@@ -19,8 +19,23 @@ Bulq enables friend groups to coordinate bulk purchases and track savings throug
 - Individual cost calculation and tracking
 - Purchase history tracking
 - Price comparison across stores
-- Real-time order updates
+- Real-time order updates via WebSockets
 - No in-app payments (manual settlement)
+
+## Core Workflow
+
+1. **Groups**: Users join friend groups for coordinated shopping
+2. **Runs**: Groups create shopping runs targeting specific stores
+3. **Bidding**: Users express interest and specify quantities for products
+4. **Confirmation**: Products meeting thresholds are confirmed for purchase
+5. **Shopping**: Designated group members execute the shopping list
+6. **Settlement**: Costs calculated and settled manually among friends
+
+## Architecture
+
+- **Database Schema**: See [database_schema.md](database_schema.md) for detailed ER diagram
+- **Monolithic Backend**: Single FastAPI application with PostgreSQL
+- **Real-time Updates**: WebSocket connections for live bid tracking
 
 ## Target Users
 
