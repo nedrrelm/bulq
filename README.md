@@ -4,14 +4,27 @@ A platform for organizing group purchases to reduce costs through bulk buying.
 
 ## Overview
 
-Bulq enables users to coordinate bulk purchases, share costs, and maximize savings by buying in larger quantities. The platform facilitates group formation, order coordination, and cost distribution among participants.
+Bulq enables friend groups to coordinate bulk purchases and track savings through organized group buying. The platform helps manage buying runs, calculate individual costs, and track purchase history across different stores.
 
-## Architecture
+## Tech Stack
 
-- **Backend Server**: API and business logic
-- **Web Frontend**: Browser-based interface
-- **Android App**: Mobile application
-- **Database**: Data persistence layer
+- **Backend**: Python with FastAPI
+- **Database**: PostgreSQL
+- **Web Frontend**: React
+- **Android App**: Native Kotlin
+
+## Key Features
+
+- Group buying run management
+- Individual cost calculation and tracking
+- Purchase history tracking
+- Price comparison across stores
+- Real-time order updates
+- No in-app payments (manual settlement)
+
+## Target Users
+
+Friend groups who trust each other and handle discussions/payments outside the app.
 
 ## Project Status
 
