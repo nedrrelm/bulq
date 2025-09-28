@@ -3,9 +3,11 @@
 ## Architecture Decisions
 
 - **Monolithic Backend**: Single FastAPI application, suitable for expected load
-- **WebSockets**: For real-time bid updates during group orders
+- **Containerized Development**: Docker Compose for consistent environments
+- **Frontend-Backend Separation**: React frontend, FastAPI backend with CORS
+- **WebSockets**: For real-time bid updates during group orders (planned)
 - **No Image Storage**: Avoiding complexity, text-based product descriptions only
-- **PostgreSQL with UUIDs**: For primary keys across all entities
+- **PostgreSQL with UUIDs**: For primary keys across all entities (planned)
 
 ## Core Entity Logic
 
@@ -49,6 +51,22 @@
 - Future: Store API integration or scraping
 - Price tracking built into Product entity
 
+## Development Environment
+
+### Current Stack Implementation
+- **Backend**: FastAPI with uv dependency management
+- **Frontend**: React + TypeScript with Vite build tool
+- **Containerization**: Docker with multi-stage builds
+- **Web Server**: Caddy for frontend serving
+- **Node.js Management**: Volta for consistent Node.js versions
+- **CORS**: Configured for localhost:3000 frontend communication
+
+### Development Workflow
+1. Use `docker compose up -d` for full stack development
+2. Individual containers can be rebuilt: `docker compose up -d --build backend`
+3. Frontend includes backend connectivity test for integration verification
+4. API documentation available at `/docs` endpoint
+
 ## Future Considerations
 
 - Payment integration if user base grows
@@ -56,3 +74,5 @@
 - Chat if coordination becomes complex
 - BulkPricingTier entity for threshold logic
 - Multiple delivery coordination options
+- Database containerization and persistence
+- Production deployment configuration
