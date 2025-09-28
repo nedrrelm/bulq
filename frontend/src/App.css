@@ -1,0 +1,65 @@
+.app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  color: #646cff;
+  margin-bottom: 0.5rem;
+}
+
+header h2 {
+  color: #888;
+  font-size: 1.2em;
+  font-weight: normal;
+}
+
+main {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.status-card, .info-card {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.status-card h3, .info-card h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  padding: 1rem;
+  color: #155724;
+}
+
+.error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 1rem;
+  color: #721c24;
+}
+
+.info-card p {
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 768px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+}
