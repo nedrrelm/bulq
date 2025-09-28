@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import create_tables
+from .database import create_tables
 
 app = FastAPI(title="Bulq API", version="0.1.0")
 
@@ -21,6 +21,8 @@ async def startup_event():
     # Create seed data if in development
     import os
     if os.getenv("ENV") == "development":
+        import sys
+        sys.path.append("..")
         from seed_data import create_seed_data
         create_seed_data()
 
@@ -36,7 +38,7 @@ async def health_check():
 async def db_health_check():
     """Check database connectivity."""
     try:
-        from database import engine
+        from .database import engine
         from sqlalchemy import text
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
