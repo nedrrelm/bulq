@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from database import create_tables
 
 app = FastAPI(title="Bulq API", version="0.1.0")
 
@@ -12,12 +13,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    """Create database tables and seed data on startup."""
+    create_tables()
+
+    # Create seed data if in development
+    import os
+    if os.getenv("ENV") == "development":
+        from seed_data import create_seed_data
+        create_seed_data()
 
 @app.get("/")
 async def hello_world():
     return {"message": "Hello World from Bulq Backend!"}
 
-
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.get("/db-health")
+async def db_health_check():
+    """Check database connectivity."""
+    try:
+        from database import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
