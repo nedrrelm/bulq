@@ -20,6 +20,7 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
 
     groups = relationship("Group", secondary=group_membership, back_populates="members")
     created_groups = relationship("Group", back_populates="creator")

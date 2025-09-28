@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_tables
+from .routes.auth import router as auth_router
 
 app = FastAPI(title="Bulq API", version="0.1.0")
+
+# Include routers
+app.include_router(auth_router)
 
 # Add CORS middleware
 app.add_middleware(
@@ -21,10 +25,11 @@ async def startup_event():
     # Create seed data if in development
     import os
     if os.getenv("ENV") == "development":
-        import sys
-        sys.path.append("..")
-        from seed_data import create_seed_data
-        create_seed_data()
+        try:
+            from ..seed_data import create_seed_data
+            create_seed_data()
+        except ImportError:
+            print("Warning: Could not import seed data. Skipping seed data creation.")
 
 @app.get("/")
 async def hello_world():

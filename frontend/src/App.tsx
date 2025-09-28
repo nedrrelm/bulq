@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import Login from './components/Login'
 
 interface BackendResponse {
   message: string
@@ -9,13 +10,39 @@ interface HealthResponse {
   status: string
 }
 
+interface User {
+  id: string
+  name: string
+  email: string
+}
+
 function App() {
+  const [user, setUser] = useState<User | null>(null)
   const [backendMessage, setBackendMessage] = useState<string>('')
   const [healthStatus, setHealthStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
 
   const BACKEND_URL = 'http://localhost:8000'
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/auth/me`, {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const userData: User = await response.json()
+          setUser(userData)
+        }
+      } catch (err) {
+        // User not logged in, which is fine
+      }
+    }
+
+    checkAuth()
+  }, [])
 
   useEffect(() => {
     const fetchBackendData = async () => {
@@ -49,11 +76,38 @@ function App() {
     fetchBackendData()
   }, [])
 
+  const handleLogin = (userData: User) => {
+    setUser(userData)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${BACKEND_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+      setUser(null)
+    } catch (err) {
+      console.error('Logout failed:', err)
+    }
+  }
+
+  // Show login page if not authenticated
+  if (!user) {
+    return <Login onLogin={handleLogin} />
+  }
+
+  // Show main app if authenticated
   return (
     <div className="app">
       <header>
         <h1>Bulq - Bulk Buying Platform</h1>
-        <h2>Frontend Status</h2>
+        <div className="user-info">
+          <span>Welcome, {user.name}!</span>
+          <button onClick={handleLogout} className="logout-button">
+            Logout
+          </button>
+        </div>
       </header>
 
       <main>
@@ -76,6 +130,13 @@ function App() {
               <p><strong>Health Status:</strong> {healthStatus}</p>
             </div>
           )}
+        </div>
+
+        <div className="info-card">
+          <h3>User Info</h3>
+          <p><strong>Name:</strong> {user.name}</p>
+          <p><strong>Email:</strong> {user.email}</p>
+          <p><strong>User ID:</strong> {user.id}</p>
         </div>
 
         <div className="info-card">
