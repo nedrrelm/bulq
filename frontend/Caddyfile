@@ -1,0 +1,18 @@
+:3000 {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+
+    # CORS headers for API calls
+    header {
+        Access-Control-Allow-Origin *
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization"
+    }
+
+    # Handle preflight requests
+    @options {
+        method OPTIONS
+    }
+    respond @options 204
+}
