@@ -8,17 +8,12 @@ erDiagram
         uuid id PK
         string name
         string email
-        timestamp created_at
-        timestamp updated_at
     }
     
     Group {
         uuid id PK
         string name
-        string description
         uuid created_by FK
-        timestamp created_at
-        timestamp updated_at
     }
     
     Run {
@@ -26,18 +21,11 @@ erDiagram
         uuid group_id FK
         uuid store_id FK
         string state
-        json designated_shoppers
-        text delivery_info
-        timestamp created_at
-        timestamp updated_at
     }
     
     Store {
         uuid id PK
         string name
-        string location
-        timestamp created_at
-        timestamp updated_at
     }
     
     Product {
@@ -56,14 +44,11 @@ erDiagram
         uuid product_id FK
         integer quantity
         boolean interested_only
-        timestamp created_at
-        timestamp updated_at
     }
     
     GroupMembership {
         uuid user_id FK
         uuid group_id FK
-        timestamp joined_at
     }
 
     User ||--o{ GroupMembership : "belongs to"
