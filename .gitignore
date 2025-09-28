@@ -1,0 +1,69 @@
+# Python cache and bytecode
+__pycache__/
+*__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python egg files
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite3
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker volumes (but keep compose file)
+postgres_data/
+
+# Logs
+*.log
+logs/
+
+# Node.js (frontend dependencies already handled in frontend/.gitignore)
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Coverage reports
+htmlcov/
+.coverage
+.pytest_cache/
+
+# uv lock file (keep pyproject.toml but ignore resolved dependencies in some cases)
+# Note: uv.lock should typically be committed, but add here if needed
+# uv.lock
