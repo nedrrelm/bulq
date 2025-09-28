@@ -1,0 +1,71 @@
+import hashlib
+import secrets
+import os
+from typing import Optional, Dict
+from datetime import datetime, timedelta
+
+# In-memory session storage (use Redis in production)
+sessions: Dict[str, dict] = {}
+
+# Session configuration
+SESSION_EXPIRY_HOURS = 24
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+
+def hash_password(password: str) -> str:
+    """Hash a password using SHA-256 with salt."""
+    salt = secrets.token_hex(32)
+    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    return f"{salt}:{password_hash}"
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against its hash."""
+    try:
+        salt, password_hash = hashed.split(":")
+        return hashlib.sha256((password + salt).encode()).hexdigest() == password_hash
+    except ValueError:
+        return False
+
+def create_session(user_id: str) -> str:
+    """Create a new session and return session token."""
+    session_token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=SESSION_EXPIRY_HOURS)
+
+    sessions[session_token] = {
+        "user_id": user_id,
+        "expires_at": expires_at,
+        "created_at": datetime.utcnow()
+    }
+
+    return session_token
+
+def get_session(session_token: str) -> Optional[dict]:
+    """Get session data if valid, None if expired or invalid."""
+    if session_token not in sessions:
+        return None
+
+    session = sessions[session_token]
+
+    # Check if session is expired
+    if datetime.utcnow() > session["expires_at"]:
+        del sessions[session_token]
+        return None
+
+    return session
+
+def delete_session(session_token: str) -> bool:
+    """Delete a session (logout)."""
+    if session_token in sessions:
+        del sessions[session_token]
+        return True
+    return False
+
+def cleanup_expired_sessions():
+    """Remove expired sessions from memory."""
+    now = datetime.utcnow()
+    expired_tokens = [
+        token for token, session in sessions.items()
+        if now > session["expires_at"]
+    ]
+
+    for token in expired_tokens:
+        del sessions[token]
