@@ -211,6 +211,131 @@
   margin-bottom: 20px;
 }
 
+/* Bid-related styles */
+.bid-users {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.bid-users h5 {
+  color: #374151;
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-avatars {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #f3f4f6;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  cursor: help;
+}
+
+.avatar-initials {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bid-quantity {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #10b981;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.bid-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.user-bid-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.current-bid {
+  color: #059669;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.bid-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-bid-button,
+.retract-bid-button,
+.place-bid-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.edit-bid-button {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.edit-bid-button:hover {
+  background: #dbeafe;
+  border-color: #3b82f6;
+}
+
+.retract-bid-button {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.retract-bid-button:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.place-bid-button {
+  background: #ecfdf5;
+  color: #059669;
+  width: 100%;
+  height: 40px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.place-bid-button:hover {
+  background: #d1fae5;
+  border-color: #10b981;
+}
+
 /* Loading state */
 .run-page p {
   color: #6b7280;

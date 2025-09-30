@@ -217,6 +217,16 @@ class MemoryRepository(AbstractRepository):
         sams_run_confirmed = self._create_run(friends_group.id, sams.id, "confirmed")
         costco_run_shopping = self._create_run(work_group.id, costco.id, "shopping")
 
+        # Create test bids for the active run
+        self._create_bid(alice.id, costco_run_active.id, olive_oil.id, 2, False)
+        self._create_bid(bob.id, costco_run_active.id, olive_oil.id, 1, False)
+        self._create_bid(carol.id, costco_run_active.id, quinoa.id, 1, False)
+        self._create_bid(test_user.id, costco_run_active.id, olive_oil.id, 0, True)  # interested only
+
+        # Create test bids for the planning run
+        self._create_bid(bob.id, sams_run_planning.id, detergent.id, 1, False)
+        self._create_bid(carol.id, sams_run_planning.id, detergent.id, 2, False)
+
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         return self._users.get(user_id)
 
@@ -293,6 +303,11 @@ class MemoryRepository(AbstractRepository):
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state=state)
         self._runs[run.id] = run
         return run
+
+    def _create_bid(self, user_id: UUID, run_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
+        bid = ProductBid(id=uuid4(), user_id=user_id, run_id=run_id, product_id=product_id, quantity=quantity, interested_only=interested_only)
+        self._bids[bid.id] = bid
+        return bid
 
 
 def get_repository(db: Session = None) -> AbstractRepository:
