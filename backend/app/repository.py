@@ -75,10 +75,32 @@ class AbstractRepository(ABC):
 
 
 class DatabaseRepository(AbstractRepository):
-    """Database implementation using SQLAlchemy."""
+    """Database implementation using SQLAlchemy - Singleton."""
+
+    _instance = None
+    _db = None
+
+    def __new__(cls, db: Session):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._db = db
+        return cls._instance
 
     def __init__(self, db: Session):
-        self.db = db
+        # Only initialize once
+        if not hasattr(self, '_initialized'):
+            self.db = db
+            self._initialized = True
+
+    @property
+    def db(self):
+        """Get the current database session."""
+        return self._db
+
+    @db.setter
+    def db(self, value):
+        """Update the database session."""
+        DatabaseRepository._db = value
 
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         return self.db.query(User).filter(User.id == user_id).first()
@@ -132,21 +154,31 @@ class DatabaseRepository(AbstractRepository):
 
 
 class MemoryRepository(AbstractRepository):
-    """In-memory implementation for testing and development."""
+    """In-memory implementation for testing and development - Singleton."""
+
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
-        # Storage dictionaries
-        self._users: Dict[UUID, User] = {}
-        self._users_by_email: Dict[str, User] = {}
-        self._groups: Dict[UUID, Group] = {}
-        self._group_memberships: Dict[UUID, List[UUID]] = {}  # group_id -> [user_ids]
-        self._stores: Dict[UUID, Store] = {}
-        self._runs: Dict[UUID, Run] = {}
-        self._products: Dict[UUID, Product] = {}
-        self._bids: Dict[UUID, ProductBid] = {}
+        # Only initialize once
+        if not hasattr(self, '_initialized'):
+            # Storage dictionaries
+            self._users: Dict[UUID, User] = {}
+            self._users_by_email: Dict[str, User] = {}
+            self._groups: Dict[UUID, Group] = {}
+            self._group_memberships: Dict[UUID, List[UUID]] = {}  # group_id -> [user_ids]
+            self._stores: Dict[UUID, Store] = {}
+            self._runs: Dict[UUID, Run] = {}
+            self._products: Dict[UUID, Product] = {}
+            self._bids: Dict[UUID, ProductBid] = {}
 
-        # Create test data
-        self._create_test_data()
+            # Create test data
+            self._create_test_data()
+            self._initialized = True
 
     def _create_test_data(self):
         """Create test data for memory mode."""
@@ -260,20 +292,16 @@ class MemoryRepository(AbstractRepository):
         return run
 
 
-# Global repository instance for memory mode
-_memory_repository_instance = None
-
 def get_repository(db: Session = None) -> AbstractRepository:
     """Get the appropriate repository implementation based on config."""
-    global _memory_repository_instance
-
     if get_repo_mode() == "memory":
-        # Use singleton for memory mode to maintain data across requests
-        if _memory_repository_instance is None:
-            _memory_repository_instance = MemoryRepository()
-        return _memory_repository_instance
+        # MemoryRepository is now a singleton - just call constructor
+        return MemoryRepository()
     else:
-        # Create new database repository instance for each request
+        # DatabaseRepository is now a singleton with updated db session
         if db is None:
             raise ValueError("Database session required for database mode")
-        return DatabaseRepository(db)
+        repo = DatabaseRepository(db)
+        # Update the database session in case it changed
+        repo.db = db
+        return repo
