@@ -1,0 +1,105 @@
+import { useState, useEffect } from 'react'
+import './Groups.css'
+
+interface Group {
+  id: string
+  name: string
+  description: string
+  member_count: number
+  created_at: string
+}
+
+interface GroupsProps {
+  onGroupSelect: (groupId: string) => void
+}
+
+export default function Groups({ onGroupSelect }: GroupsProps) {
+  console.log('🔵 Groups component: Component is being rendered!')
+
+  const [groups, setGroups] = useState<Group[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const BACKEND_URL = 'http://localhost:8000'
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        console.log('Groups component: Starting to fetch groups...')
+        setLoading(true)
+        setError('')
+
+        const response = await fetch(`${BACKEND_URL}/groups/my-groups`, {
+          credentials: 'include'
+        })
+
+        console.log('Groups component: Response status:', response.status)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.log('Groups component: Error response:', errorText)
+          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+        }
+
+        const groupsData: Group[] = await response.json()
+        console.log('Groups component: Received groups data:', groupsData)
+        setGroups(groupsData)
+      } catch (err) {
+        console.error('Groups component: Error fetching groups:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load groups')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchGroups()
+  }, [])
+
+  const handleGroupClick = (groupId: string) => {
+    onGroupSelect(groupId)
+  }
+
+  console.log('Groups component: Rendering with loading:', loading, 'error:', error, 'groups:', groups)
+
+  return (
+    <div className="groups-panel" style={{backgroundColor: '#ffcccc', border: '2px solid red', padding: '20px', margin: '20px 0'}}>
+      <h3>🎯 My Groups Panel - DEBUG MODE</h3>
+
+      {loading && <p>Loading groups...</p>}
+
+      {error && (
+        <div className="error">
+          <p>❌ Failed to load groups: {error}</p>
+        </div>
+      )}
+
+      {!loading && !error && groups.length === 0 && (
+        <div className="no-groups">
+          <p>You haven't joined any groups yet.</p>
+          <p>Ask a friend to invite you to their group!</p>
+        </div>
+      )}
+
+      {!loading && !error && groups.length > 0 && (
+        <div className="groups-list">
+          {groups.map((group) => (
+            <div
+              key={group.id}
+              className="group-item"
+              onClick={() => handleGroupClick(group.id)}
+            >
+              <div className="group-header">
+                <h4>{group.name}</h4>
+                <span className="member-count">{group.member_count} members</span>
+              </div>
+              <p className="group-description">{group.description}</p>
+              <p className="group-date">
+                Joined: {new Date(group.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
