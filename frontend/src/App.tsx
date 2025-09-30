@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Login from './components/Login'
+import Groups from './components/Groups'
 
 interface BackendResponse {
   message: string
@@ -22,6 +23,8 @@ function App() {
   const [healthStatus, setHealthStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'group'>('dashboard')
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -92,18 +95,30 @@ function App() {
     }
   }
 
+  const handleGroupSelect = (groupId: string) => {
+    setSelectedGroupId(groupId)
+    setCurrentView('group')
+  }
+
+  const handleBackToDashboard = () => {
+    setCurrentView('dashboard')
+    setSelectedGroupId(null)
+  }
+
   // Show login page if not authenticated
   if (!user) {
     return <Login onLogin={handleLogin} />
   }
 
   // Show main app if authenticated
+  console.log('🔵 App: Rendering main app. currentView:', currentView, 'user:', user)
+
   return (
     <div className="app">
       <header>
         <h1>Bulq - Bulk Buying Platform</h1>
         <div className="user-info">
-          <span>Welcome, {user.name}!</span>
+          <span>Welcome 1, {user.name}!</span>
           <button onClick={handleLogout} className="logout-button">
             Logout
           </button>
@@ -111,40 +126,70 @@ function App() {
       </header>
 
       <main>
-        <div className="status-card">
-          <h3>Backend Connection Test</h3>
+        <div style={{backgroundColor: 'yellow', padding: '10px', margin: '10px 0'}}>
+          🔍 DEBUG: currentView = {currentView}
+        </div>
 
-          {loading && <p>Connecting to backend...</p>}
-
-          {error && (
-            <div className="error">
-              <p>❌ Backend connection failed: {error}</p>
-              <p>Make sure the backend is running on {BACKEND_URL}</p>
+        {currentView === 'dashboard' && (
+          <>
+            <div style={{backgroundColor: 'lightblue', padding: '10px', margin: '10px 0'}}>
+              🔍 DEBUG: About to render Groups component
             </div>
-          )}
+            <Groups onGroupSelect={handleGroupSelect} />
 
-          {!loading && !error && (
-            <div className="success">
-              <p>✅ Backend connected successfully!</p>
-              <p><strong>Message:</strong> {backendMessage}</p>
-              <p><strong>Health Status:</strong> {healthStatus}</p>
+            <div className="status-card">
+              <h3>Backend Connection Test</h3>
+
+              {loading && <p>Connecting to backend...</p>}
+
+              {error && (
+                <div className="error">
+                  <p>❌ Backend connection failed: {error}</p>
+                  <p>Make sure the backend is running on {BACKEND_URL}</p>
+                </div>
+              )}
+
+              {!loading && !error && (
+                <div className="success">
+                  <p>✅ Backend connected successfully!</p>
+                  <p><strong>Message:</strong> {backendMessage}</p>
+                  <p><strong>Health Status:</strong> {healthStatus}</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="info-card">
-          <h3>User Info</h3>
-          <p><strong>Name:</strong> {user.name}</p>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>User ID:</strong> {user.id}</p>
-        </div>
+            <div className="info-card">
+              <h3>User Info</h3>
+              <p><strong>Name:</strong> {user.name}</p>
+              <p><strong>Email:</strong> {user.email}</p>
+              <p><strong>User ID:</strong> {user.id}</p>
+            </div>
 
-        <div className="info-card">
-          <h3>Development Info</h3>
-          <p>Frontend: React + TypeScript + Vite</p>
-          <p>Backend: FastAPI (Python)</p>
-          <p>Backend URL: {BACKEND_URL}</p>
-        </div>
+            <div className="info-card">
+              <h3>Development Info</h3>
+              <p>Frontend: React + TypeScript + Vite</p>
+              <p>Backend: FastAPI (Python)</p>
+              <p>Backend URL: {BACKEND_URL}</p>
+            </div>
+          </>
+        )}
+
+        {currentView === 'group' && selectedGroupId && (
+          <div className="group-view">
+            <div className="group-header">
+              <button onClick={handleBackToDashboard} className="back-button">
+                ← Back to Dashboard
+              </button>
+              <h2>Group: {selectedGroupId}</h2>
+            </div>
+            <div className="info-card">
+              <h3>Group Details</h3>
+              <p>Group ID: {selectedGroupId}</p>
+              <p>This is where the group page will be implemented.</p>
+              <p>Here you'll see group runs, members, and group-specific actions.</p>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

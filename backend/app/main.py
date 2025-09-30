@@ -2,16 +2,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_tables
 from .routes.auth import router as auth_router
+from .routes.groups import router as groups_router
 
 app = FastAPI(title="Bulq API", version="0.1.0")
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(groups_router)
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",  # Vite dev server
+        "http://127.0.0.1:5173"   # Vite dev server
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
