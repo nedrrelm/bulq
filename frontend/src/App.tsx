@@ -3,6 +3,7 @@ import './App.css'
 import Login from './components/Login'
 import Groups from './components/Groups'
 import GroupPage from './components/GroupPage'
+import RunPage from './components/RunPage'
 
 interface BackendResponse {
   message: string
@@ -24,8 +25,9 @@ function App() {
   const [healthStatus, setHealthStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'group'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'group' | 'run'>('dashboard')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -104,6 +106,17 @@ function App() {
   const handleBackToDashboard = () => {
     setCurrentView('dashboard')
     setSelectedGroupId(null)
+    setSelectedRunId(null)
+  }
+
+  const handleRunSelect = (runId: string) => {
+    setSelectedRunId(runId)
+    setCurrentView('run')
+  }
+
+  const handleBackToGroup = () => {
+    setCurrentView('group')
+    setSelectedRunId(null)
   }
 
   // Show login page if not authenticated
@@ -179,6 +192,14 @@ function App() {
           <GroupPage
             groupId={selectedGroupId}
             onBack={handleBackToDashboard}
+            onRunSelect={handleRunSelect}
+          />
+        )}
+
+        {currentView === 'run' && selectedRunId && (
+          <RunPage
+            runId={selectedRunId}
+            onBack={handleBackToGroup}
           />
         )}
       </main>

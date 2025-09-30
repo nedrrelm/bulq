@@ -12,9 +12,10 @@ interface Run {
 interface GroupPageProps {
   groupId: string
   onBack: () => void
+  onRunSelect: (runId: string) => void
 }
 
-export default function GroupPage({ groupId, onBack }: GroupPageProps) {
+export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPageProps) {
   const [runs, setRuns] = useState<Run[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -75,6 +76,10 @@ export default function GroupPage({ groupId, onBack }: GroupPageProps) {
     alert('New run functionality will be implemented soon!')
   }
 
+  const handleRunClick = (runId: string) => {
+    onRunSelect(runId)
+  }
+
   return (
     <div className="group-page">
       <div className="group-header">
@@ -108,7 +113,11 @@ export default function GroupPage({ groupId, onBack }: GroupPageProps) {
                 {currentRuns.map((run) => {
                   const stateDisplay = getStateDisplay(run.state)
                   return (
-                    <div key={run.id} className="run-item">
+                    <div
+                      key={run.id}
+                      className="run-item"
+                      onClick={() => handleRunClick(run.id)}
+                    >
                       <div className="run-header">
                         <h4>{run.store_name}</h4>
                         <span
@@ -144,7 +153,11 @@ export default function GroupPage({ groupId, onBack }: GroupPageProps) {
                 {pastRuns.map((run) => {
                   const stateDisplay = getStateDisplay(run.state)
                   return (
-                    <div key={run.id} className="run-item past">
+                    <div
+                      key={run.id}
+                      className="run-item past"
+                      onClick={() => handleRunClick(run.id)}
+                    >
                       <div className="run-header">
                         <h4>{run.store_name}</h4>
                         <span

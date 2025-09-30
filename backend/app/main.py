@@ -3,12 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import create_tables
 from .routes.auth import router as auth_router
 from .routes.groups import router as groups_router
+from .routes.runs import router as runs_router
 
 app = FastAPI(title="Bulq API", version="0.1.0")
 
 # Include routers
 app.include_router(auth_router)
 app.include_router(groups_router)
+app.include_router(runs_router)
 
 # Add CORS middleware
 app.add_middleware(
