@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import Login from './components/Login'
 import Groups from './components/Groups'
+import GroupPage from './components/GroupPage'
 
 interface BackendResponse {
   message: string
@@ -175,20 +176,10 @@ function App() {
         )}
 
         {currentView === 'group' && selectedGroupId && (
-          <div className="group-view">
-            <div className="group-header">
-              <button onClick={handleBackToDashboard} className="back-button">
-                ← Back to Dashboard
-              </button>
-              <h2>Group: {selectedGroupId}</h2>
-            </div>
-            <div className="info-card">
-              <h3>Group Details</h3>
-              <p>Group ID: {selectedGroupId}</p>
-              <p>This is where the group page will be implemented.</p>
-              <p>Here you'll see group runs, members, and group-specific actions.</p>
-            </div>
-          </div>
+          <GroupPage
+            groupId={selectedGroupId}
+            onBack={handleBackToDashboard}
+          />
         )}
       </main>
     </div>

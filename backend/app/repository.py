@@ -210,9 +210,12 @@ class MemoryRepository(AbstractRepository):
         quinoa = self._create_product(costco.id, "Test Quinoa", 18.99)
         detergent = self._create_product(sams.id, "Test Detergent", 16.98)
 
-        # Create test runs
-        costco_run = self._create_run(friends_group.id, costco.id, "active")
-        sams_run = self._create_run(work_group.id, sams.id, "planning")
+        # Create test runs with variety of states
+        costco_run_active = self._create_run(friends_group.id, costco.id, "active")
+        sams_run_planning = self._create_run(work_group.id, sams.id, "planning")
+        costco_run_completed = self._create_run(friends_group.id, costco.id, "completed")
+        sams_run_confirmed = self._create_run(friends_group.id, sams.id, "confirmed")
+        costco_run_shopping = self._create_run(work_group.id, costco.id, "shopping")
 
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         return self._users.get(user_id)

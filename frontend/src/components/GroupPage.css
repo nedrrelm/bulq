@@ -1,0 +1,145 @@
+.group-page {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.back-button {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background: #e5e7eb;
+}
+
+.group-header h2 {
+  color: #1f2937;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.new-run-button {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.new-run-button:hover {
+  background: #059669;
+}
+
+.runs-section {
+  margin-bottom: 40px;
+}
+
+.runs-section h3 {
+  color: #1f2937;
+  margin-bottom: 16px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.runs-list {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.run-item {
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 20px;
+  background: white;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.run-item:hover {
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+  transform: translateY(-2px);
+}
+
+.run-item.past {
+  opacity: 0.75;
+  background: #f9fafb;
+}
+
+.run-item.past:hover {
+  border-color: #6b7280;
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.15);
+}
+
+.run-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.run-header h4 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.run-state {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.run-id {
+  color: #6b7280;
+  font-size: 12px;
+  margin: 0;
+  font-family: monospace;
+}
+
+.no-runs {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px dashed #d1d5db;
+}
+
+.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/* Loading state */
+p {
+  color: #6b7280;
+  text-align: center;
+  padding: 20px;
+}
