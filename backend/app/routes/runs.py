@@ -262,3 +262,59 @@ async def retract_bid(
             raise HTTPException(status_code=404, detail="No bid found to retract")
 
     return {"message": "Bid retracted successfully"}
+
+class AvailableProductResponse(BaseModel):
+    id: str
+    name: str
+    base_price: str
+
+    class Config:
+        from_attributes = True
+
+@router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
+async def get_available_products(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Get products available for bidding (products from the store that don't have bids yet)."""
+    repo = get_repository(db)
+
+    # Validate run ID
+    try:
+        run_uuid = uuid.UUID(run_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid run ID format")
+
+    # Verify run exists and user has access
+    runs = [run for run in repo._runs.values() if run.id == run_uuid] if hasattr(repo, '_runs') else []
+    if not runs:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    run = runs[0]
+    user_groups = repo.get_user_groups(current_user)
+    if not any(g.id == run.group_id for g in user_groups):
+        raise HTTPException(status_code=403, detail="Not authorized to view this run")
+
+    if hasattr(repo, '_runs'):  # Memory mode
+        # Get all products for the store
+        store_products = repo.get_products_by_store(run.store_id)
+        run_bids = repo.get_bids_by_run(run.id)
+
+        # Get products that have bids
+        products_with_bids = set(bid.product_id for bid in run_bids)
+
+        # Return products that don't have bids
+        available_products = []
+        for product in store_products:
+            if product.id not in products_with_bids:
+                available_products.append(AvailableProductResponse(
+                    id=str(product.id),
+                    name=product.name,
+                    base_price=str(product.base_price)
+                ))
+
+        return available_products
+    else:
+        # Database mode - would need proper joins
+        return []

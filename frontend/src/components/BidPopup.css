@@ -64,6 +64,7 @@
   border-radius: 8px;
   font-size: 16px;
   color: #1f2937;
+  background: white;
 }
 
 .quantity-input:focus {

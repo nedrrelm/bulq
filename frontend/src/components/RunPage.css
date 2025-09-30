@@ -101,11 +101,37 @@
   margin-bottom: 40px;
 }
 
+.products-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
 .products-section h3 {
   color: #1f2937;
-  margin-bottom: 20px;
+  margin: 0;
   font-size: 20px;
   font-weight: 600;
+}
+
+.add-product-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.add-product-button:hover {
+  background: #2563eb;
 }
 
 .products-list {
