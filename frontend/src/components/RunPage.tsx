@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
 import './RunPage.css'
+import BidPopup from './BidPopup'
+
+interface UserBid {
+  user_id: string
+  user_name: string
+  quantity: number
+  interested_only: boolean
+}
 
 interface Product {
   id: string
@@ -7,6 +15,8 @@ interface Product {
   base_price: string
   total_quantity: number
   interested_count: number
+  user_bids: UserBid[]
+  current_user_bid: UserBid | null
 }
 
 interface RunDetail {
@@ -28,6 +38,8 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
   const [run, setRun] = useState<RunDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showBidPopup, setShowBidPopup] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -57,6 +69,87 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
 
     fetchRunDetails()
   }, [runId])
+
+  const canBid = run?.state === 'planning' || run?.state === 'active'
+
+  const handlePlaceBid = (product: Product) => {
+    setSelectedProduct(product)
+    setShowBidPopup(true)
+  }
+
+  const handleRetractBid = async (product: Product) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/runs/${runId}/bids/${product.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to retract bid')
+      }
+
+      // Refresh run details
+      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+        credentials: 'include'
+      })
+
+      if (refreshResponse.ok) {
+        const runData: RunDetail = await refreshResponse.json()
+        setRun(runData)
+      }
+    } catch (err) {
+      console.error('Error retracting bid:', err)
+      alert('Failed to retract bid. Please try again.')
+    }
+  }
+
+  const handleSubmitBid = async (quantity: number, interestedOnly: boolean) => {
+    if (!selectedProduct) return
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/runs/${runId}/bids`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          product_id: selectedProduct.id,
+          quantity: quantity,
+          interested_only: interestedOnly
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to place bid')
+      }
+
+      // Refresh run details
+      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+        credentials: 'include'
+      })
+
+      if (refreshResponse.ok) {
+        const runData: RunDetail = await refreshResponse.json()
+        setRun(runData)
+      }
+
+      setShowBidPopup(false)
+      setSelectedProduct(null)
+    } catch (err) {
+      console.error('Error placing bid:', err)
+      alert('Failed to place bid. Please try again.')
+    }
+  }
+
+  const handleCancelBid = () => {
+    setShowBidPopup(false)
+    setSelectedProduct(null)
+  }
+
+  const getUserInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase()
+  }
 
   const getStateDisplay = (state: string) => {
     switch (state) {
@@ -187,6 +280,7 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
                   <h4>{product.name}</h4>
                   <span className="product-price">${product.base_price}</span>
                 </div>
+
                 <div className="product-stats">
                   <div className="stat">
                     <span className="stat-value">{product.total_quantity}</span>
@@ -197,6 +291,56 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
                     <span className="stat-label">People Interested</span>
                   </div>
                 </div>
+
+                <div className="bid-users">
+                  <h5>Bidders:</h5>
+                  <div className="user-avatars">
+                    {product.user_bids.map((bid, index) => (
+                      <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? 'Interested' : `${bid.quantity} items`}`}>
+                        <span className="avatar-initials">{getUserInitials(bid.user_name)}</span>
+                        <span className="bid-quantity">
+                          {bid.interested_only ? '?' : bid.quantity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {canBid && (
+                  <div className="bid-actions">
+                    {product.current_user_bid ? (
+                      <div className="user-bid-status">
+                        <span className="current-bid">
+                          Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
+                        </span>
+                        <div className="bid-buttons">
+                          <button
+                            onClick={() => handlePlaceBid(product)}
+                            className="edit-bid-button"
+                            title="Edit bid"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleRetractBid(product)}
+                            className="retract-bid-button"
+                            title="Retract bid"
+                          >
+                            −
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handlePlaceBid(product)}
+                        className="place-bid-button"
+                        title="Place bid"
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -241,6 +385,15 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
             <p>🎉 This run has been completed! Costs have been calculated and the run is finished.</p>
           </div>
         </div>
+      )}
+
+      {showBidPopup && selectedProduct && (
+        <BidPopup
+          productName={selectedProduct.name}
+          currentQuantity={selectedProduct.current_user_bid?.quantity}
+          onSubmit={handleSubmitBid}
+          onCancel={handleCancelBid}
+        />
       )}
     </div>
   )
