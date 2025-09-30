@@ -5,9 +5,13 @@ from typing import Optional
 
 from ..database import get_db
 from ..models import User
-from ..auth import hash_password, verify_password, create_session, get_session, delete_session
+from ..auth import hash_password, create_session, get_session, delete_session
+from ..repository import get_repository
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+
 
 class UserRegister(BaseModel):
     name: str
@@ -33,7 +37,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Optiona
     if not session:
         return None
 
-    user = db.query(User).filter(User.id == session["user_id"]).first()
+    repo = get_repository(db)
+    from uuid import UUID
+    user_id = UUID(session["user_id"])
+    user = repo.get_user_by_id(user_id)
     return user
 
 def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
@@ -49,8 +56,10 @@ def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
 @router.post("/register", response_model=UserResponse)
 async def register(user_data: UserRegister, response: Response, db: Session = Depends(get_db)):
     """Register a new user."""
+    repo = get_repository(db)
+
     # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    existing_user = repo.get_user_by_email(user_data.email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -59,15 +68,11 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
 
     # Create new user
     password_hash = hash_password(user_data.password)
-    new_user = User(
+    new_user = repo.create_user(
         name=user_data.name,
         email=user_data.email,
         password_hash=password_hash
     )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
 
     # Create session
     session_token = create_session(str(new_user.id))
@@ -88,9 +93,11 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
 @router.post("/login", response_model=UserResponse)
 async def login(user_data: UserLogin, response: Response, db: Session = Depends(get_db)):
     """Login user."""
+    repo = get_repository(db)
+
     # Find user by email
-    user = db.query(User).filter(User.email == user_data.email).first()
-    if not user or not verify_password(user_data.password, user.password_hash):
+    user = repo.get_user_by_email(user_data.email)
+    if not user or not repo.verify_password(user_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"

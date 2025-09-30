@@ -14,8 +14,6 @@ interface GroupsProps {
 }
 
 export default function Groups({ onGroupSelect }: GroupsProps) {
-  console.log('🔵 Groups component: Component is being rendered!')
-
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -25,7 +23,6 @@ export default function Groups({ onGroupSelect }: GroupsProps) {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        console.log('Groups component: Starting to fetch groups...')
         setLoading(true)
         setError('')
 
@@ -33,19 +30,14 @@ export default function Groups({ onGroupSelect }: GroupsProps) {
           credentials: 'include'
         })
 
-        console.log('Groups component: Response status:', response.status)
-
         if (!response.ok) {
           const errorText = await response.text()
-          console.log('Groups component: Error response:', errorText)
           throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
         }
 
         const groupsData: Group[] = await response.json()
-        console.log('Groups component: Received groups data:', groupsData)
         setGroups(groupsData)
       } catch (err) {
-        console.error('Groups component: Error fetching groups:', err)
         setError(err instanceof Error ? err.message : 'Failed to load groups')
       } finally {
         setLoading(false)
@@ -59,11 +51,9 @@ export default function Groups({ onGroupSelect }: GroupsProps) {
     onGroupSelect(groupId)
   }
 
-  console.log('Groups component: Rendering with loading:', loading, 'error:', error, 'groups:', groups)
-
   return (
-    <div className="groups-panel" style={{backgroundColor: '#ffcccc', border: '2px solid red', padding: '20px', margin: '20px 0'}}>
-      <h3>🎯 My Groups Panel - DEBUG MODE</h3>
+    <div className="groups-panel">
+      <h3>My Groups</h3>
 
       {loading && <p>Loading groups...</p>}
 

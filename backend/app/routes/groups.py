@@ -4,6 +4,7 @@ from typing import List
 from ..database import get_db
 from ..models import Group, User
 from ..routes.auth import require_auth
+from ..repository import get_repository
 from pydantic import BaseModel
 from datetime import datetime
 import uuid
@@ -26,9 +27,10 @@ async def get_my_groups(
     db: Session = Depends(get_db)
 ):
     """Get all groups the current user is a member of."""
+    repo = get_repository(db)
 
     # Get groups where the user is a member
-    groups = db.query(Group).filter(Group.members.contains(current_user)).all()
+    groups = repo.get_user_groups(current_user)
 
     # Convert to response format
     group_responses = []
