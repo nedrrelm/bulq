@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './RunPage.css'
 import BidPopup from './BidPopup'
+import AddProductPopup from './AddProductPopup'
 
 interface UserBid {
   user_id: string
@@ -17,6 +18,12 @@ interface Product {
   interested_count: number
   user_bids: UserBid[]
   current_user_bid: UserBid | null
+}
+
+interface AvailableProduct {
+  id: string
+  name: string
+  base_price: string
 }
 
 interface RunDetail {
@@ -40,6 +47,7 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
   const [error, setError] = useState('')
   const [showBidPopup, setShowBidPopup] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [showAddProductPopup, setShowAddProductPopup] = useState(false)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -149,6 +157,32 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
 
   const getUserInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase()
+  }
+
+  const handleAddProduct = () => {
+    setShowAddProductPopup(true)
+  }
+
+  const handleProductSelected = async (product: AvailableProduct) => {
+    setShowAddProductPopup(false)
+
+    // Convert available product to full product format and open bid popup
+    const fullProduct: Product = {
+      id: product.id,
+      name: product.name,
+      base_price: product.base_price,
+      total_quantity: 0,
+      interested_count: 0,
+      user_bids: [],
+      current_user_bid: null
+    }
+
+    setSelectedProduct(fullProduct)
+    setShowBidPopup(true)
+  }
+
+  const handleCancelAddProduct = () => {
+    setShowAddProductPopup(false)
   }
 
   const getStateDisplay = (state: string) => {
@@ -263,7 +297,14 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
       </div>
 
       <div className="products-section">
-        <h3>Products ({run.products.length})</h3>
+        <div className="products-header">
+          <h3>Products ({run.products.length})</h3>
+          {canBid && (
+            <button onClick={handleAddProduct} className="add-product-button">
+              + Add Product
+            </button>
+          )}
+        </div>
 
         {run.products.length === 0 ? (
           <div className="no-products">
@@ -393,6 +434,14 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
           currentQuantity={selectedProduct.current_user_bid?.quantity}
           onSubmit={handleSubmitBid}
           onCancel={handleCancelBid}
+        />
+      )}
+
+      {showAddProductPopup && (
+        <AddProductPopup
+          runId={runId}
+          onProductSelected={handleProductSelected}
+          onCancel={handleCancelAddProduct}
         />
       )}
     </div>

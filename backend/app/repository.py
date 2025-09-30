@@ -210,6 +210,20 @@ class MemoryRepository(AbstractRepository):
         quinoa = self._create_product(costco.id, "Test Quinoa", 18.99)
         detergent = self._create_product(sams.id, "Test Detergent", 16.98)
 
+        # Add more products for Costco (some without bids)
+        paper_towels = self._create_product(costco.id, "Kirkland Paper Towels 12-pack", 19.99)
+        rotisserie_chicken = self._create_product(costco.id, "Rotisserie Chicken", 4.99)
+        almond_butter = self._create_product(costco.id, "Kirkland Almond Butter", 9.99)
+        frozen_berries = self._create_product(costco.id, "Organic Frozen Berry Mix", 12.99)
+        toilet_paper = self._create_product(costco.id, "Charmin Ultra Soft 24-pack", 22.99)
+        coffee_beans = self._create_product(costco.id, "Kirkland Colombian Coffee", 14.99)
+
+        # Add more products for Sam's Club
+        laundry_pods = self._create_product(sams.id, "Tide Pods 81-count", 18.98)
+        ground_beef = self._create_product(sams.id, "93/7 Ground Beef 3lbs", 16.48)
+        bananas = self._create_product(sams.id, "Organic Bananas 3lbs", 4.98)
+        cheese_sticks = self._create_product(sams.id, "String Cheese 48-pack", 8.98)
+
         # Create test runs with variety of states
         costco_run_active = self._create_run(friends_group.id, costco.id, "active")
         sams_run_planning = self._create_run(work_group.id, sams.id, "planning")
