@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
-from ..models import Group, User
+from ..models import Group, User, Run, Store
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from pydantic import BaseModel
@@ -17,6 +17,16 @@ class GroupResponse(BaseModel):
     description: str
     member_count: int
     created_at: str
+
+    class Config:
+        from_attributes = True
+
+class RunResponse(BaseModel):
+    id: str
+    group_id: str
+    store_id: str
+    store_name: str
+    state: str
 
     class Config:
         from_attributes = True
@@ -44,3 +54,46 @@ async def get_my_groups(
         ))
 
     return group_responses
+
+@router.get("/{group_id}/runs", response_model=List[RunResponse])
+async def get_group_runs(
+    group_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Get all runs for a specific group."""
+    repo = get_repository(db)
+
+    # Verify user is a member of the group
+    try:
+        group_uuid = uuid.UUID(group_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid group ID format")
+
+    group = repo.get_group_by_id(group_uuid)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # Check if user is a member of the group
+    user_groups = repo.get_user_groups(current_user)
+    if not any(g.id == group_uuid for g in user_groups):
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+
+    # Get runs for the group
+    runs = repo.get_runs_by_group(group_uuid)
+
+    # Convert to response format with store names
+    run_responses = []
+    all_stores = repo.get_all_stores()
+    store_lookup = {store.id: store.name for store in all_stores}
+
+    for run in runs:
+        run_responses.append(RunResponse(
+            id=str(run.id),
+            group_id=str(run.group_id),
+            store_id=str(run.store_id),
+            store_name=store_lookup.get(run.store_id, "Unknown Store"),
+            state=run.state
+        ))
+
+    return run_responses
