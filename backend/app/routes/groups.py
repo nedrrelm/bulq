@@ -55,6 +55,36 @@ async def get_my_groups(
 
     return group_responses
 
+@router.get("/{group_id}")
+async def get_group(
+    group_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Get details of a specific group."""
+    repo = get_repository(db)
+
+    # Verify group ID format
+    try:
+        group_uuid = uuid.UUID(group_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid group ID format")
+
+    # Get the group
+    group = repo.get_group_by_id(group_uuid)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # Check if user is a member of the group
+    user_groups = repo.get_user_groups(current_user)
+    if not any(g.id == group_uuid for g in user_groups):
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+
+    return {
+        "id": str(group.id),
+        "name": group.name
+    }
+
 @router.get("/{group_id}/runs", response_model=List[RunResponse])
 async def get_group_runs(
     group_id: str,

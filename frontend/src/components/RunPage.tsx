@@ -250,10 +250,11 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
 
   return (
     <div className="run-page">
+      <div className="breadcrumb">
+        {run.group_name} &gt; {run.store_name}
+      </div>
+
       <div className="run-header">
-        <button onClick={onBack} className="back-button">
-          ← Back to Group
-        </button>
         <div className="run-title">
           <h2>{run.store_name}</h2>
           <span

@@ -9,6 +9,11 @@ interface Run {
   state: string
 }
 
+interface Group {
+  id: string
+  name: string
+}
+
 interface GroupPageProps {
   groupId: string
   onBack: () => void
@@ -17,36 +22,51 @@ interface GroupPageProps {
 
 export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPageProps) {
   const [runs, setRuns] = useState<Run[]>([])
+  const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const BACKEND_URL = 'http://localhost:8000'
 
   useEffect(() => {
-    const fetchRuns = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`${BACKEND_URL}/groups/${groupId}/runs`, {
+        // Fetch group details
+        const groupResponse = await fetch(`${BACKEND_URL}/groups/${groupId}`, {
           credentials: 'include'
         })
 
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+        if (!groupResponse.ok) {
+          const errorText = await groupResponse.text()
+          throw new Error(`HTTP error! status: ${groupResponse.status} - ${errorText}`)
         }
 
-        const runsData: Run[] = await response.json()
+        const groupData: Group = await groupResponse.json()
+        setGroup(groupData)
+
+        // Fetch runs
+        const runsResponse = await fetch(`${BACKEND_URL}/groups/${groupId}/runs`, {
+          credentials: 'include'
+        })
+
+        if (!runsResponse.ok) {
+          const errorText = await runsResponse.text()
+          throw new Error(`HTTP error! status: ${runsResponse.status} - ${errorText}`)
+        }
+
+        const runsData: Run[] = await runsResponse.json()
         setRuns(runsData)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load runs')
+        setError(err instanceof Error ? err.message : 'Failed to load data')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchRuns()
+    fetchData()
   }, [groupId])
 
   const getStateDisplay = (state: string) => {
@@ -82,15 +102,13 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
 
   return (
     <div className="group-page">
-      <div className="group-header">
-        <button onClick={onBack} className="back-button">
-          ← Back to Dashboard
-        </button>
-        <h2>Group Runs</h2>
-        <button onClick={handleNewRunClick} className="new-run-button">
-          + New Run
-        </button>
+      <div className="breadcrumb">
+        {group?.name || 'Loading...'}
       </div>
+
+      <button onClick={handleNewRunClick} className="new-run-button">
+        + New Run
+      </button>
 
       {loading && <p>Loading runs...</p>}
 

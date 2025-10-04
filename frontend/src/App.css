@@ -13,9 +13,17 @@ header {
 }
 
 main {
+  margin: 2rem 0;
+  padding: 0;
+}
+
+main.dashboard {
   max-width: 1280px;
   margin: 2rem auto;
   padding: 0 2rem;
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr 1fr;
 }
 
 .user-info {
@@ -47,12 +55,6 @@ header h2 {
   color: #888;
   font-size: 1.2em;
   font-weight: normal;
-}
-
-main {
-  display: grid;
-  gap: 2rem;
-  grid-template-columns: 1fr 1fr;
 }
 
 .status-card, .info-card {
