@@ -103,7 +103,9 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   return (
     <div className="group-page">
       <div className="breadcrumb">
-        {group?.name || 'Loading...'}
+        <span style={{ cursor: 'pointer', color: '#667eea' }} onClick={onBack}>
+          {group?.name || 'Loading...'}
+        </span>
       </div>
 
       <button onClick={handleNewRunClick} className="new-run-button">
