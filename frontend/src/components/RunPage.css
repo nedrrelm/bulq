@@ -6,7 +6,7 @@
 
 .breadcrumb {
   font-size: 24px;
-  color: #1f2937;
+  color: var(--color-text);
   font-weight: 600;
   margin-bottom: 20px;
 }
@@ -17,22 +17,22 @@
   justify-content: space-between;
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-gray-200);
 }
 
 .back-button {
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
   padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #374151;
+  color: var(--color-gray-700);
   transition: background-color 0.2s;
 }
 
 .back-button:hover {
-  background: #e5e7eb;
+  background: var(--color-gray-200);
 }
 
 .run-title {
@@ -44,7 +44,7 @@
 }
 
 .run-title h2 {
-  color: #1f2937;
+  color: var(--color-text);
   margin: 0;
   font-size: 28px;
   font-weight: 600;
@@ -61,13 +61,13 @@
 
 .info-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-200);
   border-radius: 12px;
   padding: 24px;
 }
 
 .info-card h3 {
-  color: #1f2937;
+  color: var(--color-text);
   margin: 0 0 20px 0;
   font-size: 20px;
   font-weight: 600;
@@ -87,21 +87,21 @@
 
 .info-item label {
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-700);
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .info-item span {
-  color: #1f2937;
+  color: var(--color-text);
   font-size: 16px;
 }
 
 .run-id {
   font-family: monospace;
   font-size: 12px !important;
-  color: #6b7280 !important;
+  color: var(--color-text-light) !important;
 }
 
 .products-section {
@@ -116,14 +116,14 @@
 }
 
 .products-section h3 {
-  color: #1f2937;
+  color: var(--color-text);
   margin: 0;
   font-size: 20px;
   font-weight: 600;
 }
 
 .add-product-button {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
   border: none;
   padding: 10px 16px;
@@ -138,7 +138,7 @@
 }
 
 .add-product-button:hover {
-  background: #2563eb;
+  background: var(--color-primary-hover);
 }
 
 .products-list {
@@ -149,14 +149,14 @@
 
 .product-item {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-200);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.2s;
 }
 
 .product-item:hover {
-  border-color: #10b981;
+  border-color: var(--color-success);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
 }
 
@@ -169,14 +169,14 @@
 
 .product-header h4 {
   margin: 0;
-  color: #1f2937;
+  color: var(--color-text);
   font-size: 16px;
   font-weight: 600;
   flex: 1;
 }
 
 .product-price {
-  color: #059669;
+  color: var(--color-success-hover);
   font-weight: 700;
   font-size: 18px;
 }
@@ -194,14 +194,14 @@
 }
 
 .stat-value {
-  color: #1f2937;
+  color: var(--color-text);
   font-size: 24px;
   font-weight: 700;
   line-height: 1;
 }
 
 .stat-label {
-  color: #6b7280;
+  color: var(--color-text-light);
   font-size: 12px;
   margin-top: 4px;
   text-transform: uppercase;
@@ -211,10 +211,10 @@
 .no-products {
   text-align: center;
   padding: 40px;
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--color-text-light);
+  background: var(--color-gray-50);
   border-radius: 12px;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-gray-300);
 }
 
 .actions-section {
@@ -222,11 +222,11 @@
 }
 
 .info-banner {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary);
   border-radius: 12px;
   padding: 16px 20px;
-  color: #1e40af;
+  color: var(--color-primary-hover);
 }
 
 .info-banner p {
@@ -236,9 +236,9 @@
 }
 
 .error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: var(--color-danger-light);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger-hover);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -248,11 +248,11 @@
 .bid-users {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-200);
 }
 
 .bid-users h5 {
-  color: #374151;
+  color: var(--color-gray-700);
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 600;
@@ -271,14 +271,14 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: #f3f4f6;
-  border: 2px solid #d1d5db;
+  background: var(--color-gray-100);
+  border: 2px solid var(--color-gray-300);
   border-radius: 50%;
   cursor: help;
 }
 
 .avatar-initials {
-  color: #374151;
+  color: var(--color-gray-700);
   font-size: 12px;
   font-weight: 600;
 }
@@ -287,7 +287,7 @@
   position: absolute;
   bottom: -4px;
   right: -4px;
-  background: #10b981;
+  background: var(--color-success);
   color: white;
   font-size: 10px;
   font-weight: bold;
@@ -300,7 +300,7 @@
 .bid-actions {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-200);
 }
 
 .user-bid-status {
@@ -310,7 +310,7 @@
 }
 
 .current-bid {
-  color: #059669;
+  color: var(--color-success-hover);
   font-weight: 600;
   font-size: 14px;
 }
@@ -328,7 +328,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-300);
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
@@ -336,28 +336,28 @@
 }
 
 .edit-bid-button {
-  background: #eff6ff;
-  color: #1e40af;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
 }
 
 .edit-bid-button:hover {
   background: #dbeafe;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .retract-bid-button {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--color-danger-light);
+  color: var(--color-danger-hover);
 }
 
 .retract-bid-button:hover {
   background: #fee2e2;
-  border-color: #ef4444;
+  border-color: var(--color-danger);
 }
 
 .place-bid-button {
-  background: #ecfdf5;
-  color: #059669;
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
   width: 100%;
   height: 40px;
   font-size: 18px;
@@ -366,12 +366,12 @@
 
 .place-bid-button:hover {
   background: #d1fae5;
-  border-color: #10b981;
+  border-color: var(--color-success);
 }
 
 /* Loading state */
 .run-page p {
-  color: #6b7280;
+  color: var(--color-text-light);
   text-align: center;
   padding: 20px;
 }
