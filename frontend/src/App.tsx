@@ -140,15 +140,8 @@ function App() {
       </header>
 
       <main>
-        <div style={{backgroundColor: 'yellow', padding: '10px', margin: '10px 0'}}>
-          🔍 DEBUG: currentView = {currentView}
-        </div>
-
         {currentView === 'dashboard' && (
           <>
-            <div style={{backgroundColor: 'lightblue', padding: '10px', margin: '10px 0'}}>
-              🔍 DEBUG: About to render Groups component
-            </div>
             <Groups onGroupSelect={handleGroupSelect} />
 
             <div className="status-card">
