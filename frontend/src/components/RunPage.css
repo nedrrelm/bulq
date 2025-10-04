@@ -4,12 +4,6 @@
   margin: 0 auto;
 }
 
-.breadcrumb {
-  font-size: 24px;
-  color: var(--color-text);
-  font-weight: 600;
-  margin-bottom: 20px;
-}
 
 .run-header {
   display: flex;
@@ -20,20 +14,6 @@
   border-bottom: 2px solid var(--color-gray-200);
 }
 
-.back-button {
-  background: var(--color-gray-100);
-  border: 1px solid var(--color-gray-300);
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--color-gray-700);
-  transition: background-color 0.2s;
-}
-
-.back-button:hover {
-  background: var(--color-gray-200);
-}
 
 .run-title {
   display: flex;
@@ -57,13 +37,6 @@
 
 .run-info {
   margin-bottom: 40px;
-}
-
-.info-card {
-  background: white;
-  border: 1px solid var(--color-gray-200);
-  border-radius: 12px;
-  padding: 24px;
 }
 
 .info-card h3 {
@@ -123,22 +96,9 @@
 }
 
 .add-product-button {
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.2s;
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-.add-product-button:hover {
-  background: var(--color-primary-hover);
 }
 
 .products-list {
@@ -208,40 +168,15 @@
   letter-spacing: 0.05em;
 }
 
-.no-products {
-  text-align: center;
-  padding: 40px;
-  color: var(--color-text-light);
-  background: var(--color-gray-50);
-  border-radius: 12px;
-  border: 2px dashed var(--color-gray-300);
-}
 
 .actions-section {
   margin-top: 40px;
-}
-
-.info-banner {
-  background: var(--color-primary-light);
-  border: 1px solid var(--color-primary);
-  border-radius: 12px;
-  padding: 16px 20px;
-  color: var(--color-primary-hover);
 }
 
 .info-banner p {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-}
-
-.error {
-  background: var(--color-danger-light);
-  border: 1px solid var(--color-danger);
-  color: var(--color-danger-hover);
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
 }
 
 /* Bid-related styles */

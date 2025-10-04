@@ -2,28 +2,6 @@
   padding: 20px;
 }
 
-.breadcrumb {
-  font-size: 24px;
-  color: var(--color-text);
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-
-.new-run-button {
-  background: var(--color-success);
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.2s;
-}
-
-.new-run-button:hover {
-  background: var(--color-success-hover);
-}
 
 .runs-section {
   margin-bottom: 40px;
@@ -44,23 +22,6 @@
   scroll-behavior: smooth;
 }
 
-.runs-list::-webkit-scrollbar {
-  height: 8px;
-}
-
-.runs-list::-webkit-scrollbar-track {
-  background: var(--color-gray-100);
-  border-radius: 4px;
-}
-
-.runs-list::-webkit-scrollbar-thumb {
-  background: var(--color-gray-400);
-  border-radius: 4px;
-}
-
-.runs-list::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gray-500);
-}
 
 .run-item {
   border: 1px solid var(--color-gray-300);
@@ -115,23 +76,6 @@
   font-family: monospace;
 }
 
-.no-runs {
-  text-align: center;
-  padding: 40px;
-  color: var(--color-text-light);
-  background: var(--color-gray-50);
-  border-radius: 12px;
-  border: 2px dashed var(--color-gray-300);
-}
-
-.error {
-  background: var(--color-danger-light);
-  border: 1px solid var(--color-danger);
-  color: var(--color-danger-hover);
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
 
 /* Loading state */
 p {

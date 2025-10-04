@@ -1,38 +1,9 @@
-.add-product-popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
 .add-product-popup {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
   min-width: 400px;
   max-width: 500px;
   max-height: 80vh;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  animation: popup-enter 0.2s ease-out;
   display: flex;
   flex-direction: column;
-}
-
-@keyframes popup-enter {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 
 .add-product-popup h3 {
@@ -143,21 +114,6 @@
   gap: 16px;
 }
 
-.cancel-button {
-  background: var(--color-gray-100);
-  border: 1px solid var(--color-gray-300);
-  color: var(--color-gray-700);
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.2s;
-}
-
-.cancel-button:hover {
-  background: var(--color-gray-200);
-}
 
 .keyboard-hint {
   color: var(--color-text-light);
@@ -167,20 +123,3 @@
   text-align: right;
 }
 
-/* Scrollbar styling for products list */
-.products-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.products-list::-webkit-scrollbar-track {
-  background: var(--color-gray-100);
-}
-
-.products-list::-webkit-scrollbar-thumb {
-  background: var(--color-gray-300);
-  border-radius: 3px;
-}
-
-.products-list::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gray-400);
-}

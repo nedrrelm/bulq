@@ -111,10 +111,11 @@ export default function Login({ onLogin }: LoginProps) {
         {isRegister ? (
           <form onSubmit={handleRegister} className="auth-form">
             <div className="form-group">
-              <label htmlFor="name">Name</label>
+              <label htmlFor="name" className="form-label">Name</label>
               <input
                 type="text"
                 id="name"
+                className="form-input"
                 value={registerData.name}
                 onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
                 required
@@ -123,10 +124,11 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email" className="form-label">Email</label>
               <input
                 type="email"
                 id="email"
+                className="form-input"
                 value={registerData.email}
                 onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
                 required
@@ -135,10 +137,11 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password" className="form-label">Password</label>
               <input
                 type="password"
                 id="password"
+                className="form-input"
                 value={registerData.password}
                 onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
                 required
@@ -154,10 +157,11 @@ export default function Login({ onLogin }: LoginProps) {
         ) : (
           <form onSubmit={handleLogin} className="auth-form">
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email" className="form-label">Email</label>
               <input
                 type="email"
                 id="email"
+                className="form-input"
                 value={loginData.email}
                 onChange={(e) => setLoginData({...loginData, email: e.target.value})}
                 required
@@ -166,10 +170,11 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password" className="form-label">Password</label>
               <input
                 type="password"
                 id="password"
+                className="form-input"
                 value={loginData.password}
                 onChange={(e) => setLoginData({...loginData, password: e.target.value})}
                 required
