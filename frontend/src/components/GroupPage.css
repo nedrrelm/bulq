@@ -4,13 +4,13 @@
 
 .breadcrumb {
   font-size: 24px;
-  color: #1f2937;
+  color: var(--color-text);
   font-weight: 600;
   margin-bottom: 20px;
 }
 
 .new-run-button {
-  background: #10b981;
+  background: var(--color-success);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -22,7 +22,7 @@
 }
 
 .new-run-button:hover {
-  background: #059669;
+  background: var(--color-success-hover);
 }
 
 .runs-section {
@@ -30,7 +30,7 @@
 }
 
 .runs-section h3 {
-  color: #1f2937;
+  color: var(--color-text);
   margin-bottom: 16px;
   font-size: 20px;
   font-weight: 600;
@@ -49,21 +49,21 @@
 }
 
 .runs-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--color-gray-100);
   border-radius: 4px;
 }
 
 .runs-list::-webkit-scrollbar-thumb {
-  background: #888;
+  background: var(--color-gray-400);
   border-radius: 4px;
 }
 
 .runs-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--color-gray-500);
 }
 
 .run-item {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 20px;
   background: white;
@@ -74,18 +74,18 @@
 }
 
 .run-item:hover {
-  border-color: #10b981;
+  border-color: var(--color-success);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
   transform: translateY(-2px);
 }
 
 .run-item.past {
   opacity: 0.75;
-  background: #f9fafb;
+  background: var(--color-gray-50);
 }
 
 .run-item.past:hover {
-  border-color: #6b7280;
+  border-color: var(--color-gray-500);
   box-shadow: 0 4px 12px rgba(107, 114, 128, 0.15);
 }
 
@@ -98,7 +98,7 @@
 
 .run-header h4 {
   margin: 0;
-  color: #1f2937;
+  color: var(--color-text);
   font-size: 18px;
   font-weight: 600;
 }
@@ -109,7 +109,7 @@
 }
 
 .run-id {
-  color: #6b7280;
+  color: var(--color-text-light);
   font-size: 12px;
   margin: 0;
   font-family: monospace;
@@ -118,16 +118,16 @@
 .no-runs {
   text-align: center;
   padding: 40px;
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--color-text-light);
+  background: var(--color-gray-50);
   border-radius: 12px;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-gray-300);
 }
 
 .error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: var(--color-danger-light);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger-hover);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -135,7 +135,7 @@
 
 /* Loading state */
 p {
-  color: #6b7280;
+  color: var(--color-text-light);
   text-align: center;
   padding: 20px;
 }

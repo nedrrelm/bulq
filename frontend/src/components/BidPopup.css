@@ -33,14 +33,14 @@
 }
 
 .bid-popup h3 {
-  color: #1f2937;
+  color: var(--color-text);
   margin: 0 0 8px 0;
   font-size: 20px;
   font-weight: 600;
 }
 
 .product-name {
-  color: #6b7280;
+  color: var(--color-text-light);
   margin: 0 0 20px 0;
   font-size: 14px;
 }
@@ -51,7 +51,7 @@
 
 .form-group label {
   display: block;
-  color: #374151;
+  color: var(--color-gray-700);
   font-weight: 600;
   margin-bottom: 4px;
   font-size: 14px;
@@ -60,16 +60,16 @@
 .quantity-input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-300);
   border-radius: 8px;
   font-size: 16px;
-  color: #1f2937;
+  color: var(--color-text);
   background: white;
 }
 
 .quantity-input:focus {
   outline: none;
-  border-color: #10b981;
+  border-color: var(--color-success);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
@@ -79,7 +79,7 @@
   gap: 8px;
   cursor: pointer;
   font-weight: normal !important;
-  color: #6b7280 !important;
+  color: var(--color-text-light) !important;
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -94,9 +94,9 @@
 
 .cancel-button {
   flex: 1;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
+  color: var(--color-gray-700);
   padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -106,12 +106,12 @@
 }
 
 .cancel-button:hover {
-  background: #e5e7eb;
+  background: var(--color-gray-200);
 }
 
 .submit-button {
   flex: 1;
-  background: #10b981;
+  background: var(--color-success);
   border: none;
   color: white;
   padding: 10px 16px;
@@ -123,5 +123,5 @@
 }
 
 .submit-button:hover {
-  background: #059669;
+  background: var(--color-success-hover);
 }
