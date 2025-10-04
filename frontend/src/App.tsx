@@ -130,7 +130,7 @@ function App() {
   return (
     <div className="app">
       <header>
-        <h1>Bulq 📦</h1>
+        <h1 onClick={handleBackToDashboard} style={{ cursor: 'pointer' }}>Bulq 📦</h1>
         <div className="user-info">
           <span>Welcome, {user.name}!</span>
           <button onClick={handleLogout} className="logout-button">

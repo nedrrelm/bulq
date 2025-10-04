@@ -251,7 +251,11 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
   return (
     <div className="run-page">
       <div className="breadcrumb">
-        {run.group_name} &gt; {run.store_name}
+        <span style={{ cursor: 'pointer', color: '#667eea' }} onClick={onBack}>
+          {run.group_name}
+        </span>
+        {' > '}
+        <span>{run.store_name}</span>
       </div>
 
       <div className="run-header">
