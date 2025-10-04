@@ -36,9 +36,60 @@ Bulq enables friend groups to coordinate bulk purchases and track savings throug
 - **Database Schema**: See [database_schema.md](database_schema.md) for detailed ER diagram
 - **Containerized Architecture**: Separate Docker containers for backend, frontend, and database
 - **Backend**: FastAPI application running in Python container
-- **Database**: PostgreSQL running in dedicated container
+- **Database**: PostgreSQL running in dedicated container with UUIDs for primary keys
 - **Frontend**: React + TypeScript application served with Caddy
 - **Real-time Updates**: WebSocket connections for live bid tracking
+
+### Architecture Decisions
+
+- **Monolithic Backend**: Single FastAPI application, suitable for expected load
+- **Containerized Development**: Docker Compose for consistent environments
+- **Frontend-Backend Separation**: React frontend, FastAPI backend with CORS
+- **WebSockets**: For real-time bid updates during group orders (planned)
+- **No Image Storage**: Avoiding complexity, text-based product descriptions only
+- **PostgreSQL with UUIDs**: For primary keys across all entities (planned)
+
+### Core Entity Logic
+
+**Run States Flow:**
+`planning` → `active` → `confirmed` → `shopping` → `completed`
+- Can transition to `cancelled` from any state before `shopping`
+
+**ProductBid System:**
+- **interested_only**: Boolean flag for expressing interest without commitment
+- **quantity**: Required for items to make it to shopping list
+- Real-time totals calculated from sum of quantities per product per run
+
+**Thresholds:**
+- Deferred for initial version
+- Will integrate with bulk pricing tiers later
+- For now, any product with quantity bids gets confirmed
+
+**Shopping List Generation:**
+- Calculated view, not stored entity
+- Confirmed products = products with quantity > 0
+- Quantities = sum of all user bids per product
+- Assigned to designated_shoppers stored in Run
+
+### Design Principles
+
+- Trust-based system for friend groups
+- Focus on management and calculation tools
+- Keep it simple for initial version
+- Real-time updates for engagement
+
+### Non-Features (Intentionally Excluded)
+
+- In-app payments (users settle manually)
+- Chat functionality (users communicate externally)
+- Image uploads/storage
+- Complex shopping assignment tracking
+
+### Data Entry Strategy
+
+- Manual store/product entry initially
+- Future: Store API integration or scraping
+- Price tracking built into Product entity
 
 ## Target Users
 
@@ -115,6 +166,13 @@ The frontend will be available at `http://localhost:3000` and includes a backend
 - **Framework**: React + TypeScript
 - **Web Server**: Caddy (for production builds)
 
+### Development Workflow
+
+1. Use `docker compose up -d` for full stack development
+2. Individual containers can be rebuilt: `docker compose up -d --build backend`
+3. Frontend includes backend connectivity test for integration verification
+4. API documentation available at `/docs` endpoint
+
 ## Project Status
 
 🚧 Project in initial development phase
@@ -144,3 +202,13 @@ The frontend will be available at `http://localhost:3000` and includes a backend
 - Frontend in development mode (`npm run dev`) runs on Vite dev server
 - Frontend in Docker runs on Caddy serving built static files
 - CORS is configured for both `localhost:3000` and `127.0.0.1:3000`
+
+## Future Considerations
+
+- Payment integration if user base grows
+- Image support for product catalogs
+- Chat if coordination becomes complex
+- BulkPricingTier entity for threshold logic
+- Multiple delivery coordination options
+- Database containerization and persistence
+- Production deployment configuration
