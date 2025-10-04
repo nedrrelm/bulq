@@ -130,9 +130,9 @@ function App() {
   return (
     <div className="app">
       <header>
-        <h1>Bulq - Bulk Buying Platform</h1>
+        <h1>Bulq 📦</h1>
         <div className="user-info">
-          <span>Welcome 1, {user.name}!</span>
+          <span>Welcome, {user.name}!</span>
           <button onClick={handleLogout} className="logout-button">
             Logout
           </button>
