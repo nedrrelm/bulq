@@ -139,7 +139,7 @@ function App() {
         </div>
       </header>
 
-      <main>
+      <main className={currentView === 'dashboard' ? 'dashboard' : ''}>
         {currentView === 'dashboard' && (
           <>
             <Groups onGroupSelect={handleGroupSelect} />

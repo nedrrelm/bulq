@@ -1,7 +1,14 @@
 .run-page {
   padding: 20px;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
+}
+
+.breadcrumb {
+  font-size: 24px;
+  color: #1f2937;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
 .run-header {
