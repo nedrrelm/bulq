@@ -166,6 +166,13 @@ The frontend will be available at `http://localhost:3000` and includes a backend
 - **Framework**: React + TypeScript
 - **Web Server**: Caddy (for production builds)
 
+**CSS Guidelines:**
+- **Reuse utility classes** from `utilities.css` whenever possible
+- Common components available: `.card`, `.card-lg`, `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-success`, `.modal`, `.modal-overlay`, `.form-group`, `.form-input`, `.form-label`, `.alert`, `.alert-error`, `.alert-success`, `.empty-state`, `.breadcrumb`
+- Only create component-specific CSS when absolutely necessary
+- Use CSS variables (e.g., `var(--color-primary)`) for colors and common values
+- This keeps the codebase DRY and makes styling changes easier
+
 ### Development Workflow
 
 1. Use `docker compose up -d` for full stack development
