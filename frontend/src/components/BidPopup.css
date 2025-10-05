@@ -37,11 +37,7 @@
   margin: 0;
 }
 
-.button-group {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
+/* Using .button-group from utilities.css */
 
 .cancel-button {
   flex: 1;

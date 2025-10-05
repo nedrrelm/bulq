@@ -72,10 +72,10 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
+/* Using .item-muted from utilities.css */
 .shopping-item.purchased {
   background: var(--color-gray-50);
   border-color: var(--color-gray-300);
-  opacity: 0.8;
 }
 
 .shopping-item.purchased:hover {
@@ -170,28 +170,7 @@
   border-top: 1px solid var(--color-gray-200);
 }
 
-/* Popup styles */
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.popup-content {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
+/* Using .modal-overlay and .modal from utilities.css */
 
 .popup-content h3 {
   margin: 0 0 8px 0;
@@ -210,46 +189,11 @@
   font-style: italic;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 14px;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid var(--color-gray-300);
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
+/* Using .form-group and .form-input-lg from utilities.css */
 
 .popup-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   margin-top: 24px;
-}
-
-.btn-sm {
-  padding: 8px 16px;
-  font-size: 14px;
-}
-
-.btn-lg {
-  padding: 16px 32px;
-  font-size: 18px;
-  font-weight: 700;
 }

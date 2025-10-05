@@ -42,20 +42,12 @@
   border-radius: 12px;
   padding: 20px;
   background: white;
-  transition: all 0.2s;
-  cursor: pointer;
   min-width: 300px;
   flex-shrink: 0;
 }
 
-.run-item:hover {
-  border-color: var(--color-success);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-  transform: translateY(-2px);
-}
-
+/* Using .item-muted from utilities.css */
 .run-item.past {
-  opacity: 0.75;
   background: var(--color-gray-50);
 }
 
