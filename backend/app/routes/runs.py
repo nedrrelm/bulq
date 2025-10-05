@@ -85,6 +85,15 @@ class ProductResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ParticipantResponse(BaseModel):
+    user_id: str
+    user_name: str
+    is_leader: bool
+    is_ready: bool
+
+    class Config:
+        from_attributes = True
+
 class RunDetailResponse(BaseModel):
     id: str
     group_id: str
@@ -93,6 +102,8 @@ class RunDetailResponse(BaseModel):
     store_name: str
     state: str
     products: List[ProductResponse]
+    participants: List[ParticipantResponse]
+    current_user_is_ready: bool
 
     class Config:
         from_attributes = True
@@ -135,6 +146,23 @@ async def get_run_details(
 
     if not group or not store:
         raise HTTPException(status_code=404, detail="Group or store not found")
+
+    # Get participants
+    participants_data = []
+    current_user_is_ready = False
+    participations = repo.get_run_participations(run.id)
+
+    for participation in participations:
+        user = repo.get_user_by_id(participation.user_id)
+        if user:
+            participants_data.append(ParticipantResponse(
+                user_id=str(participation.user_id),
+                user_name=user.name,
+                is_leader=participation.is_leader,
+                is_ready=participation.is_ready
+            ))
+            if participation.user_id == current_user.id:
+                current_user_is_ready = participation.is_ready
 
     # Get products and bids for this run
     if hasattr(repo, '_runs'):  # Memory mode
@@ -193,7 +221,9 @@ async def get_run_details(
         store_id=str(run.store_id),
         store_name=store.name,
         state=run.state,
-        products=products_data
+        products=products_data,
+        participants=participants_data,
+        current_user_is_ready=current_user_is_ready
     )
 
 class PlaceBidRequest(BaseModel):
@@ -345,6 +375,56 @@ class AvailableProductResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+@router.post("/{run_id}/ready")
+async def toggle_ready(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Toggle the current user's ready status for a run."""
+    repo = get_repository(db)
+
+    # Validate run ID
+    try:
+        run_uuid = uuid.UUID(run_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid run ID format")
+
+    # Get the run
+    run = repo.get_run_by_id(run_uuid)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Verify user has access to this run (member of the group)
+    user_groups = repo.get_user_groups(current_user)
+    if not any(g.id == run.group_id for g in user_groups):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this run")
+
+    # Only allow toggling ready in active state
+    if run.state != 'active':
+        raise HTTPException(status_code=400, detail="Can only mark ready in active state")
+
+    # Get user's participation
+    participation = repo.get_participation(current_user.id, run_uuid)
+    if not participation:
+        raise HTTPException(status_code=404, detail="You are not participating in this run")
+
+    # Toggle ready status
+    new_ready_status = not participation.is_ready
+    repo.update_participation_ready(participation.id, new_ready_status)
+
+    # Check if all participants are ready
+    all_participations = repo.get_run_participations(run_uuid)
+    all_ready = all(p.is_ready for p in all_participations)
+
+    # Automatic state transition: active → confirmed
+    # When all participants mark themselves as ready
+    if all_ready and len(all_participations) > 0:
+        repo.update_run_state(run_uuid, "confirmed")
+        return {"message": "All participants ready! Run confirmed.", "is_ready": new_ready_status, "state_changed": True}
+
+    return {"message": f"Ready status updated to {new_ready_status}", "is_ready": new_ready_status, "state_changed": False}
 
 @router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
 async def get_available_products(
