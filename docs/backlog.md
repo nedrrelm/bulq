@@ -50,14 +50,6 @@ Implement WebSocket connections for real-time updates during runs.
 
 ## Product Discovery
 
-### Product page and search
-**Status**: Planned
-
-Shows comparable products in different stores, allowing users to:
-- Search for products
-- Compare prices across stores
-- View product details
-
 ### Product families
 **Status**: Planned
 
