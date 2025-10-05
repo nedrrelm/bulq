@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './Groups.css'
+import NewGroupPopup from './NewGroupPopup'
 
 interface Group {
   id: string
@@ -18,6 +19,7 @@ export default function Groups({ onGroupSelect }: GroupsProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showNewGroupPopup, setShowNewGroupPopup] = useState(false)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -52,9 +54,40 @@ export default function Groups({ onGroupSelect }: GroupsProps) {
     onGroupSelect(groupId)
   }
 
+  const handleNewGroupSuccess = () => {
+    setShowNewGroupPopup(false)
+    // Refresh the groups list
+    const fetchGroups = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/groups/my-groups`, {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const groupsData: Group[] = await response.json()
+          setGroups(groupsData)
+        }
+      } catch (err) {
+        console.error('Failed to refresh groups:', err)
+      }
+    }
+    fetchGroups()
+  }
+
   return (
     <div className="groups-panel">
-      <h3>My Groups</h3>
+      {showNewGroupPopup && (
+        <NewGroupPopup
+          onClose={() => setShowNewGroupPopup(false)}
+          onSuccess={handleNewGroupSuccess}
+        />
+      )}
+
+      <div className="groups-header">
+        <h3>My Groups</h3>
+        <button onClick={() => setShowNewGroupPopup(true)} className="btn btn-primary">
+          + New Group
+        </button>
+      </div>
 
       {loading && <p>Loading groups...</p>}
 
