@@ -204,6 +204,34 @@ async def complete_shopping(
     if run.state != 'shopping':
         raise HTTPException(status_code=400, detail="Can only complete shopping from shopping state")
 
+    # Initialize distribution data from shopping list and bids
+    shopping_items = repo.get_shopping_list_items(run_uuid)
+    all_bids = repo.get_bids_by_run(run_uuid)
+
+    # For each shopping item (purchased product), distribute to users who bid
+    for shopping_item in shopping_items:
+        if not shopping_item.is_purchased:
+            continue
+
+        # Get all bids for this product
+        product_bids = [bid for bid in all_bids if bid.product_id == shopping_item.product_id and not bid.interested_only]
+
+        # Distribute the purchased items to bidders
+        # For now, assume we got exactly what was requested
+        for bid in product_bids:
+            if hasattr(repo, '_bids'):  # Memory mode
+                bid.distributed_quantity = bid.quantity
+                bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
+            else:  # Database mode
+                from ..models import ProductBid
+                db_bid = db.query(ProductBid).filter(ProductBid.id == bid.id).first()
+                if db_bid:
+                    db_bid.distributed_quantity = bid.quantity
+                    db_bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
+
+    if not hasattr(repo, '_bids'):  # Database mode
+        db.commit()
+
     # Transition to distributing state
     repo.update_run_state(run_uuid, "distributing")
 
