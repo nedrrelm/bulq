@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from decimal import Decimal
 
-from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation
+from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem
 from .config import get_repo_mode
 
 
@@ -116,6 +116,26 @@ class AbstractRepository(ABC):
     @abstractmethod
     def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
         """Update the state of a run."""
+        pass
+
+    @abstractmethod
+    def create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
+        """Create a shopping list item."""
+        pass
+
+    @abstractmethod
+    def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
+        """Get all shopping list items for a run."""
+        pass
+
+    @abstractmethod
+    def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
+        """Add an encountered price to a shopping list item."""
+        pass
+
+    @abstractmethod
+    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
+        """Mark a shopping list item as purchased."""
         pass
 
 
@@ -263,6 +283,47 @@ class DatabaseRepository(AbstractRepository):
             return run
         return None
 
+    def create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
+        item = ShoppingListItem(
+            run_id=run_id,
+            product_id=product_id,
+            requested_quantity=requested_quantity,
+            encountered_prices=[]
+        )
+        self.db.add(item)
+        self.db.commit()
+        self.db.refresh(item)
+        return item
+
+    def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
+        return self.db.query(ShoppingListItem).filter(ShoppingListItem.run_id == run_id).all()
+
+    def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
+        item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
+        if item:
+            if item.encountered_prices is None:
+                item.encountered_prices = []
+            prices = list(item.encountered_prices) if item.encountered_prices else []
+            prices.append({"price": float(price), "notes": notes})
+            item.encountered_prices = prices
+            self.db.commit()
+            self.db.refresh(item)
+            return item
+        return None
+
+    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
+        item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
+        if item:
+            item.purchased_quantity = quantity
+            item.purchased_price_per_unit = Decimal(str(price_per_unit))
+            item.purchased_total = Decimal(str(total))
+            item.is_purchased = True
+            item.purchase_order = purchase_order
+            self.db.commit()
+            self.db.refresh(item)
+            return item
+        return None
+
 
 class MemoryRepository(AbstractRepository):
     """In-memory implementation for testing and development - Singleton."""
@@ -287,6 +348,7 @@ class MemoryRepository(AbstractRepository):
             self._products: Dict[UUID, Product] = {}
             self._participations: Dict[UUID, RunParticipation] = {}
             self._bids: Dict[UUID, ProductBid] = {}
+            self._shopping_list_items: Dict[UUID, ShoppingListItem] = {}
 
             # Create test data
             self._create_test_data()
@@ -527,6 +589,51 @@ class MemoryRepository(AbstractRepository):
         if run:
             run.state = new_state
             return run
+        return None
+
+    def create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
+        item = ShoppingListItem(
+            id=uuid4(),
+            run_id=run_id,
+            product_id=product_id,
+            requested_quantity=requested_quantity,
+            encountered_prices=[],
+            is_purchased=False
+        )
+        # Set up relationships
+        item.run = self._runs.get(run_id)
+        item.product = self._products.get(product_id)
+        self._shopping_list_items[item.id] = item
+        return item
+
+    def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
+        items = []
+        for item in self._shopping_list_items.values():
+            if item.run_id == run_id:
+                # Set up relationships
+                item.run = self._runs.get(run_id)
+                item.product = self._products.get(item.product_id)
+                items.append(item)
+        return items
+
+    def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
+        item = self._shopping_list_items.get(item_id)
+        if item:
+            if item.encountered_prices is None:
+                item.encountered_prices = []
+            item.encountered_prices.append({"price": float(price), "notes": notes})
+            return item
+        return None
+
+    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
+        item = self._shopping_list_items.get(item_id)
+        if item:
+            item.purchased_quantity = quantity
+            item.purchased_price_per_unit = Decimal(str(price_per_unit))
+            item.purchased_total = Decimal(str(total))
+            item.is_purchased = True
+            item.purchase_order = purchase_order
+            return item
         return None
 
 

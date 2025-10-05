@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, DECIMAL, DateTime, ForeignKey, Table
+from sqlalchemy import Column, String, Integer, Boolean, DECIMAL, DateTime, ForeignKey, Table, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -96,3 +96,20 @@ class ProductBid(Base):
 
     participation = relationship("RunParticipation", back_populates="product_bids")
     product = relationship("Product", back_populates="product_bids")
+
+class ShoppingListItem(Base):
+    __tablename__ = "shopping_list_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False)
+    requested_quantity = Column(Integer, nullable=False)
+    encountered_prices = Column(JSON, nullable=False, default=list)  # [{"price": 24.99, "notes": "aisle 3"}, ...]
+    purchased_quantity = Column(Integer, nullable=True)
+    purchased_price_per_unit = Column(DECIMAL(10, 2), nullable=True)
+    purchased_total = Column(DECIMAL(10, 2), nullable=True)
+    is_purchased = Column(Boolean, nullable=False, default=False)
+    purchase_order = Column(Integer, nullable=True)
+
+    run = relationship("Run")
+    product = relationship("Product")
