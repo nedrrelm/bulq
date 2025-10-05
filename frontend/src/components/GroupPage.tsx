@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './GroupPage.css'
+import NewRunPopup from './NewRunPopup'
 
 interface Run {
   id: string
@@ -25,6 +26,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showNewRunPopup, setShowNewRunPopup] = useState(false)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -92,8 +94,26 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   const pastRuns = runs.filter(run => ['completed', 'cancelled'].includes(run.state))
 
   const handleNewRunClick = () => {
-    // TODO: Implement new run functionality
-    alert('New run functionality will be implemented soon!')
+    setShowNewRunPopup(true)
+  }
+
+  const handleNewRunSuccess = () => {
+    setShowNewRunPopup(false)
+    // Refresh the runs list
+    const fetchRuns = async () => {
+      try {
+        const runsResponse = await fetch(`${BACKEND_URL}/groups/${groupId}/runs`, {
+          credentials: 'include'
+        })
+        if (runsResponse.ok) {
+          const runsData: Run[] = await runsResponse.json()
+          setRuns(runsData)
+        }
+      } catch (err) {
+        console.error('Failed to refresh runs:', err)
+      }
+    }
+    fetchRuns()
   }
 
   const handleRunClick = (runId: string) => {
@@ -102,6 +122,14 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
 
   return (
     <div className="group-page">
+      {showNewRunPopup && (
+        <NewRunPopup
+          groupId={groupId}
+          onClose={() => setShowNewRunPopup(false)}
+          onSuccess={handleNewRunSuccess}
+        />
+      )}
+
       <div className="breadcrumb">
         <span style={{ cursor: 'pointer', color: '#667eea' }} onClick={onBack}>
           {group?.name || 'Loading...'}
