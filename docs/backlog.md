@@ -56,15 +56,3 @@ Implement WebSocket connections for real-time updates during runs.
 Allows using general terms (e.g., "rice") instead of specific variants (e.g., "sushi rice", "jasmine rice", "basmati rice").
 
 This creates a hierarchy/grouping system for products.
-
-## Price Tracking
-
-### Product price history
-**Status**: Planned
-
-Every time someone visits a store they can note the current price of a product.
-
-**Features**:
-- Track prices over time
-- Support multiple values per product (for cases like markets where different sellers price differently)
-- Show a graph over time of price changes
