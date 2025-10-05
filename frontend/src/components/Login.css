@@ -7,13 +7,11 @@
   background-color: var(--color-gray-50);
 }
 
+/* Using .card from utilities.css with custom max-width */
 .login-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 100%;
   max-width: 400px;
+  width: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .login-card h2 {
@@ -22,11 +20,7 @@
   color: var(--color-text);
 }
 
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+/* Using .flex-col and .gap-md from utilities.css */
 
 
 .auth-button {
@@ -61,20 +55,7 @@
   border-top: 1px solid var(--color-gray-200);
 }
 
-.link-button {
-  background: none;
-  border: none;
-  color: var(--color-primary);
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: inherit;
-  transition: color 0.2s;
-}
-
-.link-button:hover:not(:disabled) {
-  color: var(--color-primary-hover);
-}
-
+/* Using .btn-link from utilities.css */
 .link-button:disabled {
   color: var(--color-gray-400);
   cursor: not-allowed;

@@ -29,19 +29,10 @@
   font-size: 16px;
 }
 
+/* Using .animate-scale-in from utilities.css */
 .success-icon {
   font-size: 64px;
   margin-bottom: 20px;
-  animation: scaleIn 0.3s ease-out;
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0);
-  }
-  to {
-    transform: scale(1);
-  }
 }
 
 .redirect-message {

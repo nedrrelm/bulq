@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import './NewGroupPopup.css'
 
 interface NewGroupPopupProps {
   onClose: () => void
