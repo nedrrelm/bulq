@@ -22,6 +22,13 @@ erDiagram
         uuid group_id FK
         uuid store_id FK
         string state
+        timestamp planning_at
+        timestamp active_at
+        timestamp confirmed_at
+        timestamp shopping_at
+        timestamp distributing_at
+        timestamp completed_at
+        timestamp cancelled_at
     }
 
     RunParticipation {
@@ -55,6 +62,8 @@ erDiagram
         integer distributed_quantity
         decimal distributed_price_per_unit
         boolean is_picked_up
+        timestamp created_at
+        timestamp updated_at
     }
 
     ShoppingListItem {
@@ -68,6 +77,8 @@ erDiagram
         decimal purchased_total
         boolean is_purchased
         integer purchase_order
+        timestamp created_at
+        timestamp updated_at
     }
     
     GroupMembership {
@@ -154,7 +165,22 @@ Can transition to `cancelled` from any state before `distributing`.
 ### Group
 - **invite_token**: Unique token for inviting users to join the group
 
+### Run
+State transition timestamps track when the run entered each state:
+- **planning_at**: When run was created (always set)
+- **active_at**: When run transitioned to active state
+- **confirmed_at**: When all users marked themselves ready
+- **shopping_at**: When shopping trip began
+- **distributing_at**: When items started being distributed
+- **completed_at**: When run was fully completed
+- **cancelled_at**: When run was cancelled (if applicable)
+
 ### ProductBid
+Timestamps for bid tracking:
+- **created_at**: When the bid was first placed
+- **updated_at**: Last time the bid was modified (quantity or status changed)
+
+
 Distribution fields for tracking allocation and pickup:
 - **distributed_quantity**: Actual quantity allocated to the user (may differ from requested)
 - **distributed_price_per_unit**: The actual price paid per unit during shopping
@@ -169,3 +195,5 @@ Manages the shopping process for each product in a run:
 - **purchased_total**: Total cost for this item
 - **is_purchased**: Whether the item has been purchased
 - **purchase_order**: Order in which items were purchased (for receipt tracking)
+- **created_at**: When the shopping list item was created
+- **updated_at**: Last time the item was modified (prices encountered, purchased, etc.)

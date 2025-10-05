@@ -55,6 +55,15 @@ class Run(Base):
     store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False)
     state = Column(String, nullable=False, default="planning")
 
+    # State transition timestamps
+    planning_at = Column(DateTime(timezone=True), server_default=func.now())
+    active_at = Column(DateTime(timezone=True), nullable=True)
+    confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    shopping_at = Column(DateTime(timezone=True), nullable=True)
+    distributing_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    cancelled_at = Column(DateTime(timezone=True), nullable=True)
+
     group = relationship("Group", back_populates="runs")
     store = relationship("Store", back_populates="runs")
     participations = relationship("RunParticipation", back_populates="run")
@@ -99,6 +108,10 @@ class ProductBid(Base):
     distributed_price_per_unit = Column(DECIMAL(10, 2), nullable=True)  # Price we paid per unit
     is_picked_up = Column(Boolean, nullable=False, default=False)  # Whether user collected their items
 
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
     participation = relationship("RunParticipation", back_populates="product_bids")
     product = relationship("Product", back_populates="product_bids")
 
@@ -115,6 +128,10 @@ class ShoppingListItem(Base):
     purchased_total = Column(DECIMAL(10, 2), nullable=True)
     is_purchased = Column(Boolean, nullable=False, default=False)
     purchase_order = Column(Integer, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     run = relationship("Run")
     product = relationship("Product")

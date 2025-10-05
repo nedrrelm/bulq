@@ -297,9 +297,14 @@ class DatabaseRepository(AbstractRepository):
         return self.db.query(Run).filter(Run.id == run_id).first()
 
     def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
+        from datetime import datetime
         run = self.get_run_by_id(run_id)
         if run:
             run.state = new_state
+            # Set the timestamp for the new state
+            timestamp_field = f"{new_state}_at"
+            if hasattr(run, timestamp_field):
+                setattr(run, timestamp_field, datetime.utcnow())
             self.db.commit()
             self.db.refresh(run)
             return run
@@ -708,7 +713,12 @@ class MemoryRepository(AbstractRepository):
         return product
 
     def _create_run(self, group_id: UUID, store_id: UUID, state: str, leader_id: UUID) -> Run:
+        from datetime import datetime
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state=state)
+        # Set timestamp for the initial state
+        timestamp_field = f"{state}_at"
+        if hasattr(Run, timestamp_field):
+            setattr(run, timestamp_field, datetime.utcnow())
         self._runs[run.id] = run
         # Create leader participation
         self._create_participation(leader_id, run.id, is_leader=True)
@@ -746,7 +756,9 @@ class MemoryRepository(AbstractRepository):
         return item
 
     def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
+        from datetime import datetime
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state="planning")
+        run.planning_at = datetime.utcnow()
         self._runs[run.id] = run
         # Create participation for the leader
         self._create_participation(leader_id, run.id, is_leader=True)
@@ -790,9 +802,14 @@ class MemoryRepository(AbstractRepository):
         return self._runs.get(run_id)
 
     def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
+        from datetime import datetime
         run = self._runs.get(run_id)
         if run:
             run.state = new_state
+            # Set the timestamp for the new state
+            timestamp_field = f"{new_state}_at"
+            if hasattr(run, timestamp_field):
+                setattr(run, timestamp_field, datetime.utcnow())
             return run
         return None
 
