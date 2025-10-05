@@ -95,3 +95,55 @@
   color: var(--color-text-light);
   font-size: 0.85rem;
 }
+
+.price-graph {
+  margin: 20px 0;
+  padding: 16px;
+  background: var(--color-gray-50);
+  border-radius: 8px;
+}
+
+.price-graph h4 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.no-graph-data {
+  color: var(--color-text-light);
+  font-style: italic;
+  margin: 0;
+}
+
+.price-chart {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.grid-line {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0.5;
+}
+
+.y-axis-label,
+.x-axis-label {
+  font-size: 11px;
+  fill: var(--color-text-light);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.price-point {
+  fill: var(--color-primary);
+  stroke: white;
+  stroke-width: 2;
+  cursor: pointer;
+}
+
+.price-point:hover {
+  fill: var(--color-primary-dark);
+  r: 8;
+}

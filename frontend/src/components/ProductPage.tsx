@@ -5,6 +5,7 @@ interface PriceEntry {
   price: number
   notes: string
   run_id: string
+  timestamp?: string
 }
 
 interface StoreData {
@@ -24,6 +25,106 @@ interface ProductDetails {
 interface ProductPageProps {
   productId: string
   onBack: () => void
+}
+
+function PriceGraph({ prices }: { prices: PriceEntry[] }) {
+  // Filter prices with timestamps and sort by date
+  const pricesWithTime = prices
+    .filter(p => p.timestamp)
+    .map(p => ({
+      ...p,
+      date: new Date(p.timestamp!)
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+
+  if (pricesWithTime.length === 0) {
+    return <p className="no-graph-data">No historical price data available</p>
+  }
+
+  // Calculate graph dimensions and scales
+  const allPrices = pricesWithTime.map(p => p.price)
+  const minPrice = Math.min(...allPrices)
+  const maxPrice = Math.max(...allPrices)
+  const priceRange = maxPrice - minPrice || 1
+  const padding = priceRange * 0.1
+
+  const graphHeight = 200
+  const graphWidth = 600
+  const yMin = minPrice - padding
+  const yMax = maxPrice + padding
+  const yRange = yMax - yMin
+
+  // Convert price to y-coordinate
+  const priceToY = (price: number) => {
+    return graphHeight - ((price - yMin) / yRange) * graphHeight
+  }
+
+  // Convert date to x-coordinate
+  const minTime = pricesWithTime[0].date.getTime()
+  const maxTime = pricesWithTime[pricesWithTime.length - 1].date.getTime()
+  const timeRange = maxTime - minTime || 1
+
+  const dateToX = (date: Date) => {
+    return ((date.getTime() - minTime) / timeRange) * (graphWidth - 40) + 20
+  }
+
+  return (
+    <div className="price-graph">
+      <h4>Price Over Time</h4>
+      <svg width={graphWidth} height={graphHeight + 40} className="price-chart">
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
+          const y = graphHeight * (1 - ratio)
+          const price = yMin + yRange * ratio
+          return (
+            <g key={ratio}>
+              <line
+                x1={20}
+                y1={y}
+                x2={graphWidth - 20}
+                y2={y}
+                className="grid-line"
+              />
+              <text x={5} y={y + 4} className="y-axis-label">
+                ${price.toFixed(2)}
+              </text>
+            </g>
+          )
+        })}
+
+        {/* Data points */}
+        {pricesWithTime.map((p, i) => (
+          <g key={i}>
+            <circle
+              cx={dateToX(p.date)}
+              cy={priceToY(p.price)}
+              r={6}
+              className="price-point"
+            />
+            <title>{`$${p.price.toFixed(2)} - ${p.date.toLocaleDateString()} ${p.notes ? `(${p.notes})` : ''}`}</title>
+          </g>
+        ))}
+
+        {/* X-axis labels */}
+        {pricesWithTime.map((p, i) => {
+          if (i % Math.ceil(pricesWithTime.length / 4) === 0 || i === pricesWithTime.length - 1) {
+            return (
+              <text
+                key={i}
+                x={dateToX(p.date)}
+                y={graphHeight + 20}
+                className="x-axis-label"
+                textAnchor="middle"
+              >
+                {p.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </text>
+            )
+          }
+          return null
+        })}
+      </svg>
+    </div>
+  )
 }
 
 export default function ProductPage({ productId, onBack }: ProductPageProps) {
@@ -137,6 +238,8 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
                         </div>
                       )}
                     </div>
+
+                    <PriceGraph prices={allPrices} />
 
                     <div className="price-history">
                       <h4>Price History</h4>

@@ -81,7 +81,8 @@ async def get_product_details(
                         all_prices.append({
                             "price": float(price_entry["price"]),
                             "notes": price_entry.get("notes", ""),
-                            "run_id": str(item.run_id)
+                            "run_id": str(item.run_id),
+                            "timestamp": item.updated_at.isoformat() if item.updated_at else None
                         })
 
             # Add purchased price if available
@@ -89,7 +90,8 @@ async def get_product_details(
                 all_prices.append({
                     "price": float(item.purchased_price_per_unit),
                     "notes": "Purchased",
-                    "run_id": str(item.run_id)
+                    "run_id": str(item.run_id),
+                    "timestamp": item.updated_at.isoformat() if item.updated_at else None
                 })
 
         store = all_stores.get(prod.store_id)
