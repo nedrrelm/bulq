@@ -2,20 +2,29 @@ import { useState, useEffect } from 'react'
 import './Groups.css'
 import NewGroupPopup from './NewGroupPopup'
 
+interface RunSummary {
+  id: string
+  store_name: string
+  state: string
+}
+
 interface Group {
   id: string
   name: string
   description: string
   member_count: number
   active_runs_count: number
+  completed_runs_count: number
+  active_runs: RunSummary[]
   created_at: string
 }
 
 interface GroupsProps {
   onGroupSelect: (groupId: string) => void
+  onRunSelect: (runId: string) => void
 }
 
-export default function Groups({ onGroupSelect }: GroupsProps) {
+export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -107,25 +116,40 @@ export default function Groups({ onGroupSelect }: GroupsProps) {
       {!loading && !error && groups.length > 0 && (
         <div className="groups-list">
           {groups.map((group) => (
-            <div
-              key={group.id}
-              className="group-item"
-              onClick={() => handleGroupClick(group.id)}
-            >
-              <div className="group-header">
+            <div key={group.id} className="group-item">
+              <div className="group-header" onClick={() => handleGroupClick(group.id)}>
                 <h4>{group.name}</h4>
               </div>
-              <p className="group-description">{group.description}</p>
               <div className="group-stats">
                 <span className="stat">
                   <span className="stat-icon">👥</span>
                   {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
                 </span>
                 <span className="stat">
-                  <span className="stat-icon">🛒</span>
-                  {group.active_runs_count} active {group.active_runs_count === 1 ? 'run' : 'runs'}
+                  <span className="stat-icon">✅</span>
+                  {group.completed_runs_count} completed {group.completed_runs_count === 1 ? 'run' : 'runs'}
                 </span>
               </div>
+
+              {group.active_runs.length > 0 && (
+                <div className="active-runs">
+                  {group.active_runs.map((run) => (
+                    <div
+                      key={run.id}
+                      className="run-summary"
+                      onClick={() => onRunSelect(run.id)}
+                    >
+                      <span className="run-store">{run.store_name}</span>
+                      <span className={`run-state state-${run.state}`}>{run.state}</span>
+                    </div>
+                  ))}
+                  {group.active_runs_count > 3 && (
+                    <div className="more-runs" onClick={() => handleGroupClick(group.id)}>
+                      +{group.active_runs_count - 3} more...
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

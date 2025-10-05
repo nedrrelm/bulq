@@ -244,44 +244,7 @@ function App() {
 
       <main className={currentView === 'dashboard' ? 'dashboard' : ''}>
         {currentView === 'dashboard' && (
-          <>
-            <Groups onGroupSelect={handleGroupSelect} />
-
-            <div className="status-card">
-              <h3>Backend Connection Test</h3>
-
-              {loading && <p>Connecting to backend...</p>}
-
-              {error && (
-                <div className="error">
-                  <p>❌ Backend connection failed: {error}</p>
-                  <p>Make sure the backend is running on {BACKEND_URL}</p>
-                </div>
-              )}
-
-              {!loading && !error && (
-                <div className="success">
-                  <p>✅ Backend connected successfully!</p>
-                  <p><strong>Message:</strong> {backendMessage}</p>
-                  <p><strong>Health Status:</strong> {healthStatus}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="info-card">
-              <h3>User Info</h3>
-              <p><strong>Name:</strong> {user.name}</p>
-              <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>User ID:</strong> {user.id}</p>
-            </div>
-
-            <div className="info-card">
-              <h3>Development Info</h3>
-              <p>Frontend: React + TypeScript + Vite</p>
-              <p>Backend: FastAPI (Python)</p>
-              <p>Backend URL: {BACKEND_URL}</p>
-            </div>
-          </>
+          <Groups onGroupSelect={handleGroupSelect} onRunSelect={handleRunSelect} />
         )}
 
         {currentView === 'group' && selectedGroupId && (
