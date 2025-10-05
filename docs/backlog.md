@@ -2,13 +2,6 @@
 
 Feature backlog for Bulq development.
 
-## Group Management
-
-### Create and join groups via invite links
-**Status**: Planned
-
-Groups should be joinable through some kind of invite link.
-
 ## Run Management
 
 ### Allow users to progress a run
