@@ -33,7 +33,8 @@ Bulq enables friend groups to coordinate bulk purchases and track savings throug
 
 ## Architecture
 
-- **Database Schema**: See [database_schema.md](database_schema.md) for detailed ER diagram
+- **Database Schema**: See [docs/database_schema.md](docs/database_schema.md) for detailed ER diagram
+- **Project Structure**: See [docs/project_structure.md](docs/project_structure.md) for file organization and contents
 - **Containerized Architecture**: Separate Docker containers for backend, frontend, and database
 - **Backend**: FastAPI application running in Python container
 - **Database**: PostgreSQL running in dedicated container with UUIDs for primary keys
