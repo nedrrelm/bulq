@@ -49,9 +49,10 @@ interface RunDetail {
 interface RunPageProps {
   runId: string
   onBack: () => void
+  onShoppingSelect?: (runId: string) => void
 }
 
-export default function RunPage({ runId, onBack }: RunPageProps) {
+export default function RunPage({ runId, onBack, onShoppingSelect }: RunPageProps) {
   const [run, setRun] = useState<RunDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -412,6 +413,23 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
             </button>
             <p className="ready-hint" style={{ marginTop: '12px' }}>
               Click this button when you're heading to the store to begin the shopping phase.
+            </p>
+          </div>
+        )}
+
+        {run.state === 'shopping' && run.current_user_is_leader && onShoppingSelect && (
+          <div className="info-card">
+            <h3>Shopping in Progress</h3>
+            <p>You are currently shopping for this run.</p>
+            <button
+              onClick={() => onShoppingSelect(runId)}
+              className="btn btn-success btn-lg"
+              style={{ marginTop: '16px', width: '100%' }}
+            >
+              📝 Open Shopping List
+            </button>
+            <p className="ready-hint" style={{ marginTop: '12px' }}>
+              Track prices and mark items as purchased.
             </p>
           </div>
         )}
