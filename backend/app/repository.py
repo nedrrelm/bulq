@@ -406,30 +406,180 @@ class MemoryRepository(AbstractRepository):
         bananas = self._create_product(sams.id, "Organic Bananas 3lbs", 4.98)
         cheese_sticks = self._create_product(sams.id, "String Cheese 48-pack", 8.98)
 
-        # Create test runs with variety of states
-        costco_run_active = self._create_run(friends_group.id, costco.id, "active", alice.id)
-        sams_run_planning = self._create_run(work_group.id, sams.id, "planning", bob.id)
-        costco_run_completed = self._create_run(friends_group.id, costco.id, "completed", alice.id)
-        sams_run_confirmed = self._create_run(friends_group.id, sams.id, "confirmed", test_user.id)
-        costco_run_shopping = self._create_run(work_group.id, costco.id, "shopping", bob.id)
+        # Create test runs - one for each state with test user as leader
+        run_planning = self._create_run(friends_group.id, costco.id, "planning", test_user.id)
+        run_active = self._create_run(friends_group.id, sams.id, "active", test_user.id)
+        run_confirmed = self._create_run(friends_group.id, costco.id, "confirmed", test_user.id)
+        run_shopping = self._create_run(friends_group.id, sams.id, "shopping", test_user.id)
+        run_distributing = self._create_run(friends_group.id, costco.id, "distributing", test_user.id)
+        run_completed = self._create_run(friends_group.id, sams.id, "completed", test_user.id)
 
-        # Create participations and bids for the active run
-        alice_active_p = self._create_participation(alice.id, costco_run_active.id, is_leader=True)
-        bob_active_p = self._create_participation(bob.id, costco_run_active.id, is_leader=False)
-        carol_active_p = self._create_participation(carol.id, costco_run_active.id, is_leader=False)
-        test_active_p = self._create_participation(test_user.id, costco_run_active.id, is_leader=False)
+        # Planning run - test user is leader (no other participants yet)
+        test_planning_p = self._create_participation(test_user.id, run_planning.id, is_leader=True)
 
-        self._create_bid(alice_active_p.id, olive_oil.id, 2, False)
-        self._create_bid(bob_active_p.id, olive_oil.id, 1, False)
-        self._create_bid(carol_active_p.id, quinoa.id, 1, False)
-        self._create_bid(test_active_p.id, olive_oil.id, 0, True)  # interested only
+        # Active run - test user is leader, others have bid
+        # Multiple users bidding on same products
+        test_active_p = self._create_participation(test_user.id, run_active.id, is_leader=True)
+        alice_active_p = self._create_participation(alice.id, run_active.id, is_leader=False)
+        bob_active_p = self._create_participation(bob.id, run_active.id, is_leader=False)
+        carol_active_p = self._create_participation(carol.id, run_active.id, is_leader=False)
 
-        # Create participations and bids for the planning run
-        bob_planning_p = self._create_participation(bob.id, sams_run_planning.id, is_leader=True)
-        carol_planning_p = self._create_participation(carol.id, sams_run_planning.id, is_leader=False)
+        # Detergent - multiple users want it
+        self._create_bid(test_active_p.id, detergent.id, 2, False)
+        self._create_bid(alice_active_p.id, detergent.id, 1, False)
+        self._create_bid(bob_active_p.id, detergent.id, 1, False)
 
-        self._create_bid(bob_planning_p.id, detergent.id, 1, False)
-        self._create_bid(carol_planning_p.id, detergent.id, 2, False)
+        # Laundry Pods - just bob
+        self._create_bid(bob_active_p.id, laundry_pods.id, 2, False)
+
+        # Ground Beef - test user and carol
+        self._create_bid(test_active_p.id, ground_beef.id, 1, False)
+        self._create_bid(carol_active_p.id, ground_beef.id, 2, False)
+
+        # Bananas - interested only from alice
+        self._create_bid(alice_active_p.id, bananas.id, 0, True)
+
+        # Confirmed run - test user is leader, all are ready
+        test_confirmed_p = self._create_participation(test_user.id, run_confirmed.id, is_leader=True, is_ready=True)
+        alice_confirmed_p = self._create_participation(alice.id, run_confirmed.id, is_leader=False, is_ready=True)
+        carol_confirmed_p = self._create_participation(carol.id, run_confirmed.id, is_leader=False, is_ready=True)
+        bob_confirmed_p = self._create_participation(bob.id, run_confirmed.id, is_leader=False, is_ready=True)
+
+        # Olive Oil - everyone wants it
+        self._create_bid(test_confirmed_p.id, olive_oil.id, 3, False)
+        self._create_bid(alice_confirmed_p.id, olive_oil.id, 1, False)
+        self._create_bid(bob_confirmed_p.id, olive_oil.id, 2, False)
+
+        # Quinoa - carol and test user
+        self._create_bid(test_confirmed_p.id, quinoa.id, 1, False)
+        self._create_bid(carol_confirmed_p.id, quinoa.id, 2, False)
+
+        # Paper Towels - everyone needs them
+        self._create_bid(test_confirmed_p.id, paper_towels.id, 1, False)
+        self._create_bid(alice_confirmed_p.id, paper_towels.id, 1, False)
+        self._create_bid(bob_confirmed_p.id, paper_towels.id, 1, False)
+        self._create_bid(carol_confirmed_p.id, paper_towels.id, 2, False)
+
+        # Shopping run - test user is leader, has shopping list
+        test_shopping_p = self._create_participation(test_user.id, run_shopping.id, is_leader=True)
+        alice_shopping_p = self._create_participation(alice.id, run_shopping.id, is_leader=False)
+        bob_shopping_p = self._create_participation(bob.id, run_shopping.id, is_leader=False)
+
+        # Detergent - multiple users
+        self._create_bid(test_shopping_p.id, detergent.id, 2, False)
+        self._create_bid(alice_shopping_p.id, detergent.id, 1, False)
+        self._create_bid(bob_shopping_p.id, detergent.id, 1, False)
+
+        # Laundry Pods - test user and bob
+        self._create_bid(test_shopping_p.id, laundry_pods.id, 1, False)
+        self._create_bid(bob_shopping_p.id, laundry_pods.id, 2, False)
+
+        # Create shopping list items
+        shopping_item1 = self._create_shopping_list_item(run_shopping.id, detergent.id, 4)
+        shopping_item1.encountered_prices = [{"price": 16.50, "notes": "aisle 7"}, {"price": 17.00, "notes": "end cap"}]
+        shopping_item1.purchased_quantity = 4
+        shopping_item1.purchased_price_per_unit = Decimal("16.50")
+        shopping_item1.purchased_total = Decimal("66.00")
+        shopping_item1.is_purchased = True
+        shopping_item1.purchase_order = 1
+
+        shopping_item2 = self._create_shopping_list_item(run_shopping.id, laundry_pods.id, 3)
+        shopping_item2.encountered_prices = [{"price": 18.98, "notes": "front display"}]
+        shopping_item2.purchased_quantity = 3
+        shopping_item2.purchased_price_per_unit = Decimal("18.98")
+        shopping_item2.purchased_total = Decimal("56.94")
+        shopping_item2.is_purchased = True
+        shopping_item2.purchase_order = 2
+
+        # Distributing run - test user is leader, has distribution data
+        # Multiple users bidding on same products
+        test_dist_p = self._create_participation(test_user.id, run_distributing.id, is_leader=True)
+        alice_dist_p = self._create_participation(alice.id, run_distributing.id, is_leader=False)
+        bob_dist_p = self._create_participation(bob.id, run_distributing.id, is_leader=False)
+        carol_dist_p = self._create_participation(carol.id, run_distributing.id, is_leader=False)
+
+        # Olive Oil - multiple users ordered, test user picked up, others haven't
+        bid1 = self._create_bid(test_dist_p.id, olive_oil.id, 2, False)
+        bid1.distributed_quantity = 2
+        bid1.distributed_price_per_unit = Decimal("23.99")
+        bid1.is_picked_up = True
+
+        bid2 = self._create_bid(alice_dist_p.id, olive_oil.id, 1, False)
+        bid2.distributed_quantity = 1
+        bid2.distributed_price_per_unit = Decimal("23.99")
+        bid2.is_picked_up = False
+
+        bid3 = self._create_bid(bob_dist_p.id, olive_oil.id, 3, False)
+        bid3.distributed_quantity = 3
+        bid3.distributed_price_per_unit = Decimal("23.99")
+        bid3.is_picked_up = False
+
+        # Quinoa - multiple users, some picked up
+        bid4 = self._create_bid(test_dist_p.id, quinoa.id, 1, False)
+        bid4.distributed_quantity = 1
+        bid4.distributed_price_per_unit = Decimal("18.50")
+        bid4.is_picked_up = True
+
+        bid5 = self._create_bid(carol_dist_p.id, quinoa.id, 2, False)
+        bid5.distributed_quantity = 2
+        bid5.distributed_price_per_unit = Decimal("18.50")
+        bid5.is_picked_up = True
+
+        # Paper Towels - only Alice ordered, hasn't picked up yet
+        bid6 = self._create_bid(alice_dist_p.id, paper_towels.id, 2, False)
+        bid6.distributed_quantity = 2
+        bid6.distributed_price_per_unit = Decimal("19.49")
+        bid6.is_picked_up = False
+
+        # Rotisserie Chicken - multiple users, none picked up
+        bid7 = self._create_bid(bob_dist_p.id, rotisserie_chicken.id, 2, False)
+        bid7.distributed_quantity = 2
+        bid7.distributed_price_per_unit = Decimal("4.99")
+        bid7.is_picked_up = False
+
+        bid8 = self._create_bid(carol_dist_p.id, rotisserie_chicken.id, 1, False)
+        bid8.distributed_quantity = 1
+        bid8.distributed_price_per_unit = Decimal("4.99")
+        bid8.is_picked_up = False
+
+        # Almond Butter - only test user, already picked up
+        bid9 = self._create_bid(test_dist_p.id, almond_butter.id, 1, False)
+        bid9.distributed_quantity = 1
+        bid9.distributed_price_per_unit = Decimal("9.99")
+        bid9.is_picked_up = True
+
+        # Completed run - test user is leader, all picked up
+        test_completed_p = self._create_participation(test_user.id, run_completed.id, is_leader=True)
+        alice_completed_p = self._create_participation(alice.id, run_completed.id, is_leader=False)
+        carol_completed_p = self._create_participation(carol.id, run_completed.id, is_leader=False)
+
+        # Detergent - test user and alice, both picked up
+        bid10 = self._create_bid(test_completed_p.id, detergent.id, 2, False)
+        bid10.distributed_quantity = 2
+        bid10.distributed_price_per_unit = Decimal("16.48")
+        bid10.is_picked_up = True
+
+        bid11 = self._create_bid(alice_completed_p.id, detergent.id, 1, False)
+        bid11.distributed_quantity = 1
+        bid11.distributed_price_per_unit = Decimal("16.48")
+        bid11.is_picked_up = True
+
+        # Laundry Pods - carol and test user, all picked up
+        bid12 = self._create_bid(test_completed_p.id, laundry_pods.id, 1, False)
+        bid12.distributed_quantity = 1
+        bid12.distributed_price_per_unit = Decimal("18.98")
+        bid12.is_picked_up = True
+
+        bid13 = self._create_bid(carol_completed_p.id, laundry_pods.id, 2, False)
+        bid13.distributed_quantity = 2
+        bid13.distributed_price_per_unit = Decimal("18.98")
+        bid13.is_picked_up = True
+
+        # Cheese Sticks - alice only, picked up
+        bid14 = self._create_bid(alice_completed_p.id, cheese_sticks.id, 1, False)
+        bid14.distributed_quantity = 1
+        bid14.distributed_price_per_unit = Decimal("8.98")
+        bid14.is_picked_up = True
 
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         return self._users.get(user_id)
@@ -532,8 +682,8 @@ class MemoryRepository(AbstractRepository):
         self._create_participation(leader_id, run.id, is_leader=True)
         return run
 
-    def _create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
-        participation = RunParticipation(id=uuid4(), user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=False)
+    def _create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False, is_ready: bool = False) -> RunParticipation:
+        participation = RunParticipation(id=uuid4(), user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=is_ready)
         # Set up relationships
         participation.user = self._users.get(user_id)
         participation.run = self._runs.get(run_id)
@@ -547,6 +697,21 @@ class MemoryRepository(AbstractRepository):
         bid.product = self._products.get(product_id)
         self._bids[bid.id] = bid
         return bid
+
+    def _create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
+        item = ShoppingListItem(
+            id=uuid4(),
+            run_id=run_id,
+            product_id=product_id,
+            requested_quantity=requested_quantity,
+            encountered_prices=[],
+            is_purchased=False
+        )
+        # Set up relationships
+        item.run = self._runs.get(run_id)
+        item.product = self._products.get(product_id)
+        self._shopping_list_items[item.id] = item
+        return item
 
     def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state="planning")
