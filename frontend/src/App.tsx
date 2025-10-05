@@ -96,6 +96,12 @@ function App() {
 
   const handleLogin = (userData: User) => {
     setUser(userData)
+    // Reset to dashboard view on login
+    setCurrentView('dashboard')
+    setSelectedGroupId(null)
+    setSelectedRunId(null)
+    setInviteToken(null)
+    window.history.pushState({}, '', '/')
   }
 
   const handleLogout = async () => {
@@ -105,6 +111,12 @@ function App() {
         credentials: 'include'
       })
       setUser(null)
+      // Reset to dashboard view on logout
+      setCurrentView('dashboard')
+      setSelectedGroupId(null)
+      setSelectedRunId(null)
+      setInviteToken(null)
+      window.history.pushState({}, '', '/')
     } catch (err) {
       console.error('Logout failed:', err)
     }
