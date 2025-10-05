@@ -104,6 +104,7 @@ class RunDetailResponse(BaseModel):
     products: List[ProductResponse]
     participants: List[ParticipantResponse]
     current_user_is_ready: bool
+    current_user_is_leader: bool
 
     class Config:
         from_attributes = True
@@ -150,6 +151,7 @@ async def get_run_details(
     # Get participants
     participants_data = []
     current_user_is_ready = False
+    current_user_is_leader = False
     participations = repo.get_run_participations(run.id)
 
     for participation in participations:
@@ -163,6 +165,7 @@ async def get_run_details(
             ))
             if participation.user_id == current_user.id:
                 current_user_is_ready = participation.is_ready
+                current_user_is_leader = participation.is_leader
 
     # Get products and bids for this run
     if hasattr(repo, '_runs'):  # Memory mode
@@ -223,7 +226,8 @@ async def get_run_details(
         state=run.state,
         products=products_data,
         participants=participants_data,
-        current_user_is_ready=current_user_is_ready
+        current_user_is_ready=current_user_is_ready,
+        current_user_is_leader=current_user_is_leader
     )
 
 class PlaceBidRequest(BaseModel):
@@ -425,6 +429,45 @@ async def toggle_ready(
         return {"message": "All participants ready! Run confirmed.", "is_ready": new_ready_status, "state_changed": True}
 
     return {"message": f"Ready status updated to {new_ready_status}", "is_ready": new_ready_status, "state_changed": False}
+
+@router.post("/{run_id}/start-shopping")
+async def start_shopping(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Start shopping - transition from confirmed to shopping state (leader only)."""
+    repo = get_repository(db)
+
+    # Validate run ID
+    try:
+        run_uuid = uuid.UUID(run_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid run ID format")
+
+    # Get the run
+    run = repo.get_run_by_id(run_uuid)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Verify user has access to this run (member of the group)
+    user_groups = repo.get_user_groups(current_user)
+    if not any(g.id == run.group_id for g in user_groups):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this run")
+
+    # Only allow starting shopping from confirmed state
+    if run.state != 'confirmed':
+        raise HTTPException(status_code=400, detail="Can only start shopping from confirmed state")
+
+    # Check if user is the run leader
+    participation = repo.get_participation(current_user.id, run_uuid)
+    if not participation or not participation.is_leader:
+        raise HTTPException(status_code=403, detail="Only the run leader can start shopping")
+
+    # Transition to shopping state
+    repo.update_run_state(run_uuid, "shopping")
+
+    return {"message": "Shopping started!", "state": "shopping"}
 
 @router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
 async def get_available_products(

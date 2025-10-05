@@ -43,6 +43,7 @@ interface RunDetail {
   products: Product[]
   participants: Participant[]
   current_user_is_ready: boolean
+  current_user_is_leader: boolean
 }
 
 interface RunPageProps {
@@ -220,6 +221,33 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
     }
   }
 
+  const handleStartShopping = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/runs/${runId}/start-shopping`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to start shopping')
+      }
+
+      // Refresh run details
+      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+        credentials: 'include'
+      })
+
+      if (refreshResponse.ok) {
+        const runData: RunDetail = await refreshResponse.json()
+        setRun(runData)
+      }
+    } catch (err) {
+      console.error('Error starting shopping:', err)
+      alert('Failed to start shopping. Please try again.')
+    }
+  }
+
   const getStateDisplay = (state: string) => {
     switch (state) {
       case 'planning':
@@ -368,6 +396,23 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
               </label>
               <p className="ready-hint">When all participants are ready, the run will automatically move to confirmed state.</p>
             </div>
+          </div>
+        )}
+
+        {run.state === 'confirmed' && run.current_user_is_leader && (
+          <div className="info-card">
+            <h3>Ready to Shop</h3>
+            <p>All participants are ready! The shopping list is finalized.</p>
+            <button
+              onClick={handleStartShopping}
+              className="btn btn-primary btn-lg"
+              style={{ marginTop: '16px', width: '100%' }}
+            >
+              🛒 Start Shopping
+            </button>
+            <p className="ready-hint" style={{ marginTop: '12px' }}>
+              Click this button when you're heading to the store to begin the shopping phase.
+            </p>
           </div>
         )}
       </div>
