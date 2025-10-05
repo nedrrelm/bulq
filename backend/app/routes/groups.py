@@ -11,6 +11,9 @@ import uuid
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
+class CreateGroupRequest(BaseModel):
+    name: str
+
 class GroupResponse(BaseModel):
     id: str
     name: str
@@ -60,6 +63,27 @@ async def get_my_groups(
         ))
 
     return group_responses
+
+@router.post("/create")
+async def create_group(
+    request: CreateGroupRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Create a new group."""
+    repo = get_repository(db)
+
+    # Create the group
+    group = repo.create_group(request.name, current_user.id)
+
+    # Add the creator as a member
+    repo.add_group_member(group.id, current_user)
+
+    return {
+        "id": str(group.id),
+        "name": group.name,
+        "message": "Group created successfully"
+    }
 
 @router.get("/{group_id}")
 async def get_group(
