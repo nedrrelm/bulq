@@ -54,10 +54,28 @@
 }
 
 .group-description {
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
   color: var(--color-text-light);
   font-size: 0.9rem;
   line-height: 1.4;
+}
+
+.group-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-light);
+  font-size: 0.85rem;
+}
+
+.stat-icon {
+  font-size: 1rem;
 }
 
 .group-date {
