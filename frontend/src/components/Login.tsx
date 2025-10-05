@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './Login.css'
 
 interface User {
@@ -26,10 +26,11 @@ export default function Login({ onLogin }: LoginProps) {
   const [isRegister, setIsRegister] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const emailInputRef = useRef<HTMLInputElement>(null)
 
   const [loginData, setLoginData] = useState<LoginFormData>({
-    email: '',
-    password: ''
+    email: 'test@example.com',
+    password: 'a'
   })
 
   const [registerData, setRegisterData] = useState<RegisterFormData>({
@@ -39,6 +40,12 @@ export default function Login({ onLogin }: LoginProps) {
   })
 
   const BACKEND_URL = 'http://localhost:8000'
+
+  useEffect(() => {
+    if (!isRegister && emailInputRef.current) {
+      emailInputRef.current.focus()
+    }
+  }, [isRegister])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -166,6 +173,7 @@ export default function Login({ onLogin }: LoginProps) {
                 onChange={(e) => setLoginData({...loginData, email: e.target.value})}
                 required
                 disabled={loading}
+                ref={emailInputRef}
               />
             </div>
 
