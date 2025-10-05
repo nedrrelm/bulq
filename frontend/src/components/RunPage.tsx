@@ -26,6 +26,13 @@ interface AvailableProduct {
   base_price: string
 }
 
+interface Participant {
+  user_id: string
+  user_name: string
+  is_leader: boolean
+  is_ready: boolean
+}
+
 interface RunDetail {
   id: string
   group_id: string
@@ -34,6 +41,8 @@ interface RunDetail {
   store_name: string
   state: string
   products: Product[]
+  participants: Participant[]
+  current_user_is_ready: boolean
 }
 
 interface RunPageProps {
@@ -185,6 +194,32 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
     setShowAddProductPopup(false)
   }
 
+  const handleToggleReady = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/runs/${runId}/ready`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle ready status')
+      }
+
+      // Refresh run details
+      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+        credentials: 'include'
+      })
+
+      if (refreshResponse.ok) {
+        const runData: RunDetail = await refreshResponse.json()
+        setRun(runData)
+      }
+    } catch (err) {
+      console.error('Error toggling ready:', err)
+      alert('Failed to update ready status. Please try again.')
+    }
+  }
+
   const getStateDisplay = (state: string) => {
     switch (state) {
       case 'planning':
@@ -299,6 +334,42 @@ export default function RunPage({ runId, onBack }: RunPageProps) {
             </div>
           </div>
         </div>
+
+        {run.state === 'active' && (
+          <div className="info-card">
+            <h3>Participants</h3>
+            <div className="participants-list">
+              {run.participants.map(participant => (
+                <div key={participant.user_id} className="participant-item">
+                  <div className="participant-info">
+                    <span className="participant-name">
+                      {participant.user_name}
+                      {participant.is_leader && <span className="leader-badge">Leader</span>}
+                    </span>
+                  </div>
+                  <div className="participant-ready">
+                    {participant.is_ready ? (
+                      <span className="ready-indicator ready">✓ Ready</span>
+                    ) : (
+                      <span className="ready-indicator not-ready">⏳ Not Ready</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="ready-section">
+              <label className="ready-checkbox">
+                <input
+                  type="checkbox"
+                  checked={run.current_user_is_ready}
+                  onChange={handleToggleReady}
+                />
+                <span>I'm ready (my order is complete)</span>
+              </label>
+              <p className="ready-hint">When all participants are ready, the run will automatically move to confirmed state.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="products-section">
