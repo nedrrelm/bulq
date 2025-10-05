@@ -6,6 +6,7 @@ interface Group {
   name: string
   description: string
   member_count: number
+  active_runs_count: number
   created_at: string
 }
 
@@ -80,12 +81,18 @@ export default function Groups({ onGroupSelect }: GroupsProps) {
             >
               <div className="group-header">
                 <h4>{group.name}</h4>
-                <span className="member-count">{group.member_count} members</span>
               </div>
               <p className="group-description">{group.description}</p>
-              <p className="group-date">
-                Joined: {new Date(group.created_at).toLocaleDateString()}
-              </p>
+              <div className="group-stats">
+                <span className="stat">
+                  <span className="stat-icon">👥</span>
+                  {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
+                </span>
+                <span className="stat">
+                  <span className="stat-icon">🛒</span>
+                  {group.active_runs_count} active {group.active_runs_count === 1 ? 'run' : 'runs'}
+                </span>
+              </div>
             </div>
           ))}
         </div>

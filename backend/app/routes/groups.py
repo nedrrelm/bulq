@@ -16,6 +16,7 @@ class GroupResponse(BaseModel):
     name: str
     description: str
     member_count: int
+    active_runs_count: int
     created_at: str
 
     class Config:
@@ -45,11 +46,16 @@ async def get_my_groups(
     # Convert to response format
     group_responses = []
     for group in groups:
+        # Get runs for this group and count active ones
+        runs = repo.get_runs_by_group(group.id)
+        active_runs = [run for run in runs if run.state not in ['completed', 'cancelled']]
+
         group_responses.append(GroupResponse(
             id=str(group.id),
             name=group.name,
             description=f"Group created by {group.creator.name}" if group.creator else "Group",
             member_count=len(group.members),
+            active_runs_count=len(active_runs),
             created_at=datetime.now().isoformat()  # Using current time for now since we don't have created_at in model
         ))
 
