@@ -245,9 +245,11 @@ async def place_bid(
     if hasattr(repo, '_bids'):  # Memory mode
         # Get or create participation for this user in this run
         participation = repo.get_participation(current_user.id, run_uuid)
+        is_new_participant = False
         if not participation:
             # Create participation (not as leader)
             participation = repo.create_participation(current_user.id, run_uuid, is_leader=False)
+            is_new_participant = True
 
         # Check if user already has a bid for this product
         existing_bid = None
@@ -275,6 +277,11 @@ async def place_bid(
             new_bid.participation = participation
             new_bid.product = product
             repo._bids[new_bid.id] = new_bid
+
+        # Automatic state transition: planning → active
+        # When a non-leader places their first bid, transition from planning to active
+        if is_new_participant and not participation.is_leader and run.state == "planning":
+            repo.update_run_state(run_uuid, "active")
 
     return {"message": "Bid placed successfully"}
 

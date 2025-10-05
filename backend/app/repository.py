@@ -108,6 +108,16 @@ class AbstractRepository(ABC):
         """Update the ready status of a participation."""
         pass
 
+    @abstractmethod
+    def get_run_by_id(self, run_id: UUID) -> Optional[Run]:
+        """Get run by ID."""
+        pass
+
+    @abstractmethod
+    def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
+        """Update the state of a run."""
+        pass
+
 
 class DatabaseRepository(AbstractRepository):
     """Database implementation using SQLAlchemy - Singleton."""
@@ -239,6 +249,18 @@ class DatabaseRepository(AbstractRepository):
             self.db.commit()
             self.db.refresh(participation)
             return participation
+        return None
+
+    def get_run_by_id(self, run_id: UUID) -> Optional[Run]:
+        return self.db.query(Run).filter(Run.id == run_id).first()
+
+    def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
+        run = self.get_run_by_id(run_id)
+        if run:
+            run.state = new_state
+            self.db.commit()
+            self.db.refresh(run)
+            return run
         return None
 
 
@@ -495,6 +517,16 @@ class MemoryRepository(AbstractRepository):
         if participation:
             participation.is_ready = is_ready
             return participation
+        return None
+
+    def get_run_by_id(self, run_id: UUID) -> Optional[Run]:
+        return self._runs.get(run_id)
+
+    def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
+        run = self._runs.get(run_id)
+        if run:
+            run.state = new_state
+            return run
         return None
 
 
