@@ -72,22 +72,24 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     fetchData()
   }, [groupId])
 
-  const getStateDisplay = (state: string) => {
+  const getStateLabel = (state: string) => {
     switch (state) {
       case 'planning':
-        return { label: 'Planning', color: '#fbbf24' }
+        return 'Planning'
       case 'active':
-        return { label: 'Active', color: '#10b981' }
+        return 'Active'
       case 'confirmed':
-        return { label: 'Confirmed', color: '#3b82f6' }
+        return 'Confirmed'
       case 'shopping':
-        return { label: 'Shopping', color: '#8b5cf6' }
+        return 'Shopping'
+      case 'distributing':
+        return 'Distributing'
       case 'completed':
-        return { label: 'Completed', color: '#6b7280' }
+        return 'Completed'
       case 'cancelled':
-        return { label: 'Cancelled', color: '#ef4444' }
+        return 'Cancelled'
       default:
-        return { label: state, color: '#6b7280' }
+        return state
     }
   }
 
@@ -207,34 +209,21 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
               </div>
             ) : (
               <div className="runs-list">
-                {currentRuns.map((run) => {
-                  const stateDisplay = getStateDisplay(run.state)
-                  return (
-                    <div
-                      key={run.id}
-                      className="run-item"
-                      onClick={() => handleRunClick(run.id)}
-                    >
-                      <div className="run-header">
-                        <h4>{run.store_name}</h4>
-                        <span
-                          className="run-state"
-                          style={{
-                            backgroundColor: stateDisplay.color,
-                            color: 'white',
-                            padding: '4px 12px',
-                            borderRadius: '12px',
-                            fontSize: '0.875rem',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          {stateDisplay.label}
-                        </span>
-                      </div>
-                      <p className="run-id">ID: {run.id}</p>
+                {currentRuns.map((run) => (
+                  <div
+                    key={run.id}
+                    className="run-item"
+                    onClick={() => handleRunClick(run.id)}
+                  >
+                    <div className="run-header">
+                      <h4>{run.store_name}</h4>
+                      <span className={`run-state state-${run.state}`}>
+                        {getStateLabel(run.state)}
+                      </span>
                     </div>
-                  )
-                })}
+                    <p className="run-id">ID: {run.id}</p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -247,34 +236,21 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
               </div>
             ) : (
               <div className="runs-list">
-                {pastRuns.map((run) => {
-                  const stateDisplay = getStateDisplay(run.state)
-                  return (
-                    <div
-                      key={run.id}
-                      className="run-item past"
-                      onClick={() => handleRunClick(run.id)}
-                    >
-                      <div className="run-header">
-                        <h4>{run.store_name}</h4>
-                        <span
-                          className="run-state"
-                          style={{
-                            backgroundColor: stateDisplay.color,
-                            color: 'white',
-                            padding: '4px 12px',
-                            borderRadius: '12px',
-                            fontSize: '0.875rem',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          {stateDisplay.label}
-                        </span>
-                      </div>
-                      <p className="run-id">ID: {run.id}</p>
+                {pastRuns.map((run) => (
+                  <div
+                    key={run.id}
+                    className="run-item past"
+                    onClick={() => handleRunClick(run.id)}
+                  >
+                    <div className="run-header">
+                      <h4>{run.store_name}</h4>
+                      <span className={`run-state state-${run.state}`}>
+                        {getStateLabel(run.state)}
+                      </span>
                     </div>
-                  )
-                })}
+                    <p className="run-id">ID: {run.id}</p>
+                  </div>
+                ))}
               </div>
             )}
           </div>

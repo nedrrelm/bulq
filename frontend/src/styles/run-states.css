@@ -1,0 +1,36 @@
+/* Shared run state styles */
+.run-state {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: white;
+}
+
+.state-planning {
+  background-color: #fbbf24;
+}
+
+.state-active {
+  background-color: #10b981;
+}
+
+.state-confirmed {
+  background-color: #3b82f6;
+}
+
+.state-shopping {
+  background-color: #8b5cf6;
+}
+
+.state-distributing {
+  background-color: #06b6d4;
+}
+
+.state-completed {
+  background-color: #6b7280;
+}
+
+.state-cancelled {
+  background-color: #ef4444;
+}
