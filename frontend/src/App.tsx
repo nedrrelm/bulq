@@ -4,6 +4,7 @@ import Login from './components/Login'
 import Groups from './components/Groups'
 import GroupPage from './components/GroupPage'
 import RunPage from './components/RunPage'
+import JoinGroup from './components/JoinGroup'
 
 interface BackendResponse {
   message: string
@@ -25,11 +26,22 @@ function App() {
   const [healthStatus, setHealthStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'group' | 'run'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'group' | 'run' | 'join'>('dashboard')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
 
   const BACKEND_URL = 'http://localhost:8000'
+
+  // Check for invite link on mount
+  useEffect(() => {
+    const path = window.location.pathname
+    const inviteMatch = path.match(/^\/invite\/(.+)$/)
+    if (inviteMatch) {
+      setInviteToken(inviteMatch[1])
+      setCurrentView('join')
+    }
+  }, [])
 
   // Check if user is already logged in
   useEffect(() => {
@@ -117,6 +129,20 @@ function App() {
   const handleBackToGroup = () => {
     setCurrentView('group')
     setSelectedRunId(null)
+  }
+
+  const handleJoinSuccess = () => {
+    setCurrentView('dashboard')
+    setInviteToken(null)
+    window.history.pushState({}, '', '/')
+  }
+
+  // Show join page if invite link
+  if (currentView === 'join' && inviteToken) {
+    if (!user) {
+      return <Login onLogin={handleLogin} />
+    }
+    return <JoinGroup inviteToken={inviteToken} onJoinSuccess={handleJoinSuccess} />
   }
 
   // Show login page if not authenticated

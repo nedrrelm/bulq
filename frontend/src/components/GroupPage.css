@@ -2,6 +2,18 @@
   padding: 20px;
 }
 
+.group-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 8px;
+}
 
 .runs-section {
   margin-bottom: 40px;

@@ -32,6 +32,7 @@ class Group(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    invite_token = Column(String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
 
     creator = relationship("User", back_populates="created_groups")
     members = relationship("User", secondary=group_membership, back_populates="groups")
