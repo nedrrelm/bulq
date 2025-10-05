@@ -14,6 +14,7 @@ erDiagram
         uuid id PK
         string name
         uuid created_by FK
+        string invite_token
     }
     
     Run {
@@ -51,6 +52,22 @@ erDiagram
         uuid product_id FK
         integer quantity
         boolean interested_only
+        integer distributed_quantity
+        decimal distributed_price_per_unit
+        boolean is_picked_up
+    }
+
+    ShoppingListItem {
+        uuid id PK
+        uuid run_id FK
+        uuid product_id FK
+        integer requested_quantity
+        json encountered_prices
+        integer purchased_quantity
+        decimal purchased_price_per_unit
+        decimal purchased_total
+        boolean is_purchased
+        integer purchase_order
     }
     
     GroupMembership {
@@ -68,6 +85,8 @@ erDiagram
     RunParticipation ||--o{ ProductBid : "places"
     Product ||--o{ ProductBid : "receives"
     User ||--o{ Group : "creates"
+    Run ||--o{ ShoppingListItem : "has items"
+    Product ||--o{ ShoppingListItem : "included in"
 ```
 
 ## Run States
@@ -123,3 +142,30 @@ Can transition to `cancelled` from any state before `distributing`.
 - **ProductBids**: Junction of RunParticipation + Product with quantity/interest data
   - Each bid belongs to a participation (which links user + run)
   - Simplifies querying all bids for a user in a run
+  - Includes distribution fields: `distributed_quantity`, `distributed_price_per_unit`, `is_picked_up`
+- **ShoppingListItems**: Shopping list generation for runs
+  - Links Run + Product with requested quantities (sum of all bids)
+  - Tracks encountered prices during shopping with JSON array
+  - Records actual purchased quantities and prices
+  - `purchase_order` tracks the sequence items were purchased
+
+## Entity Details
+
+### Group
+- **invite_token**: Unique token for inviting users to join the group
+
+### ProductBid
+Distribution fields for tracking allocation and pickup:
+- **distributed_quantity**: Actual quantity allocated to the user (may differ from requested)
+- **distributed_price_per_unit**: The actual price paid per unit during shopping
+- **is_picked_up**: Whether the user has collected their allocated items
+
+### ShoppingListItem
+Manages the shopping process for each product in a run:
+- **requested_quantity**: Total quantity needed (sum of all user bids)
+- **encountered_prices**: JSON array of price observations, e.g., `[{"price": 24.99, "notes": "aisle 3"}]`
+- **purchased_quantity**: Actual quantity purchased (may differ from requested)
+- **purchased_price_per_unit**: Final price paid per unit
+- **purchased_total**: Total cost for this item
+- **is_purchased**: Whether the item has been purchased
+- **purchase_order**: Order in which items were purchased (for receipt tracking)
