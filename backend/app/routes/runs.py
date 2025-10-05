@@ -464,6 +464,22 @@ async def start_shopping(
     if not participation or not participation.is_leader:
         raise HTTPException(status_code=403, detail="Only the run leader can start shopping")
 
+    # Generate shopping list items from bids
+    # Get all bids for this run and aggregate by product
+    bids = repo.get_bids_by_run(run_uuid)
+    product_quantities = {}
+
+    for bid in bids:
+        if not bid.interested_only and bid.quantity > 0:
+            product_id = bid.product_id
+            if product_id not in product_quantities:
+                product_quantities[product_id] = 0
+            product_quantities[product_id] += bid.quantity
+
+    # Create shopping list items
+    for product_id, quantity in product_quantities.items():
+        repo.create_shopping_list_item(run_uuid, product_id, quantity)
+
     # Transition to shopping state
     repo.update_run_state(run_uuid, "shopping")
 
