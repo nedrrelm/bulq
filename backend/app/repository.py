@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from decimal import Decimal
 
-from .models import User, Group, Store, Run, Product, ProductBid
+from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation
 from .config import get_repo_mode
 
 
@@ -84,8 +84,28 @@ class AbstractRepository(ABC):
         pass
 
     @abstractmethod
-    def create_run(self, group_id: UUID, store_id: UUID) -> Run:
-        """Create a new run."""
+    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
+        """Create a new run with the leader as first participant."""
+        pass
+
+    @abstractmethod
+    def get_participation(self, user_id: UUID, run_id: UUID) -> Optional[RunParticipation]:
+        """Get a user's participation in a run."""
+        pass
+
+    @abstractmethod
+    def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
+        """Get all participations for a run."""
+        pass
+
+    @abstractmethod
+    def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
+        """Create a participation record for a user in a run."""
+        pass
+
+    @abstractmethod
+    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> Optional[RunParticipation]:
+        """Update the ready status of a participation."""
         pass
 
 
@@ -173,18 +193,53 @@ class DatabaseRepository(AbstractRepository):
         return self.db.query(Product).filter(Product.store_id == store_id).all()
 
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
-        return self.db.query(ProductBid).filter(ProductBid.run_id == run_id).all()
+        # Get all participations for this run, then get their bids
+        participations = self.db.query(RunParticipation).filter(RunParticipation.run_id == run_id).all()
+        all_bids = []
+        for participation in participations:
+            all_bids.extend(participation.product_bids)
+        return all_bids
 
     def verify_password(self, password: str, stored_hash: str) -> bool:
         from .auth import verify_password
         return verify_password(password, stored_hash)
 
-    def create_run(self, group_id: UUID, store_id: UUID) -> Run:
+    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
         run = Run(group_id=group_id, store_id=store_id, state="planning")
         self.db.add(run)
+        self.db.flush()  # Get the run ID before creating participation
+
+        # Create participation for the leader
+        participation = RunParticipation(user_id=leader_id, run_id=run.id, is_leader=True, is_ready=False)
+        self.db.add(participation)
         self.db.commit()
         self.db.refresh(run)
         return run
+
+    def get_participation(self, user_id: UUID, run_id: UUID) -> Optional[RunParticipation]:
+        return self.db.query(RunParticipation).filter(
+            RunParticipation.user_id == user_id,
+            RunParticipation.run_id == run_id
+        ).first()
+
+    def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
+        return self.db.query(RunParticipation).filter(RunParticipation.run_id == run_id).all()
+
+    def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
+        participation = RunParticipation(user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=False)
+        self.db.add(participation)
+        self.db.commit()
+        self.db.refresh(participation)
+        return participation
+
+    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> Optional[RunParticipation]:
+        participation = self.db.query(RunParticipation).filter(RunParticipation.id == participation_id).first()
+        if participation:
+            participation.is_ready = is_ready
+            self.db.commit()
+            self.db.refresh(participation)
+            return participation
+        return None
 
 
 class MemoryRepository(AbstractRepository):
@@ -208,6 +263,7 @@ class MemoryRepository(AbstractRepository):
             self._stores: Dict[UUID, Store] = {}
             self._runs: Dict[UUID, Run] = {}
             self._products: Dict[UUID, Product] = {}
+            self._participations: Dict[UUID, RunParticipation] = {}
             self._bids: Dict[UUID, ProductBid] = {}
 
             # Create test data
@@ -259,21 +315,29 @@ class MemoryRepository(AbstractRepository):
         cheese_sticks = self._create_product(sams.id, "String Cheese 48-pack", 8.98)
 
         # Create test runs with variety of states
-        costco_run_active = self._create_run(friends_group.id, costco.id, "active")
-        sams_run_planning = self._create_run(work_group.id, sams.id, "planning")
-        costco_run_completed = self._create_run(friends_group.id, costco.id, "completed")
-        sams_run_confirmed = self._create_run(friends_group.id, sams.id, "confirmed")
-        costco_run_shopping = self._create_run(work_group.id, costco.id, "shopping")
+        costco_run_active = self._create_run(friends_group.id, costco.id, "active", alice.id)
+        sams_run_planning = self._create_run(work_group.id, sams.id, "planning", bob.id)
+        costco_run_completed = self._create_run(friends_group.id, costco.id, "completed", alice.id)
+        sams_run_confirmed = self._create_run(friends_group.id, sams.id, "confirmed", test_user.id)
+        costco_run_shopping = self._create_run(work_group.id, costco.id, "shopping", bob.id)
 
-        # Create test bids for the active run
-        self._create_bid(alice.id, costco_run_active.id, olive_oil.id, 2, False)
-        self._create_bid(bob.id, costco_run_active.id, olive_oil.id, 1, False)
-        self._create_bid(carol.id, costco_run_active.id, quinoa.id, 1, False)
-        self._create_bid(test_user.id, costco_run_active.id, olive_oil.id, 0, True)  # interested only
+        # Create participations and bids for the active run
+        alice_active_p = self._create_participation(alice.id, costco_run_active.id, is_leader=True)
+        bob_active_p = self._create_participation(bob.id, costco_run_active.id, is_leader=False)
+        carol_active_p = self._create_participation(carol.id, costco_run_active.id, is_leader=False)
+        test_active_p = self._create_participation(test_user.id, costco_run_active.id, is_leader=False)
 
-        # Create test bids for the planning run
-        self._create_bid(bob.id, sams_run_planning.id, detergent.id, 1, False)
-        self._create_bid(carol.id, sams_run_planning.id, detergent.id, 2, False)
+        self._create_bid(alice_active_p.id, olive_oil.id, 2, False)
+        self._create_bid(bob_active_p.id, olive_oil.id, 1, False)
+        self._create_bid(carol_active_p.id, quinoa.id, 1, False)
+        self._create_bid(test_active_p.id, olive_oil.id, 0, True)  # interested only
+
+        # Create participations and bids for the planning run
+        bob_planning_p = self._create_participation(bob.id, sams_run_planning.id, is_leader=True)
+        carol_planning_p = self._create_participation(carol.id, sams_run_planning.id, is_leader=False)
+
+        self._create_bid(bob_planning_p.id, detergent.id, 1, False)
+        self._create_bid(carol_planning_p.id, detergent.id, 2, False)
 
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         return self._users.get(user_id)
@@ -348,7 +412,11 @@ class MemoryRepository(AbstractRepository):
         return [product for product in self._products.values() if product.store_id == store_id]
 
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
-        return [bid for bid in self._bids.values() if bid.run_id == run_id]
+        # Get all participations for this run
+        participations = [p for p in self._participations.values() if p.run_id == run_id]
+        participation_ids = {p.id for p in participations}
+        # Get all bids for these participations
+        return [bid for bid in self._bids.values() if bid.participation_id in participation_ids]
 
     def verify_password(self, password: str, stored_hash: str) -> bool:
         # In memory mode, accept any password for ease of testing
@@ -365,20 +433,69 @@ class MemoryRepository(AbstractRepository):
         self._products[product.id] = product
         return product
 
-    def _create_run(self, group_id: UUID, store_id: UUID, state: str) -> Run:
+    def _create_run(self, group_id: UUID, store_id: UUID, state: str, leader_id: UUID) -> Run:
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state=state)
         self._runs[run.id] = run
+        # Create leader participation
+        self._create_participation(leader_id, run.id, is_leader=True)
         return run
 
-    def _create_bid(self, user_id: UUID, run_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
-        bid = ProductBid(id=uuid4(), user_id=user_id, run_id=run_id, product_id=product_id, quantity=quantity, interested_only=interested_only)
+    def _create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
+        participation = RunParticipation(id=uuid4(), user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=False)
+        # Set up relationships
+        participation.user = self._users.get(user_id)
+        participation.run = self._runs.get(run_id)
+        self._participations[participation.id] = participation
+        return participation
+
+    def _create_bid(self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
+        bid = ProductBid(id=uuid4(), participation_id=participation_id, product_id=product_id, quantity=quantity, interested_only=interested_only)
+        # Set up relationships
+        bid.participation = self._participations.get(participation_id)
+        bid.product = self._products.get(product_id)
         self._bids[bid.id] = bid
         return bid
 
-    def create_run(self, group_id: UUID, store_id: UUID) -> Run:
+    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state="planning")
         self._runs[run.id] = run
+        # Create participation for the leader
+        self._create_participation(leader_id, run.id, is_leader=True)
         return run
+
+    def get_participation(self, user_id: UUID, run_id: UUID) -> Optional[RunParticipation]:
+        for participation in self._participations.values():
+            if participation.user_id == user_id and participation.run_id == run_id:
+                # Set up relationships
+                participation.user = self._users.get(user_id)
+                participation.run = self._runs.get(run_id)
+                return participation
+        return None
+
+    def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
+        participations = []
+        for participation in self._participations.values():
+            if participation.run_id == run_id:
+                # Set up relationships
+                participation.user = self._users.get(participation.user_id)
+                participation.run = self._runs.get(run_id)
+                participations.append(participation)
+        return participations
+
+    def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
+        participation = RunParticipation(id=uuid4(), user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=False)
+        # Set up relationships
+        participation.user = self._users.get(user_id)
+        participation.run = self._runs.get(run_id)
+        self._participations[participation.id] = participation
+        return participation
+
+    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> Optional[RunParticipation]:
+        participation = self._participations.get(participation_id)
+        if participation:
+            participation.is_ready = is_ready
+            return participation
+        return None
 
 
 def get_repository(db: Session = None) -> AbstractRepository:

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
-from ..models import Run, Store, Group, User, Product, ProductBid
+from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipation
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from pydantic import BaseModel
@@ -54,8 +54,8 @@ async def create_run(
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
 
-    # Create the run
-    run = repo.create_run(group_uuid, store_uuid)
+    # Create the run with current user as leader
+    run = repo.create_run(group_uuid, store_uuid, current_user.id)
 
     return CreateRunResponse(
         id=str(run.id),
@@ -156,19 +156,22 @@ async def get_run_details(
                 current_user_bid = None
 
                 for bid in product_bids:
-                    user = repo.get_user_by_id(bid.user_id)
-                    if user:
-                        bid_response = UserBidResponse(
-                            user_id=str(bid.user_id),
-                            user_name=user.name,
-                            quantity=bid.quantity,
-                            interested_only=bid.interested_only
-                        )
-                        user_bids_data.append(bid_response)
+                    # Get participation to find user
+                    participation = repo._participations.get(bid.participation_id) if hasattr(repo, '_participations') else None
+                    if participation:
+                        user = repo.get_user_by_id(participation.user_id)
+                        if user:
+                            bid_response = UserBidResponse(
+                                user_id=str(participation.user_id),
+                                user_name=user.name,
+                                quantity=bid.quantity,
+                                interested_only=bid.interested_only
+                            )
+                            user_bids_data.append(bid_response)
 
-                        # Check if this is the current user's bid
-                        if bid.user_id == current_user.id:
-                            current_user_bid = bid_response
+                            # Check if this is the current user's bid
+                            if participation.user_id == current_user.id:
+                                current_user_bid = bid_response
 
                 products_data.append(ProductResponse(
                     id=str(product.id),
@@ -240,11 +243,16 @@ async def place_bid(
         raise HTTPException(status_code=400, detail="Quantity cannot be negative")
 
     if hasattr(repo, '_bids'):  # Memory mode
-        # Check if user already has a bid for this product in this run
+        # Get or create participation for this user in this run
+        participation = repo.get_participation(current_user.id, run_uuid)
+        if not participation:
+            # Create participation (not as leader)
+            participation = repo.create_participation(current_user.id, run_uuid, is_leader=False)
+
+        # Check if user already has a bid for this product
         existing_bid = None
         for bid in repo._bids.values():
-            if (bid.user_id == current_user.id and
-                bid.run_id == run_uuid and
+            if (bid.participation_id == participation.id and
                 bid.product_id == product_uuid):
                 existing_bid = bid
                 break
@@ -258,12 +266,14 @@ async def place_bid(
             from uuid import uuid4
             new_bid = ProductBid(
                 id=uuid4(),
-                user_id=current_user.id,
-                run_id=run_uuid,
+                participation_id=participation.id,
                 product_id=product_uuid,
                 quantity=bid_request.quantity,
                 interested_only=bid_request.interested_only
             )
+            # Set up relationships
+            new_bid.participation = participation
+            new_bid.product = product
             repo._bids[new_bid.id] = new_bid
 
     return {"message": "Bid placed successfully"}
@@ -300,11 +310,15 @@ async def retract_bid(
         raise HTTPException(status_code=400, detail="Bid modification not allowed in current run state")
 
     if hasattr(repo, '_bids'):  # Memory mode
+        # Get participation for this user in this run
+        participation = repo.get_participation(current_user.id, run_uuid)
+        if not participation:
+            raise HTTPException(status_code=404, detail="No bid found to retract")
+
         # Find and remove the user's bid
         bid_to_remove = None
         for bid_id, bid in repo._bids.items():
-            if (bid.user_id == current_user.id and
-                bid.run_id == run_uuid and
+            if (bid.participation_id == participation.id and
                 bid.product_id == product_uuid):
                 bid_to_remove = bid_id
                 break

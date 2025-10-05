@@ -24,7 +24,7 @@ class User(Base):
 
     groups = relationship("Group", secondary=group_membership, back_populates="members")
     created_groups = relationship("Group", back_populates="creator")
-    product_bids = relationship("ProductBid", back_populates="user")
+    run_participations = relationship("RunParticipation", back_populates="user")
 
 class Group(Base):
     __tablename__ = "groups"
@@ -57,7 +57,7 @@ class Run(Base):
 
     group = relationship("Group", back_populates="runs")
     store = relationship("Store", back_populates="runs")
-    product_bids = relationship("ProductBid", back_populates="run")
+    participations = relationship("RunParticipation", back_populates="run")
 
 class Product(Base):
     __tablename__ = "products"
@@ -72,16 +72,27 @@ class Product(Base):
     store = relationship("Store", back_populates="products")
     product_bids = relationship("ProductBid", back_populates="product")
 
-class ProductBid(Base):
-    __tablename__ = "product_bids"
+class RunParticipation(Base):
+    __tablename__ = "run_participations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False)
+    is_leader = Column(Boolean, nullable=False, default=False)
+    is_ready = Column(Boolean, nullable=False, default=False)
+
+    user = relationship("User", back_populates="run_participations")
+    run = relationship("Run", back_populates="participations")
+    product_bids = relationship("ProductBid", back_populates="participation")
+
+class ProductBid(Base):
+    __tablename__ = "product_bids"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    participation_id = Column(UUID(as_uuid=True), ForeignKey('run_participations.id'), nullable=False)
     product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False)
     quantity = Column(Integer, nullable=False, default=0)
     interested_only = Column(Boolean, nullable=False, default=False)
 
-    user = relationship("User", back_populates="product_bids")
-    run = relationship("Run", back_populates="product_bids")
+    participation = relationship("RunParticipation", back_populates="product_bids")
     product = relationship("Product", back_populates="product_bids")
