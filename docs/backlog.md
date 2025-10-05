@@ -5,11 +5,16 @@ Feature backlog for Bulq development.
 ## Run Management
 
 ### Allow users to progress a run
-**Status**: Planned
+**Status**: In Progress
 
-Runs should be progressable through states (planning → active → confirmed → shopping → completed).
+Runs should be progressable through states (planning → active → confirmed → shopping → distributing → completed).
 
-This would require acknowledgements from all users active in the run.
+**Implementation details:**
+- Run leader (user who created the run) can manually control state transitions
+- Automatic transitions when conditions are met (e.g., planning → active when others bid)
+- Users mark themselves as "ready" during active state
+- Automatic transition to confirmed when all bidders are ready
+- Distribution tracking before final completion
 
 ## Product Discovery
 

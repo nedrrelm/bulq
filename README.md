@@ -53,8 +53,14 @@ Bulq enables friend groups to coordinate bulk purchases and track savings throug
 ### Core Entity Logic
 
 **Run States Flow:**
-`planning` → `active` → `confirmed` → `shopping` → `completed`
-- Can transition to `cancelled` from any state before `shopping`
+`planning` → `active` → `confirmed` → `shopping` → `distributing` → `completed`
+- Can transition to `cancelled` from any state before `distributing`
+- **planning**: Run leader's initial bids only
+- **active**: Multiple users bidding, with "ready" checkboxes
+- **confirmed**: All users ready, awaiting shopping trip
+- **shopping**: Shopping in progress
+- **distributing**: Items being distributed to members
+- **completed**: Final historical record
 
 **ProductBid System:**
 - **interested_only**: Boolean flag for expressing interest without commitment
