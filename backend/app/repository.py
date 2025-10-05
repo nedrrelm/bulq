@@ -319,6 +319,14 @@ class DatabaseRepository(AbstractRepository):
             item.purchased_total = Decimal(str(total))
             item.is_purchased = True
             item.purchase_order = purchase_order
+
+            # Add purchased price to encountered prices if not already there
+            if item.encountered_prices is None:
+                item.encountered_prices = []
+            prices = list(item.encountered_prices) if item.encountered_prices else []
+            prices.append({"price": float(price_per_unit), "notes": "purchased"})
+            item.encountered_prices = prices
+
             self.db.commit()
             self.db.refresh(item)
             return item
@@ -633,6 +641,12 @@ class MemoryRepository(AbstractRepository):
             item.purchased_total = Decimal(str(total))
             item.is_purchased = True
             item.purchase_order = purchase_order
+
+            # Add purchased price to encountered prices if not already there
+            if item.encountered_prices is None:
+                item.encountered_prices = []
+            item.encountered_prices.append({"price": float(price_per_unit), "notes": "purchased"})
+
             return item
         return None
 

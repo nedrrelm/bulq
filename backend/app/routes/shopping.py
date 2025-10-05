@@ -174,3 +174,37 @@ async def mark_purchased(
         raise HTTPException(status_code=404, detail="Shopping list item not found")
 
     return {"message": "Item marked as purchased", "purchase_order": next_order}
+
+@router.post("/{run_id}/complete")
+async def complete_shopping(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Complete shopping - transition from shopping to distributing state (leader only)."""
+    repo = get_repository(db)
+
+    # Validate run ID
+    try:
+        run_uuid = uuid.UUID(run_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid run ID format")
+
+    # Get the run
+    run = repo.get_run_by_id(run_uuid)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Verify user is the run leader
+    participation = repo.get_participation(current_user.id, run_uuid)
+    if not participation or not participation.is_leader:
+        raise HTTPException(status_code=403, detail="Only the run leader can complete shopping")
+
+    # Only allow completing from shopping state
+    if run.state != 'shopping':
+        raise HTTPException(status_code=400, detail="Can only complete shopping from shopping state")
+
+    # Transition to distributing state
+    repo.update_run_state(run_uuid, "distributing")
+
+    return {"message": "Shopping completed! Moving to distribution.", "state": "distributing"}
