@@ -74,6 +74,16 @@ class AbstractRepository(ABC):
         pass
 
     @abstractmethod
+    def search_products(self, query: str) -> List[Product]:
+        """Search for products by name."""
+        pass
+
+    @abstractmethod
+    def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
+        """Get product by ID."""
+        pass
+
+    @abstractmethod
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
         """Get all bids for a run."""
         pass
@@ -126,6 +136,11 @@ class AbstractRepository(ABC):
     @abstractmethod
     def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
         """Get all shopping list items for a run."""
+        pass
+
+    @abstractmethod
+    def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
+        """Get all shopping list items for a product across all runs."""
         pass
 
     @abstractmethod
@@ -222,6 +237,13 @@ class DatabaseRepository(AbstractRepository):
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
         return self.db.query(Product).filter(Product.store_id == store_id).all()
 
+    def search_products(self, query: str) -> List[Product]:
+        search_pattern = f"%{query}%"
+        return self.db.query(Product).filter(Product.name.ilike(search_pattern)).all()
+
+    def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
+        return self.db.query(Product).filter(Product.id == product_id).first()
+
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
         # Get all participations for this run, then get their bids
         participations = self.db.query(RunParticipation).filter(RunParticipation.run_id == run_id).all()
@@ -297,6 +319,9 @@ class DatabaseRepository(AbstractRepository):
 
     def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
         return self.db.query(ShoppingListItem).filter(ShoppingListItem.run_id == run_id).all()
+
+    def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
+        return self.db.query(ShoppingListItem).filter(ShoppingListItem.product_id == product_id).all()
 
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
         item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
@@ -653,6 +678,13 @@ class MemoryRepository(AbstractRepository):
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
         return [product for product in self._products.values() if product.store_id == store_id]
 
+    def search_products(self, query: str) -> List[Product]:
+        query_lower = query.lower()
+        return [product for product in self._products.values() if query_lower in product.name.lower()]
+
+    def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
+        return self._products.get(product_id)
+
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
         # Get all participations for this run
         participations = [p for p in self._participations.values() if p.run_id == run_id]
@@ -786,6 +818,16 @@ class MemoryRepository(AbstractRepository):
                 # Set up relationships
                 item.run = self._runs.get(run_id)
                 item.product = self._products.get(item.product_id)
+                items.append(item)
+        return items
+
+    def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
+        items = []
+        for item in self._shopping_list_items.values():
+            if item.product_id == product_id:
+                # Set up relationships
+                item.run = self._runs.get(item.run_id)
+                item.product = self._products.get(product_id)
                 items.append(item)
         return items
 

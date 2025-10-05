@@ -1,0 +1,97 @@
+.product-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.product-page h2 {
+  margin: 20px 0;
+  color: var(--color-text);
+}
+
+.stores-comparison {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.store-card h3 {
+  margin: 0 0 16px 0;
+  color: var(--color-text);
+  font-size: 1.3rem;
+}
+
+.no-price-data {
+  color: var(--color-text-light);
+  font-style: italic;
+}
+
+.price-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--color-gray-50);
+  border-radius: 8px;
+}
+
+.price-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.price-label {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.price-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.price-min {
+  color: var(--color-success);
+}
+
+.price-max {
+  color: var(--color-danger);
+}
+
+.price-history h4 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.price-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.price-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--color-gray-50);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-primary);
+}
+
+.price-amount {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 1.1rem;
+}
+
+.price-notes {
+  color: var(--color-text-light);
+  font-size: 0.85rem;
+}
