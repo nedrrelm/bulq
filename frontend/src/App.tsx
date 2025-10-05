@@ -33,14 +33,36 @@ function App() {
 
   const BACKEND_URL = 'http://localhost:8000'
 
-  // Check for invite link on mount
+  // Parse URL and set initial view based on pathname
   useEffect(() => {
     const path = window.location.pathname
+
+    // Check for invite link
     const inviteMatch = path.match(/^\/invite\/(.+)$/)
     if (inviteMatch) {
       setInviteToken(inviteMatch[1])
       setCurrentView('join')
+      return
     }
+
+    // Check for run page
+    const runMatch = path.match(/^\/runs\/(.+)$/)
+    if (runMatch) {
+      setSelectedRunId(runMatch[1])
+      setCurrentView('run')
+      return
+    }
+
+    // Check for group page
+    const groupMatch = path.match(/^\/groups\/(.+)$/)
+    if (groupMatch) {
+      setSelectedGroupId(groupMatch[1])
+      setCurrentView('group')
+      return
+    }
+
+    // Default to dashboard
+    setCurrentView('dashboard')
   }, [])
 
   // Check if user is already logged in
@@ -125,22 +147,28 @@ function App() {
   const handleGroupSelect = (groupId: string) => {
     setSelectedGroupId(groupId)
     setCurrentView('group')
+    window.history.pushState({}, '', `/groups/${groupId}`)
   }
 
   const handleBackToDashboard = () => {
     setCurrentView('dashboard')
     setSelectedGroupId(null)
     setSelectedRunId(null)
+    window.history.pushState({}, '', '/')
   }
 
   const handleRunSelect = (runId: string) => {
     setSelectedRunId(runId)
     setCurrentView('run')
+    window.history.pushState({}, '', `/runs/${runId}`)
   }
 
   const handleBackToGroup = () => {
     setCurrentView('group')
     setSelectedRunId(null)
+    if (selectedGroupId) {
+      window.history.pushState({}, '', `/groups/${selectedGroupId}`)
+    }
   }
 
   const handleJoinSuccess = () => {
