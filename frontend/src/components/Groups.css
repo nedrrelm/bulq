@@ -1,3 +1,5 @@
+@import '../styles/run-states.css';
+
 .groups-panel {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 24px;
@@ -128,39 +130,6 @@
 .run-store {
   font-weight: 500;
   color: var(--color-text);
-}
-
-.run-state {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.state-planning {
-  background: #e0e7ff;
-  color: #4338ca;
-}
-
-.state-active {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.state-confirmed {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.state-shopping {
-  background: #fce7f3;
-  color: #9f1239;
-}
-
-.state-distributing {
-  background: #d1fae5;
-  color: #065f46;
 }
 
 .more-runs {
