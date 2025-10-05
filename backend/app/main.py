@@ -6,6 +6,7 @@ from .routes.groups import router as groups_router
 from .routes.runs import router as runs_router
 from .routes.stores import router as stores_router
 from .routes.shopping import router as shopping_router
+from .routes.distribution import router as distribution_router
 
 app = FastAPI(title="Bulq API", version="0.1.0")
 
@@ -15,6 +16,7 @@ app.include_router(groups_router)
 app.include_router(runs_router)
 app.include_router(stores_router)
 app.include_router(shopping_router)
+app.include_router(distribution_router)
 
 # Add CORS middleware
 app.add_middleware(

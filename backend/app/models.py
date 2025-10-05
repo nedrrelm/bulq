@@ -94,6 +94,11 @@ class ProductBid(Base):
     quantity = Column(Integer, nullable=False, default=0)
     interested_only = Column(Boolean, nullable=False, default=False)
 
+    # Distribution fields
+    distributed_quantity = Column(Integer, nullable=True)  # Actual quantity allocated to user
+    distributed_price_per_unit = Column(DECIMAL(10, 2), nullable=True)  # Price we paid per unit
+    is_picked_up = Column(Boolean, nullable=False, default=False)  # Whether user collected their items
+
     participation = relationship("RunParticipation", back_populates="product_bids")
     product = relationship("Product", back_populates="product_bids")
 
@@ -113,3 +118,4 @@ class ShoppingListItem(Base):
 
     run = relationship("Run")
     product = relationship("Product")
+

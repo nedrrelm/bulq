@@ -50,9 +50,10 @@ interface RunPageProps {
   runId: string
   onBack: () => void
   onShoppingSelect?: (runId: string) => void
+  onDistributionSelect?: (runId: string) => void
 }
 
-export default function RunPage({ runId, onBack, onShoppingSelect }: RunPageProps) {
+export default function RunPage({ runId, onBack, onShoppingSelect, onDistributionSelect }: RunPageProps) {
   const [run, setRun] = useState<RunDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -430,6 +431,23 @@ export default function RunPage({ runId, onBack, onShoppingSelect }: RunPageProp
             </button>
             <p className="ready-hint" style={{ marginTop: '12px' }}>
               Track prices and mark items as purchased.
+            </p>
+          </div>
+        )}
+
+        {run.state === 'distributing' && onDistributionSelect && (
+          <div className="info-card">
+            <h3>Distribution in Progress</h3>
+            <p>Shopping is complete. Time to distribute items to participants.</p>
+            <button
+              onClick={() => onDistributionSelect(runId)}
+              className="btn btn-success btn-lg"
+              style={{ marginTop: '16px', width: '100%' }}
+            >
+              📦 Open Distribution
+            </button>
+            <p className="ready-hint" style={{ marginTop: '12px' }}>
+              Track who picked up their items.
             </p>
           </div>
         )}

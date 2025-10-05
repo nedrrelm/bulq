@@ -16,6 +16,27 @@ Runs should be progressable through states (planning → active → confirmed �
 - Automatic transition to confirmed when all bidders are ready
 - Distribution tracking before final completion
 
+### Handle insufficient quantities during distribution
+**Status**: Planned
+
+When purchased quantity is less than requested, allow run leader to adjust distribution.
+
+**Current behavior:**
+- Assumes purchased quantity equals requested quantity for all users
+- Works fine when everything was available
+
+**Needed enhancement:**
+- Detect when purchased < total requested
+- Allow leader to adjust individual user allocations
+- Show warnings/indicators for affected products
+- Maintain fairness tracking (who got less this time)
+
+**Implementation approach:**
+- Add `allocated_quantity` field to distribution tracking
+- Default to requested quantity
+- Allow leader to edit allocations when total doesn't match
+- Show visual diff between requested vs allocated
+
 ### Real-time updates with WebSockets
 **Status**: Planned
 
