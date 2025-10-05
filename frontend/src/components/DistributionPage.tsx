@@ -73,9 +73,52 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
     }
   }
 
+  const handleMarkAllPickedUp = async (user: DistributionUser) => {
+    try {
+      // Mark all unpicked products for this user as picked up
+      const unpickedProducts = user.products.filter(p => !p.is_picked_up)
+
+      for (const product of unpickedProducts) {
+        const response = await fetch(`http://localhost:8000/distribution/${runId}/pickup/${product.bid_id}`, {
+          method: 'POST',
+          credentials: 'include'
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to mark as picked up')
+        }
+      }
+
+      // Reload data after successful pickup
+      await loadDistributionData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    }
+  }
+
+  const handleCompleteRun = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/distribution/${runId}/complete`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to complete run')
+      }
+
+      // Go back to run page after completion
+      onBack()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    }
+  }
+
   const toggleExpand = (userId: string) => {
     setExpandedUserId(expandedUserId === userId ? null : userId)
   }
+
+  const allPickedUp = users.length > 0 && users.every(user => user.all_picked_up)
 
   if (loading) {
     return <div className="distribution-page">Loading distribution data...</div>
@@ -111,6 +154,19 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
 
             {expandedUserId === user.user_id && (
               <div className="user-products">
+                <div className="user-products-header">
+                  {!user.all_picked_up && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleMarkAllPickedUp(user)
+                      }}
+                      className="mark-all-button"
+                    >
+                      Mark All Picked Up
+                    </button>
+                  )}
+                </div>
                 {user.products.map(product => (
                   <div key={product.bid_id} className={`product-item ${product.is_picked_up ? 'picked-up' : ''}`}>
                     <div className="product-info">
@@ -140,6 +196,14 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
           <div className="empty-state">No distribution data available</div>
         )}
       </div>
+
+      {allPickedUp && (
+        <div className="complete-section">
+          <button onClick={handleCompleteRun} className="complete-button">
+            Complete Run
+          </button>
+        </div>
+      )}
     </div>
   )
 }
