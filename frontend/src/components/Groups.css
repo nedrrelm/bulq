@@ -30,6 +30,13 @@
   padding: 16px;
   transition: all 0.2s ease;
   background: var(--color-gray-50);
+  cursor: pointer;
+}
+
+.group-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  background: white;
 }
 
 .group-header {
@@ -37,10 +44,9 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  cursor: pointer;
 }
 
-.group-header:hover h4 {
+.group-item:hover .group-header h4 {
   color: var(--color-primary);
 }
 

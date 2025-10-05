@@ -116,8 +116,12 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       {!loading && !error && groups.length > 0 && (
         <div className="groups-list">
           {groups.map((group) => (
-            <div key={group.id} className="group-item">
-              <div className="group-header" onClick={() => handleGroupClick(group.id)}>
+            <div
+              key={group.id}
+              className="group-item"
+              onClick={() => handleGroupClick(group.id)}
+            >
+              <div className="group-header">
                 <h4>{group.name}</h4>
               </div>
               <div className="group-stats">
@@ -137,14 +141,17 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
                     <div
                       key={run.id}
                       className="run-summary"
-                      onClick={() => onRunSelect(run.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onRunSelect(run.id)
+                      }}
                     >
                       <span className="run-store">{run.store_name}</span>
                       <span className={`run-state state-${run.state}`}>{run.state}</span>
                     </div>
                   ))}
                   {group.active_runs_count > 3 && (
-                    <div className="more-runs" onClick={() => handleGroupClick(group.id)}>
+                    <div className="more-runs">
                       +{group.active_runs_count - 3} more...
                     </div>
                   )}
