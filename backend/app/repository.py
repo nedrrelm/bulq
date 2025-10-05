@@ -354,8 +354,16 @@ class DatabaseRepository(AbstractRepository):
             if item.encountered_prices is None:
                 item.encountered_prices = []
             prices = list(item.encountered_prices) if item.encountered_prices else []
-            prices.append({"price": float(price_per_unit), "notes": "purchased"})
-            item.encountered_prices = prices
+
+            # Check if this exact price is already in the list
+            price_already_exists = any(
+                p.get("price") == float(price_per_unit)
+                for p in prices
+            )
+
+            if not price_already_exists:
+                prices.append({"price": float(price_per_unit), "notes": "purchased"})
+                item.encountered_prices = prices
 
             self.db.commit()
             self.db.refresh(item)
@@ -1122,7 +1130,15 @@ class MemoryRepository(AbstractRepository):
             # Add purchased price to encountered prices if not already there
             if item.encountered_prices is None:
                 item.encountered_prices = []
-            item.encountered_prices.append({"price": float(price_per_unit), "notes": "purchased"})
+
+            # Check if this exact price is already in the list
+            price_already_exists = any(
+                p.get("price") == float(price_per_unit)
+                for p in item.encountered_prices
+            )
+
+            if not price_already_exists:
+                item.encountered_prices.append({"price": float(price_per_unit), "notes": "purchased"})
 
             return item
         return None
