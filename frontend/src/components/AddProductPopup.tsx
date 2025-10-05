@@ -95,8 +95,8 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   }
 
   return (
-    <div className="add-product-popup-overlay" onClick={onCancel}>
-      <div className="add-product-popup" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal modal-md add-product-popup" onClick={(e) => e.stopPropagation()}>
         <h3>Add Product to Run</h3>
         <p className="popup-description">Select a product to start bidding on</p>
 

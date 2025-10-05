@@ -36,8 +36,8 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
   }
 
   return (
-    <div className="bid-popup-overlay" onClick={onCancel}>
-      <div className="bid-popup" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal modal-sm" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
         <h3>Place Bid</h3>
         <p className="product-name">{productName}</p>
 
