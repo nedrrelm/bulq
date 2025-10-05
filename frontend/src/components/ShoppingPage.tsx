@@ -124,6 +124,30 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
     }
   }
 
+  const handleCompleteShopping = async () => {
+    if (unpurchasedItems.length > 0) {
+      const confirm = window.confirm(
+        `You still have ${unpurchasedItems.length} items not purchased. Are you sure you want to complete shopping?`
+      )
+      if (!confirm) return
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/shopping/${runId}/complete`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (!response.ok) throw new Error('Failed to complete shopping')
+
+      // Navigate back to run page
+      onBack()
+    } catch (err) {
+      console.error('Error completing shopping:', err)
+      alert('Failed to complete shopping. Please try again.')
+    }
+  }
+
   const unpurchasedItems = items.filter(item => !item.is_purchased)
   const purchasedItems = items.filter(item => item.is_purchased)
   const totalSpent = purchasedItems.reduce((sum, item) => {
@@ -155,8 +179,13 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
       <div className="shopping-header">
         <button onClick={onBack} className="back-button">← Back to Run</button>
         <h2>🛒 Shopping Mode</h2>
-        <div className="total-display">
-          Total: ${totalSpent.toFixed(2)}
+        <div className="header-actions">
+          <div className="total-display">
+            Total: ${totalSpent.toFixed(2)}
+          </div>
+          <button onClick={handleCompleteShopping} className="btn btn-success btn-lg">
+            ✓ Complete Shopping
+          </button>
         </div>
       </div>
 
