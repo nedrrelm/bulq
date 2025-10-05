@@ -22,13 +22,25 @@ interface Group {
 interface GroupsProps {
   onGroupSelect: (groupId: string) => void
   onRunSelect: (runId: string) => void
+  onProductSelect: (productId: string) => void
 }
 
-export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
+interface ProductSearchResult {
+  id: string
+  name: string
+  store_id: string
+  store_name: string
+  base_price: number | null
+}
+
+export default function Groups({ onGroupSelect, onRunSelect, onProductSelect }: GroupsProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showNewGroupPopup, setShowNewGroupPopup] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([])
+  const [searching, setSearching] = useState(false)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -82,8 +94,36 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     fetchGroups()
   }
 
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query)
+
+    if (query.trim().length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    try {
+      setSearching(true)
+      const response = await fetch(`${BACKEND_URL}/products/search?q=${encodeURIComponent(query)}`, {
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const results: ProductSearchResult[] = await response.json()
+        setSearchResults(results)
+      } else {
+        setSearchResults([])
+      }
+    } catch (err) {
+      console.error('Search failed:', err)
+      setSearchResults([])
+    } finally {
+      setSearching(false)
+    }
+  }
+
   return (
-    <div className="groups-panel">
+    <>
       {showNewGroupPopup && (
         <NewGroupPopup
           onClose={() => setShowNewGroupPopup(false)}
@@ -91,12 +131,52 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
         />
       )}
 
-      <div className="groups-header">
-        <h3>My Groups</h3>
-        <button onClick={() => setShowNewGroupPopup(true)} className="btn btn-primary">
-          + New Group
-        </button>
+      <div className="product-search-panel card">
+        <h3>Search Products</h3>
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="Search for products..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="form-input"
+          />
+        </div>
+
+        {searching && <p className="search-status">Searching...</p>}
+
+        {searchResults.length > 0 && (
+          <div className="search-results">
+            {searchResults.map((product) => (
+              <div
+                key={product.id}
+                className="product-result"
+                onClick={() => onProductSelect(product.id)}
+              >
+                <div className="product-info">
+                  <strong>{product.name}</strong>
+                  <span className="product-store">{product.store_name}</span>
+                </div>
+                {product.base_price && (
+                  <span className="product-price">${product.base_price.toFixed(2)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {searchQuery.trim().length >= 2 && !searching && searchResults.length === 0 && (
+          <p className="search-status">No products found</p>
+        )}
       </div>
+
+      <div className="groups-panel">
+        <div className="groups-header">
+          <h3>My Groups</h3>
+          <button onClick={() => setShowNewGroupPopup(true)} className="btn btn-primary">
+            + New Group
+          </button>
+        </div>
 
       {loading && <p>Loading groups...</p>}
 
@@ -161,6 +241,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

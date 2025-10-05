@@ -7,6 +7,7 @@ import RunPage from './components/RunPage'
 import JoinGroup from './components/JoinGroup'
 import ShoppingPage from './components/ShoppingPage'
 import DistributionPage from './components/DistributionPage'
+import ProductPage from './components/ProductPage'
 
 interface BackendResponse {
   message: string
@@ -28,9 +29,10 @@ function App() {
   const [healthStatus, setHealthStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'group' | 'run' | 'shopping' | 'distribution' | 'join'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'group' | 'run' | 'shopping' | 'distribution' | 'join' | 'product'>('dashboard')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
   const [inviteToken, setInviteToken] = useState<string | null>(null)
 
   const BACKEND_URL = 'http://localhost:8000'
@@ -44,6 +46,14 @@ function App() {
     if (inviteMatch) {
       setInviteToken(inviteMatch[1])
       setCurrentView('join')
+      return
+    }
+
+    // Check for product page
+    const productMatch = path.match(/^\/products\/(.+)$/)
+    if (productMatch) {
+      setSelectedProductId(productMatch[1])
+      setCurrentView('product')
       return
     }
 
@@ -172,7 +182,14 @@ function App() {
     setCurrentView('dashboard')
     setSelectedGroupId(null)
     setSelectedRunId(null)
+    setSelectedProductId(null)
     window.history.pushState({}, '', '/')
+  }
+
+  const handleProductSelect = (productId: string) => {
+    setSelectedProductId(productId)
+    setCurrentView('product')
+    window.history.pushState({}, '', `/products/${productId}`)
   }
 
   const handleRunSelect = (runId: string) => {
@@ -244,7 +261,7 @@ function App() {
 
       <main className={currentView === 'dashboard' ? 'dashboard' : ''}>
         {currentView === 'dashboard' && (
-          <Groups onGroupSelect={handleGroupSelect} onRunSelect={handleRunSelect} />
+          <Groups onGroupSelect={handleGroupSelect} onRunSelect={handleRunSelect} onProductSelect={handleProductSelect} />
         )}
 
         {currentView === 'group' && selectedGroupId && (
@@ -275,6 +292,13 @@ function App() {
           <DistributionPage
             runId={selectedRunId}
             onBack={handleBackToRun}
+          />
+        )}
+
+        {currentView === 'product' && selectedProductId && (
+          <ProductPage
+            productId={selectedProductId}
+            onBack={handleBackToDashboard}
           />
         )}
       </main>
