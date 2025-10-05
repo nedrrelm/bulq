@@ -16,6 +16,29 @@ Runs should be progressable through states (planning → active → confirmed �
 - Automatic transition to confirmed when all bidders are ready
 - Distribution tracking before final completion
 
+### Real-time updates with WebSockets
+**Status**: Planned
+
+Implement WebSocket connections for real-time updates during runs.
+
+**Features:**
+- Instant updates when users place/modify bids
+- Live participant ready status changes
+- Automatic UI refresh when run state transitions
+- No need for manual page refresh to see others' changes
+
+**Implementation approach:**
+- Backend: Add WebSocket endpoint `/ws/runs/{run_id}` using FastAPI WebSocket support
+- Track connected clients per run and broadcast updates
+- Frontend: Connect to WebSocket on RunPage mount, listen for updates
+- Message types: `bid_placed`, `bid_retracted`, `ready_toggled`, `state_changed`
+- Handle reconnection and connection errors gracefully
+
+**Benefits:**
+- Better user experience for collaborative ordering
+- Immediate feedback when teammates make changes
+- Reduces confusion from stale data
+
 ## Product Discovery
 
 ### Product page and search
