@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './NewRunPopup.css'
 
 interface Store {
@@ -17,8 +17,24 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   const [selectedStoreId, setSelectedStoreId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const selectRef = useRef<HTMLSelectElement>(null)
 
   const BACKEND_URL = 'http://localhost:8000'
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+
+    // Focus the select so ESC works immediately
+    selectRef.current?.focus()
+
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [onClose])
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -92,8 +108,8 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   }
 
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className="modal modal-sm new-run-popup">
+    <div className="modal-overlay" onClick={handleOverlayClick} tabIndex={-1} ref={overlayRef}>
+      <div className="modal modal-sm new-run-popup" onClick={(e) => e.stopPropagation()}>
         <h3>Create New Run</h3>
         <p className="popup-description">Select a store to start a new shopping run</p>
 
@@ -109,6 +125,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
               onChange={(e) => setSelectedStoreId(e.target.value)}
               disabled={loading || stores.length === 0}
               required
+              ref={selectRef}
             >
               {stores.length === 0 && <option value="">No stores available</option>}
               {stores.map(store => (

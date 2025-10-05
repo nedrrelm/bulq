@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './NewGroupPopup.css'
 
 interface NewGroupPopupProps {
@@ -12,6 +12,16 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
   const [submitting, setSubmitting] = useState(false)
 
   const BACKEND_URL = 'http://localhost:8000'
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [onClose])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

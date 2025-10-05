@@ -1,6 +1,6 @@
+/* Using .modal-overlay and .modal-md from utilities.css */
+
 .add-product-popup {
-  min-width: 400px;
-  max-width: 500px;
   max-height: 80vh;
   display: flex;
   flex-direction: column;

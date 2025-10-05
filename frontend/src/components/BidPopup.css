@@ -1,7 +1,4 @@
-.bid-popup {
-  min-width: 300px;
-  max-width: 400px;
-}
+/* Using .modal-overlay and .modal-sm from utilities.css */
 
 .bid-popup h3 {
   color: var(--color-text);
