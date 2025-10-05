@@ -437,12 +437,18 @@ class MemoryRepository(AbstractRepository):
         cheese_sticks = self._create_product(sams.id, "String Cheese 48-pack", 8.98)
 
         # Create test runs - one for each state with test user as leader
-        run_planning = self._create_run(friends_group.id, costco.id, "planning", test_user.id)
-        run_active = self._create_run(friends_group.id, sams.id, "active", test_user.id)
-        run_confirmed = self._create_run(friends_group.id, costco.id, "confirmed", test_user.id)
-        run_shopping = self._create_run(friends_group.id, sams.id, "shopping", test_user.id)
-        run_distributing = self._create_run(friends_group.id, costco.id, "distributing", test_user.id)
-        run_completed = self._create_run(friends_group.id, sams.id, "completed", test_user.id)
+        run_planning = self._create_run(friends_group.id, costco.id, "planning", test_user.id, days_ago=7)
+        run_active = self._create_run(friends_group.id, sams.id, "active", test_user.id, days_ago=5)
+        run_confirmed = self._create_run(friends_group.id, costco.id, "confirmed", test_user.id, days_ago=3)
+        run_shopping = self._create_run(friends_group.id, sams.id, "shopping", test_user.id, days_ago=2)
+        run_distributing = self._create_run(friends_group.id, costco.id, "distributing", test_user.id, days_ago=1)
+        run_completed = self._create_run(friends_group.id, sams.id, "completed", test_user.id, days_ago=14)
+
+        # Add more completed runs with different dates for better price history
+        run_completed_2 = self._create_run(friends_group.id, costco.id, "completed", test_user.id, days_ago=30)
+        run_completed_3 = self._create_run(friends_group.id, sams.id, "completed", alice.id, days_ago=45)
+        run_completed_4 = self._create_run(friends_group.id, costco.id, "completed", bob.id, days_ago=60)
+        run_completed_5 = self._create_run(work_group.id, sams.id, "completed", bob.id, days_ago=75)
 
         # Planning run - test user is leader (no other participants yet)
         test_planning_p = self._create_participation(test_user.id, run_planning.id, is_leader=True)
@@ -611,6 +617,217 @@ class MemoryRepository(AbstractRepository):
         bid14.distributed_price_per_unit = Decimal("8.98")
         bid14.is_picked_up = True
 
+        # Completed run 2 (30 days ago) - Costco run with different prices
+        test_completed2_p = self._create_participation(test_user.id, run_completed_2.id, is_leader=True)
+        alice_completed2_p = self._create_participation(alice.id, run_completed_2.id, is_leader=False)
+        bob_completed2_p = self._create_participation(bob.id, run_completed_2.id, is_leader=False)
+
+        # Olive Oil - price was higher 30 days ago
+        bid15 = self._create_bid(test_completed2_p.id, olive_oil.id, 2, False)
+        bid15.distributed_quantity = 2
+        bid15.distributed_price_per_unit = Decimal("25.99")
+        bid15.is_picked_up = True
+
+        bid16 = self._create_bid(alice_completed2_p.id, olive_oil.id, 1, False)
+        bid16.distributed_quantity = 1
+        bid16.distributed_price_per_unit = Decimal("25.99")
+        bid16.is_picked_up = True
+
+        # Quinoa - different price
+        bid17 = self._create_bid(bob_completed2_p.id, quinoa.id, 3, False)
+        bid17.distributed_quantity = 3
+        bid17.distributed_price_per_unit = Decimal("19.49")
+        bid17.is_picked_up = True
+
+        # Paper Towels
+        bid18 = self._create_bid(test_completed2_p.id, paper_towels.id, 2, False)
+        bid18.distributed_quantity = 2
+        bid18.distributed_price_per_unit = Decimal("20.99")
+        bid18.is_picked_up = True
+
+        # Create shopping list for run_completed_2
+        shopping_item3 = self._create_shopping_list_item(run_completed_2.id, olive_oil.id, 3)
+        shopping_item3.encountered_prices = [{"price": 25.99, "notes": "aisle 12"}]
+        shopping_item3.purchased_quantity = 3
+        shopping_item3.purchased_price_per_unit = Decimal("25.99")
+        shopping_item3.purchased_total = Decimal("77.97")
+        shopping_item3.is_purchased = True
+        shopping_item3.purchase_order = 1
+
+        shopping_item4 = self._create_shopping_list_item(run_completed_2.id, quinoa.id, 3)
+        shopping_item4.encountered_prices = [{"price": 19.49, "notes": "aisle 8"}]
+        shopping_item4.purchased_quantity = 3
+        shopping_item4.purchased_price_per_unit = Decimal("19.49")
+        shopping_item4.purchased_total = Decimal("58.47")
+        shopping_item4.is_purchased = True
+        shopping_item4.purchase_order = 2
+
+        shopping_item5 = self._create_shopping_list_item(run_completed_2.id, paper_towels.id, 2)
+        shopping_item5.encountered_prices = [{"price": 20.99, "notes": "aisle 5"}]
+        shopping_item5.purchased_quantity = 2
+        shopping_item5.purchased_price_per_unit = Decimal("20.99")
+        shopping_item5.purchased_total = Decimal("41.98")
+        shopping_item5.is_purchased = True
+        shopping_item5.purchase_order = 3
+
+        # Completed run 3 (45 days ago) - Sam's Club run led by alice
+        alice_completed3_p = self._create_participation(alice.id, run_completed_3.id, is_leader=True)
+        bob_completed3_p = self._create_participation(bob.id, run_completed_3.id, is_leader=False)
+        carol_completed3_p = self._create_participation(carol.id, run_completed_3.id, is_leader=False)
+
+        # Detergent - lower price 45 days ago
+        bid19 = self._create_bid(alice_completed3_p.id, detergent.id, 2, False)
+        bid19.distributed_quantity = 2
+        bid19.distributed_price_per_unit = Decimal("15.98")
+        bid19.is_picked_up = True
+
+        bid20 = self._create_bid(bob_completed3_p.id, detergent.id, 1, False)
+        bid20.distributed_quantity = 1
+        bid20.distributed_price_per_unit = Decimal("15.98")
+        bid20.is_picked_up = True
+
+        # Laundry Pods - different price
+        bid21 = self._create_bid(carol_completed3_p.id, laundry_pods.id, 2, False)
+        bid21.distributed_quantity = 2
+        bid21.distributed_price_per_unit = Decimal("17.98")
+        bid21.is_picked_up = True
+
+        # Ground Beef
+        bid22 = self._create_bid(alice_completed3_p.id, ground_beef.id, 2, False)
+        bid22.distributed_quantity = 2
+        bid22.distributed_price_per_unit = Decimal("15.99")
+        bid22.is_picked_up = True
+
+        # Create shopping list for run_completed_3
+        shopping_item6 = self._create_shopping_list_item(run_completed_3.id, detergent.id, 3)
+        shopping_item6.encountered_prices = [{"price": 15.98, "notes": "special sale"}]
+        shopping_item6.purchased_quantity = 3
+        shopping_item6.purchased_price_per_unit = Decimal("15.98")
+        shopping_item6.purchased_total = Decimal("47.94")
+        shopping_item6.is_purchased = True
+        shopping_item6.purchase_order = 1
+
+        shopping_item7 = self._create_shopping_list_item(run_completed_3.id, laundry_pods.id, 2)
+        shopping_item7.encountered_prices = [{"price": 17.98, "notes": "member special"}]
+        shopping_item7.purchased_quantity = 2
+        shopping_item7.purchased_price_per_unit = Decimal("17.98")
+        shopping_item7.purchased_total = Decimal("35.96")
+        shopping_item7.is_purchased = True
+        shopping_item7.purchase_order = 2
+
+        shopping_item8 = self._create_shopping_list_item(run_completed_3.id, ground_beef.id, 2)
+        shopping_item8.encountered_prices = [{"price": 15.99, "notes": "fresh section"}]
+        shopping_item8.purchased_quantity = 2
+        shopping_item8.purchased_price_per_unit = Decimal("15.99")
+        shopping_item8.purchased_total = Decimal("31.98")
+        shopping_item8.is_purchased = True
+        shopping_item8.purchase_order = 3
+
+        # Completed run 4 (60 days ago) - Costco run led by bob
+        bob_completed4_p = self._create_participation(bob.id, run_completed_4.id, is_leader=True)
+        alice_completed4_p = self._create_participation(alice.id, run_completed_4.id, is_leader=False)
+        test_completed4_p = self._create_participation(test_user.id, run_completed_4.id, is_leader=False)
+
+        # Olive Oil - even higher price 60 days ago
+        bid23 = self._create_bid(bob_completed4_p.id, olive_oil.id, 1, False)
+        bid23.distributed_quantity = 1
+        bid23.distributed_price_per_unit = Decimal("26.99")
+        bid23.is_picked_up = True
+
+        bid24 = self._create_bid(alice_completed4_p.id, olive_oil.id, 2, False)
+        bid24.distributed_quantity = 2
+        bid24.distributed_price_per_unit = Decimal("26.99")
+        bid24.is_picked_up = True
+
+        # Quinoa
+        bid25 = self._create_bid(test_completed4_p.id, quinoa.id, 1, False)
+        bid25.distributed_quantity = 1
+        bid25.distributed_price_per_unit = Decimal("20.99")
+        bid25.is_picked_up = True
+
+        # Coffee Beans
+        bid26 = self._create_bid(bob_completed4_p.id, coffee_beans.id, 3, False)
+        bid26.distributed_quantity = 3
+        bid26.distributed_price_per_unit = Decimal("15.49")
+        bid26.is_picked_up = True
+
+        bid27 = self._create_bid(alice_completed4_p.id, coffee_beans.id, 1, False)
+        bid27.distributed_quantity = 1
+        bid27.distributed_price_per_unit = Decimal("15.49")
+        bid27.is_picked_up = True
+
+        # Create shopping list for run_completed_4
+        shopping_item9 = self._create_shopping_list_item(run_completed_4.id, olive_oil.id, 3)
+        shopping_item9.encountered_prices = [{"price": 26.99, "notes": "regular price"}]
+        shopping_item9.purchased_quantity = 3
+        shopping_item9.purchased_price_per_unit = Decimal("26.99")
+        shopping_item9.purchased_total = Decimal("80.97")
+        shopping_item9.is_purchased = True
+        shopping_item9.purchase_order = 1
+
+        shopping_item10 = self._create_shopping_list_item(run_completed_4.id, quinoa.id, 1)
+        shopping_item10.encountered_prices = [{"price": 20.99, "notes": "aisle 8"}]
+        shopping_item10.purchased_quantity = 1
+        shopping_item10.purchased_price_per_unit = Decimal("20.99")
+        shopping_item10.purchased_total = Decimal("20.99")
+        shopping_item10.is_purchased = True
+        shopping_item10.purchase_order = 2
+
+        shopping_item11 = self._create_shopping_list_item(run_completed_4.id, coffee_beans.id, 4)
+        shopping_item11.encountered_prices = [{"price": 15.49, "notes": "aisle 14"}]
+        shopping_item11.purchased_quantity = 4
+        shopping_item11.purchased_price_per_unit = Decimal("15.49")
+        shopping_item11.purchased_total = Decimal("61.96")
+        shopping_item11.is_purchased = True
+        shopping_item11.purchase_order = 3
+
+        # Completed run 5 (75 days ago) - Sam's Club run for work group
+        bob_completed5_p = self._create_participation(bob.id, run_completed_5.id, is_leader=True)
+        carol_completed5_p = self._create_participation(carol.id, run_completed_5.id, is_leader=False)
+
+        # Detergent - different price 75 days ago
+        bid28 = self._create_bid(bob_completed5_p.id, detergent.id, 3, False)
+        bid28.distributed_quantity = 3
+        bid28.distributed_price_per_unit = Decimal("17.48")
+        bid28.is_picked_up = True
+
+        # Cheese Sticks
+        bid29 = self._create_bid(carol_completed5_p.id, cheese_sticks.id, 2, False)
+        bid29.distributed_quantity = 2
+        bid29.distributed_price_per_unit = Decimal("9.48")
+        bid29.is_picked_up = True
+
+        # Bananas
+        bid30 = self._create_bid(bob_completed5_p.id, bananas.id, 1, False)
+        bid30.distributed_quantity = 1
+        bid30.distributed_price_per_unit = Decimal("4.48")
+        bid30.is_picked_up = True
+
+        # Create shopping list for run_completed_5
+        shopping_item12 = self._create_shopping_list_item(run_completed_5.id, detergent.id, 3)
+        shopping_item12.encountered_prices = [{"price": 17.48, "notes": "aisle 6"}]
+        shopping_item12.purchased_quantity = 3
+        shopping_item12.purchased_price_per_unit = Decimal("17.48")
+        shopping_item12.purchased_total = Decimal("52.44")
+        shopping_item12.is_purchased = True
+        shopping_item12.purchase_order = 1
+
+        shopping_item13 = self._create_shopping_list_item(run_completed_5.id, cheese_sticks.id, 2)
+        shopping_item13.encountered_prices = [{"price": 9.48, "notes": "dairy section"}]
+        shopping_item13.purchased_quantity = 2
+        shopping_item13.purchased_price_per_unit = Decimal("9.48")
+        shopping_item13.purchased_total = Decimal("18.96")
+        shopping_item13.is_purchased = True
+        shopping_item13.purchase_order = 2
+
+        shopping_item14 = self._create_shopping_list_item(run_completed_5.id, bananas.id, 1)
+        shopping_item14.encountered_prices = [{"price": 4.48, "notes": "produce"}]
+        shopping_item14.purchased_quantity = 1
+        shopping_item14.purchased_price_per_unit = Decimal("4.48")
+        shopping_item14.purchased_total = Decimal("4.48")
+        shopping_item14.is_purchased = True
+        shopping_item14.purchase_order = 3
+
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         return self._users.get(user_id)
 
@@ -720,24 +937,24 @@ class MemoryRepository(AbstractRepository):
         self._products[product.id] = product
         return product
 
-    def _create_run(self, group_id: UUID, store_id: UUID, state: str, leader_id: UUID) -> Run:
+    def _create_run(self, group_id: UUID, store_id: UUID, state: str, leader_id: UUID, days_ago: int = 7) -> Run:
         from datetime import datetime, timedelta
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state=state)
 
         # Set timestamps for state progression (simulate realistic timeline)
         now = datetime.utcnow()
-        run.planning_at = now - timedelta(days=7)  # Started 7 days ago
+        run.planning_at = now - timedelta(days=days_ago)  # Started X days ago
 
         if state in ["active", "confirmed", "shopping", "distributing", "completed"]:
-            run.active_at = now - timedelta(days=5)
+            run.active_at = now - timedelta(days=days_ago - 2)
         if state in ["confirmed", "shopping", "distributing", "completed"]:
-            run.confirmed_at = now - timedelta(days=3)
+            run.confirmed_at = now - timedelta(days=days_ago - 4)
         if state in ["shopping", "distributing", "completed"]:
-            run.shopping_at = now - timedelta(days=2)
+            run.shopping_at = now - timedelta(days=days_ago - 5)
         if state in ["distributing", "completed"]:
-            run.distributing_at = now - timedelta(days=1)
+            run.distributing_at = now - timedelta(days=days_ago - 6)
         if state == "completed":
-            run.completed_at = now
+            run.completed_at = now - timedelta(days=days_ago - 7)
 
         self._runs[run.id] = run
         # Create leader participation
@@ -771,6 +988,10 @@ class MemoryRepository(AbstractRepository):
 
     def _create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
         from datetime import datetime
+        run = self._runs.get(run_id)
+        # Use the run's shopping timestamp if available, otherwise use current time
+        timestamp = run.shopping_at if run and run.shopping_at else datetime.utcnow()
+
         item = ShoppingListItem(
             id=uuid4(),
             run_id=run_id,
@@ -778,11 +999,11 @@ class MemoryRepository(AbstractRepository):
             requested_quantity=requested_quantity,
             encountered_prices=[],
             is_purchased=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=timestamp,
+            updated_at=timestamp
         )
         # Set up relationships
-        item.run = self._runs.get(run_id)
+        item.run = run
         item.product = self._products.get(product_id)
         self._shopping_list_items[item.id] = item
         return item
