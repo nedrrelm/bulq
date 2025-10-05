@@ -93,7 +93,19 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     }
   }
 
-  const currentRuns = runs.filter(run => !['completed', 'cancelled'].includes(run.state))
+  // State ordering for sorting (reverse order: distributing > shopping > confirmed > active > planning)
+  const stateOrder: Record<string, number> = {
+    'distributing': 5,
+    'shopping': 4,
+    'confirmed': 3,
+    'active': 2,
+    'planning': 1
+  }
+
+  const currentRuns = runs
+    .filter(run => !['completed', 'cancelled'].includes(run.state))
+    .sort((a, b) => (stateOrder[b.state] || 0) - (stateOrder[a.state] || 0))
+
   const pastRuns = runs.filter(run => ['completed', 'cancelled'].includes(run.state))
 
   const handleNewRunClick = () => {
