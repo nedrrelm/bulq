@@ -73,6 +73,11 @@ class AbstractRepository(ABC):
         """Verify a password."""
         pass
 
+    @abstractmethod
+    def create_run(self, group_id: UUID, store_id: UUID) -> Run:
+        """Create a new run."""
+        pass
+
 
 class DatabaseRepository(AbstractRepository):
     """Database implementation using SQLAlchemy - Singleton."""
@@ -151,6 +156,13 @@ class DatabaseRepository(AbstractRepository):
     def verify_password(self, password: str, stored_hash: str) -> bool:
         from .auth import verify_password
         return verify_password(password, stored_hash)
+
+    def create_run(self, group_id: UUID, store_id: UUID) -> Run:
+        run = Run(group_id=group_id, store_id=store_id, state="planning")
+        self.db.add(run)
+        self.db.commit()
+        self.db.refresh(run)
+        return run
 
 
 class MemoryRepository(AbstractRepository):
@@ -322,6 +334,11 @@ class MemoryRepository(AbstractRepository):
         bid = ProductBid(id=uuid4(), user_id=user_id, run_id=run_id, product_id=product_id, quantity=quantity, interested_only=interested_only)
         self._bids[bid.id] = bid
         return bid
+
+    def create_run(self, group_id: UUID, store_id: UUID) -> Run:
+        run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state="planning")
+        self._runs[run.id] = run
+        return run
 
 
 def get_repository(db: Session = None) -> AbstractRepository:

@@ -10,6 +10,60 @@ import uuid
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
+class CreateRunRequest(BaseModel):
+    group_id: str
+    store_id: str
+
+class CreateRunResponse(BaseModel):
+    id: str
+    group_id: str
+    store_id: str
+    state: str
+
+    class Config:
+        from_attributes = True
+
+@router.post("/create", response_model=CreateRunResponse)
+async def create_run(
+    request: CreateRunRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Create a new run for a group."""
+    repo = get_repository(db)
+
+    # Validate IDs
+    try:
+        group_uuid = uuid.UUID(request.group_id)
+        store_uuid = uuid.UUID(request.store_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+
+    # Verify group exists and user is a member
+    group = repo.get_group_by_id(group_uuid)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    user_groups = repo.get_user_groups(current_user)
+    if not any(g.id == group_uuid for g in user_groups):
+        raise HTTPException(status_code=403, detail="Not authorized to create runs for this group")
+
+    # Verify store exists
+    all_stores = repo.get_all_stores()
+    store = next((s for s in all_stores if s.id == store_uuid), None)
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+
+    # Create the run
+    run = repo.create_run(group_uuid, store_uuid)
+
+    return CreateRunResponse(
+        id=str(run.id),
+        group_id=str(run.group_id),
+        store_id=str(run.store_id),
+        state=run.state
+    )
+
 class UserBidResponse(BaseModel):
     user_id: str
     user_name: str
