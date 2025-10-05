@@ -30,9 +30,6 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     }
     window.addEventListener('keydown', handleEscape)
 
-    // Focus the select so ESC works immediately
-    selectRef.current?.focus()
-
     return () => window.removeEventListener('keydown', handleEscape)
   }, [onClose])
 
@@ -55,6 +52,9 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
         if (data.length > 0) {
           setSelectedStoreId(data[0].id)
         }
+
+        // Focus the select after stores are loaded
+        setTimeout(() => selectRef.current?.focus(), 0)
       } catch (err) {
         console.error('Error fetching stores:', err)
         setError(err instanceof Error ? err.message : 'Failed to load stores')
