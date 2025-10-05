@@ -179,3 +179,44 @@ async def mark_picked_up(
             raise HTTPException(status_code=404, detail="Bid not found")
 
     return {"message": "Marked as picked up"}
+
+@router.post("/{run_id}/complete")
+async def complete_distribution(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Complete distribution - transition from distributing to completed state (leader only)."""
+    repo = get_repository(db)
+
+    # Validate run ID
+    try:
+        run_uuid = uuid.UUID(run_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid run ID format")
+
+    # Get the run
+    run = repo.get_run_by_id(run_uuid)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Verify user is the run leader
+    participation = repo.get_participation(current_user.id, run_uuid)
+    if not participation or not participation.is_leader:
+        raise HTTPException(status_code=403, detail="Only the run leader can complete distribution")
+
+    # Only allow completing from distributing state
+    if run.state != 'distributing':
+        raise HTTPException(status_code=400, detail="Can only complete distribution from distributing state")
+
+    # Verify all items are picked up
+    all_bids = repo.get_bids_by_run(run_uuid)
+    unpicked_bids = [bid for bid in all_bids if not bid.interested_only and bid.distributed_quantity and not bid.is_picked_up]
+
+    if unpicked_bids:
+        raise HTTPException(status_code=400, detail="Cannot complete distribution - some items not picked up")
+
+    # Transition to completed state
+    repo.update_run_state(run_uuid, "completed")
+
+    return {"message": "Distribution completed!", "state": "completed"}

@@ -101,6 +101,27 @@
   gap: 0.75rem;
 }
 
+.user-products-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.mark-all-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #2563eb;
+  border-radius: 4px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.mark-all-button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
 .product-item {
   display: flex;
   justify-content: space-between;
@@ -173,4 +194,28 @@
   color: #dc2626;
   padding: 1rem;
   text-align: center;
+}
+
+.complete-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f0fdf4;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.complete-button {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 6px;
+  background: #10b981;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.complete-button:hover {
+  background: #059669;
 }
