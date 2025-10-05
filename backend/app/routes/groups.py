@@ -162,6 +162,26 @@ async def regenerate_invite_token(
         "invite_token": new_token
     }
 
+@router.get("/preview/{invite_token}")
+async def preview_group_by_invite(
+    invite_token: str,
+    db: Session = Depends(get_db)
+):
+    """Preview group information by invite token without joining."""
+    repo = get_repository(db)
+
+    # Find the group by invite token
+    group = repo.get_group_by_invite_token(invite_token)
+    if not group:
+        raise HTTPException(status_code=404, detail="Invalid invite token")
+
+    return {
+        "id": str(group.id),
+        "name": group.name,
+        "member_count": len(group.members),
+        "creator_name": group.creator.name if group.creator else "Unknown"
+    }
+
 @router.post("/join/{invite_token}")
 async def join_group_by_invite(
     invite_token: str,
