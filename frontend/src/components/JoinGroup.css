@@ -50,6 +50,38 @@
   font-style: italic;
 }
 
+.group-preview {
+  margin: 24px 0;
+  padding: 24px;
+  background: var(--color-gray-50);
+  border-radius: 12px;
+  border: 2px solid var(--color-primary);
+}
+
+.group-preview h3 {
+  margin: 0 0 16px 0;
+  color: var(--color-primary);
+  font-size: 24px;
+  text-align: center;
+}
+
+.group-details {
+  margin-bottom: 16px;
+}
+
+.group-details p {
+  margin: 8px 0;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.invite-message {
+  margin-top: 16px;
+  font-style: italic;
+  color: var(--color-text-light);
+  text-align: center;
+}
+
 .join-actions {
   margin-top: 32px;
   display: flex;

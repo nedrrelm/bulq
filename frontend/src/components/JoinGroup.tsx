@@ -9,13 +9,16 @@ interface JoinGroupProps {
 interface GroupInfo {
   id: string
   name: string
+  member_count: number
+  creator_name: string
 }
 
 export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps) {
-  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null)
+  const [groupPreview, setGroupPreview] = useState<GroupInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [joining, setJoining] = useState(false)
+  const [joinedGroup, setJoinedGroup] = useState<GroupInfo | null>(null)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -25,12 +28,17 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
         setLoading(true)
         setError('')
 
-        // We need to get group info first - we'll try to join and see the response
-        // Or we can add a new endpoint to just preview the group
-        // For now, let's just show the token and allow joining
-        setLoading(false)
+        const response = await fetch(`${BACKEND_URL}/groups/preview/${inviteToken}`)
+
+        if (!response.ok) {
+          throw new Error('Invalid or expired invite link')
+        }
+
+        const data: GroupInfo = await response.json()
+        setGroupPreview(data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load group info')
+      } finally {
         setLoading(false)
       }
     }
@@ -54,7 +62,12 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
       }
 
       const data = await response.json()
-      setGroupInfo({ id: data.group_id, name: data.group_name })
+      setJoinedGroup({
+        id: data.group_id,
+        name: data.group_name,
+        member_count: groupPreview?.member_count || 0,
+        creator_name: groupPreview?.creator_name || ''
+      })
 
       // Show success message briefly then redirect
       setTimeout(() => {
@@ -76,13 +89,13 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
     )
   }
 
-  if (groupInfo) {
+  if (joinedGroup) {
     return (
       <div className="join-group-page">
         <div className="join-group-card">
           <div className="success-icon">✅</div>
           <h2>Successfully Joined!</h2>
-          <p>You've joined the group: <strong>{groupInfo.name}</strong></p>
+          <p>You've joined the group: <strong>{joinedGroup.name}</strong></p>
           <p className="redirect-message">Redirecting to your groups...</p>
         </div>
       </div>
@@ -93,7 +106,6 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
     <div className="join-group-page">
       <div className="join-group-card">
         <h2>Join Group</h2>
-        <p>You've been invited to join a group on Bulq!</p>
 
         {error && (
           <div className="alert alert-error">
@@ -101,11 +113,22 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
           </div>
         )}
 
+        {groupPreview && (
+          <div className="group-preview">
+            <h3>{groupPreview.name}</h3>
+            <div className="group-details">
+              <p><strong>Created by:</strong> {groupPreview.creator_name}</p>
+              <p><strong>Members:</strong> {groupPreview.member_count}</p>
+            </div>
+            <p className="invite-message">You've been invited to join this group!</p>
+          </div>
+        )}
+
         <div className="join-actions">
           <button
             onClick={handleJoin}
             className="btn btn-primary"
-            disabled={joining}
+            disabled={joining || !groupPreview}
           >
             {joining ? 'Joining...' : 'Join Group'}
           </button>
