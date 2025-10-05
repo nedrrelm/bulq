@@ -5,6 +5,7 @@ import Groups from './components/Groups'
 import GroupPage from './components/GroupPage'
 import RunPage from './components/RunPage'
 import JoinGroup from './components/JoinGroup'
+import ShoppingPage from './components/ShoppingPage'
 
 interface BackendResponse {
   message: string
@@ -26,7 +27,7 @@ function App() {
   const [healthStatus, setHealthStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'group' | 'run' | 'join'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'group' | 'run' | 'shopping' | 'join'>('dashboard')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [inviteToken, setInviteToken] = useState<string | null>(null)
@@ -42,6 +43,14 @@ function App() {
     if (inviteMatch) {
       setInviteToken(inviteMatch[1])
       setCurrentView('join')
+      return
+    }
+
+    // Check for shopping page
+    const shoppingMatch = path.match(/^\/shopping\/(.+)$/)
+    if (shoppingMatch) {
+      setSelectedRunId(shoppingMatch[1])
+      setCurrentView('shopping')
       return
     }
 
@@ -177,6 +186,19 @@ function App() {
     window.history.pushState({}, '', '/')
   }
 
+  const handleShoppingSelect = (runId: string) => {
+    setSelectedRunId(runId)
+    setCurrentView('shopping')
+    window.history.pushState({}, '', `/shopping/${runId}`)
+  }
+
+  const handleBackToRun = () => {
+    setCurrentView('run')
+    if (selectedRunId) {
+      window.history.pushState({}, '', `/runs/${selectedRunId}`)
+    }
+  }
+
   // Show join page if invite link
   if (currentView === 'join' && inviteToken) {
     if (!user) {
@@ -259,6 +281,14 @@ function App() {
           <RunPage
             runId={selectedRunId}
             onBack={handleBackToGroup}
+            onShoppingSelect={handleShoppingSelect}
+          />
+        )}
+
+        {currentView === 'shopping' && selectedRunId && (
+          <ShoppingPage
+            runId={selectedRunId}
+            onBack={handleBackToRun}
           />
         )}
       </main>
