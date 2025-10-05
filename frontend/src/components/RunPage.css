@@ -113,6 +113,8 @@
   border-radius: 12px;
   padding: 20px;
   transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 
 .product-item:hover {
