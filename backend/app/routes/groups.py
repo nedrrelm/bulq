@@ -82,7 +82,8 @@ async def get_group(
 
     return {
         "id": str(group.id),
-        "name": group.name
+        "name": group.name,
+        "invite_token": group.invite_token
     }
 
 @router.get("/{group_id}/runs", response_model=List[RunResponse])
@@ -127,3 +128,66 @@ async def get_group_runs(
         ))
 
     return run_responses
+
+@router.post("/{group_id}/regenerate-invite")
+async def regenerate_invite_token(
+    group_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Regenerate the invite token for a group."""
+    repo = get_repository(db)
+
+    # Verify group ID format
+    try:
+        group_uuid = uuid.UUID(group_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid group ID format")
+
+    # Get the group
+    group = repo.get_group_by_id(group_uuid)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # Check if user is the creator of the group
+    if group.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the group creator can regenerate the invite token")
+
+    # Regenerate the token
+    new_token = repo.regenerate_group_invite_token(group_uuid)
+    if not new_token:
+        raise HTTPException(status_code=500, detail="Failed to regenerate invite token")
+
+    return {
+        "invite_token": new_token
+    }
+
+@router.post("/join/{invite_token}")
+async def join_group_by_invite(
+    invite_token: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Join a group using an invite token."""
+    repo = get_repository(db)
+
+    # Find the group by invite token
+    group = repo.get_group_by_invite_token(invite_token)
+    if not group:
+        raise HTTPException(status_code=404, detail="Invalid invite token")
+
+    # Check if user is already a member
+    user_groups = repo.get_user_groups(current_user)
+    if any(g.id == group.id for g in user_groups):
+        raise HTTPException(status_code=400, detail="Already a member of this group")
+
+    # Add user to the group
+    success = repo.add_group_member(group.id, current_user)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to join group")
+
+    return {
+        "message": "Successfully joined group",
+        "group_id": str(group.id),
+        "group_name": group.name
+    }

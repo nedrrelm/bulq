@@ -13,6 +13,7 @@ interface Run {
 interface Group {
   id: string
   name: string
+  invite_token: string
 }
 
 interface GroupPageProps {
@@ -120,6 +121,44 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     onRunSelect(runId)
   }
 
+  const handleCopyInviteLink = () => {
+    if (!group) return
+    const inviteUrl = `${window.location.origin}/invite/${group.invite_token}`
+    navigator.clipboard.writeText(inviteUrl)
+      .then(() => {
+        alert('Invite link copied to clipboard!')
+      })
+      .catch(err => {
+        console.error('Failed to copy:', err)
+        alert('Failed to copy invite link')
+      })
+  }
+
+  const handleRegenerateToken = async () => {
+    if (!group) return
+    if (!confirm('Are you sure you want to regenerate the invite link? The old link will stop working.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/regenerate-invite`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Failed to regenerate invite token')
+      }
+
+      const data = await response.json()
+      setGroup({ ...group, invite_token: data.invite_token })
+      alert('Invite link regenerated successfully!')
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to regenerate invite link')
+    }
+  }
+
   return (
     <div className="group-page">
       {showNewRunPopup && (
@@ -136,9 +175,19 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
         </span>
       </div>
 
-      <button onClick={handleNewRunClick} className="new-run-button">
-        + New Run
-      </button>
+      <div className="group-actions">
+        <button onClick={handleNewRunClick} className="new-run-button">
+          + New Run
+        </button>
+        <div className="invite-actions">
+          <button onClick={handleCopyInviteLink} className="btn btn-secondary">
+            📋 Copy Invite Link
+          </button>
+          <button onClick={handleRegenerateToken} className="btn btn-secondary">
+            🔄 Regenerate Link
+          </button>
+        </div>
+      </div>
 
       {loading && <p>Loading runs...</p>}
 

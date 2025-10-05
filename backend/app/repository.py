@@ -39,6 +39,16 @@ class AbstractRepository(ABC):
         pass
 
     @abstractmethod
+    def get_group_by_invite_token(self, invite_token: str) -> Optional[Group]:
+        """Get group by invite token."""
+        pass
+
+    @abstractmethod
+    def regenerate_group_invite_token(self, group_id: UUID) -> Optional[str]:
+        """Regenerate invite token for a group."""
+        pass
+
+    @abstractmethod
     def create_group(self, name: str, created_by: UUID) -> Group:
         """Create a new group."""
         pass
@@ -125,6 +135,18 @@ class DatabaseRepository(AbstractRepository):
 
     def get_group_by_id(self, group_id: UUID) -> Optional[Group]:
         return self.db.query(Group).filter(Group.id == group_id).first()
+
+    def get_group_by_invite_token(self, invite_token: str) -> Optional[Group]:
+        return self.db.query(Group).filter(Group.invite_token == invite_token).first()
+
+    def regenerate_group_invite_token(self, group_id: UUID) -> Optional[str]:
+        group = self.get_group_by_id(group_id)
+        if group:
+            new_token = str(uuid4())
+            group.invite_token = new_token
+            self.db.commit()
+            return new_token
+        return None
 
     def create_group(self, name: str, created_by: UUID) -> Group:
         group = Group(name=name, created_by=created_by)
@@ -286,8 +308,26 @@ class MemoryRepository(AbstractRepository):
             group.members = [self._users.get(uid) for uid in member_ids if uid in self._users]
         return group
 
+    def get_group_by_invite_token(self, invite_token: str) -> Optional[Group]:
+        for group in self._groups.values():
+            if group.invite_token == invite_token:
+                # Set up relationships
+                group.creator = self._users.get(group.created_by)
+                member_ids = self._group_memberships.get(group.id, [])
+                group.members = [self._users.get(uid) for uid in member_ids if uid in self._users]
+                return group
+        return None
+
+    def regenerate_group_invite_token(self, group_id: UUID) -> Optional[str]:
+        group = self._groups.get(group_id)
+        if group:
+            new_token = str(uuid4())
+            group.invite_token = new_token
+            return new_token
+        return None
+
     def create_group(self, name: str, created_by: UUID) -> Group:
-        group = Group(id=uuid4(), name=name, created_by=created_by)
+        group = Group(id=uuid4(), name=name, created_by=created_by, invite_token=str(uuid4()))
         self._groups[group.id] = group
         self._group_memberships[group.id] = []
         return group

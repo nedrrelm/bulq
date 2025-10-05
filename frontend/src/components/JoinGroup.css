@@ -1,0 +1,61 @@
+.join-group-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.join-group-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.join-group-card h2 {
+  color: var(--color-text);
+  margin-bottom: 16px;
+  font-size: 28px;
+}
+
+.join-group-card p {
+  color: var(--color-text-light);
+  margin-bottom: 24px;
+  font-size: 16px;
+}
+
+.success-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.redirect-message {
+  font-size: 14px;
+  color: var(--color-text-light);
+  font-style: italic;
+}
+
+.join-actions {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.join-actions .btn {
+  min-width: 150px;
+}
