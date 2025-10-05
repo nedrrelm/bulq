@@ -14,12 +14,19 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 class CreateGroupRequest(BaseModel):
     name: str
 
+class RunSummary(BaseModel):
+    id: str
+    store_name: str
+    state: str
+
 class GroupResponse(BaseModel):
     id: str
     name: str
     description: str
     member_count: int
     active_runs_count: int
+    completed_runs_count: int
+    active_runs: List[RunSummary]
     created_at: str
 
     class Config:
@@ -46,12 +53,39 @@ async def get_my_groups(
     # Get groups where the user is a member
     groups = repo.get_user_groups(current_user)
 
+    # Get all stores for lookups
+    all_stores = repo.get_all_stores()
+    store_lookup = {store.id: store.name for store in all_stores}
+
+    # State ordering for sorting (reverse order: distributing > shopping > confirmed > active > planning)
+    state_order = {
+        'distributing': 5,
+        'shopping': 4,
+        'confirmed': 3,
+        'active': 2,
+        'planning': 1
+    }
+
     # Convert to response format
     group_responses = []
     for group in groups:
-        # Get runs for this group and count active ones
+        # Get runs for this group
         runs = repo.get_runs_by_group(group.id)
-        active_runs = [run for run in runs if run.state not in ['completed', 'cancelled']]
+        active_runs = [run for run in runs if run.state != 'completed']
+        completed_runs = [run for run in runs if run.state == 'completed']
+
+        # Sort active runs by state (reverse state order) and take top 3
+        sorted_active_runs = sorted(active_runs, key=lambda r: state_order.get(r.state, 0), reverse=True)[:3]
+
+        # Convert to RunSummary
+        active_runs_summary = [
+            RunSummary(
+                id=str(run.id),
+                store_name=store_lookup.get(run.store_id, "Unknown Store"),
+                state=run.state
+            )
+            for run in sorted_active_runs
+        ]
 
         group_responses.append(GroupResponse(
             id=str(group.id),
@@ -59,6 +93,8 @@ async def get_my_groups(
             description=f"Group created by {group.creator.name}" if group.creator else "Group",
             member_count=len(group.members),
             active_runs_count=len(active_runs),
+            completed_runs_count=len(completed_runs),
+            active_runs=active_runs_summary,
             created_at=datetime.now().isoformat()  # Using current time for now since we don't have created_at in model
         ))
 
