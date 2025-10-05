@@ -708,17 +708,37 @@ class MemoryRepository(AbstractRepository):
         return store
 
     def _create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
-        product = Product(id=uuid4(), store_id=store_id, name=name, base_price=Decimal(str(base_price)))
+        from datetime import datetime
+        product = Product(
+            id=uuid4(),
+            store_id=store_id,
+            name=name,
+            base_price=Decimal(str(base_price)),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
         self._products[product.id] = product
         return product
 
     def _create_run(self, group_id: UUID, store_id: UUID, state: str, leader_id: UUID) -> Run:
-        from datetime import datetime
+        from datetime import datetime, timedelta
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state=state)
-        # Set timestamp for the initial state
-        timestamp_field = f"{state}_at"
-        if hasattr(Run, timestamp_field):
-            setattr(run, timestamp_field, datetime.utcnow())
+
+        # Set timestamps for state progression (simulate realistic timeline)
+        now = datetime.utcnow()
+        run.planning_at = now - timedelta(days=7)  # Started 7 days ago
+
+        if state in ["active", "confirmed", "shopping", "distributing", "completed"]:
+            run.active_at = now - timedelta(days=5)
+        if state in ["confirmed", "shopping", "distributing", "completed"]:
+            run.confirmed_at = now - timedelta(days=3)
+        if state in ["shopping", "distributing", "completed"]:
+            run.shopping_at = now - timedelta(days=2)
+        if state in ["distributing", "completed"]:
+            run.distributing_at = now - timedelta(days=1)
+        if state == "completed":
+            run.completed_at = now
+
         self._runs[run.id] = run
         # Create leader participation
         self._create_participation(leader_id, run.id, is_leader=True)
@@ -733,7 +753,16 @@ class MemoryRepository(AbstractRepository):
         return participation
 
     def _create_bid(self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
-        bid = ProductBid(id=uuid4(), participation_id=participation_id, product_id=product_id, quantity=quantity, interested_only=interested_only)
+        from datetime import datetime
+        bid = ProductBid(
+            id=uuid4(),
+            participation_id=participation_id,
+            product_id=product_id,
+            quantity=quantity,
+            interested_only=interested_only,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
         # Set up relationships
         bid.participation = self._participations.get(participation_id)
         bid.product = self._products.get(product_id)
@@ -741,13 +770,16 @@ class MemoryRepository(AbstractRepository):
         return bid
 
     def _create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
+        from datetime import datetime
         item = ShoppingListItem(
             id=uuid4(),
             run_id=run_id,
             product_id=product_id,
             requested_quantity=requested_quantity,
             encountered_prices=[],
-            is_purchased=False
+            is_purchased=False,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         # Set up relationships
         item.run = self._runs.get(run_id)
