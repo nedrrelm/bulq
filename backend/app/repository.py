@@ -16,359 +16,248 @@ class AbstractRepository(ABC):
     @abstractmethod
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         """Get user by ID."""
-        pass
+        raise NotImplementedError("Subclass must implement get_user_by_id")
 
     @abstractmethod
     def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email."""
-        pass
+        raise NotImplementedError("Subclass must implement get_user_by_email")
 
     @abstractmethod
     def create_user(self, name: str, email: str, password_hash: str) -> User:
         """Create a new user."""
-        pass
+        raise NotImplementedError("Subclass must implement create_user")
 
     @abstractmethod
     def get_user_groups(self, user: User) -> List[Group]:
         """Get all groups that a user is a member of."""
-        pass
+        raise NotImplementedError("Subclass must implement get_user_groups")
 
     @abstractmethod
     def get_group_by_id(self, group_id: UUID) -> Optional[Group]:
         """Get group by ID."""
-        pass
+        raise NotImplementedError("Subclass must implement get_group_by_id")
 
     @abstractmethod
     def get_group_by_invite_token(self, invite_token: str) -> Optional[Group]:
         """Get group by invite token."""
-        pass
+        raise NotImplementedError("Subclass must implement get_group_by_invite_token")
 
     @abstractmethod
     def regenerate_group_invite_token(self, group_id: UUID) -> Optional[str]:
         """Regenerate invite token for a group."""
-        pass
+        raise NotImplementedError("Subclass must implement regenerate_group_invite_token")
 
     @abstractmethod
     def create_group(self, name: str, created_by: UUID) -> Group:
         """Create a new group."""
-        pass
+        raise NotImplementedError("Subclass must implement create_group")
 
     @abstractmethod
     def add_group_member(self, group_id: UUID, user: User) -> bool:
         """Add a user to a group."""
-        pass
+        raise NotImplementedError("Subclass must implement add_group_member")
 
     @abstractmethod
     def get_all_stores(self) -> List[Store]:
         """Get all stores."""
-        pass
+        raise NotImplementedError("Subclass must implement get_all_stores")
 
     @abstractmethod
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
         """Get all runs for a group."""
-        pass
+        raise NotImplementedError("Subclass must implement get_runs_by_group")
 
     @abstractmethod
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
         """Get all products for a store."""
-        pass
+        raise NotImplementedError("Subclass must implement get_products_by_store")
 
     @abstractmethod
     def search_products(self, query: str) -> List[Product]:
         """Search for products by name."""
-        pass
+        raise NotImplementedError("Subclass must implement search_products")
 
     @abstractmethod
     def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
         """Get product by ID."""
-        pass
+        raise NotImplementedError("Subclass must implement get_product_by_id")
 
     @abstractmethod
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
         """Get all bids for a run."""
-        pass
+        raise NotImplementedError("Subclass must implement get_bids_by_run")
 
     @abstractmethod
     def verify_password(self, password: str, stored_hash: str) -> bool:
         """Verify a password."""
-        pass
+        raise NotImplementedError("Subclass must implement verify_password")
 
     @abstractmethod
     def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
         """Create a new run with the leader as first participant."""
-        pass
+        raise NotImplementedError("Subclass must implement create_run")
 
     @abstractmethod
     def get_participation(self, user_id: UUID, run_id: UUID) -> Optional[RunParticipation]:
         """Get a user's participation in a run."""
-        pass
+        raise NotImplementedError("Subclass must implement get_participation")
 
     @abstractmethod
     def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
         """Get all participations for a run."""
-        pass
+        raise NotImplementedError("Subclass must implement get_run_participations")
 
     @abstractmethod
     def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
         """Create a participation record for a user in a run."""
-        pass
+        raise NotImplementedError("Subclass must implement create_participation")
 
     @abstractmethod
     def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> Optional[RunParticipation]:
         """Update the ready status of a participation."""
-        pass
+        raise NotImplementedError("Subclass must implement update_participation_ready")
 
     @abstractmethod
     def get_run_by_id(self, run_id: UUID) -> Optional[Run]:
         """Get run by ID."""
-        pass
+        raise NotImplementedError("Subclass must implement get_run_by_id")
 
     @abstractmethod
     def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
         """Update the state of a run."""
-        pass
+        raise NotImplementedError("Subclass must implement update_run_state")
 
     @abstractmethod
     def create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
         """Create a shopping list item."""
-        pass
+        raise NotImplementedError("Subclass must implement create_shopping_list_item")
 
     @abstractmethod
     def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
         """Get all shopping list items for a run."""
-        pass
+        raise NotImplementedError("Subclass must implement get_shopping_list_items")
 
     @abstractmethod
     def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
         """Get all shopping list items for a product across all runs."""
-        pass
+        raise NotImplementedError("Subclass must implement get_shopping_list_items_by_product")
 
     @abstractmethod
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
         """Add an encountered price to a shopping list item."""
-        pass
+        raise NotImplementedError("Subclass must implement add_encountered_price")
 
     @abstractmethod
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
         """Mark a shopping list item as purchased."""
-        pass
+        raise NotImplementedError("Subclass must implement mark_item_purchased")
 
 
 class DatabaseRepository(AbstractRepository):
-    """Database implementation using SQLAlchemy - Singleton."""
+    """
+    Database implementation using SQLAlchemy.
 
-    _instance = None
-    _db = None
+    NOTE: This implementation is intentionally gutted and left as a stub.
 
-    def __new__(cls, db: Session):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._db = db
-        return cls._instance
+    Why? We're currently only using MemoryRepository for development and testing.
+    When we eventually need database persistence, we'll build this from scratch
+    based on the working MemoryRepository implementation. This approach:
+
+    1. Makes it clear we're only using MemoryRepository right now
+    2. Avoids maintaining unused code
+    3. Eliminates route anti-patterns (hasattr checks, direct private attribute access)
+    4. Provides a clear interface to implement when database mode is needed
+
+    When implementing this later, use MemoryRepository as the reference implementation.
+    """
 
     def __init__(self, db: Session):
-        # Only initialize once
-        if not hasattr(self, '_initialized'):
-            self.db = db
-            self._initialized = True
-
-    @property
-    def db(self):
-        """Get the current database session."""
-        return self._db
-
-    @db.setter
-    def db(self, value):
-        """Update the database session."""
-        DatabaseRepository._db = value
+        self.db = db
 
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
-        return self.db.query(User).filter(User.id == user_id).first()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_user_by_email(self, email: str) -> Optional[User]:
-        return self.db.query(User).filter(User.email == email).first()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def create_user(self, name: str, email: str, password_hash: str) -> User:
-        user = User(name=name, email=email, password_hash=password_hash)
-        self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
-        return user
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_user_groups(self, user: User) -> List[Group]:
-        return self.db.query(Group).filter(Group.members.contains(user)).all()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_group_by_id(self, group_id: UUID) -> Optional[Group]:
-        return self.db.query(Group).filter(Group.id == group_id).first()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_group_by_invite_token(self, invite_token: str) -> Optional[Group]:
-        return self.db.query(Group).filter(Group.invite_token == invite_token).first()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def regenerate_group_invite_token(self, group_id: UUID) -> Optional[str]:
-        group = self.get_group_by_id(group_id)
-        if group:
-            new_token = str(uuid4())
-            group.invite_token = new_token
-            self.db.commit()
-            return new_token
-        return None
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def create_group(self, name: str, created_by: UUID) -> Group:
-        group = Group(name=name, created_by=created_by)
-        self.db.add(group)
-        self.db.commit()
-        self.db.refresh(group)
-        return group
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def add_group_member(self, group_id: UUID, user: User) -> bool:
-        group = self.get_group_by_id(group_id)
-        if group and user not in group.members:
-            group.members.append(user)
-            self.db.commit()
-            return True
-        return False
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_all_stores(self) -> List[Store]:
-        return self.db.query(Store).all()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
-        return self.db.query(Run).filter(Run.group_id == group_id).all()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
-        return self.db.query(Product).filter(Product.store_id == store_id).all()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def search_products(self, query: str) -> List[Product]:
-        search_pattern = f"%{query}%"
-        return self.db.query(Product).filter(Product.name.ilike(search_pattern)).all()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
-        return self.db.query(Product).filter(Product.id == product_id).first()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
-        # Get all participations for this run, then get their bids
-        participations = self.db.query(RunParticipation).filter(RunParticipation.run_id == run_id).all()
-        all_bids = []
-        for participation in participations:
-            all_bids.extend(participation.product_bids)
-        return all_bids
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def verify_password(self, password: str, stored_hash: str) -> bool:
-        from .auth import verify_password
-        return verify_password(password, stored_hash)
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
-        run = Run(group_id=group_id, store_id=store_id, state="planning")
-        self.db.add(run)
-        self.db.flush()  # Get the run ID before creating participation
-
-        # Create participation for the leader
-        participation = RunParticipation(user_id=leader_id, run_id=run.id, is_leader=True, is_ready=False)
-        self.db.add(participation)
-        self.db.commit()
-        self.db.refresh(run)
-        return run
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_participation(self, user_id: UUID, run_id: UUID) -> Optional[RunParticipation]:
-        return self.db.query(RunParticipation).filter(
-            RunParticipation.user_id == user_id,
-            RunParticipation.run_id == run_id
-        ).first()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
-        return self.db.query(RunParticipation).filter(RunParticipation.run_id == run_id).all()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
-        participation = RunParticipation(user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=False)
-        self.db.add(participation)
-        self.db.commit()
-        self.db.refresh(participation)
-        return participation
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> Optional[RunParticipation]:
-        participation = self.db.query(RunParticipation).filter(RunParticipation.id == participation_id).first()
-        if participation:
-            participation.is_ready = is_ready
-            self.db.commit()
-            self.db.refresh(participation)
-            return participation
-        return None
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_run_by_id(self, run_id: UUID) -> Optional[Run]:
-        return self.db.query(Run).filter(Run.id == run_id).first()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
-        from datetime import datetime
-        run = self.get_run_by_id(run_id)
-        if run:
-            run.state = new_state
-            # Set the timestamp for the new state
-            timestamp_field = f"{new_state}_at"
-            if hasattr(run, timestamp_field):
-                setattr(run, timestamp_field, datetime.utcnow())
-            self.db.commit()
-            self.db.refresh(run)
-            return run
-        return None
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
-        item = ShoppingListItem(
-            run_id=run_id,
-            product_id=product_id,
-            requested_quantity=requested_quantity,
-            encountered_prices=[]
-        )
-        self.db.add(item)
-        self.db.commit()
-        self.db.refresh(item)
-        return item
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
-        return self.db.query(ShoppingListItem).filter(ShoppingListItem.run_id == run_id).all()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
-        return self.db.query(ShoppingListItem).filter(ShoppingListItem.product_id == product_id).all()
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
-        item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
-        if item:
-            if item.encountered_prices is None:
-                item.encountered_prices = []
-            prices = list(item.encountered_prices) if item.encountered_prices else []
-            prices.append({"price": float(price), "notes": notes})
-            item.encountered_prices = prices
-            self.db.commit()
-            self.db.refresh(item)
-            return item
-        return None
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
-        item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
-        if item:
-            item.purchased_quantity = quantity
-            item.purchased_price_per_unit = Decimal(str(price_per_unit))
-            item.purchased_total = Decimal(str(total))
-            item.is_purchased = True
-            item.purchase_order = purchase_order
-
-            # Add purchased price to encountered prices if not already there
-            if item.encountered_prices is None:
-                item.encountered_prices = []
-            prices = list(item.encountered_prices) if item.encountered_prices else []
-
-            # Check if this exact price is already in the list
-            price_already_exists = any(
-                p.get("price") == float(price_per_unit)
-                for p in prices
-            )
-
-            if not price_already_exists:
-                prices.append({"price": float(price_per_unit), "notes": "purchased"})
-                item.encountered_prices = prices
-
-            self.db.commit()
-            self.db.refresh(item)
-            return item
-        return None
+        raise NotImplementedError("DatabaseRepository not yet implemented")
 
 
 class MemoryRepository(AbstractRepository):
@@ -1193,13 +1082,10 @@ class MemoryRepository(AbstractRepository):
 def get_repository(db: Session = None) -> AbstractRepository:
     """Get the appropriate repository implementation based on config."""
     if get_repo_mode() == "memory":
-        # MemoryRepository is now a singleton - just call constructor
+        # MemoryRepository is a singleton - just call constructor
         return MemoryRepository()
     else:
-        # DatabaseRepository is now a singleton with updated db session
+        # DatabaseRepository is not yet implemented
         if db is None:
             raise ValueError("Database session required for database mode")
-        repo = DatabaseRepository(db)
-        # Update the database session in case it changed
-        repo.db = db
-        return repo
+        return DatabaseRepository(db)
