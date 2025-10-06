@@ -161,18 +161,17 @@ async def get_run_details(
     if not group or not store:
         raise HTTPException(status_code=404, detail="Group or store not found")
 
-    # Get participants
+    # Get participants with users eagerly loaded to avoid N+1 queries
     participants_data = []
     current_user_is_ready = False
     current_user_is_leader = False
-    participations = repo.get_run_participations(run.id)
+    participations = repo.get_run_participations_with_users(run.id)
 
     for participation in participations:
-        user = repo.get_user_by_id(participation.user_id)
-        if user:
+        if participation.user:
             participants_data.append(ParticipantResponse(
                 user_id=str(participation.user_id),
-                user_name=user.name,
+                user_name=participation.user.name,
                 is_leader=participation.is_leader,
                 is_ready=participation.is_ready
             ))
@@ -184,7 +183,8 @@ async def get_run_details(
     if hasattr(repo, '_runs'):  # Memory mode
         # Get all products for the store
         store_products = repo.get_products_by_store(run.store_id)
-        run_bids = repo.get_bids_by_run(run.id)
+        # Get bids with participations and users eagerly loaded to avoid N+1 queries
+        run_bids = repo.get_bids_by_run_with_participations(run.id)
 
         # Get shopping list items if in adjusting state
         shopping_list_map = {}
@@ -207,22 +207,19 @@ async def get_run_details(
                 current_user_bid = None
 
                 for bid in product_bids:
-                    # Get participation to find user
-                    participation = repo._participations.get(bid.participation_id) if hasattr(repo, '_participations') else None
-                    if participation:
-                        user = repo.get_user_by_id(participation.user_id)
-                        if user:
-                            bid_response = UserBidResponse(
-                                user_id=str(participation.user_id),
-                                user_name=user.name,
-                                quantity=bid.quantity,
-                                interested_only=bid.interested_only
-                            )
-                            user_bids_data.append(bid_response)
+                    # Participation and user are eagerly loaded on the bid object
+                    if bid.participation and bid.participation.user:
+                        bid_response = UserBidResponse(
+                            user_id=str(bid.participation.user_id),
+                            user_name=bid.participation.user.name,
+                            quantity=bid.quantity,
+                            interested_only=bid.interested_only
+                        )
+                        user_bids_data.append(bid_response)
 
-                            # Check if this is the current user's bid
-                            if participation.user_id == current_user.id:
-                                current_user_bid = bid_response
+                        # Check if this is the current user's bid
+                        if bid.participation.user_id == current_user.id:
+                            current_user_bid = bid_response
 
                 # Get purchased quantity if in adjusting state
                 purchased_qty = None

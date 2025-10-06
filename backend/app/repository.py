@@ -89,6 +89,17 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement get_bids_by_run")
 
     @abstractmethod
+    def get_bids_by_run_with_participations(self, run_id: UUID) -> List[ProductBid]:
+        """
+        Get all bids for a run with participation and user data eagerly loaded.
+
+        This avoids N+1 query problems when you need to access bid.participation.user.
+        Each bid will have its participation object populated, and each participation
+        will have its user object populated.
+        """
+        raise NotImplementedError("Subclass must implement get_bids_by_run_with_participations")
+
+    @abstractmethod
     def verify_password(self, password: str, stored_hash: str) -> bool:
         """Verify a password."""
         raise NotImplementedError("Subclass must implement verify_password")
@@ -107,6 +118,17 @@ class AbstractRepository(ABC):
     def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
         """Get all participations for a run."""
         raise NotImplementedError("Subclass must implement get_run_participations")
+
+    @abstractmethod
+    def get_run_participations_with_users(self, run_id: UUID) -> List[RunParticipation]:
+        """
+        Get all participations for a run with user data eagerly loaded.
+
+        This avoids N+1 query problems when you need to access participation.user.
+        For DatabaseRepository, this should use SQLAlchemy's joinedload().
+        For MemoryRepository, this pre-populates the user relationship.
+        """
+        raise NotImplementedError("Subclass must implement get_run_participations_with_users")
 
     @abstractmethod
     def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
@@ -220,6 +242,9 @@ class DatabaseRepository(AbstractRepository):
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
+    def get_bids_by_run_with_participations(self, run_id: UUID) -> List[ProductBid]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
     def verify_password(self, password: str, stored_hash: str) -> bool:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
@@ -230,6 +255,9 @@ class DatabaseRepository(AbstractRepository):
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_run_participations_with_users(self, run_id: UUID) -> List[RunParticipation]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
@@ -857,6 +885,27 @@ class MemoryRepository(AbstractRepository):
         # Get all bids for these participations
         return [bid for bid in self._bids.values() if bid.participation_id in participation_ids]
 
+    def get_bids_by_run_with_participations(self, run_id: UUID) -> List[ProductBid]:
+        """Get bids with participation and user data eagerly loaded to avoid N+1 queries."""
+        # Get all participations for this run with users loaded
+        participations = [p for p in self._participations.values() if p.run_id == run_id]
+        participation_ids = {p.id for p in participations}
+
+        # Eagerly load user data for each participation
+        for participation in participations:
+            participation.user = self._users.get(participation.user_id)
+            participation.run = self._runs.get(run_id)
+
+        # Get all bids for these participations and attach the participation objects
+        bids = []
+        for bid in self._bids.values():
+            if bid.participation_id in participation_ids:
+                # Attach the participation object with pre-loaded user
+                bid.participation = next((p for p in participations if p.id == bid.participation_id), None)
+                bids.append(bid)
+
+        return bids
+
     def verify_password(self, password: str, stored_hash: str) -> bool:
         # In memory mode, accept any password for ease of testing
         return True
@@ -974,6 +1023,17 @@ class MemoryRepository(AbstractRepository):
         for participation in self._participations.values():
             if participation.run_id == run_id:
                 # Set up relationships
+                participation.user = self._users.get(participation.user_id)
+                participation.run = self._runs.get(run_id)
+                participations.append(participation)
+        return participations
+
+    def get_run_participations_with_users(self, run_id: UUID) -> List[RunParticipation]:
+        """Get participations with user data eagerly loaded to avoid N+1 queries."""
+        participations = []
+        for participation in self._participations.values():
+            if participation.run_id == run_id:
+                # Eagerly load relationships
                 participation.user = self._users.get(participation.user_id)
                 participation.run = self._runs.get(run_id)
                 participations.append(participation)

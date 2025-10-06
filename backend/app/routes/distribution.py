@@ -57,8 +57,8 @@ async def get_distribution_data(
     if run.state not in ['distributing', 'completed']:
         raise HTTPException(status_code=400, detail="Distribution only available in distributing state")
 
-    # Get all bids for this run
-    all_bids = repo.get_bids_by_run(run_uuid)
+    # Get all bids with participations and users eagerly loaded to avoid N+1 queries
+    all_bids = repo.get_bids_by_run_with_participations(run_uuid)
 
     # Group bids by user
     users_data = {}
@@ -67,25 +67,17 @@ async def get_distribution_data(
         if bid.interested_only or not bid.distributed_quantity:
             continue
 
-        # Get participation to find user
-        participation = None
-        if hasattr(repo, '_participations'):
-            participation = repo._participations.get(bid.participation_id)
-        else:
-            from ..models import RunParticipation
-            participation = db.query(RunParticipation).filter(RunParticipation.id == bid.participation_id).first()
-
-        if not participation:
+        # Participation and user are eagerly loaded on the bid object
+        if not bid.participation or not bid.participation.user:
             continue
 
-        user_id = str(participation.user_id)
+        user_id = str(bid.participation.user_id)
 
         # Initialize user data if not exists
         if user_id not in users_data:
-            user = repo.get_user_by_id(participation.user_id)
             users_data[user_id] = {
                 'user_id': user_id,
-                'user_name': user.name if user else "Unknown",
+                'user_name': bid.participation.user.name,
                 'products': [],
                 'total_cost': 0.0
             }
