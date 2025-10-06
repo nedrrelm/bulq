@@ -38,43 +38,6 @@ def quantity_non_negative(cls, v):
 
 ---
 
-### Create RunState enum and state machine
-**Status**: Medium Priority
-**Affected files**: `app/models.py`, `app/routes/runs.py`, `app/routes/shopping.py`
-
-**Problem:** State transitions scattered with hardcoded strings ("planning", "active", etc.). No centralized validation.
-
-**Solution:**
-1. Create `RunState` enum inheriting from both `str` and `Enum`:
-```python
-from enum import Enum
-
-class RunState(str, Enum):
-    PLANNING = "planning"
-    ACTIVE = "active"
-    CONFIRMED = "confirmed"
-    SHOPPING = "shopping"
-    ADJUSTING = "adjusting"
-    DISTRIBUTING = "distributing"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
-```
-
-2. Create `RunStateMachine` class with validation:
-```python
-class RunStateMachine:
-    VALID_TRANSITIONS = {
-        RunState.PLANNING: [RunState.ACTIVE, RunState.CANCELLED],
-        RunState.ACTIVE: [RunState.CONFIRMED, RunState.PLANNING, RunState.CANCELLED],
-        # ...
-    }
-
-    def can_transition(self, from_state: RunState, to_state: RunState) -> bool:
-        return to_state in self.VALID_TRANSITIONS.get(from_state, [])
-```
-
----
-
 ### Database migrations with Alembic
 **Status**: Future (before production)
 **Affected files**: New `alembic/` directory, `app/main.py`
