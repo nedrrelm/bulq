@@ -19,6 +19,7 @@ from .error_handlers import (
     generic_exception_handler,
 )
 from .logging_config import setup_logging
+from .middleware import RequestLoggingMiddleware
 import os
 
 # Setup logging
@@ -26,6 +27,9 @@ log_level = os.getenv("LOG_LEVEL", "INFO")
 setup_logging(level=log_level)
 
 app = FastAPI(title="Bulq API", version="0.1.0")
+
+# Add middleware
+app.add_middleware(RequestLoggingMiddleware)
 
 # Register exception handlers
 app.add_exception_handler(AppException, app_exception_handler)

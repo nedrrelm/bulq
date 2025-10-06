@@ -5,11 +5,14 @@ from ..database import get_db
 from ..models import Group, User, Run, Store
 from ..routes.auth import require_auth
 from ..repository import get_repository
+from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from pydantic import BaseModel
 from datetime import datetime
+import logging
 import uuid
 
 router = APIRouter(prefix="/groups", tags=["groups"])
+logger = logging.getLogger(__name__)
 
 class CreateGroupRequest(BaseModel):
     name: str
@@ -48,6 +51,7 @@ async def get_my_groups(
     db: Session = Depends(get_db)
 ):
     """Get all groups the current user is a member of."""
+    logger.debug(f"Fetching groups for user", extra={"user_id": str(current_user.id)})
     repo = get_repository(db)
 
     # Get groups where the user is a member
@@ -108,6 +112,10 @@ async def create_group(
     db: Session = Depends(get_db)
 ):
     """Create a new group."""
+    logger.info(
+        f"Creating group: {request.name}",
+        extra={"user_id": str(current_user.id), "group_name": request.name}
+    )
     repo = get_repository(db)
 
     # Create the group
@@ -115,6 +123,11 @@ async def create_group(
 
     # Add the creator as a member
     repo.add_group_member(group.id, current_user)
+
+    logger.info(
+        f"Group created successfully",
+        extra={"user_id": str(current_user.id), "group_id": str(group.id)}
+    )
 
     return {
         "id": str(group.id),
@@ -140,12 +153,16 @@ async def get_group(
     # Get the group
     group = repo.get_group_by_id(group_uuid)
     if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+        raise NotFoundError("Group", group_uuid)
 
     # Check if user is a member of the group
     user_groups = repo.get_user_groups(current_user)
     if not any(g.id == group_uuid for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not a member of this group")
+        logger.warning(
+            f"User attempted to access group they're not a member of",
+            extra={"user_id": str(current_user.id), "group_id": str(group_uuid)}
+        )
+        raise ForbiddenError("Not a member of this group")
 
     return {
         "id": str(group.id),
@@ -170,14 +187,18 @@ async def get_group_runs(
 
     group = repo.get_group_by_id(group_uuid)
     if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+        raise NotFoundError("Group", group_uuid)
 
     # Check if user is a member of the group
     user_groups = repo.get_user_groups(current_user)
     if not any(g.id == group_uuid for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not a member of this group")
+        raise ForbiddenError("Not a member of this group")
 
     # Get runs for the group
+    logger.debug(
+        f"Fetching runs for group",
+        extra={"user_id": str(current_user.id), "group_id": str(group_uuid)}
+    )
     runs = repo.get_runs_by_group(group_uuid)
 
     # Convert to response format with store names
@@ -214,13 +235,21 @@ async def regenerate_invite_token(
     # Get the group
     group = repo.get_group_by_id(group_uuid)
     if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+        raise NotFoundError("Group", group_uuid)
 
     # Check if user is the creator of the group
     if group.created_by != current_user.id:
-        raise HTTPException(status_code=403, detail="Only the group creator can regenerate the invite token")
+        logger.warning(
+            f"User attempted to regenerate invite token for group they don't own",
+            extra={"user_id": str(current_user.id), "group_id": str(group_uuid)}
+        )
+        raise ForbiddenError("Only the group creator can regenerate the invite token")
 
     # Regenerate the token
+    logger.info(
+        f"Regenerating invite token for group",
+        extra={"user_id": str(current_user.id), "group_id": str(group_uuid)}
+    )
     new_token = repo.regenerate_group_invite_token(group_uuid)
     if not new_token:
         raise HTTPException(status_code=500, detail="Failed to regenerate invite token")
@@ -235,12 +264,14 @@ async def preview_group_by_invite(
     db: Session = Depends(get_db)
 ):
     """Preview group information by invite token without joining."""
+    logger.debug(f"Previewing group with invite token")
     repo = get_repository(db)
 
     # Find the group by invite token
     group = repo.get_group_by_invite_token(invite_token)
     if not group:
-        raise HTTPException(status_code=404, detail="Invalid invite token")
+        logger.warning(f"Invalid invite token used for preview")
+        raise NotFoundError("Group", invite_token)
 
     return {
         "id": str(group.id),
@@ -256,22 +287,40 @@ async def join_group_by_invite(
     db: Session = Depends(get_db)
 ):
     """Join a group using an invite token."""
+    logger.info(
+        f"User attempting to join group via invite",
+        extra={"user_id": str(current_user.id)}
+    )
     repo = get_repository(db)
 
     # Find the group by invite token
     group = repo.get_group_by_invite_token(invite_token)
     if not group:
-        raise HTTPException(status_code=404, detail="Invalid invite token")
+        logger.warning(f"Invalid invite token used for join")
+        raise NotFoundError("Group", invite_token)
 
     # Check if user is already a member
     user_groups = repo.get_user_groups(current_user)
     if any(g.id == group.id for g in user_groups):
-        raise HTTPException(status_code=400, detail="Already a member of this group")
+        logger.info(
+            f"User already a member of group",
+            extra={"user_id": str(current_user.id), "group_id": str(group.id)}
+        )
+        raise BadRequestError("Already a member of this group")
 
     # Add user to the group
     success = repo.add_group_member(group.id, current_user)
     if not success:
+        logger.error(
+            f"Failed to add user to group",
+            extra={"user_id": str(current_user.id), "group_id": str(group.id)}
+        )
         raise HTTPException(status_code=500, detail="Failed to join group")
+
+    logger.info(
+        f"User joined group successfully",
+        extra={"user_id": str(current_user.id), "group_id": str(group.id)}
+    )
 
     return {
         "message": "Successfully joined group",

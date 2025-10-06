@@ -6,10 +6,13 @@ from ..models import User
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..websocket_manager import manager
+from ..exceptions import NotFoundError, ForbiddenError
 from pydantic import BaseModel
+import logging
 import uuid
 
 router = APIRouter(prefix="/shopping", tags=["shopping"])
+logger = logging.getLogger(__name__)
 
 class EncounteredPrice(BaseModel):
     price: float
@@ -183,6 +186,10 @@ async def complete_shopping(
     db: Session = Depends(get_db)
 ):
     """Complete shopping - transition from shopping to distributing state (leader only)."""
+    logger.info(
+        f"Completing shopping for run",
+        extra={"user_id": str(current_user.id), "run_id": run_id}
+    )
     repo = get_repository(db)
 
     # Validate run ID

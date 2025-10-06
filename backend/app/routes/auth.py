@@ -2,13 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
+import logging
 
 from ..database import get_db
 from ..models import User
 from ..auth import hash_password, create_session, get_session, delete_session
 from ..repository import get_repository
+from ..exceptions import UnauthorizedError, BadRequestError
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+logger = logging.getLogger(__name__)
 
 
 
@@ -47,24 +50,24 @@ def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
     """Dependency that requires authentication."""
     user = get_current_user(request, db)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+        logger.warning(
+            "Unauthorized access attempt",
+            extra={"path": request.url.path, "method": request.method}
         )
+        raise UnauthorizedError("Authentication required")
     return user
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_data: UserRegister, response: Response, db: Session = Depends(get_db)):
     """Register a new user."""
+    logger.info(f"Registration attempt for email: {user_data.email}")
     repo = get_repository(db)
 
     # Check if user already exists
     existing_user = repo.get_user_by_email(user_data.email)
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
+        logger.warning(f"Registration failed - email already exists: {user_data.email}")
+        raise BadRequestError("Email already registered")
 
     # Create new user
     password_hash = hash_password(user_data.password)
@@ -84,6 +87,11 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
         samesite="lax"
     )
 
+    logger.info(
+        f"User registered successfully",
+        extra={"user_id": str(new_user.id), "email": new_user.email}
+    )
+
     return UserResponse(
         id=str(new_user.id),
         name=new_user.name,
@@ -93,15 +101,14 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
 @router.post("/login", response_model=UserResponse)
 async def login(user_data: UserLogin, response: Response, db: Session = Depends(get_db)):
     """Login user."""
+    logger.info(f"Login attempt for email: {user_data.email}")
     repo = get_repository(db)
 
     # Find user by email
     user = repo.get_user_by_email(user_data.email)
     if not user or not repo.verify_password(user_data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
+        logger.warning(f"Failed login attempt for email: {user_data.email}")
+        raise UnauthorizedError("Invalid email or password")
 
     # Create session
     session_token = create_session(str(user.id))
@@ -111,6 +118,11 @@ async def login(user_data: UserLogin, response: Response, db: Session = Depends(
         httponly=True,
         secure=False,  # Set to True in production with HTTPS
         samesite="lax"
+    )
+
+    logger.info(
+        f"User logged in successfully",
+        extra={"user_id": str(user.id), "email": user.email}
     )
 
     return UserResponse(
@@ -125,6 +137,7 @@ async def logout(request: Request, response: Response):
     session_token = request.cookies.get("session_token")
     if session_token:
         delete_session(session_token)
+        logger.info("User logged out successfully")
 
     response.delete_cookie(key="session_token")
     return {"message": "Logged out successfully"}
