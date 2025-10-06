@@ -5,6 +5,7 @@ from ..database import get_db
 from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipation
 from ..routes.auth import require_auth
 from ..repository import get_repository
+from ..websocket_manager import manager
 from pydantic import BaseModel
 import uuid
 
@@ -56,6 +57,17 @@ async def create_run(
 
     # Create the run with current user as leader
     run = repo.create_run(group_uuid, store_uuid, current_user.id)
+
+    # Broadcast to group room
+    await manager.broadcast(f"group:{group_uuid}", {
+        "type": "run_created",
+        "data": {
+            "run_id": str(run.id),
+            "store_id": str(run.store_id),
+            "store_name": store.name,
+            "state": run.state
+        }
+    })
 
     return CreateRunResponse(
         id=str(run.id),
@@ -366,8 +378,45 @@ async def place_bid(
 
         # Automatic state transition: planning → active
         # When a non-leader places their first bid, transition from planning to active
+        state_changed = False
         if is_new_participant and not participation.is_leader and run.state == "planning":
             repo.update_run_state(run_uuid, "active")
+            state_changed = True
+
+        # Calculate new totals for broadcasting
+        all_bids = repo.get_bids_by_run(run_uuid)
+        product_bids = [bid for bid in all_bids if bid.product_id == product_uuid]
+        new_total = sum(bid.quantity for bid in product_bids if not bid.interested_only)
+
+        # Broadcast to run room
+        await manager.broadcast(f"run:{run_uuid}", {
+            "type": "bid_updated",
+            "data": {
+                "product_id": str(product_uuid),
+                "user_id": str(current_user.id),
+                "user_name": current_user.name,
+                "quantity": bid_request.quantity,
+                "interested_only": bid_request.interested_only,
+                "new_total": new_total
+            }
+        })
+
+        # If state changed, broadcast to both run and group
+        if state_changed:
+            await manager.broadcast(f"run:{run_uuid}", {
+                "type": "state_changed",
+                "data": {
+                    "run_id": str(run_uuid),
+                    "new_state": "active"
+                }
+            })
+            await manager.broadcast(f"group:{run.group_id}", {
+                "type": "run_state_changed",
+                "data": {
+                    "run_id": str(run_uuid),
+                    "new_state": "active"
+                }
+            })
 
     return {"message": "Bid placed successfully"}
 
@@ -442,6 +491,22 @@ async def retract_bid(
 
         if bid_to_remove:
             del repo._bids[bid_to_remove]
+
+            # Calculate new totals after retraction
+            all_bids = repo.get_bids_by_run(run_uuid)
+            product_bids = [bid for bid in all_bids if bid.product_id == product_uuid]
+            new_total = sum(bid.quantity for bid in product_bids if not bid.interested_only)
+
+            # Broadcast to run room
+            await manager.broadcast(f"run:{run_uuid}", {
+                "type": "bid_retracted",
+                "data": {
+                    "product_id": str(product_uuid),
+                    "user_id": str(current_user.id),
+                    "new_total": new_total
+                }
+            })
+
             return {"message": "Bid retracted successfully"}
         else:
             raise HTTPException(status_code=404, detail=f"No bid found for this product")
@@ -498,10 +563,36 @@ async def toggle_ready(
     all_participations = repo.get_run_participations(run_uuid)
     all_ready = all(p.is_ready for p in all_participations)
 
+    # Broadcast ready toggle to run room
+    await manager.broadcast(f"run:{run_uuid}", {
+        "type": "ready_toggled",
+        "data": {
+            "user_id": str(current_user.id),
+            "is_ready": new_ready_status
+        }
+    })
+
     # Automatic state transition: active → confirmed
     # When all participants mark themselves as ready
     if all_ready and len(all_participations) > 0:
         repo.update_run_state(run_uuid, "confirmed")
+
+        # Broadcast state change to both run and group
+        await manager.broadcast(f"run:{run_uuid}", {
+            "type": "state_changed",
+            "data": {
+                "run_id": str(run_uuid),
+                "new_state": "confirmed"
+            }
+        })
+        await manager.broadcast(f"group:{run.group_id}", {
+            "type": "run_state_changed",
+            "data": {
+                "run_id": str(run_uuid),
+                "new_state": "confirmed"
+            }
+        })
+
         return {"message": "All participants ready! Run confirmed.", "is_ready": new_ready_status, "state_changed": True}
 
     return {"message": f"Ready status updated to {new_ready_status}", "is_ready": new_ready_status, "state_changed": False}
@@ -558,6 +649,22 @@ async def start_shopping(
 
     # Transition to shopping state
     repo.update_run_state(run_uuid, "shopping")
+
+    # Broadcast state change to both run and group
+    await manager.broadcast(f"run:{run_uuid}", {
+        "type": "state_changed",
+        "data": {
+            "run_id": str(run_uuid),
+            "new_state": "shopping"
+        }
+    })
+    await manager.broadcast(f"group:{run.group_id}", {
+        "type": "run_state_changed",
+        "data": {
+            "run_id": str(run_uuid),
+            "new_state": "shopping"
+        }
+    })
 
     return {"message": "Shopping started!", "state": "shopping"}
 
@@ -650,6 +757,22 @@ async def finish_adjusting(
 
     # Transition to distributing state
     repo.update_run_state(run_uuid, "distributing")
+
+    # Broadcast state change to both run and group
+    await manager.broadcast(f"run:{run_uuid}", {
+        "type": "state_changed",
+        "data": {
+            "run_id": str(run_uuid),
+            "new_state": "distributing"
+        }
+    })
+    await manager.broadcast(f"group:{run.group_id}", {
+        "type": "run_state_changed",
+        "data": {
+            "run_id": str(run_uuid),
+            "new_state": "distributing"
+        }
+    })
 
     return {"message": "Adjustments complete! Moving to distribution.", "state": "distributing"}
 

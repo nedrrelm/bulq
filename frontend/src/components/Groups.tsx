@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './Groups.css'
 import NewGroupPopup from './NewGroupPopup'
+import { useWebSocket } from '../hooks/useWebSocket'
 
 interface RunSummary {
   id: string
@@ -93,6 +94,74 @@ export default function Groups({ onGroupSelect, onRunSelect, onProductSelect }: 
 
     fetchGroups()
   }, [])
+
+  // WebSocket connections for real-time updates
+  useEffect(() => {
+    const wsConnections: any[] = []
+
+    groups.forEach((group) => {
+      const ws = new WebSocket(`ws://localhost:8000/ws/groups/${group.id}`)
+
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data)
+
+          if (message.type === 'run_created') {
+            // Add new run to the group's active runs
+            setGroups(prev => prev.map(g => {
+              if (g.id === group.id) {
+                const newRun: RunSummary = {
+                  id: message.data.run_id,
+                  store_name: message.data.store_name,
+                  state: message.data.state
+                }
+                return {
+                  ...g,
+                  active_runs: [...g.active_runs, newRun].slice(0, 3),
+                  active_runs_count: g.active_runs_count + 1
+                }
+              }
+              return g
+            }))
+          } else if (message.type === 'run_state_changed') {
+            // Update run state in active runs
+            setGroups(prev => prev.map(g => {
+              if (g.id === group.id) {
+                // If completed, move to completed count
+                if (message.data.new_state === 'completed') {
+                  return {
+                    ...g,
+                    active_runs: g.active_runs.filter(r => r.id !== message.data.run_id),
+                    active_runs_count: g.active_runs_count - 1,
+                    completed_runs_count: g.completed_runs_count + 1
+                  }
+                }
+                // Otherwise just update the state
+                return {
+                  ...g,
+                  active_runs: g.active_runs.map(r =>
+                    r.id === message.data.run_id
+                      ? { ...r, state: message.data.new_state }
+                      : r
+                  )
+                }
+              }
+              return g
+            }))
+          }
+        } catch (err) {
+          console.error('Failed to parse WebSocket message:', err)
+        }
+      }
+
+      wsConnections.push(ws)
+    })
+
+    // Cleanup on unmount or when groups change
+    return () => {
+      wsConnections.forEach(ws => ws.close())
+    }
+  }, [groups.map(g => g.id).join(',')]) // Re-run when group IDs change
 
   const handleGroupClick = (groupId: string) => {
     onGroupSelect(groupId)

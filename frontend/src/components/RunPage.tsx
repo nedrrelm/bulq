@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './RunPage.css'
 import BidPopup from './BidPopup'
 import AddProductPopup from './AddProductPopup'
+import { useWebSocket } from '../hooks/useWebSocket'
 
 interface UserBid {
   user_id: string
@@ -90,6 +91,98 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
 
     fetchRunDetails()
   }, [runId])
+
+  // WebSocket for real-time updates
+  useWebSocket(
+    runId ? `ws://localhost:8000/ws/runs/${runId}` : null,
+    {
+      onMessage: (message) => {
+        if (!run) return
+
+        if (message.type === 'bid_updated') {
+          // Update product with new bid or updated bid
+          setRun(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              products: prev.products.map(p => {
+                if (p.id === message.data.product_id) {
+                  // Check if bid from this user already exists
+                  const existingBidIndex = p.user_bids.findIndex(b => b.user_id === message.data.user_id)
+                  let newUserBids = [...p.user_bids]
+
+                  const newBid: UserBid = {
+                    user_id: message.data.user_id,
+                    user_name: message.data.user_name,
+                    quantity: message.data.quantity,
+                    interested_only: message.data.interested_only
+                  }
+
+                  if (existingBidIndex >= 0) {
+                    // Update existing bid
+                    newUserBids[existingBidIndex] = newBid
+                  } else {
+                    // Add new bid
+                    newUserBids.push(newBid)
+                  }
+
+                  return {
+                    ...p,
+                    user_bids: newUserBids,
+                    total_quantity: message.data.new_total,
+                    interested_count: newUserBids.filter(b => b.interested_only || b.quantity > 0).length
+                  }
+                }
+                return p
+              })
+            }
+          })
+        } else if (message.type === 'bid_retracted') {
+          // Remove bid from product
+          setRun(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              products: prev.products.map(p => {
+                if (p.id === message.data.product_id) {
+                  const newUserBids = p.user_bids.filter(b => b.user_id !== message.data.user_id)
+                  return {
+                    ...p,
+                    user_bids: newUserBids,
+                    total_quantity: message.data.new_total,
+                    interested_count: newUserBids.filter(b => b.interested_only || b.quantity > 0).length
+                  }
+                }
+                return p
+              })
+            }
+          })
+        } else if (message.type === 'ready_toggled') {
+          // Update participant ready status
+          setRun(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              participants: prev.participants.map(p =>
+                p.user_id === message.data.user_id
+                  ? { ...p, is_ready: message.data.is_ready }
+                  : p
+              )
+            }
+          })
+        } else if (message.type === 'state_changed') {
+          // Update run state
+          setRun(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              state: message.data.new_state
+            }
+          })
+        }
+      }
+    }
+  )
 
   const canBid = run?.state === 'planning' || run?.state === 'active' || run?.state === 'adjusting'
 
