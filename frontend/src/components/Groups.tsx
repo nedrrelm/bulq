@@ -44,6 +44,29 @@ export default function Groups({ onGroupSelect, onRunSelect, onProductSelect }: 
 
   const BACKEND_URL = 'http://localhost:8000'
 
+  const getStateLabel = (state: string) => {
+    switch (state) {
+      case 'planning':
+        return 'Planning'
+      case 'active':
+        return 'Active'
+      case 'confirmed':
+        return 'Confirmed'
+      case 'shopping':
+        return 'Shopping'
+      case 'adjusting':
+        return 'Adjusting'
+      case 'distributing':
+        return 'Distributing'
+      case 'completed':
+        return 'Completed'
+      case 'cancelled':
+        return 'Cancelled'
+      default:
+        return state
+    }
+  }
+
   useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -227,7 +250,7 @@ export default function Groups({ onGroupSelect, onRunSelect, onProductSelect }: 
                       }}
                     >
                       <span className="run-store">{run.store_name}</span>
-                      <span className={`run-state state-${run.state}`}>{run.state}</span>
+                      <span className={`run-state state-${run.state}`}>{getStateLabel(run.state)}</span>
                     </div>
                   ))}
                   {group.active_runs_count > 3 && (

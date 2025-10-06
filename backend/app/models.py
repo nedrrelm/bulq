@@ -60,6 +60,7 @@ class Run(Base):
     active_at = Column(DateTime(timezone=True), nullable=True)
     confirmed_at = Column(DateTime(timezone=True), nullable=True)
     shopping_at = Column(DateTime(timezone=True), nullable=True)
+    adjusting_at = Column(DateTime(timezone=True), nullable=True)
     distributing_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     cancelled_at = Column(DateTime(timezone=True), nullable=True)

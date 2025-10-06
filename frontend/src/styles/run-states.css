@@ -23,6 +23,10 @@
   background-color: #8b5cf6;
 }
 
+.state-adjusting {
+  background-color: #f59e0b;
+}
+
 .state-distributing {
   background-color: #06b6d4;
 }

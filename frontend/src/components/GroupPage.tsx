@@ -82,6 +82,8 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
         return 'Confirmed'
       case 'shopping':
         return 'Shopping'
+      case 'adjusting':
+        return 'Adjusting'
       case 'distributing':
         return 'Distributing'
       case 'completed':
@@ -93,9 +95,10 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     }
   }
 
-  // State ordering for sorting (reverse order: distributing > shopping > confirmed > active > planning)
+  // State ordering for sorting (reverse order: distributing > adjusting > shopping > confirmed > active > planning)
   const stateOrder: Record<string, number> = {
-    'distributing': 5,
+    'distributing': 6,
+    'adjusting': 5,
     'shopping': 4,
     'confirmed': 3,
     'active': 2,

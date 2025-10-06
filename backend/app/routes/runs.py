@@ -81,6 +81,7 @@ class ProductResponse(BaseModel):
     interested_count: int
     user_bids: list[UserBidResponse]
     current_user_bid: UserBidResponse | None
+    purchased_quantity: int | None = None  # For adjusting state
 
     class Config:
         from_attributes = True
@@ -173,6 +174,13 @@ async def get_run_details(
         store_products = repo.get_products_by_store(run.store_id)
         run_bids = repo.get_bids_by_run(run.id)
 
+        # Get shopping list items if in adjusting state
+        shopping_list_map = {}
+        if run.state == 'adjusting':
+            shopping_items = repo.get_shopping_list_items(run.id)
+            for item in shopping_items:
+                shopping_list_map[item.product_id] = item
+
         # Calculate product statistics
         products_data = []
         for product in store_products:
@@ -204,6 +212,11 @@ async def get_run_details(
                             if participation.user_id == current_user.id:
                                 current_user_bid = bid_response
 
+                # Get purchased quantity if in adjusting state
+                purchased_qty = None
+                if run.state == 'adjusting' and product.id in shopping_list_map:
+                    purchased_qty = shopping_list_map[product.id].purchased_quantity
+
                 products_data.append(ProductResponse(
                     id=str(product.id),
                     name=product.name,
@@ -211,7 +224,8 @@ async def get_run_details(
                     total_quantity=total_quantity,
                     interested_count=interested_count,
                     user_bids=user_bids_data,
-                    current_user_bid=current_user_bid
+                    current_user_bid=current_user_bid,
+                    purchased_quantity=purchased_qty
                 ))
     else:
         # Database mode - would need proper joins
@@ -263,7 +277,7 @@ async def place_bid(
         raise HTTPException(status_code=403, detail="Not authorized to bid on this run")
 
     # Check if run allows bidding
-    if run.state not in ['planning', 'active']:
+    if run.state not in ['planning', 'active', 'adjusting']:
         raise HTTPException(status_code=400, detail="Bidding not allowed in current run state")
 
     # Verify product exists
@@ -276,11 +290,46 @@ async def place_bid(
     if bid_request.quantity < 0:
         raise HTTPException(status_code=400, detail="Quantity cannot be negative")
 
+    # In adjusting state, only allow downward adjustments
+    if run.state == 'adjusting':
+        # Get shopping list to check purchased quantity
+        shopping_items = repo.get_shopping_list_items(run_uuid)
+        shopping_item = next((item for item in shopping_items if item.product_id == product_uuid), None)
+
+        if not shopping_item:
+            raise HTTPException(status_code=400, detail="Product not in shopping list")
+
+        # Calculate how much we need to reduce
+        purchased_qty = shopping_item.purchased_quantity or 0
+        requested_qty = shopping_item.requested_quantity
+        shortage = requested_qty - purchased_qty
+
+        # Get current bid (only in memory mode for now)
+        participation = repo.get_participation(current_user.id, run_uuid)
+        existing_bid = None
+        if participation and hasattr(repo, '_bids'):
+            for bid in repo._bids.values():
+                if (bid.participation_id == participation.id and
+                    bid.product_id == product_uuid):
+                    existing_bid = bid
+                    break
+
+            if existing_bid:
+                # Can only reduce, and at most to accommodate the shortage
+                min_allowed = max(0, existing_bid.quantity - shortage)
+                if bid_request.quantity > existing_bid.quantity:
+                    raise HTTPException(status_code=400, detail=f"Can only reduce bids in adjusting state (current: {existing_bid.quantity}, new: {bid_request.quantity})")
+                if bid_request.quantity < min_allowed:
+                    raise HTTPException(status_code=400, detail=f"Cannot reduce bid below {min_allowed} (current: {existing_bid.quantity}, shortage: {shortage}, would remove more than needed)")
+
     if hasattr(repo, '_bids'):  # Memory mode
         # Get or create participation for this user in this run
         participation = repo.get_participation(current_user.id, run_uuid)
         is_new_participant = False
         if not participation:
+            # Don't allow new participants in adjusting state
+            if run.state == 'adjusting':
+                raise HTTPException(status_code=400, detail="Cannot join run in adjusting state")
             # Create participation (not as leader)
             participation = repo.create_participation(current_user.id, run_uuid, is_leader=False)
             is_new_participant = True
@@ -298,6 +347,9 @@ async def place_bid(
             existing_bid.quantity = bid_request.quantity
             existing_bid.interested_only = bid_request.interested_only
         else:
+            # Don't allow new bids on products in adjusting state
+            if run.state == 'adjusting':
+                raise HTTPException(status_code=400, detail="Cannot bid on new products in adjusting state")
             # Create new bid
             from uuid import uuid4
             new_bid = ProductBid(
@@ -347,14 +399,38 @@ async def retract_bid(
         raise HTTPException(status_code=403, detail="Not authorized to modify bids on this run")
 
     # Check if run allows bid modification
-    if run.state not in ['planning', 'active']:
+    if run.state not in ['planning', 'active', 'adjusting']:
         raise HTTPException(status_code=400, detail="Bid modification not allowed in current run state")
+
+    # In adjusting state, check if retraction is allowed
+    if run.state == 'adjusting':
+        # Get shopping list to check if this retraction is within limits
+        shopping_items = repo.get_shopping_list_items(run_uuid)
+        shopping_item = next((item for item in shopping_items if item.product_id == product_uuid), None)
+
+        if shopping_item:
+            purchased_qty = shopping_item.purchased_quantity or 0
+            requested_qty = shopping_item.requested_quantity
+            shortage = requested_qty - purchased_qty
+
+            # Get current bid to check if full retraction is allowed
+            participation = repo.get_participation(current_user.id, run_uuid)
+            if participation and hasattr(repo, '_bids'):
+                current_bid = None
+                for bid in repo._bids.values():
+                    if (bid.participation_id == participation.id and
+                        bid.product_id == product_uuid):
+                        current_bid = bid
+                        break
+
+                if current_bid and current_bid.quantity > shortage:
+                    raise HTTPException(status_code=400, detail=f"Cannot fully retract bid. You can reduce it by at most {shortage} items.")
 
     if hasattr(repo, '_bids'):  # Memory mode
         # Get participation for this user in this run
         participation = repo.get_participation(current_user.id, run_uuid)
         if not participation:
-            raise HTTPException(status_code=404, detail="No bid found to retract")
+            raise HTTPException(status_code=404, detail=f"You are not participating in this run (user_id: {current_user.id}, run_id: {run_uuid})")
 
         # Find and remove the user's bid
         bid_to_remove = None
@@ -368,7 +444,7 @@ async def retract_bid(
             del repo._bids[bid_to_remove]
             return {"message": "Bid retracted successfully"}
         else:
-            raise HTTPException(status_code=404, detail="No bid found to retract")
+            raise HTTPException(status_code=404, detail=f"No bid found for this product")
 
     return {"message": "Bid retracted successfully"}
 
@@ -484,6 +560,98 @@ async def start_shopping(
     repo.update_run_state(run_uuid, "shopping")
 
     return {"message": "Shopping started!", "state": "shopping"}
+
+@router.post("/{run_id}/finish-adjusting")
+async def finish_adjusting(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Finish adjusting bids - transition from adjusting to distributing state (leader only)."""
+    repo = get_repository(db)
+
+    # Validate run ID
+    try:
+        run_uuid = uuid.UUID(run_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid run ID format")
+
+    # Get the run
+    run = repo.get_run_by_id(run_uuid)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Verify user has access to this run (member of the group)
+    user_groups = repo.get_user_groups(current_user)
+    if not any(g.id == run.group_id for g in user_groups):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this run")
+
+    # Only allow finishing adjusting from adjusting state
+    if run.state != 'adjusting':
+        raise HTTPException(status_code=400, detail="Can only finish adjusting from adjusting state")
+
+    # Check if user is the run leader
+    participation = repo.get_participation(current_user.id, run_uuid)
+    if not participation or not participation.is_leader:
+        raise HTTPException(status_code=403, detail="Only the run leader can finish adjusting")
+
+    # Verify that quantities now match
+    shopping_items = repo.get_shopping_list_items(run_uuid)
+    all_bids = repo.get_bids_by_run(run_uuid)
+
+    for shopping_item in shopping_items:
+        if not shopping_item.is_purchased:
+            continue
+
+        # Calculate new total from bids
+        product_bids = [bid for bid in all_bids if bid.product_id == shopping_item.product_id and not bid.interested_only]
+        total_requested = sum(bid.quantity for bid in product_bids)
+
+        # Check if it matches purchased quantity
+        if total_requested != shopping_item.purchased_quantity:
+            shortage = total_requested - shopping_item.purchased_quantity
+            raise HTTPException(
+                status_code=400,
+                detail=f"Quantities still don't match. Need to reduce {shortage} more items across all bids."
+            )
+
+    # All quantities match, proceed with distribution
+    for shopping_item in shopping_items:
+        if not shopping_item.is_purchased:
+            continue
+
+        # Get all bids for this product
+        product_bids = [bid for bid in all_bids if bid.product_id == shopping_item.product_id and not bid.interested_only]
+
+        # Update shopping list item's requested_quantity to match adjusted bids
+        total_requested = sum(bid.quantity for bid in product_bids)
+        if hasattr(repo, '_shopping_list_items'):  # Memory mode
+            shopping_item.requested_quantity = total_requested
+        else:  # Database mode
+            from ..models import ShoppingListItem
+            db_item = db.query(ShoppingListItem).filter(ShoppingListItem.id == shopping_item.id).first()
+            if db_item:
+                db_item.requested_quantity = total_requested
+
+        # Distribute the purchased items to bidders
+        for bid in product_bids:
+            if hasattr(repo, '_bids'):  # Memory mode
+                bid.distributed_quantity = bid.quantity
+                bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
+            else:  # Database mode
+                from ..models import ProductBid
+                db_bid = db.query(ProductBid).filter(ProductBid.id == bid.id).first()
+                if db_bid:
+                    db_bid.distributed_quantity = bid.quantity
+                    db_bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
+
+    if not hasattr(repo, '_bids'):  # Database mode
+        db.commit()
+
+    # Transition to distributing state
+    repo.update_run_state(run_uuid, "distributing")
+
+    return {"message": "Adjustments complete! Moving to distribution.", "state": "distributing"}
 
 @router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
 async def get_available_products(

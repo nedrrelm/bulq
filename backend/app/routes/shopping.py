@@ -204,10 +204,26 @@ async def complete_shopping(
     if run.state != 'shopping':
         raise HTTPException(status_code=400, detail="Can only complete shopping from shopping state")
 
-    # Initialize distribution data from shopping list and bids
+    # Check if any items have insufficient quantities
     shopping_items = repo.get_shopping_list_items(run_uuid)
     all_bids = repo.get_bids_by_run(run_uuid)
 
+    has_insufficient = False
+    for shopping_item in shopping_items:
+        if not shopping_item.is_purchased:
+            continue
+
+        # Check if purchased quantity is less than requested
+        if shopping_item.purchased_quantity < shopping_item.requested_quantity:
+            has_insufficient = True
+            break
+
+    # If we have insufficient quantities, transition to adjusting state
+    if has_insufficient:
+        repo.update_run_state(run_uuid, "adjusting")
+        return {"message": "Some items have insufficient quantities. Participants need to adjust their bids.", "state": "adjusting"}
+
+    # Otherwise, proceed with distribution
     # For each shopping item (purchased product), distribute to users who bid
     for shopping_item in shopping_items:
         if not shopping_item.is_purchased:
@@ -216,8 +232,7 @@ async def complete_shopping(
         # Get all bids for this product
         product_bids = [bid for bid in all_bids if bid.product_id == shopping_item.product_id and not bid.interested_only]
 
-        # Distribute the purchased items to bidders
-        # For now, assume we got exactly what was requested
+        # Distribute the purchased items to bidders (all quantities match)
         for bid in product_bids:
             if hasattr(repo, '_bids'):  # Memory mode
                 bid.distributed_quantity = bid.quantity

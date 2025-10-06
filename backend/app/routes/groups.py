@@ -57,9 +57,10 @@ async def get_my_groups(
     all_stores = repo.get_all_stores()
     store_lookup = {store.id: store.name for store in all_stores}
 
-    # State ordering for sorting (reverse order: distributing > shopping > confirmed > active > planning)
+    # State ordering for sorting (reverse order: distributing > adjusting > shopping > confirmed > active > planning)
     state_order = {
-        'distributing': 5,
+        'distributing': 6,
+        'adjusting': 5,
         'shopping': 4,
         'confirmed': 3,
         'active': 2,
