@@ -7,6 +7,7 @@ from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..websocket_manager import manager
 from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError
+from ..run_state import RunState
 from pydantic import BaseModel
 import logging
 import uuid
@@ -402,8 +403,8 @@ async def place_bid(
         # Automatic state transition: planning → active
         # When a non-leader places their first bid, transition from planning to active
         state_changed = False
-        if is_new_participant and not participation.is_leader and run.state == "planning":
-            repo.update_run_state(run_uuid, "active")
+        if is_new_participant and not participation.is_leader and run.state == RunState.PLANNING:
+            repo.update_run_state(run_uuid, RunState.ACTIVE)
             state_changed = True
 
         # Calculate new totals for broadcasting
@@ -430,14 +431,14 @@ async def place_bid(
                 "type": "state_changed",
                 "data": {
                     "run_id": str(run_uuid),
-                    "new_state": "active"
+                    "new_state": RunState.ACTIVE
                 }
             })
             await manager.broadcast(f"group:{run.group_id}", {
                 "type": "run_state_changed",
                 "data": {
                     "run_id": str(run_uuid),
-                    "new_state": "active"
+                    "new_state": RunState.ACTIVE
                 }
             })
 
@@ -598,21 +599,21 @@ async def toggle_ready(
     # Automatic state transition: active → confirmed
     # When all participants mark themselves as ready
     if all_ready and len(all_participations) > 0:
-        repo.update_run_state(run_uuid, "confirmed")
+        repo.update_run_state(run_uuid, RunState.CONFIRMED)
 
         # Broadcast state change to both run and group
         await manager.broadcast(f"run:{run_uuid}", {
             "type": "state_changed",
             "data": {
                 "run_id": str(run_uuid),
-                "new_state": "confirmed"
+                "new_state": RunState.CONFIRMED
             }
         })
         await manager.broadcast(f"group:{run.group_id}", {
             "type": "run_state_changed",
             "data": {
                 "run_id": str(run_uuid),
-                "new_state": "confirmed"
+                "new_state": RunState.CONFIRMED
             }
         })
 
@@ -671,25 +672,25 @@ async def start_shopping(
         repo.create_shopping_list_item(run_uuid, product_id, quantity)
 
     # Transition to shopping state
-    repo.update_run_state(run_uuid, "shopping")
+    repo.update_run_state(run_uuid, RunState.SHOPPING)
 
     # Broadcast state change to both run and group
     await manager.broadcast(f"run:{run_uuid}", {
         "type": "state_changed",
         "data": {
             "run_id": str(run_uuid),
-            "new_state": "shopping"
+            "new_state": RunState.SHOPPING
         }
     })
     await manager.broadcast(f"group:{run.group_id}", {
         "type": "run_state_changed",
         "data": {
             "run_id": str(run_uuid),
-            "new_state": "shopping"
+            "new_state": RunState.SHOPPING
         }
     })
 
-    return {"message": "Shopping started!", "state": "shopping"}
+    return {"message": "Shopping started!", "state": RunState.SHOPPING}
 
 @router.post("/{run_id}/finish-adjusting")
 async def finish_adjusting(
@@ -779,25 +780,25 @@ async def finish_adjusting(
         db.commit()
 
     # Transition to distributing state
-    repo.update_run_state(run_uuid, "distributing")
+    repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
 
     # Broadcast state change to both run and group
     await manager.broadcast(f"run:{run_uuid}", {
         "type": "state_changed",
         "data": {
             "run_id": str(run_uuid),
-            "new_state": "distributing"
+            "new_state": RunState.DISTRIBUTING
         }
     })
     await manager.broadcast(f"group:{run.group_id}", {
         "type": "run_state_changed",
         "data": {
             "run_id": str(run_uuid),
-            "new_state": "distributing"
+            "new_state": RunState.DISTRIBUTING
         }
     })
 
-    return {"message": "Adjustments complete! Moving to distribution.", "state": "distributing"}
+    return {"message": "Adjustments complete! Moving to distribution.", "state": RunState.DISTRIBUTING}
 
 @router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
 async def get_available_products(

@@ -7,6 +7,7 @@ from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..websocket_manager import manager
 from ..exceptions import NotFoundError, ForbiddenError
+from ..run_state import RunState
 from pydantic import BaseModel
 import logging
 import uuid
@@ -228,25 +229,25 @@ async def complete_shopping(
 
     # If we have insufficient quantities, transition to adjusting state
     if has_insufficient:
-        repo.update_run_state(run_uuid, "adjusting")
+        repo.update_run_state(run_uuid, RunState.ADJUSTING)
 
         # Broadcast state change to both run and group
         await manager.broadcast(f"run:{run_uuid}", {
             "type": "state_changed",
             "data": {
                 "run_id": str(run_uuid),
-                "new_state": "adjusting"
+                "new_state": RunState.ADJUSTING
             }
         })
         await manager.broadcast(f"group:{run.group_id}", {
             "type": "run_state_changed",
             "data": {
                 "run_id": str(run_uuid),
-                "new_state": "adjusting"
+                "new_state": RunState.ADJUSTING
             }
         })
 
-        return {"message": "Some items have insufficient quantities. Participants need to adjust their bids.", "state": "adjusting"}
+        return {"message": "Some items have insufficient quantities. Participants need to adjust their bids.", "state": RunState.ADJUSTING}
 
     # Otherwise, proceed with distribution
     # For each shopping item (purchased product), distribute to users who bid
@@ -273,22 +274,22 @@ async def complete_shopping(
         db.commit()
 
     # Transition to distributing state
-    repo.update_run_state(run_uuid, "distributing")
+    repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
 
     # Broadcast state change to both run and group
     await manager.broadcast(f"run:{run_uuid}", {
         "type": "state_changed",
         "data": {
             "run_id": str(run_uuid),
-            "new_state": "distributing"
+            "new_state": RunState.DISTRIBUTING
         }
     })
     await manager.broadcast(f"group:{run.group_id}", {
         "type": "run_state_changed",
         "data": {
             "run_id": str(run_uuid),
-            "new_state": "distributing"
+            "new_state": RunState.DISTRIBUTING
         }
     })
 
-    return {"message": "Shopping completed! Moving to distribution.", "state": "distributing"}
+    return {"message": "Shopping completed! Moving to distribution.", "state": RunState.DISTRIBUTING}
