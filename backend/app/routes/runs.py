@@ -6,10 +6,13 @@ from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipat
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..websocket_manager import manager
+from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError
 from pydantic import BaseModel
+import logging
 import uuid
 
 router = APIRouter(prefix="/runs", tags=["runs"])
+logger = logging.getLogger(__name__)
 
 class CreateRunRequest(BaseModel):
     group_id: str
@@ -31,6 +34,10 @@ async def create_run(
     db: Session = Depends(get_db)
 ):
     """Create a new run for a group."""
+    logger.info(
+        f"Creating run for group",
+        extra={"user_id": str(current_user.id), "group_id": request.group_id, "store_id": request.store_id}
+    )
     repo = get_repository(db)
 
     # Validate IDs
@@ -57,6 +64,11 @@ async def create_run(
 
     # Create the run with current user as leader
     run = repo.create_run(group_uuid, store_uuid, current_user.id)
+
+    logger.info(
+        f"Run created successfully",
+        extra={"user_id": str(current_user.id), "run_id": str(run.id), "group_id": str(group_uuid)}
+    )
 
     # Broadcast to group room
     await manager.broadcast(f"group:{group_uuid}", {
@@ -276,6 +288,10 @@ async def place_bid(
     db: Session = Depends(get_db)
 ):
     """Place or update a bid on a product in a run."""
+    logger.info(
+        f"Placing bid on product",
+        extra={"user_id": str(current_user.id), "run_id": run_id, "product_id": bid_request.product_id, "quantity": bid_request.quantity}
+    )
     repo = get_repository(db)
 
     # Validate IDs
