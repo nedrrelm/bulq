@@ -5,6 +5,7 @@ from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
 from ..repository import get_repository
+from ..websocket_manager import manager
 from pydantic import BaseModel
 import uuid
 
@@ -221,6 +222,23 @@ async def complete_shopping(
     # If we have insufficient quantities, transition to adjusting state
     if has_insufficient:
         repo.update_run_state(run_uuid, "adjusting")
+
+        # Broadcast state change to both run and group
+        await manager.broadcast(f"run:{run_uuid}", {
+            "type": "state_changed",
+            "data": {
+                "run_id": str(run_uuid),
+                "new_state": "adjusting"
+            }
+        })
+        await manager.broadcast(f"group:{run.group_id}", {
+            "type": "run_state_changed",
+            "data": {
+                "run_id": str(run_uuid),
+                "new_state": "adjusting"
+            }
+        })
+
         return {"message": "Some items have insufficient quantities. Participants need to adjust their bids.", "state": "adjusting"}
 
     # Otherwise, proceed with distribution
@@ -249,5 +267,21 @@ async def complete_shopping(
 
     # Transition to distributing state
     repo.update_run_state(run_uuid, "distributing")
+
+    # Broadcast state change to both run and group
+    await manager.broadcast(f"run:{run_uuid}", {
+        "type": "state_changed",
+        "data": {
+            "run_id": str(run_uuid),
+            "new_state": "distributing"
+        }
+    })
+    await manager.broadcast(f"group:{run.group_id}", {
+        "type": "run_state_changed",
+        "data": {
+            "run_id": str(run_uuid),
+            "new_state": "distributing"
+        }
+    })
 
     return {"message": "Shopping completed! Moving to distribution.", "state": "distributing"}

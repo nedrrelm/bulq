@@ -8,6 +8,7 @@ from .routes.stores import router as stores_router
 from .routes.shopping import router as shopping_router
 from .routes.distribution import router as distribution_router
 from .routes.products import router as products_router
+from .routes.websocket import router as websocket_router
 
 app = FastAPI(title="Bulq API", version="0.1.0")
 
@@ -19,6 +20,7 @@ app.include_router(stores_router)
 app.include_router(shopping_router)
 app.include_router(distribution_router)
 app.include_router(products_router)
+app.include_router(websocket_router)
 
 # Add CORS middleware
 app.add_middleware(

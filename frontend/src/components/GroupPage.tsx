@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './GroupPage.css'
 import NewRunPopup from './NewRunPopup'
+import { useWebSocket } from '../hooks/useWebSocket'
 
 interface Run {
   id: string
@@ -71,6 +72,33 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
 
     fetchData()
   }, [groupId])
+
+  // WebSocket for real-time updates
+  useWebSocket(
+    groupId ? `ws://localhost:8000/ws/groups/${groupId}` : null,
+    {
+      onMessage: (message) => {
+        if (message.type === 'run_created') {
+          // Add new run to the list
+          const newRun: Run = {
+            id: message.data.run_id,
+            group_id: groupId,
+            store_id: message.data.store_id,
+            store_name: message.data.store_name,
+            state: message.data.state
+          }
+          setRuns(prev => [newRun, ...prev])
+        } else if (message.type === 'run_state_changed') {
+          // Update run state
+          setRuns(prev => prev.map(run =>
+            run.id === message.data.run_id
+              ? { ...run, state: message.data.new_state }
+              : run
+          ))
+        }
+      }
+    }
+  )
 
   const getStateLabel = (state: string) => {
     switch (state) {
