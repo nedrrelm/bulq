@@ -5,9 +5,13 @@ from typing import List, Optional, Dict
 from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from decimal import Decimal
+import logging
 
 from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem
 from .config import get_repo_mode
+from .run_state import RunState, state_machine
+
+logger = logging.getLogger(__name__)
 
 
 class AbstractRepository(ABC):
@@ -1072,11 +1076,30 @@ class MemoryRepository(AbstractRepository):
         from datetime import datetime
         run = self._runs.get(run_id)
         if run:
+            # Convert string states to RunState enum
+            current_state = RunState(run.state)
+            target_state = RunState(new_state)
+
+            # Validate transition using state machine
+            state_machine.validate_transition(current_state, target_state, str(run_id))
+
+            # Update state
             run.state = new_state
+
             # Set the timestamp for the new state
             timestamp_field = f"{new_state}_at"
             if hasattr(run, timestamp_field):
                 setattr(run, timestamp_field, datetime.utcnow())
+
+            logger.info(
+                f"Run state transitioned",
+                extra={
+                    "run_id": str(run_id),
+                    "from_state": str(current_state),
+                    "to_state": str(target_state)
+                }
+            )
+
             return run
         return None
 

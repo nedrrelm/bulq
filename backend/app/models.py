@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
+from .run_state import RunState
 
 Base = declarative_base()
 
@@ -53,7 +54,7 @@ class Run(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     group_id = Column(UUID(as_uuid=True), ForeignKey('groups.id'), nullable=False)
     store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False)
-    state = Column(String, nullable=False, default="planning")
+    state = Column(String, nullable=False, default=RunState.PLANNING)
 
     # State transition timestamps
     planning_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -6,6 +6,7 @@ from ..models import User
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..websocket_manager import manager
+from ..run_state import RunState
 from pydantic import BaseModel
 import uuid
 
@@ -210,22 +211,22 @@ async def complete_distribution(
         raise HTTPException(status_code=400, detail="Cannot complete distribution - some items not picked up")
 
     # Transition to completed state
-    repo.update_run_state(run_uuid, "completed")
+    repo.update_run_state(run_uuid, RunState.COMPLETED)
 
     # Broadcast state change to both run and group
     await manager.broadcast(f"run:{run_uuid}", {
         "type": "state_changed",
         "data": {
             "run_id": str(run_uuid),
-            "new_state": "completed"
+            "new_state": RunState.COMPLETED
         }
     })
     await manager.broadcast(f"group:{run.group_id}", {
         "type": "run_state_changed",
         "data": {
             "run_id": str(run_uuid),
-            "new_state": "completed"
+            "new_state": RunState.COMPLETED
         }
     })
 
-    return {"message": "Distribution completed!", "state": "completed"}
+    return {"message": "Distribution completed!", "state": RunState.COMPLETED}
