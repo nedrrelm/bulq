@@ -118,6 +118,7 @@ class RunDetailResponse(BaseModel):
     participants: List[ParticipantResponse]
     current_user_is_ready: bool
     current_user_is_leader: bool
+    leader_name: str
 
     class Config:
         from_attributes = True
@@ -165,6 +166,7 @@ async def get_run_details(
     participants_data = []
     current_user_is_ready = False
     current_user_is_leader = False
+    leader_name = "Unknown"
     participations = repo.get_run_participations_with_users(run.id)
 
     for participation in participations:
@@ -172,6 +174,10 @@ async def get_run_details(
         if participation.user_id == current_user.id:
             current_user_is_ready = participation.is_ready
             current_user_is_leader = participation.is_leader
+
+        # Find the leader
+        if participation.is_leader and participation.user:
+            leader_name = participation.user.name
 
         # Add to participants list if user data is available
         if participation.user:
@@ -253,7 +259,8 @@ async def get_run_details(
         products=products_data,
         participants=participants_data,
         current_user_is_ready=current_user_is_ready,
-        current_user_is_leader=current_user_is_leader
+        current_user_is_leader=current_user_is_leader,
+        leader_name=leader_name
     )
 
 class PlaceBidRequest(BaseModel):
