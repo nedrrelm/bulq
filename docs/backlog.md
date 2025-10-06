@@ -4,16 +4,6 @@ Feature backlog and technical debt for Bulq development.
 
 ## Technical Debt / Code Quality
 
-### Implement N+1 query optimization
-**Status**: High Priority
-**Affected files**: `app/routes/runs.py`, `app/repository.py`
-
-**Problem:** Multiple queries in loops causing N+1 query problems (e.g., `runs.py:169-181` iterating participations and querying users individually).
-
-**Solution:** Implement eager loading with SQLAlchemy `joinedload()` in repository methods. Should be repository-pattern friendly - add methods like:
-- `get_run_participations_with_users(run_id: UUID)`
-- `get_bids_with_products_and_users(run_id: UUID)`
-
 ---
 
 ### Add transaction management
