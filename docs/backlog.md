@@ -38,36 +38,6 @@ def quantity_non_negative(cls, v):
 
 ---
 
-### Implement proper FastAPI error handling
-**Status**: Medium Priority
-**Affected files**: `app/main.py`, all route files
-
-**Problem:** Inconsistent error responses, no global exception handler.
-
-**Solution:** Add exception handlers in `main.py`:
-- `@app.exception_handler(HTTPException)`
-- `@app.exception_handler(Exception)` for unexpected errors
-- Standardized error response format with timestamp
-
----
-
-### Add comprehensive logging
-**Status**: Medium Priority
-**Affected files**: All backend files
-
-**Problem:** Zero logging throughout application - debugging production issues will be impossible.
-
-**Solution:** Add Python logging with appropriate severity levels:
-- **DEBUG**: Detailed info for debugging (SQL queries, internal flow)
-- **INFO**: Key operations (user login, run creation, state transitions)
-- **WARNING**: Recoverable issues (retry attempts, deprecation warnings)
-- **ERROR**: Operation failures that need attention
-- **CRITICAL**: System-level failures
-
-Configure structured logging with context (user_id, run_id, etc.).
-
----
-
 ### Create RunState enum and state machine
 **Status**: Medium Priority
 **Affected files**: `app/models.py`, `app/routes/runs.py`, `app/routes/shopping.py`
