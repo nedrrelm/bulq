@@ -4,39 +4,6 @@ Feature backlog and technical debt for Bulq development.
 
 ## Technical Debt / Code Quality
 
-### Gut DatabaseRepository and fix repository pattern anti-patterns
-**Status**: High Priority
-**Affected files**: `app/repository.py`, `app/routes/runs.py`, `app/routes/shopping.py`, `app/routes/distribution.py`
-
-**Problem:**
-1. `DatabaseRepository` has full implementation but we're not using it yet - confusing and hard to maintain
-2. Routes use `hasattr(repo, '_bids')` anti-pattern to detect implementation type
-3. Routes directly access private attributes (`repo._bids`, `repo._runs`, `repo._participations`)
-4. Abstract class methods do nothing (just `pass`) instead of raising `NotImplementedError`
-
-**Solution:**
-1. **Gut DatabaseRepository**: Remove all implementation logic, leave just empty methods that raise `NotImplementedError`
-2. **Fix Abstract methods**: Change all `pass` to `raise NotImplementedError("Subclass must implement")`
-3. **Add missing repository methods** to eliminate private attribute access:
-   - `get_bid_by_participation_and_product(participation_id, product_id) -> Optional[ProductBid]`
-   - `update_bid(bid_id, quantity, interested_only) -> ProductBid`
-   - `delete_bid(bid_id) -> bool`
-   - `create_bid(participation_id, product_id, quantity, interested_only) -> ProductBid`
-   - Any others needed to eliminate `hasattr()` checks
-
-4. **Remove all `hasattr(repo, '_bids')` checks** from routes - use repository methods instead
-5. **Remove all direct private attribute access** (`repo._bids`, `repo._runs`, etc.)
-
-**When we need DatabaseRepository later:** Build it from scratch based on the working MemoryRepository implementation.
-
-**Benefits:**
-- Clear that we're only using MemoryRepository
-- Routes become cleaner and implementation-agnostic
-- Easier to maintain one implementation
-- When we need database mode, we have clear interface to implement
-
----
-
 ### Implement N+1 query optimization
 **Status**: High Priority
 **Affected files**: `app/routes/runs.py`, `app/repository.py`
