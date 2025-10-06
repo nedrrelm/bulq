@@ -377,11 +377,13 @@ class MemoryRepository(AbstractRepository):
         run_completed_5 = self._create_run(work_group.id, sams.id, "completed", bob.id, days_ago=75)
 
         # Planning run - test user is leader (no other participants yet)
-        test_planning_p = self._create_participation(test_user.id, run_planning.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        test_planning_p = next((p for p in self._participations.values() if p.user_id == test_user.id and p.run_id == run_planning.id), None)
 
         # Active run - test user is leader, others have bid
         # Multiple users bidding on same products
-        test_active_p = self._create_participation(test_user.id, run_active.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        test_active_p = next((p for p in self._participations.values() if p.user_id == test_user.id and p.run_id == run_active.id), None)
         alice_active_p = self._create_participation(alice.id, run_active.id, is_leader=False)
         bob_active_p = self._create_participation(bob.id, run_active.id, is_leader=False)
         carol_active_p = self._create_participation(carol.id, run_active.id, is_leader=False)
@@ -402,7 +404,9 @@ class MemoryRepository(AbstractRepository):
         self._create_bid(alice_active_p.id, bananas.id, 0, True)
 
         # Confirmed run - test user is leader, all are ready
-        test_confirmed_p = self._create_participation(test_user.id, run_confirmed.id, is_leader=True, is_ready=True)
+        # Leader participation already created by _create_run(), just update ready status
+        test_confirmed_p = next((p for p in self._participations.values() if p.user_id == test_user.id and p.run_id == run_confirmed.id), None)
+        test_confirmed_p.is_ready = True
         alice_confirmed_p = self._create_participation(alice.id, run_confirmed.id, is_leader=False, is_ready=True)
         carol_confirmed_p = self._create_participation(carol.id, run_confirmed.id, is_leader=False, is_ready=True)
         bob_confirmed_p = self._create_participation(bob.id, run_confirmed.id, is_leader=False, is_ready=True)
@@ -423,7 +427,8 @@ class MemoryRepository(AbstractRepository):
         self._create_bid(carol_confirmed_p.id, paper_towels.id, 2, False)
 
         # Shopping run - test user is leader, has shopping list
-        test_shopping_p = self._create_participation(test_user.id, run_shopping.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        test_shopping_p = next((p for p in self._participations.values() if p.user_id == test_user.id and p.run_id == run_shopping.id), None)
         alice_shopping_p = self._create_participation(alice.id, run_shopping.id, is_leader=False)
         bob_shopping_p = self._create_participation(bob.id, run_shopping.id, is_leader=False)
 
@@ -500,7 +505,8 @@ class MemoryRepository(AbstractRepository):
 
         # Distributing run - test user is leader, has distribution data
         # Multiple users bidding on same products
-        test_dist_p = self._create_participation(test_user.id, run_distributing.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        test_dist_p = next((p for p in self._participations.values() if p.user_id == test_user.id and p.run_id == run_distributing.id), None)
         alice_dist_p = self._create_participation(alice.id, run_distributing.id, is_leader=False)
         bob_dist_p = self._create_participation(bob.id, run_distributing.id, is_leader=False)
         carol_dist_p = self._create_participation(carol.id, run_distributing.id, is_leader=False)
@@ -556,7 +562,8 @@ class MemoryRepository(AbstractRepository):
         bid9.is_picked_up = True
 
         # Completed run - test user is leader, all picked up
-        test_completed_p = self._create_participation(test_user.id, run_completed.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        test_completed_p = next((p for p in self._participations.values() if p.user_id == test_user.id and p.run_id == run_completed.id), None)
         alice_completed_p = self._create_participation(alice.id, run_completed.id, is_leader=False)
         carol_completed_p = self._create_participation(carol.id, run_completed.id, is_leader=False)
 
@@ -589,7 +596,8 @@ class MemoryRepository(AbstractRepository):
         bid14.is_picked_up = True
 
         # Completed run 2 (30 days ago) - Costco run with different prices
-        test_completed2_p = self._create_participation(test_user.id, run_completed_2.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        test_completed2_p = next((p for p in self._participations.values() if p.user_id == test_user.id and p.run_id == run_completed_2.id), None)
         alice_completed2_p = self._create_participation(alice.id, run_completed_2.id, is_leader=False)
         bob_completed2_p = self._create_participation(bob.id, run_completed_2.id, is_leader=False)
 
@@ -642,7 +650,8 @@ class MemoryRepository(AbstractRepository):
         shopping_item5.purchase_order = 3
 
         # Completed run 3 (45 days ago) - Sam's Club run led by alice
-        alice_completed3_p = self._create_participation(alice.id, run_completed_3.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        alice_completed3_p = next((p for p in self._participations.values() if p.user_id == alice.id and p.run_id == run_completed_3.id), None)
         bob_completed3_p = self._create_participation(bob.id, run_completed_3.id, is_leader=False)
         carol_completed3_p = self._create_participation(carol.id, run_completed_3.id, is_leader=False)
 
@@ -695,7 +704,8 @@ class MemoryRepository(AbstractRepository):
         shopping_item8.purchase_order = 3
 
         # Completed run 4 (60 days ago) - Costco run led by bob
-        bob_completed4_p = self._create_participation(bob.id, run_completed_4.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        bob_completed4_p = next((p for p in self._participations.values() if p.user_id == bob.id and p.run_id == run_completed_4.id), None)
         alice_completed4_p = self._create_participation(alice.id, run_completed_4.id, is_leader=False)
         test_completed4_p = self._create_participation(test_user.id, run_completed_4.id, is_leader=False)
 
@@ -753,7 +763,8 @@ class MemoryRepository(AbstractRepository):
         shopping_item11.purchase_order = 3
 
         # Completed run 5 (75 days ago) - Sam's Club run for work group
-        bob_completed5_p = self._create_participation(bob.id, run_completed_5.id, is_leader=True)
+        # Leader participation already created by _create_run()
+        bob_completed5_p = next((p for p in self._participations.values() if p.user_id == bob.id and p.run_id == run_completed_5.id), None)
         carol_completed5_p = self._create_participation(carol.id, run_completed_5.id, is_leader=False)
 
         # Detergent - different price 75 days ago
