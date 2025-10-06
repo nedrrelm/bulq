@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import SQLAlchemyError
 from .database import create_tables
 from .routes.auth import router as auth_router
 from .routes.groups import router as groups_router
@@ -9,8 +11,27 @@ from .routes.shopping import router as shopping_router
 from .routes.distribution import router as distribution_router
 from .routes.products import router as products_router
 from .routes.websocket import router as websocket_router
+from .exceptions import AppException
+from .error_handlers import (
+    app_exception_handler,
+    validation_exception_handler,
+    sqlalchemy_exception_handler,
+    generic_exception_handler,
+)
+from .logging_config import setup_logging
+import os
+
+# Setup logging
+log_level = os.getenv("LOG_LEVEL", "INFO")
+setup_logging(level=log_level)
 
 app = FastAPI(title="Bulq API", version="0.1.0")
+
+# Register exception handlers
+app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
 # Include routers
 app.include_router(auth_router)
