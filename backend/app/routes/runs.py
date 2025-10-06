@@ -168,6 +168,12 @@ async def get_run_details(
     participations = repo.get_run_participations_with_users(run.id)
 
     for participation in participations:
+        # Check if this is the current user's participation
+        if participation.user_id == current_user.id:
+            current_user_is_ready = participation.is_ready
+            current_user_is_leader = participation.is_leader
+
+        # Add to participants list if user data is available
         if participation.user:
             participants_data.append(ParticipantResponse(
                 user_id=str(participation.user_id),
@@ -175,9 +181,6 @@ async def get_run_details(
                 is_leader=participation.is_leader,
                 is_ready=participation.is_ready
             ))
-            if participation.user_id == current_user.id:
-                current_user_is_ready = participation.is_ready
-                current_user_is_leader = participation.is_leader
 
     # Get products and bids for this run
     if hasattr(repo, '_runs'):  # Memory mode
