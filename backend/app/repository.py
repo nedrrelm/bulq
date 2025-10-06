@@ -449,6 +449,7 @@ class MemoryRepository(AbstractRepository):
         run_active = self._create_run(friends_group.id, sams.id, "active", test_user.id, days_ago=5)
         run_confirmed = self._create_run(friends_group.id, costco.id, "confirmed", test_user.id, days_ago=3)
         run_shopping = self._create_run(friends_group.id, sams.id, "shopping", test_user.id, days_ago=2)
+        run_adjusting = self._create_run(friends_group.id, costco.id, "adjusting", test_user.id, days_ago=1.5)
         run_distributing = self._create_run(friends_group.id, costco.id, "distributing", test_user.id, days_ago=1)
         run_completed = self._create_run(friends_group.id, sams.id, "completed", test_user.id, days_ago=14)
 
@@ -534,6 +535,51 @@ class MemoryRepository(AbstractRepository):
         shopping_item2.purchased_total = Decimal("56.94")
         shopping_item2.is_purchased = True
         shopping_item2.purchase_order = 2
+
+        # Adjusting run - Test user is leader (friends group with Alice, Bob, Carol)
+        # 3 products: 2 fully purchased, 1 with shortage (3 out of 6 bought, 3 bids of 2 each)
+        # Note: test_adj_p is already created by _create_run as leader
+        test_adj_p = next((p for p in self._participations.values() if p.user_id == test_user.id and p.run_id == run_adjusting.id), None)
+        alice_adj_p = self._create_participation(alice.id, run_adjusting.id, is_leader=False)
+        bob_adj_p = self._create_participation(bob.id, run_adjusting.id, is_leader=False)
+
+        # Product 1: Olive Oil - fully purchased (3 requested, 3 bought)
+        adj_bid1 = self._create_bid(test_adj_p.id, olive_oil.id, 1, False)
+        adj_bid2 = self._create_bid(alice_adj_p.id, olive_oil.id, 2, False)
+
+        # Product 2: Quinoa - fully purchased (4 requested, 4 bought)
+        adj_bid3 = self._create_bid(bob_adj_p.id, quinoa.id, 2, False)
+        adj_bid4 = self._create_bid(alice_adj_p.id, quinoa.id, 2, False)
+
+        # Product 3: Paper Towels - SHORTAGE (6 requested, 3 bought) - 3 bids of 2 each
+        adj_bid5 = self._create_bid(test_adj_p.id, paper_towels.id, 2, False)
+        adj_bid6 = self._create_bid(alice_adj_p.id, paper_towels.id, 2, False)
+        adj_bid7 = self._create_bid(bob_adj_p.id, paper_towels.id, 2, False)
+
+        # Create shopping list items (as if shopping was completed)
+        adj_item1 = self._create_shopping_list_item(run_adjusting.id, olive_oil.id, 3)
+        adj_item1.encountered_prices = [{"price": 24.99, "notes": "aisle 12"}]
+        adj_item1.purchased_quantity = 3  # Fully purchased
+        adj_item1.purchased_price_per_unit = Decimal("24.99")
+        adj_item1.purchased_total = Decimal("74.97")
+        adj_item1.is_purchased = True
+        adj_item1.purchase_order = 1
+
+        adj_item2 = self._create_shopping_list_item(run_adjusting.id, quinoa.id, 4)
+        adj_item2.encountered_prices = [{"price": 18.99, "notes": "organic section"}]
+        adj_item2.purchased_quantity = 4  # Fully purchased
+        adj_item2.purchased_price_per_unit = Decimal("18.99")
+        adj_item2.purchased_total = Decimal("75.96")
+        adj_item2.is_purchased = True
+        adj_item2.purchase_order = 2
+
+        adj_item3 = self._create_shopping_list_item(run_adjusting.id, paper_towels.id, 6)
+        adj_item3.encountered_prices = [{"price": 19.99, "notes": "only 3 left"}]
+        adj_item3.purchased_quantity = 3  # SHORTAGE: only 3 out of 6 bought
+        adj_item3.purchased_price_per_unit = Decimal("19.99")
+        adj_item3.purchased_total = Decimal("59.97")
+        adj_item3.is_purchased = True
+        adj_item3.purchase_order = 3
 
         # Distributing run - test user is leader, has distribution data
         # Multiple users bidding on same products

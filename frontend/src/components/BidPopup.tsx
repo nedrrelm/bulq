@@ -6,9 +6,12 @@ interface BidPopupProps {
   currentQuantity?: number
   onSubmit: (quantity: number, interestedOnly: boolean) => void
   onCancel: () => void
+  adjustingMode?: boolean
+  minAllowed?: number
+  maxAllowed?: number
 }
 
-export default function BidPopup({ productName, currentQuantity, onSubmit, onCancel }: BidPopupProps) {
+export default function BidPopup({ productName, currentQuantity, onSubmit, onCancel, adjustingMode, minAllowed, maxAllowed }: BidPopupProps) {
   const [quantity, setQuantity] = useState(currentQuantity?.toString() || '1')
   const [interestedOnly, setInterestedOnly] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -24,7 +27,17 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const qty = parseInt(quantity) || 0
+
+    // Validation
     if (qty < 0) return
+    if (adjustingMode && minAllowed !== undefined && qty < minAllowed) {
+      alert(`Minimum allowed quantity is ${minAllowed}`)
+      return
+    }
+    if (adjustingMode && maxAllowed !== undefined && qty > maxAllowed) {
+      alert(`Maximum allowed quantity is ${maxAllowed}`)
+      return
+    }
 
     onSubmit(qty, interestedOnly)
   }
@@ -38,8 +51,27 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal modal-sm" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
-        <h3>Place Bid</h3>
+        <h3>{adjustingMode ? 'Adjust Bid' : 'Place Bid'}</h3>
         <p className="product-name">{productName}</p>
+
+        {adjustingMode && (
+          <div style={{
+            padding: '12px',
+            backgroundColor: '#fef3c7',
+            borderRadius: '6px',
+            marginBottom: '16px',
+            fontSize: '14px',
+            border: '1px solid #fbbf24'
+          }}>
+            <strong>⚠️ Adjusting Mode</strong>
+            <p style={{ margin: '4px 0 0 0' }}>
+              You can only reduce your bid.
+              {minAllowed !== undefined && maxAllowed !== undefined && (
+                <> Range: {minAllowed} - {maxAllowed} items</>
+              )}
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -48,7 +80,8 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
               ref={inputRef}
               id="quantity"
               type="number"
-              min="0"
+              min={adjustingMode && minAllowed !== undefined ? minAllowed : 0}
+              max={adjustingMode && maxAllowed !== undefined ? maxAllowed : undefined}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               className="quantity-input"

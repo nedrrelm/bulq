@@ -18,6 +18,7 @@ interface Product {
   interested_count: number
   user_bids: UserBid[]
   current_user_bid: UserBid | null
+  purchased_quantity: number | null
 }
 
 interface AvailableProduct {
@@ -90,7 +91,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
     fetchRunDetails()
   }, [runId])
 
-  const canBid = run?.state === 'planning' || run?.state === 'active'
+  const canBid = run?.state === 'planning' || run?.state === 'active' || run?.state === 'adjusting'
 
   const handlePlaceBid = (product: Product) => {
     setSelectedProduct(product)
@@ -105,7 +106,8 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
       })
 
       if (!response.ok) {
-        throw new Error('Failed to retract bid')
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to retract bid')
       }
 
       // Refresh run details
@@ -119,7 +121,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
       }
     } catch (err) {
       console.error('Error retracting bid:', err)
-      alert('Failed to retract bid. Please try again.')
+      alert(err instanceof Error ? err.message : 'Failed to retract bid. Please try again.')
     }
   }
 
@@ -250,6 +252,33 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
     }
   }
 
+  const handleFinishAdjusting = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/runs/${runId}/finish-adjusting`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to finish adjusting')
+      }
+
+      // Refresh run details
+      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+        credentials: 'include'
+      })
+
+      if (refreshResponse.ok) {
+        const runData: RunDetail = await refreshResponse.json()
+        setRun(runData)
+      }
+    } catch (err) {
+      console.error('Error finishing adjusting:', err)
+      alert(err instanceof Error ? err.message : 'Failed to finish adjusting. Please try again.')
+    }
+  }
+
   const getStateDisplay = (state: string) => {
     switch (state) {
       case 'planning':
@@ -260,6 +289,10 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
         return { label: 'Confirmed', color: '#3b82f6', description: 'Shopping list finalized' }
       case 'shopping':
         return { label: 'Shopping', color: '#8b5cf6', description: 'Designated shoppers executing the run' }
+      case 'adjusting':
+        return { label: 'Adjusting', color: '#f59e0b', description: 'Adjusting bids due to insufficient quantities' }
+      case 'distributing':
+        return { label: 'Distributing', color: '#14b8a6', description: 'Items being distributed to members' }
       case 'completed':
         return { label: 'Completed', color: '#6b7280', description: 'Run finished, costs calculated' }
       case 'cancelled':
@@ -435,6 +468,23 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
           </div>
         )}
 
+        {run.state === 'adjusting' && run.current_user_is_leader && (
+          <div className="info-card">
+            <h3>Adjusting Bids</h3>
+            <p>Some items had insufficient quantities. Participants need to reduce their bids until the total matches what was purchased.</p>
+            <button
+              onClick={handleFinishAdjusting}
+              className="btn btn-primary btn-lg"
+              style={{ marginTop: '16px', width: '100%' }}
+            >
+              ✓ Finish Adjusting
+            </button>
+            <p className="ready-hint" style={{ marginTop: '12px' }}>
+              Click when all bid totals match purchased quantities.
+            </p>
+          </div>
+        )}
+
         {run.state === 'distributing' && onDistributionSelect && (
           <div className="info-card">
             <h3>Distribution in Progress</h3>
@@ -472,12 +522,66 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
           </div>
         ) : (
           <div className="products-list">
-            {run.products.map((product) => (
-              <div key={product.id} className="product-item">
+            {run.products
+              .sort((a, b) => {
+                // In adjusting state, sort by adjustment status
+                if (run.state === 'adjusting') {
+                  const aNeedsAdjustment = a.purchased_quantity !== null && a.total_quantity > a.purchased_quantity
+                  const bNeedsAdjustment = b.purchased_quantity !== null && b.total_quantity > b.purchased_quantity
+
+                  // Products needing adjustment come first
+                  if (aNeedsAdjustment && !bNeedsAdjustment) return -1
+                  if (!aNeedsAdjustment && bNeedsAdjustment) return 1
+                }
+                return 0
+              })
+              .map((product) => {
+              const needsAdjustment = run.state === 'adjusting' &&
+                                       product.purchased_quantity !== null &&
+                                       product.total_quantity > product.purchased_quantity
+              const adjustmentOk = run.state === 'adjusting' &&
+                                    product.purchased_quantity !== null &&
+                                    product.total_quantity === product.purchased_quantity
+
+              // In adjusting state, disable retract if user's bid is larger than the shortage
+              const shortage = product.purchased_quantity !== null ? product.total_quantity - product.purchased_quantity : 0
+              const canRetract = !adjustmentOk && !(run.state === 'adjusting' && product.current_user_bid && !product.current_user_bid.interested_only && product.current_user_bid.quantity > shortage)
+
+              return (
+              <div
+                key={product.id}
+                className="product-item"
+                style={{
+                  borderColor: needsAdjustment ? '#f59e0b' : adjustmentOk ? '#10b981' : undefined,
+                  backgroundColor: needsAdjustment ? '#fffbeb' : adjustmentOk ? '#f0fdf4' : undefined
+                }}
+              >
                 <div className="product-header">
                   <h4>{product.name}</h4>
                   <span className="product-price">${product.base_price}</span>
                 </div>
+
+                {run.state === 'adjusting' && product.purchased_quantity !== null && (
+                  <div className="adjustment-info" style={{
+                    padding: '8px 12px',
+                    backgroundColor: needsAdjustment ? '#fef3c7' : '#d1fae5',
+                    borderRadius: '6px',
+                    marginBottom: '12px',
+                    fontSize: '14px'
+                  }}>
+                    <strong>Purchased:</strong> {product.purchased_quantity} | <strong>Requested:</strong> {product.total_quantity}
+                    {needsAdjustment && (
+                      <span style={{ color: '#d97706', fontWeight: 'bold', marginLeft: '8px' }}>
+                        ⚠ Reduce by {product.total_quantity - product.purchased_quantity}
+                      </span>
+                    )}
+                    {adjustmentOk && (
+                      <span style={{ color: '#059669', fontWeight: 'bold', marginLeft: '8px' }}>
+                        ✓ OK
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <div className="product-stats">
                   <div className="stat">
@@ -515,14 +619,18 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
                           <button
                             onClick={() => handlePlaceBid(product)}
                             className="edit-bid-button"
-                            title="Edit bid"
+                            title={adjustmentOk ? "No adjustment needed" : "Edit bid"}
+                            disabled={adjustmentOk}
+                            style={adjustmentOk ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                           >
                             ✏️
                           </button>
                           <button
                             onClick={() => handleRetractBid(product)}
                             className="retract-bid-button"
-                            title="Retract bid"
+                            title={!canRetract ? "Cannot fully retract - would remove more than needed" : adjustmentOk ? "No adjustment needed" : "Retract bid"}
+                            disabled={!canRetract}
+                            style={!canRetract ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                           >
                             −
                           </button>
@@ -540,7 +648,8 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -577,6 +686,14 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
         </div>
       )}
 
+      {run.state === 'adjusting' && (
+        <div className="actions-section">
+          <div className="info-banner">
+            <p>⚠️ Some items had insufficient quantities. Please reduce your bids on highlighted products until totals match what was purchased.</p>
+          </div>
+        </div>
+      )}
+
       {run.state === 'completed' && (
         <div className="actions-section">
           <div className="info-banner">
@@ -591,6 +708,17 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
           currentQuantity={selectedProduct.current_user_bid?.quantity}
           onSubmit={handleSubmitBid}
           onCancel={handleCancelBid}
+          adjustingMode={run?.state === 'adjusting'}
+          minAllowed={
+            run?.state === 'adjusting' && selectedProduct.current_user_bid && selectedProduct.purchased_quantity !== null
+              ? Math.max(0, selectedProduct.current_user_bid.quantity - (selectedProduct.total_quantity - selectedProduct.purchased_quantity))
+              : undefined
+          }
+          maxAllowed={
+            run?.state === 'adjusting' && selectedProduct.current_user_bid
+              ? selectedProduct.current_user_bid.quantity
+              : undefined
+          }
         />
       )}
 
