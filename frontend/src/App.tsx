@@ -198,11 +198,19 @@ function App() {
     window.history.pushState({}, '', `/runs/${runId}`)
   }
 
-  const handleBackToGroup = () => {
-    setCurrentView('group')
-    setSelectedRunId(null)
-    if (selectedGroupId) {
-      window.history.pushState({}, '', `/groups/${selectedGroupId}`)
+  const handleBackToGroup = (groupId?: string) => {
+    // If groupId is provided (e.g., from RunPage), use it
+    // Otherwise fall back to selectedGroupId
+    const targetGroupId = groupId || selectedGroupId
+
+    if (targetGroupId) {
+      setSelectedGroupId(targetGroupId)
+      setCurrentView('group')
+      setSelectedRunId(null)
+      window.history.pushState({}, '', `/groups/${targetGroupId}`)
+    } else {
+      // Fallback to dashboard if no group ID available
+      handleBackToDashboard()
     }
   }
 

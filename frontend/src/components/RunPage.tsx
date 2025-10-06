@@ -50,7 +50,7 @@ interface RunDetail {
 
 interface RunPageProps {
   runId: string
-  onBack: () => void
+  onBack: (groupId?: string) => void
   onShoppingSelect?: (runId: string) => void
   onDistributionSelect?: (runId: string) => void
 }
@@ -399,7 +399,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={onBack} className="back-button">
+          <button onClick={() => onBack(run?.group_id)} className="back-button">
             ← Back to Group
           </button>
           <h2>Loading run...</h2>
@@ -412,7 +412,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={onBack} className="back-button">
+          <button onClick={() => onBack(run?.group_id)} className="back-button">
             ← Back to Group
           </button>
           <h2>Error</h2>
@@ -428,7 +428,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={onBack} className="back-button">
+          <button onClick={() => onBack(run?.group_id)} className="back-button">
             ← Back to Group
           </button>
           <h2>Run not found</h2>
@@ -442,7 +442,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
   return (
     <div className="run-page">
       <div className="breadcrumb">
-        <span style={{ cursor: 'pointer', color: '#667eea' }} onClick={onBack}>
+        <span style={{ cursor: 'pointer', color: '#667eea' }} onClick={() => onBack(run.group_id)}>
           {run.group_name}
         </span>
         {' > '}
