@@ -392,6 +392,54 @@
   font-style: italic;
 }
 
+/* Full-width action buttons in info cards */
+.info-card .btn-lg {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.info-card .ready-hint {
+  margin: 12px 0 0 0;
+}
+
+/* Adjustment state styling */
+.product-item.needs-adjustment {
+  border-color: #f59e0b;
+  background-color: #fffbeb;
+}
+
+.product-item.adjustment-ok {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.adjustment-info {
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.adjustment-info.needs-adjustment {
+  background-color: #fef3c7;
+}
+
+.adjustment-info.adjustment-ok {
+  background-color: #d1fae5;
+}
+
+.adjustment-warning {
+  color: #d97706;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.adjustment-ok-badge {
+  color: #059669;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
 /* Loading state */
 .run-page p {
   color: var(--color-text-light);
