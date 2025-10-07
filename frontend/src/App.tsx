@@ -11,6 +11,7 @@ import JoinGroup from './components/JoinGroup'
 import ShoppingPage from './components/ShoppingPage'
 import DistributionPage from './components/DistributionPage'
 import ProductPage from './components/ProductPage'
+import ErrorBoundary from './components/ErrorBoundary'
 
 interface BackendResponse {
   message: string
@@ -347,45 +348,57 @@ function App() {
 
       <main className={currentView === 'dashboard' ? 'dashboard' : ''}>
         {currentView === 'dashboard' && (
-          <Groups onGroupSelect={handleGroupSelect} onRunSelect={handleRunSelect} onProductSelect={handleProductSelect} />
+          <ErrorBoundary>
+            <Groups onGroupSelect={handleGroupSelect} onRunSelect={handleRunSelect} onProductSelect={handleProductSelect} />
+          </ErrorBoundary>
         )}
 
         {currentView === 'group' && selectedGroupId && (
-          <GroupPage
-            groupId={selectedGroupId}
-            onBack={handleBackToDashboard}
-            onRunSelect={handleRunSelect}
-          />
+          <ErrorBoundary>
+            <GroupPage
+              groupId={selectedGroupId}
+              onBack={handleBackToDashboard}
+              onRunSelect={handleRunSelect}
+            />
+          </ErrorBoundary>
         )}
 
         {currentView === 'run' && selectedRunId && (
-          <RunPage
-            runId={selectedRunId}
-            onBack={handleBackToGroup}
-            onShoppingSelect={handleShoppingSelect}
-            onDistributionSelect={handleDistributionSelect}
-          />
+          <ErrorBoundary>
+            <RunPage
+              runId={selectedRunId}
+              onBack={handleBackToGroup}
+              onShoppingSelect={handleShoppingSelect}
+              onDistributionSelect={handleDistributionSelect}
+            />
+          </ErrorBoundary>
         )}
 
         {currentView === 'shopping' && selectedRunId && (
-          <ShoppingPage
-            runId={selectedRunId}
-            onBack={handleBackToRun}
-          />
+          <ErrorBoundary>
+            <ShoppingPage
+              runId={selectedRunId}
+              onBack={handleBackToRun}
+            />
+          </ErrorBoundary>
         )}
 
         {currentView === 'distribution' && selectedRunId && (
-          <DistributionPage
-            runId={selectedRunId}
-            onBack={handleBackToRun}
-          />
+          <ErrorBoundary>
+            <DistributionPage
+              runId={selectedRunId}
+              onBack={handleBackToRun}
+            />
+          </ErrorBoundary>
         )}
 
         {currentView === 'product' && selectedProductId && (
-          <ProductPage
-            productId={selectedProductId}
-            onBack={handleBackToDashboard}
-          />
+          <ErrorBoundary>
+            <ProductPage
+              productId={selectedProductId}
+              onBack={handleBackToDashboard}
+            />
+          </ErrorBoundary>
         )}
       </main>
     </div>

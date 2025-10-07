@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../config'
 import type { AvailableProduct } from '../types/product'
 import BidPopup from './BidPopup'
 import AddProductPopup from './AddProductPopup'
+import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 
 interface UserBid {
@@ -486,39 +487,41 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
         </div>
 
         {run.state === 'active' && (
-          <div className="info-card">
-            <h3>Participants</h3>
-            <div className="participants-list">
-              {run.participants.map(participant => (
-                <div key={participant.user_id} className="participant-item">
-                  <div className="participant-info">
-                    <span className="participant-name">
-                      {participant.user_name}
-                      {participant.is_leader && <span className="leader-badge">Leader</span>}
-                    </span>
+          <ErrorBoundary>
+            <div className="info-card">
+              <h3>Participants</h3>
+              <div className="participants-list">
+                {run.participants.map(participant => (
+                  <div key={participant.user_id} className="participant-item">
+                    <div className="participant-info">
+                      <span className="participant-name">
+                        {participant.user_name}
+                        {participant.is_leader && <span className="leader-badge">Leader</span>}
+                      </span>
+                    </div>
+                    <div className="participant-ready">
+                      {participant.is_ready ? (
+                        <span className="ready-indicator ready">✓ Ready</span>
+                      ) : (
+                        <span className="ready-indicator not-ready">⏳ Not Ready</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="participant-ready">
-                    {participant.is_ready ? (
-                      <span className="ready-indicator ready">✓ Ready</span>
-                    ) : (
-                      <span className="ready-indicator not-ready">⏳ Not Ready</span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="ready-section">
+                <label className="ready-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={run.current_user_is_ready}
+                    onChange={handleToggleReady}
+                  />
+                  <span>I'm ready (my order is complete)</span>
+                </label>
+                <p className="ready-hint">When all participants are ready, the run will automatically move to confirmed state.</p>
+              </div>
             </div>
-            <div className="ready-section">
-              <label className="ready-checkbox">
-                <input
-                  type="checkbox"
-                  checked={run.current_user_is_ready}
-                  onChange={handleToggleReady}
-                />
-                <span>I'm ready (my order is complete)</span>
-              </label>
-              <p className="ready-hint">When all participants are ready, the run will automatically move to confirmed state.</p>
-            </div>
-          </div>
+          </ErrorBoundary>
         )}
 
         {run.state === 'confirmed' && run.current_user_is_leader && (
@@ -635,8 +638,8 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
               const canRetract = !adjustmentOk && !(run.state === 'adjusting' && product.current_user_bid && !product.current_user_bid.interested_only && product.current_user_bid.quantity > shortage)
 
               return (
+              <ErrorBoundary key={product.id}>
               <div
-                key={product.id}
                 className="product-item"
                 style={{
                   borderColor: needsAdjustment ? '#f59e0b' : adjustmentOk ? '#10b981' : undefined,
@@ -735,6 +738,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
                   </div>
                 )}
               </div>
+              </ErrorBoundary>
               )
             })}
           </div>

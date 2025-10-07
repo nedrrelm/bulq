@@ -279,29 +279,6 @@ Apply to:
 
 ---
 
-### 🔴 CRITICAL: No Error Boundary
-**Status**: High Priority - User Experience
-**Affected files**: App.tsx, main.tsx
-
-**Problem:** If any component throws an error, the entire app crashes with a blank screen. No error boundary to catch and display errors gracefully.
-
-**Solution:** Add React Error Boundary in App.tsx or main.tsx:
-```typescript
-class ErrorBoundary extends React.Component {
-  componentDidCatch(error, errorInfo) {
-    console.error('App error:', error, errorInfo)
-  }
-  render() {
-    if (this.state.hasError) {
-      return <div className="error-page">Something went wrong</div>
-    }
-    return this.props.children
-  }
-}
-```
-
----
-
 ### 🟠 HIGH: Inconsistent State Management Patterns
 **Status**: High Priority
 **Affected files**: Groups.tsx:95-161, GroupPage.tsx, RunPage.tsx

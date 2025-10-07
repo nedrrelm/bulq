@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './GroupPage.css'
 import { API_BASE_URL } from '../config'
 import NewRunPopup from './NewRunPopup'
+import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 
 interface Run {
@@ -257,19 +258,20 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
             ) : (
               <div className="runs-list">
                 {currentRuns.map((run) => (
-                  <div
-                    key={run.id}
-                    className="run-item"
-                    onClick={() => handleRunClick(run.id)}
-                  >
-                    <div className="run-header">
-                      <h4>{run.store_name}</h4>
-                      <span className={`run-state state-${run.state}`}>
-                        {getStateLabel(run.state)}
-                      </span>
+                  <ErrorBoundary key={run.id}>
+                    <div
+                      className="run-item"
+                      onClick={() => handleRunClick(run.id)}
+                    >
+                      <div className="run-header">
+                        <h4>{run.store_name}</h4>
+                        <span className={`run-state state-${run.state}`}>
+                          {getStateLabel(run.state)}
+                        </span>
+                      </div>
+                      <p className="run-id">ID: {run.id}</p>
                     </div>
-                    <p className="run-id">ID: {run.id}</p>
-                  </div>
+                  </ErrorBoundary>
                 ))}
               </div>
             )}
@@ -284,19 +286,20 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
             ) : (
               <div className="runs-list">
                 {pastRuns.map((run) => (
-                  <div
-                    key={run.id}
-                    className="run-item past"
-                    onClick={() => handleRunClick(run.id)}
-                  >
-                    <div className="run-header">
-                      <h4>{run.store_name}</h4>
+                  <ErrorBoundary key={run.id}>
+                    <div
+                      className="run-item past"
+                      onClick={() => handleRunClick(run.id)}
+                    >
+                      <div className="run-header">
+                        <h4>{run.store_name}</h4>
                       <span className={`run-state state-${run.state}`}>
                         {getStateLabel(run.state)}
                       </span>
                     </div>
                     <p className="run-id">ID: {run.id}</p>
                   </div>
+                  </ErrorBoundary>
                 ))}
               </div>
             )}
