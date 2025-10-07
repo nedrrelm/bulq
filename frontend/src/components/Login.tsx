@@ -1,12 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import './Login.css'
 import { API_BASE_URL } from '../config'
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
+import type { User } from '../types/user'
 
 interface LoginProps {
   onLogin: (user: User) => void

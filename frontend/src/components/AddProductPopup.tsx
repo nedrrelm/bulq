@@ -1,12 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './AddProductPopup.css'
 import { API_BASE_URL } from '../config'
-
-interface AvailableProduct {
-  id: string
-  name: string
-  base_price: string
-}
+import type { AvailableProduct } from '../types/product'
 
 interface AddProductPopupProps {
   runId: string

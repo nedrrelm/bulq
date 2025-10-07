@@ -279,31 +279,6 @@ Apply to:
 
 ---
 
-### 🔴 CRITICAL: Duplicate Interface Definitions
-**Status**: High Priority - Maintainability Issue
-**Affected files**: App.tsx, Login.tsx, Groups.tsx, RunPage.tsx, AddProductPopup.tsx
-
-**Problem:** The same interfaces are defined in multiple files:
-- `User` interface: App.tsx:20, Login.tsx:4
-- `ProductSearchResult`: App.tsx:26, Groups.tsx:29
-- `Store`: GroupPage.tsx (inferred), NewRunPopup.tsx:4
-- `Product`: RunPage.tsx:14, AddProductPopup.tsx:4 (as `AvailableProduct`)
-
-**Solution:** Create `src/types/` directory with shared type definitions:
-```typescript
-// src/types/user.ts
-export interface User { id: string; name: string; email: string }
-
-// src/types/product.ts
-export interface Product { ... }
-export interface ProductSearchResult { ... }
-
-// src/types/store.ts
-export interface Store { id: string; name: string }
-```
-
----
-
 ### 🔴 CRITICAL: No Error Boundary
 **Status**: High Priority - User Experience
 **Affected files**: App.tsx, main.tsx

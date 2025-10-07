@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './Groups.css'
 import { API_BASE_URL } from '../config'
+import type { ProductSearchResult } from '../types/product'
 import NewGroupPopup from './NewGroupPopup'
 import { useWebSocket } from '../hooks/useWebSocket'
 
@@ -25,14 +26,6 @@ interface GroupsProps {
   onGroupSelect: (groupId: string) => void
   onRunSelect: (runId: string) => void
   onProductSelect: (productId: string) => void
-}
-
-interface ProductSearchResult {
-  id: string
-  name: string
-  store_id: string
-  store_name: string
-  base_price: number | null
 }
 
 export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {

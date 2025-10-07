@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './RunPage.css'
 import { API_BASE_URL } from '../config'
+import type { AvailableProduct } from '../types/product'
 import BidPopup from './BidPopup'
 import AddProductPopup from './AddProductPopup'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -21,12 +22,6 @@ interface Product {
   user_bids: UserBid[]
   current_user_bid: UserBid | null
   purchased_quantity: number | null
-}
-
-interface AvailableProduct {
-  id: string
-  name: string
-  base_price: string
 }
 
 interface Participant {
