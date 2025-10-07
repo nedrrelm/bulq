@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import './DistributionPage.css'
 import { API_BASE_URL } from '../config'
+import LoadingSpinner from './LoadingSpinner'
+import './LoadingSpinner.css'
+import ErrorAlert from './ErrorAlert'
 
 interface DistributionProduct {
   bid_id: string
@@ -125,11 +128,11 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
   const allPickedUp = users.length > 0 && users.every(user => user.all_picked_up)
 
   if (loading) {
-    return <div className="distribution-page">Loading distribution data...</div>
+    return <LoadingSpinner />
   }
 
   if (error) {
-    return <div className="distribution-page error">{error}</div>
+    return <ErrorAlert message={error} onRetry={fetchDistribution} />
   }
 
   return (
