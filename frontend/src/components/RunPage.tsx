@@ -459,6 +459,10 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
               <span>{run.store_name}</span>
             </div>
             <div className="info-item">
+              <label>Leader:</label>
+              <span>{run.participants.find(p => p.is_leader)?.user_name || 'Unknown'}</span>
+            </div>
+            <div className="info-item">
               <label>Status:</label>
               <span>{stateDisplay.description}</span>
             </div>
