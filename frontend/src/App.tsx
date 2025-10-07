@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
 import { API_BASE_URL } from './config'
 import type { User } from './types/user'
@@ -21,76 +22,251 @@ interface HealthResponse {
   status: string
 }
 
+// Wrapper components that use params and navigation
+function GroupPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const { groupId } = useParams<{ groupId: string }>()
+  const navigate = useNavigate()
+
+  if (!groupId) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <AppLayout user={user} onLogout={onLogout}>
+      <GroupPage
+        groupId={groupId}
+        onBack={() => navigate('/')}
+        onRunSelect={(runId) => navigate(`/runs/${runId}`)}
+      />
+    </AppLayout>
+  )
+}
+
+function RunPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const { runId } = useParams<{ runId: string }>()
+  const navigate = useNavigate()
+
+  if (!runId) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <AppLayout user={user} onLogout={onLogout}>
+      <RunPage
+        runId={runId}
+        userId={user.id}
+        onBack={(groupId) => groupId ? navigate(`/groups/${groupId}`) : navigate('/')}
+        onShoppingSelect={(id) => navigate(`/shopping/${id}`)}
+        onDistributionSelect={(id) => navigate(`/distribution/${id}`)}
+      />
+    </AppLayout>
+  )
+}
+
+function ShoppingPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const { runId } = useParams<{ runId: string }>()
+  const navigate = useNavigate()
+
+  if (!runId) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <AppLayout user={user} onLogout={onLogout}>
+      <ShoppingPage
+        runId={runId}
+        onBack={() => navigate(`/runs/${runId}`)}
+      />
+    </AppLayout>
+  )
+}
+
+function DistributionPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const { runId } = useParams<{ runId: string }>()
+  const navigate = useNavigate()
+
+  if (!runId) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <AppLayout user={user} onLogout={onLogout}>
+      <DistributionPage
+        runId={runId}
+        onBack={() => navigate(`/runs/${runId}`)}
+      />
+    </AppLayout>
+  )
+}
+
+function ProductPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const { productId } = useParams<{ productId: string }>()
+  const navigate = useNavigate()
+
+  if (!productId) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <AppLayout user={user} onLogout={onLogout}>
+      <ProductPage
+        productId={productId}
+        onBack={() => navigate('/')}
+      />
+    </AppLayout>
+  )
+}
+
+function JoinGroupWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const { inviteToken } = useParams<{ inviteToken: string }>()
+  const navigate = useNavigate()
+
+  if (!inviteToken) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <JoinGroup
+      inviteToken={inviteToken}
+      onJoinSuccess={() => navigate('/')}
+    />
+  )
+}
+
+function DashboardWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const navigate = useNavigate()
+
+  return (
+    <AppLayout user={user} onLogout={onLogout}>
+      <Groups
+        onGroupSelect={(groupId) => navigate(`/groups/${groupId}`)}
+        onRunSelect={(runId) => navigate(`/runs/${runId}`)}
+        onProductSelect={(productId) => navigate(`/products/${productId}`)}
+      />
+    </AppLayout>
+  )
+}
+
+// Shared layout component with header
+function AppLayout({ user, onLogout, children }: { user: User; onLogout: () => void; children: React.ReactNode }) {
+  const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([])
+  const [searching, setSearching] = useState(false)
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query)
+
+    if (query.trim().length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    try {
+      setSearching(true)
+      const response = await fetch(`${API_BASE_URL}/products/search?q=${encodeURIComponent(query)}`, {
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const results: ProductSearchResult[] = await response.json()
+        setSearchResults(results)
+      } else {
+        setSearchResults([])
+      }
+    } catch (err) {
+      console.error('Search failed:', err)
+      setSearchResults([])
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  // Close search dropdown on ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSearchQuery('')
+        setSearchResults([])
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [])
+
+  return (
+    <div className="app">
+      <header>
+        <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>Bulq 📦</h1>
+
+        <div className="header-search">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="form-input"
+          />
+          {searchResults.length > 0 && (
+            <div className="search-dropdown">
+              {searchResults.map((product) => (
+                <div
+                  key={product.id}
+                  className="search-result-item"
+                  onClick={() => {
+                    navigate(`/products/${product.id}`)
+                    setSearchQuery('')
+                    setSearchResults([])
+                  }}
+                >
+                  <div className="product-info">
+                    <strong>{product.name}</strong>
+                    <span className="product-store">{product.store_name}</span>
+                  </div>
+                  {product.base_price && (
+                    <span className="product-price">${product.base_price.toFixed(2)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {searchQuery.trim().length >= 2 && !searching && searchResults.length === 0 && (
+            <div className="search-dropdown">
+              <div className="search-no-results">No products found</div>
+            </div>
+          )}
+        </div>
+
+        <div className="user-info">
+          <span>Welcome, {user.name}!</span>
+          <button onClick={onLogout} className="logout-button">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <main className={window.location.pathname === '/' ? 'dashboard' : ''}>
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
+      </main>
+    </div>
+  )
+}
+
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [backendMessage, setBackendMessage] = useState<string>('')
   const [healthStatus, setHealthStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'group' | 'run' | 'shopping' | 'distribution' | 'join' | 'product'>('dashboard')
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
-  const [inviteToken, setInviteToken] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([])
-  const [searching, setSearching] = useState(false)
-
-  // Parse URL and set initial view based on pathname
-  useEffect(() => {
-    const path = window.location.pathname
-
-    // Check for invite link
-    const inviteMatch = path.match(/^\/invite\/(.+)$/)
-    if (inviteMatch) {
-      setInviteToken(inviteMatch[1])
-      setCurrentView('join')
-      return
-    }
-
-    // Check for product page
-    const productMatch = path.match(/^\/products\/(.+)$/)
-    if (productMatch) {
-      setSelectedProductId(productMatch[1])
-      setCurrentView('product')
-      return
-    }
-
-    // Check for distribution page
-    const distributionMatch = path.match(/^\/distribution\/(.+)$/)
-    if (distributionMatch) {
-      setSelectedRunId(distributionMatch[1])
-      setCurrentView('distribution')
-      return
-    }
-
-    // Check for shopping page
-    const shoppingMatch = path.match(/^\/shopping\/(.+)$/)
-    if (shoppingMatch) {
-      setSelectedRunId(shoppingMatch[1])
-      setCurrentView('shopping')
-      return
-    }
-
-    // Check for run page
-    const runMatch = path.match(/^\/runs\/(.+)$/)
-    if (runMatch) {
-      setSelectedRunId(runMatch[1])
-      setCurrentView('run')
-      return
-    }
-
-    // Check for group page
-    const groupMatch = path.match(/^\/groups\/(.+)$/)
-    if (groupMatch) {
-      setSelectedGroupId(groupMatch[1])
-      setCurrentView('group')
-      return
-    }
-
-    // Default to dashboard
-    setCurrentView('dashboard')
-  }, [])
 
   // Check if user is already logged in
   useEffect(() => {
@@ -145,12 +321,6 @@ function App() {
 
   const handleLogin = (userData: User) => {
     setUser(userData)
-    // Reset to dashboard view on login
-    setCurrentView('dashboard')
-    setSelectedGroupId(null)
-    setSelectedRunId(null)
-    setInviteToken(null)
-    window.history.pushState({}, '', '/')
   }
 
   const handleLogout = async () => {
@@ -160,131 +330,10 @@ function App() {
         credentials: 'include'
       })
       setUser(null)
-      // Reset to dashboard view on logout
-      setCurrentView('dashboard')
-      setSelectedGroupId(null)
-      setSelectedRunId(null)
-      setInviteToken(null)
-      window.history.pushState({}, '', '/')
+      window.location.href = '/'
     } catch (err) {
       console.error('Logout failed:', err)
     }
-  }
-
-  const handleGroupSelect = (groupId: string) => {
-    setSelectedGroupId(groupId)
-    setCurrentView('group')
-    window.history.pushState({}, '', `/groups/${groupId}`)
-  }
-
-  const handleBackToDashboard = () => {
-    setCurrentView('dashboard')
-    setSelectedGroupId(null)
-    setSelectedRunId(null)
-    setSelectedProductId(null)
-    window.history.pushState({}, '', '/')
-  }
-
-  const handleProductSelect = (productId: string) => {
-    setSelectedProductId(productId)
-    setCurrentView('product')
-    window.history.pushState({}, '', `/products/${productId}`)
-  }
-
-  const handleRunSelect = (runId: string) => {
-    setSelectedRunId(runId)
-    setCurrentView('run')
-    window.history.pushState({}, '', `/runs/${runId}`)
-  }
-
-  const handleBackToGroup = (groupId?: string) => {
-    // If groupId is provided (e.g., from RunPage), use it
-    // Otherwise fall back to selectedGroupId
-    const targetGroupId = groupId || selectedGroupId
-
-    if (targetGroupId) {
-      setSelectedGroupId(targetGroupId)
-      setCurrentView('group')
-      setSelectedRunId(null)
-      window.history.pushState({}, '', `/groups/${targetGroupId}`)
-    } else {
-      // Fallback to dashboard if no group ID available
-      handleBackToDashboard()
-    }
-  }
-
-  const handleJoinSuccess = () => {
-    setCurrentView('dashboard')
-    setInviteToken(null)
-    window.history.pushState({}, '', '/')
-  }
-
-  const handleShoppingSelect = (runId: string) => {
-    setSelectedRunId(runId)
-    setCurrentView('shopping')
-    window.history.pushState({}, '', `/shopping/${runId}`)
-  }
-
-  const handleBackToRun = () => {
-    setCurrentView('run')
-    if (selectedRunId) {
-      window.history.pushState({}, '', `/runs/${selectedRunId}`)
-    }
-  }
-
-  const handleDistributionSelect = (runId: string) => {
-    setSelectedRunId(runId)
-    setCurrentView('distribution')
-    window.history.pushState({}, '', `/distribution/${runId}`)
-  }
-
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query)
-
-    if (query.trim().length < 2) {
-      setSearchResults([])
-      return
-    }
-
-    try {
-      setSearching(true)
-      const response = await fetch(`${API_BASE_URL}/products/search?q=${encodeURIComponent(query)}`, {
-        credentials: 'include'
-      })
-
-      if (response.ok) {
-        const results: ProductSearchResult[] = await response.json()
-        setSearchResults(results)
-      } else {
-        setSearchResults([])
-      }
-    } catch (err) {
-      console.error('Search failed:', err)
-      setSearchResults([])
-    } finally {
-      setSearching(false)
-    }
-  }
-
-  // Close search dropdown on ESC key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSearchQuery('')
-        setSearchResults([])
-      }
-    }
-
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [])
-
-  // Show join page if invite link
-  if (currentView === 'join' && inviteToken) {
-    if (!user) {
-      return <Login onLogin={handleLogin} />
-    }
-    return <JoinGroup inviteToken={inviteToken} onJoinSuccess={handleJoinSuccess} />
   }
 
   // Show login page if not authenticated
@@ -292,115 +341,18 @@ function App() {
     return <Login onLogin={handleLogin} />
   }
 
-  // Show main app if authenticated
   return (
-    <div className="app">
-      <header>
-        <h1 onClick={handleBackToDashboard} style={{ cursor: 'pointer' }}>Bulq 📦</h1>
-
-        <div className="header-search">
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="form-input"
-          />
-          {searchResults.length > 0 && (
-            <div className="search-dropdown">
-              {searchResults.map((product) => (
-                <div
-                  key={product.id}
-                  className="search-result-item"
-                  onClick={() => {
-                    handleProductSelect(product.id)
-                    setSearchQuery('')
-                    setSearchResults([])
-                  }}
-                >
-                  <div className="product-info">
-                    <strong>{product.name}</strong>
-                    <span className="product-store">{product.store_name}</span>
-                  </div>
-                  {product.base_price && (
-                    <span className="product-price">${product.base_price.toFixed(2)}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {searchQuery.trim().length >= 2 && !searching && searchResults.length === 0 && (
-            <div className="search-dropdown">
-              <div className="search-no-results">No products found</div>
-            </div>
-          )}
-        </div>
-
-        <div className="user-info">
-          <span>Welcome, {user.name}!</span>
-          <button onClick={handleLogout} className="logout-button">
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <main className={currentView === 'dashboard' ? 'dashboard' : ''}>
-        {currentView === 'dashboard' && (
-          <ErrorBoundary>
-            <Groups onGroupSelect={handleGroupSelect} onRunSelect={handleRunSelect} onProductSelect={handleProductSelect} />
-          </ErrorBoundary>
-        )}
-
-        {currentView === 'group' && selectedGroupId && (
-          <ErrorBoundary>
-            <GroupPage
-              groupId={selectedGroupId}
-              onBack={handleBackToDashboard}
-              onRunSelect={handleRunSelect}
-            />
-          </ErrorBoundary>
-        )}
-
-        {currentView === 'run' && selectedRunId && user && (
-          <ErrorBoundary>
-            <RunPage
-              runId={selectedRunId}
-              userId={user.id}
-              onBack={handleBackToGroup}
-              onShoppingSelect={handleShoppingSelect}
-              onDistributionSelect={handleDistributionSelect}
-            />
-          </ErrorBoundary>
-        )}
-
-        {currentView === 'shopping' && selectedRunId && (
-          <ErrorBoundary>
-            <ShoppingPage
-              runId={selectedRunId}
-              onBack={handleBackToRun}
-            />
-          </ErrorBoundary>
-        )}
-
-        {currentView === 'distribution' && selectedRunId && (
-          <ErrorBoundary>
-            <DistributionPage
-              runId={selectedRunId}
-              onBack={handleBackToRun}
-            />
-          </ErrorBoundary>
-        )}
-
-        {currentView === 'product' && selectedProductId && (
-          <ErrorBoundary>
-            <ProductPage
-              productId={selectedProductId}
-              onBack={handleBackToDashboard}
-            />
-          </ErrorBoundary>
-        )}
-      </main>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<DashboardWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/groups/:groupId" element={<GroupPageWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/runs/:runId" element={<RunPageWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/shopping/:runId" element={<ShoppingPageWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/distribution/:runId" element={<DistributionPageWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/products/:productId" element={<ProductPageWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/invite/:inviteToken" element={<JoinGroupWrapper user={user} onLogout={handleLogout} />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
