@@ -1,0 +1,67 @@
+.error-boundary-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--color-gray-50);
+  padding: 20px;
+}
+
+.error-boundary-card {
+  background: white;
+  border: 2px solid var(--color-danger);
+  border-radius: 12px;
+  padding: 40px;
+  max-width: 600px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.error-boundary-card h1 {
+  color: var(--color-danger);
+  margin: 0 0 16px 0;
+  font-size: 28px;
+}
+
+.error-message {
+  color: var(--color-text);
+  margin: 0 0 24px 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.error-details {
+  text-align: left;
+  margin: 24px 0;
+  padding: 16px;
+  background: var(--color-gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--color-gray-300);
+}
+
+.error-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-text);
+  user-select: none;
+}
+
+.error-details summary:hover {
+  color: var(--color-primary);
+}
+
+.error-details pre {
+  margin: 12px 0 0 0;
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 14px;
+  color: var(--color-danger);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-boundary-card .btn {
+  margin-top: 24px;
+}

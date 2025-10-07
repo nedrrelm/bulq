@@ -3,6 +3,7 @@ import './Groups.css'
 import { API_BASE_URL } from '../config'
 import type { ProductSearchResult } from '../types/product'
 import NewGroupPopup from './NewGroupPopup'
+import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 
 interface RunSummary {
@@ -210,11 +211,11 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       {!loading && !error && groups.length > 0 && (
         <div className="groups-list">
           {groups.map((group) => (
-            <div
-              key={group.id}
-              className="group-item"
-              onClick={() => handleGroupClick(group.id)}
-            >
+            <ErrorBoundary key={group.id}>
+              <div
+                className="group-item"
+                onClick={() => handleGroupClick(group.id)}
+              >
               <div className="group-header">
                 <h4>{group.name}</h4>
               </div>
@@ -247,6 +248,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
                 </div>
               )}
             </div>
+            </ErrorBoundary>
           ))}
         </div>
       )}
