@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import './ProductPage.css'
 import { API_BASE_URL } from '../config'
+import LoadingSpinner from './LoadingSpinner'
+import './LoadingSpinner.css'
+import ErrorAlert from './ErrorAlert'
 
 interface PriceEntry {
   price: number
@@ -182,23 +185,11 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
   }, [productId])
 
   if (loading) {
-    return (
-      <div className="product-page">
-        <button onClick={onBack} className="btn btn-secondary">← Back</button>
-        <p>Loading product...</p>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   if (error || !product) {
-    return (
-      <div className="product-page">
-        <button onClick={onBack} className="btn btn-secondary">← Back</button>
-        <div className="alert alert-error">
-          {error || 'Product not found'}
-        </div>
-      </div>
-    )
+    return <ErrorAlert message={error || 'Product not found'} onRetry={fetchProduct} />
   }
 
   return (
