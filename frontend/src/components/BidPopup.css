@@ -13,6 +13,19 @@
   font-size: 14px;
 }
 
+.adjusting-mode-notice {
+  padding: 12px;
+  background-color: #fef3c7;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  border: 1px solid #fbbf24;
+}
+
+.adjusting-mode-notice p {
+  margin: 4px 0 0 0;
+}
+
 .quantity-input {
   width: 100%;
   padding: 8px 12px;

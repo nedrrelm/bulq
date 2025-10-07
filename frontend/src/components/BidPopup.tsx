@@ -55,16 +55,9 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
         <p className="product-name">{productName}</p>
 
         {adjustingMode && (
-          <div style={{
-            padding: '12px',
-            backgroundColor: '#fef3c7',
-            borderRadius: '6px',
-            marginBottom: '16px',
-            fontSize: '14px',
-            border: '1px solid #fbbf24'
-          }}>
+          <div className="adjusting-mode-notice">
             <strong>⚠️ Adjusting Mode</strong>
-            <p style={{ margin: '4px 0 0 0' }}>
+            <p>
               You can only reduce your bid.
               {minAllowed !== undefined && maxAllowed !== undefined && (
                 <> Range: {minAllowed} - {maxAllowed} items</>

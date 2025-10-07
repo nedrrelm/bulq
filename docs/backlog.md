@@ -299,22 +299,6 @@ GroupPage.tsx and RunPage.tsx use the custom `useWebSocket` hook properly, but G
 
 ---
 
-### 🟠 HIGH: Data Refetching After Mutations
-**Status**: High Priority - Performance
-**Affected files**: RunPage.tsx:207-214, 242-250; ShoppingPage.tsx:88-89; Groups.tsx:170-183
-
-**Problem:** After POST/DELETE operations, components fetch the entire resource again:
-- RunPage.tsx:207-214 (after bid retraction)
-- RunPage.tsx:242-250 (after bid placement)
-- ShoppingPage.tsx:88-89 (after adding price)
-- Groups.tsx:170-183 (after group creation)
-
-Network overhead, poor UX (brief loading states), doesn't leverage WebSocket updates.
-
-**Solution:** Either trust WebSocket updates OR optimistically update local state, then sync with server response.
-
----
-
 ### 🟠 HIGH: Missing Loading/Error States
 **Status**: Medium Priority
 **Affected files**: DistributionPage.tsx:123-128, ProductPage.tsx:186-191
@@ -327,22 +311,18 @@ Network overhead, poor UX (brief loading states), doesn't leverage WebSocket upd
 
 ---
 
-### 🟠 HIGH: Inline Styles Mixed with CSS Classes
-**Status**: Medium Priority - Code Quality
-**Affected files**: RunPage.tsx:456-467, BidPopup.tsx:58-73, GroupPage.tsx:223
+### ✅ COMPLETED: Inline Styles Mixed with CSS Classes
+**Status**: COMPLETED
+**Affected files**: RunPage.tsx, BidPopup.tsx, GroupPage.tsx
 
-**Problem:** Inline styles violate separation of concerns and make theming difficult:
-```typescript
-// RunPage.tsx:456
-<span className="run-state" style={{
-  backgroundColor: stateDisplay.color,
-  color: 'white',
-  padding: '6px 16px',
-  // ...
-}}>
-```
+**Problem:** Inline styles violate separation of concerns and make theming difficult.
 
-**Solution:** Use CSS classes with CSS variables for dynamic values.
+**Solution:** All inline styles have been moved to CSS classes:
+- Run state badges now use `state-{stateName}` classes from run-states.css
+- Breadcrumb links use `.breadcrumb-link` class
+- Action buttons use CSS classes instead of inline marginTop/width
+- Adjustment state styling uses `.needs-adjustment` and `.adjustment-ok` classes
+- BidPopup adjusting mode notice uses `.adjusting-mode-notice` class
 
 ---
 

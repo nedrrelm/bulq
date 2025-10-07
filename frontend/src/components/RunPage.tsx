@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './RunPage.css'
+import '../styles/run-states.css'
 import { API_BASE_URL, WS_BASE_URL } from '../config'
 import type { AvailableProduct } from '../types/product'
 import BidPopup from './BidPopup'
@@ -408,7 +409,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   return (
     <div className="run-page">
       <div className="breadcrumb">
-        <span style={{ cursor: 'pointer', color: '#667eea' }} onClick={() => onBack(run.group_id)}>
+        <span className="breadcrumb-link" onClick={() => onBack(run.group_id)}>
           {run.group_name}
         </span>
         {' > '}
@@ -418,17 +419,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       <div className="run-header">
         <div className="run-title">
           <h2>{run.store_name}</h2>
-          <span
-            className="run-state"
-            style={{
-              backgroundColor: stateDisplay.color,
-              color: 'white',
-              padding: '6px 16px',
-              borderRadius: '16px',
-              fontSize: '0.875rem',
-              fontWeight: 'bold'
-            }}
-          >
+          <span className={`run-state state-${run.state}`}>
             {stateDisplay.label}
           </span>
         </div>
@@ -506,11 +497,10 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             <button
               onClick={handleStartShopping}
               className="btn btn-primary btn-lg"
-              style={{ marginTop: '16px', width: '100%' }}
             >
               🛒 Start Shopping
             </button>
-            <p className="ready-hint" style={{ marginTop: '12px' }}>
+            <p className="ready-hint">
               Click this button when you're heading to the store to begin the shopping phase.
             </p>
           </div>
@@ -523,11 +513,10 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             <button
               onClick={() => onShoppingSelect(runId)}
               className="btn btn-success btn-lg"
-              style={{ marginTop: '16px', width: '100%' }}
             >
               📝 Open Shopping List
             </button>
-            <p className="ready-hint" style={{ marginTop: '12px' }}>
+            <p className="ready-hint">
               Track prices and mark items as purchased.
             </p>
           </div>
@@ -540,11 +529,10 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             <button
               onClick={handleFinishAdjusting}
               className="btn btn-primary btn-lg"
-              style={{ marginTop: '16px', width: '100%' }}
             >
               ✓ Finish Adjusting
             </button>
-            <p className="ready-hint" style={{ marginTop: '12px' }}>
+            <p className="ready-hint">
               Click when all bid totals match purchased quantities.
             </p>
           </div>
@@ -557,11 +545,10 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             <button
               onClick={() => onDistributionSelect(runId)}
               className="btn btn-success btn-lg"
-              style={{ marginTop: '16px', width: '100%' }}
             >
               📦 Open Distribution
             </button>
-            <p className="ready-hint" style={{ marginTop: '12px' }}>
+            <p className="ready-hint">
               Track who picked up their items.
             </p>
           </div>
@@ -615,11 +602,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
               return (
               <ErrorBoundary key={product.id}>
               <div
-                className="product-item"
-                style={{
-                  borderColor: needsAdjustment ? '#f59e0b' : adjustmentOk ? '#10b981' : undefined,
-                  backgroundColor: needsAdjustment ? '#fffbeb' : adjustmentOk ? '#f0fdf4' : undefined
-                }}
+                className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : ''}`}
               >
                 <div className="product-header">
                   <h4>{product.name}</h4>
@@ -627,21 +610,15 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
                 </div>
 
                 {run.state === 'adjusting' && product.purchased_quantity !== null && (
-                  <div className="adjustment-info" style={{
-                    padding: '8px 12px',
-                    backgroundColor: needsAdjustment ? '#fef3c7' : '#d1fae5',
-                    borderRadius: '6px',
-                    marginBottom: '12px',
-                    fontSize: '14px'
-                  }}>
+                  <div className={`adjustment-info ${needsAdjustment ? 'needs-adjustment' : 'adjustment-ok'}`}>
                     <strong>Purchased:</strong> {product.purchased_quantity} | <strong>Requested:</strong> {product.total_quantity}
                     {needsAdjustment && (
-                      <span style={{ color: '#d97706', fontWeight: 'bold', marginLeft: '8px' }}>
+                      <span className="adjustment-warning">
                         ⚠ Reduce by {product.total_quantity - product.purchased_quantity}
                       </span>
                     )}
                     {adjustmentOk && (
-                      <span style={{ color: '#059669', fontWeight: 'bold', marginLeft: '8px' }}>
+                      <span className="adjustment-ok-badge">
                         ✓ OK
                       </span>
                     )}

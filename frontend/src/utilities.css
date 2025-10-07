@@ -463,3 +463,12 @@
   font-weight: 600;
   margin-bottom: 20px;
 }
+
+.breadcrumb-link {
+  cursor: pointer;
+  color: var(--color-primary);
+}
+
+.breadcrumb-link:hover {
+  text-decoration: underline;
+}
