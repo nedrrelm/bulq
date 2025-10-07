@@ -217,6 +217,15 @@ The frontend will be available at `http://localhost:3000` and includes a backend
 - Frontend in Docker runs on Caddy serving built static files
 - CORS is configured for both `localhost:3000` and `127.0.0.1:3000`
 
+## Development Guidelines
+
+### Commit Message Standards
+
+- Keep commit messages simple, descriptive one-liners
+- Focus on what changed, not how or why
+- Examples: "Add user authentication", "Fix bid retraction bug", "Update product page styling"
+- Do not mention AI tools or assistants in commit messages
+
 ## Future Considerations
 
 - Payment integration if user base grows
