@@ -101,6 +101,27 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.active-runs::-webkit-scrollbar {
+  width: 6px;
+}
+
+.active-runs::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: 3px;
+}
+
+.active-runs::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 3px;
+}
+
+.active-runs::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
 }
 
 .run-summary {
@@ -126,14 +147,3 @@
   color: var(--color-text);
 }
 
-.more-runs {
-  text-align: center;
-  padding: 8px;
-  color: var(--color-primary);
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.more-runs:hover {
-  text-decoration: underline;
-}
