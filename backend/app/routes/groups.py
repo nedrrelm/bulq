@@ -79,8 +79,8 @@ async def get_my_groups(
         active_runs = [run for run in runs if run.state != 'completed']
         completed_runs = [run for run in runs if run.state == 'completed']
 
-        # Sort active runs by state (reverse state order) and take top 3
-        sorted_active_runs = sorted(active_runs, key=lambda r: state_order.get(r.state, 0), reverse=True)[:3]
+        # Sort active runs by state (reverse state order)
+        sorted_active_runs = sorted(active_runs, key=lambda r: state_order.get(r.state, 0), reverse=True)
 
         # Convert to RunSummary
         active_runs_summary = [

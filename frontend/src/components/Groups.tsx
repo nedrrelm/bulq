@@ -114,7 +114,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
                 }
                 return {
                   ...g,
-                  active_runs: [...g.active_runs, newRun].slice(0, 3),
+                  active_runs: [...g.active_runs, newRun],
                   active_runs_count: g.active_runs_count + 1
                 }
               }
@@ -252,11 +252,6 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
                       <span className={`run-state state-${run.state}`}>{getStateLabel(run.state)}</span>
                     </div>
                   ))}
-                  {group.active_runs_count > 3 && (
-                    <div className="more-runs">
-                      +{group.active_runs_count - 3} more...
-                    </div>
-                  )}
                 </div>
               )}
             </div>
