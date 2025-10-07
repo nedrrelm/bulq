@@ -1,11 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import './NewRunPopup.css'
 import { API_BASE_URL } from '../config'
-
-interface Store {
-  id: string
-  name: string
-}
+import type { Store } from '../types/store'
 
 interface NewRunPopupProps {
   groupId: string

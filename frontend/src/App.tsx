@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { API_BASE_URL } from './config'
+import type { User } from './types/user'
+import type { ProductSearchResult } from './types/product'
 import Login from './components/Login'
 import Groups from './components/Groups'
 import GroupPage from './components/GroupPage'
@@ -16,20 +18,6 @@ interface BackendResponse {
 
 interface HealthResponse {
   status: string
-}
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
-
-interface ProductSearchResult {
-  id: string
-  name: string
-  store_id: string
-  store_name: string
-  base_price: number | null
 }
 
 function App() {
