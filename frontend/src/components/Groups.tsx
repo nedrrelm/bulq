@@ -123,7 +123,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       const ws = new WebSocket(`${WS_BASE_URL}/ws/groups/${group.id}`)
 
       ws.onopen = () => {
-        console.log(`WebSocket connected for group: ${group.id}`)
+        // Connection established
       }
 
       ws.onmessage = (event) => {
@@ -183,7 +183,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       }
 
       ws.onclose = () => {
-        console.log(`WebSocket closed for group: ${group.id}`)
+        // Connection closed
       }
 
       wsConnectionsRef.current.push(ws)
