@@ -97,6 +97,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
         if (!run) return
 
         if (message.type === 'bid_updated') {
+          console.log('[RunPage] Received bid_updated:', message.data, 'Current userId:', userId)
           // Update product with new bid or updated bid
           setRun(prev => {
             if (!prev) return prev
@@ -125,6 +126,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
 
                   // Update current_user_bid if this is the current user's bid
                   const isCurrentUser = message.data.user_id === userId
+                  console.log('[RunPage] Is current user?', isCurrentUser, message.data.user_id, '===', userId)
                   const newCurrentUserBid = isCurrentUser ? newBid : p.current_user_bid
 
                   return {
@@ -162,11 +164,13 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             }
           })
         } else if (message.type === 'ready_toggled') {
+          console.log('[RunPage] Received ready_toggled:', message.data, 'Current userId:', userId)
           // Update participant ready status and current user ready if it's them
           setRun(prev => {
             if (!prev) return prev
 
             const isCurrentUser = message.data.user_id === userId
+            console.log('[RunPage] Ready - Is current user?', isCurrentUser, message.data.user_id, '===', userId)
 
             return {
               ...prev,
