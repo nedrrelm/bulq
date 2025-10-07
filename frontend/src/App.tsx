@@ -363,10 +363,11 @@ function App() {
           </ErrorBoundary>
         )}
 
-        {currentView === 'run' && selectedRunId && (
+        {currentView === 'run' && selectedRunId && user && (
           <ErrorBoundary>
             <RunPage
               runId={selectedRunId}
+              userId={user.id}
               onBack={handleBackToGroup}
               onShoppingSelect={handleShoppingSelect}
               onDistributionSelect={handleDistributionSelect}

@@ -47,12 +47,13 @@ interface RunDetail {
 
 interface RunPageProps {
   runId: string
+  userId: string
   onBack: (groupId?: string) => void
   onShoppingSelect?: (runId: string) => void
   onDistributionSelect?: (runId: string) => void
 }
 
-export default function RunPage({ runId, onBack, onShoppingSelect, onDistributionSelect }: RunPageProps) {
+export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDistributionSelect }: RunPageProps) {
   const [run, setRun] = useState<RunDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -121,9 +122,14 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
                     newUserBids.push(newBid)
                   }
 
+                  // Update current_user_bid if this is the current user's bid
+                  const isCurrentUser = message.data.user_id === userId
+                  const newCurrentUserBid = isCurrentUser ? newBid : p.current_user_bid
+
                   return {
                     ...p,
                     user_bids: newUserBids,
+                    current_user_bid: newCurrentUserBid,
                     total_quantity: message.data.new_total,
                     interested_count: newUserBids.filter(b => b.interested_only || b.quantity > 0).length
                   }
@@ -141,9 +147,11 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
               products: prev.products.map(p => {
                 if (p.id === message.data.product_id) {
                   const newUserBids = p.user_bids.filter(b => b.user_id !== message.data.user_id)
+                  const isCurrentUser = message.data.user_id === userId
                   return {
                     ...p,
                     user_bids: newUserBids,
+                    current_user_bid: isCurrentUser ? null : p.current_user_bid,
                     total_quantity: message.data.new_total,
                     interested_count: newUserBids.filter(b => b.interested_only || b.quantity > 0).length
                   }
@@ -153,16 +161,20 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
             }
           })
         } else if (message.type === 'ready_toggled') {
-          // Update participant ready status
+          // Update participant ready status and current user ready if it's them
           setRun(prev => {
             if (!prev) return prev
+
+            const isCurrentUser = message.data.user_id === userId
+
             return {
               ...prev,
               participants: prev.participants.map(p =>
                 p.user_id === message.data.user_id
                   ? { ...p, is_ready: message.data.is_ready }
                   : p
-              )
+              ),
+              current_user_is_ready: isCurrentUser ? message.data.is_ready : prev.current_user_is_ready
             }
           })
         } else if (message.type === 'state_changed') {
