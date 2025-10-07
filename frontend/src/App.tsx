@@ -23,6 +23,14 @@ interface User {
   email: string
 }
 
+interface ProductSearchResult {
+  id: string
+  name: string
+  store_id: string
+  store_name: string
+  base_price: number | null
+}
+
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [backendMessage, setBackendMessage] = useState<string>('')
@@ -34,6 +42,9 @@ function App() {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
   const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([])
+  const [searching, setSearching] = useState(false)
 
   const BACKEND_URL = 'http://localhost:8000'
 
@@ -239,6 +250,47 @@ function App() {
     window.history.pushState({}, '', `/distribution/${runId}`)
   }
 
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query)
+
+    if (query.trim().length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    try {
+      setSearching(true)
+      const response = await fetch(`${BACKEND_URL}/products/search?q=${encodeURIComponent(query)}`, {
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const results: ProductSearchResult[] = await response.json()
+        setSearchResults(results)
+      } else {
+        setSearchResults([])
+      }
+    } catch (err) {
+      console.error('Search failed:', err)
+      setSearchResults([])
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  // Close search dropdown on ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSearchQuery('')
+        setSearchResults([])
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [])
+
   // Show join page if invite link
   if (currentView === 'join' && inviteToken) {
     if (!user) {
@@ -259,6 +311,45 @@ function App() {
     <div className="app">
       <header>
         <h1 onClick={handleBackToDashboard} style={{ cursor: 'pointer' }}>Bulq 📦</h1>
+
+        <div className="header-search">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="form-input"
+          />
+          {searchResults.length > 0 && (
+            <div className="search-dropdown">
+              {searchResults.map((product) => (
+                <div
+                  key={product.id}
+                  className="search-result-item"
+                  onClick={() => {
+                    handleProductSelect(product.id)
+                    setSearchQuery('')
+                    setSearchResults([])
+                  }}
+                >
+                  <div className="product-info">
+                    <strong>{product.name}</strong>
+                    <span className="product-store">{product.store_name}</span>
+                  </div>
+                  {product.base_price && (
+                    <span className="product-price">${product.base_price.toFixed(2)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {searchQuery.trim().length >= 2 && !searching && searchResults.length === 0 && (
+            <div className="search-dropdown">
+              <div className="search-no-results">No products found</div>
+            </div>
+          )}
+        </div>
+
         <div className="user-info">
           <span>Welcome, {user.name}!</span>
           <button onClick={handleLogout} className="logout-button">
