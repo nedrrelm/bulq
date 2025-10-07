@@ -79,15 +79,20 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     {
       onMessage: (message) => {
         if (message.type === 'run_created') {
-          // Add new run to the list
-          const newRun: Run = {
-            id: message.data.run_id,
-            group_id: groupId,
-            store_id: message.data.store_id,
-            store_name: message.data.store_name,
-            state: message.data.state
-          }
-          setRuns(prev => [newRun, ...prev])
+          // Check if run already exists (to avoid duplicates from handleNewRunSuccess)
+          setRuns(prev => {
+            if (prev.some(run => run.id === message.data.run_id)) {
+              return prev
+            }
+            const newRun: Run = {
+              id: message.data.run_id,
+              group_id: groupId,
+              store_id: message.data.store_id,
+              store_name: message.data.store_name,
+              state: message.data.state
+            }
+            return [newRun, ...prev]
+          })
         } else if (message.type === 'run_state_changed') {
           // Update run state
           setRuns(prev => prev.map(run =>
