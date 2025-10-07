@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './GroupPage.css'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, WS_BASE_URL } from '../config'
 import NewRunPopup from './NewRunPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -75,7 +75,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
 
   // WebSocket for real-time updates
   useWebSocket(
-    groupId ? `ws://localhost:8000/ws/groups/${groupId}` : null,
+    groupId ? `${WS_BASE_URL}/ws/groups/${groupId}` : null,
     {
       onMessage: (message) => {
         if (message.type === 'run_created') {

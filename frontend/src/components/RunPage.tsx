@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './RunPage.css'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, WS_BASE_URL } from '../config'
 import type { AvailableProduct } from '../types/product'
 import BidPopup from './BidPopup'
 import AddProductPopup from './AddProductPopup'
@@ -89,7 +89,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
 
   // WebSocket for real-time updates
   useWebSocket(
-    runId ? `ws://localhost:8000/ws/runs/${runId}` : null,
+    runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
     {
       onMessage: (message) => {
         if (!run) return

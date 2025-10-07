@@ -16,6 +16,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
 
     async def dispatch(self, request: Request, call_next):
+        # Skip WebSocket connections (middleware doesn't support them)
+        if request.url.path.startswith("/ws"):
+            return await call_next(request)
+
         # Start timer
         start_time = time.time()
 

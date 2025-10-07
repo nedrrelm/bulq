@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './Groups.css'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, WS_BASE_URL } from '../config'
 import type { ProductSearchResult } from '../types/product'
 import NewGroupPopup from './NewGroupPopup'
 import ErrorBoundary from './ErrorBoundary'
@@ -90,7 +90,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     const wsConnections: any[] = []
 
     groups.forEach((group) => {
-      const ws = new WebSocket(`ws://localhost:8000/ws/groups/${group.id}`)
+      const ws = new WebSocket(`${WS_BASE_URL}/ws/groups/${group.id}`)
 
       ws.onmessage = (event) => {
         try {
