@@ -35,17 +35,20 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
   const loadDistributionData = async () => {
     try {
       setLoading(true)
+      setError(null)
       const response = await fetch(`${API_BASE_URL}/distribution/${runId}`, {
         credentials: 'include'
       })
 
       if (!response.ok) {
-        throw new Error('Failed to load distribution data')
+        const errorText = await response.text()
+        throw new Error(`Failed to load distribution data: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
       setUsers(data)
     } catch (err) {
+      console.error('Distribution page error:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
