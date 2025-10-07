@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './ProductPage.css'
+import { API_BASE_URL } from '../config'
 
 interface PriceEntry {
   price: number
@@ -154,15 +155,13 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`${BACKEND_URL}/products/${productId}`, {
+        const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
           credentials: 'include'
         })
 

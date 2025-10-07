@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './ShoppingPage.css'
+import { API_BASE_URL } from '../config'
 
 interface EncounteredPrice {
   price: number
@@ -32,14 +33,12 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
   const [selectedItem, setSelectedItem] = useState<ShoppingListItem | null>(null)
   const [showPricePopup, setShowPricePopup] = useState(false)
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   const fetchShoppingList = async () => {
     try {
       setLoading(true)
       setError('')
 
-      const response = await fetch(`${BACKEND_URL}/shopping/${runId}/items`, {
+      const response = await fetch(`${API_BASE_URL}/shopping/${runId}/items`, {
         credentials: 'include'
       })
 
@@ -75,7 +74,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
 
     try {
       const response = await fetch(
-        `${BACKEND_URL}/shopping/${runId}/items/${selectedItem.id}/encountered-price`,
+        `${API_BASE_URL}/shopping/${runId}/items/${selectedItem.id}/encountered-price`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -100,7 +99,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
 
     try {
       const response = await fetch(
-        `${BACKEND_URL}/shopping/${runId}/items/${selectedItem.id}/purchase`,
+        `${API_BASE_URL}/shopping/${runId}/items/${selectedItem.id}/purchase`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -133,7 +132,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/shopping/${runId}/complete`, {
+      const response = await fetch(`${API_BASE_URL}/shopping/${runId}/complete`, {
         method: 'POST',
         credentials: 'include'
       })

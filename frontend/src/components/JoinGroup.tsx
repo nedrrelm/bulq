@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './JoinGroup.css'
+import { API_BASE_URL } from '../config'
 
 interface JoinGroupProps {
   inviteToken: string
@@ -20,15 +21,13 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
   const [joining, setJoining] = useState(false)
   const [joinedGroup, setJoinedGroup] = useState<GroupInfo | null>(null)
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   useEffect(() => {
     const fetchGroupInfo = async () => {
       try {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`${BACKEND_URL}/groups/preview/${inviteToken}`)
+        const response = await fetch(`${API_BASE_URL}/groups/preview/${inviteToken}`)
 
         if (!response.ok) {
           throw new Error('Invalid or expired invite link')
@@ -51,7 +50,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
       setJoining(true)
       setError('')
 
-      const response = await fetch(`${BACKEND_URL}/groups/join/${inviteToken}`, {
+      const response = await fetch(`${API_BASE_URL}/groups/join/${inviteToken}`, {
         method: 'POST',
         credentials: 'include'
       })

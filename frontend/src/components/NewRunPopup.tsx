@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './NewRunPopup.css'
+import { API_BASE_URL } from '../config'
 
 interface Store {
   id: string
@@ -20,8 +21,6 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   const overlayRef = useRef<HTMLDivElement>(null)
   const selectRef = useRef<HTMLSelectElement>(null)
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -36,7 +35,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   useEffect(() => {
     const fetchStores = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/stores`, {
+        const response = await fetch(`${API_BASE_URL}/stores`, {
           credentials: 'include'
         })
 
@@ -76,7 +75,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     setError('')
 
     try {
-      const response = await fetch(`${BACKEND_URL}/runs/create`, {
+      const response = await fetch(`${API_BASE_URL}/runs/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
