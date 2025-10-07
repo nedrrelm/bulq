@@ -106,7 +106,7 @@ async def get_distribution_data(
             'distributed_quantity': bid.distributed_quantity,
             'price_per_unit': f"{price_per_unit:.2f}",
             'subtotal': f"{subtotal:.2f}",
-            'is_picked_up': bid.is_picked_up
+            'is_picked_up': bid.is_picked_up if bid.is_picked_up is not None else False
         })
 
         users_data[user_id]['total_cost'] += subtotal
