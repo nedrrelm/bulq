@@ -281,15 +281,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
         throw new Error('Failed to toggle ready status')
       }
 
-      // Refresh run details
-      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
-        credentials: 'include'
-      })
-
-      if (refreshResponse.ok) {
-        const runData: RunDetail = await refreshResponse.json()
-        setRun(runData)
-      }
+      // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error toggling ready:', err)
       alert('Failed to update ready status. Please try again.')
@@ -308,15 +300,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
         throw new Error(errorText || 'Failed to start shopping')
       }
 
-      // Refresh run details
-      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
-        credentials: 'include'
-      })
-
-      if (refreshResponse.ok) {
-        const runData: RunDetail = await refreshResponse.json()
-        setRun(runData)
-      }
+      // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error starting shopping:', err)
       alert('Failed to start shopping. Please try again.')
@@ -335,15 +319,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
         throw new Error(errorText || 'Failed to finish adjusting')
       }
 
-      // Refresh run details
-      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
-        credentials: 'include'
-      })
-
-      if (refreshResponse.ok) {
-        const runData: RunDetail = await refreshResponse.json()
-        setRun(runData)
-      }
+      // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error finishing adjusting:', err)
       alert(err instanceof Error ? err.message : 'Failed to finish adjusting. Please try again.')

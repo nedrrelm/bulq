@@ -114,7 +114,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
 
       if (!response.ok) throw new Error('Failed to mark as purchased')
 
-      await fetchShoppingList()
+      // WebSocket will update the shopping list automatically
       setShowPurchasePopup(false)
       setSelectedItem(null)
     } catch (err) {

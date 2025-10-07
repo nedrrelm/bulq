@@ -150,21 +150,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
 
   const handleNewRunSuccess = () => {
     setShowNewRunPopup(false)
-    // Refresh the runs list
-    const fetchRuns = async () => {
-      try {
-        const runsResponse = await fetch(`${API_BASE_URL}/groups/${groupId}/runs`, {
-          credentials: 'include'
-        })
-        if (runsResponse.ok) {
-          const runsData: Run[] = await runsResponse.json()
-          setRuns(runsData)
-        }
-      } catch (err) {
-        console.error('Failed to refresh runs:', err)
-      }
-    }
-    fetchRuns()
+    // WebSocket will update the runs list automatically
   }
 
   const handleRunClick = (runId: string) => {
