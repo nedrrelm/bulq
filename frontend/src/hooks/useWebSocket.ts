@@ -62,8 +62,12 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
         console.error('WebSocket error:', error)
       }
 
-      ws.onclose = () => {
-        console.log(`WebSocket disconnected: ${url}`)
+      ws.onclose = (event) => {
+        console.log(`WebSocket disconnected: ${url}`, {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        })
         setIsConnected(false)
         wsRef.current = null
         if (onDisconnect) onDisconnect()
