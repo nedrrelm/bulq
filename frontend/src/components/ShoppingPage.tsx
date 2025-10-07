@@ -85,7 +85,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
 
       if (!response.ok) throw new Error('Failed to add price')
 
-      await fetchShoppingList()
+      // WebSocket will update the shopping list automatically
       setShowPricePopup(false)
       setSelectedItem(null)
     } catch (err) {
