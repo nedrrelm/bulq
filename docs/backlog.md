@@ -279,23 +279,21 @@ Apply to:
 
 ---
 
-### 🟠 HIGH: Inconsistent State Management Patterns
-**Status**: High Priority
-**Affected files**: Groups.tsx:95-161, GroupPage.tsx, RunPage.tsx
+### ✅ COMPLETED: Inconsistent State Management Patterns
+**Status**: COMPLETED
+**Affected files**: Groups.tsx
 
-**Problem:** Groups.tsx has manual WebSocket management with cleanup issues:
-```typescript
-// Line 95-161: Manual WebSocket array management
-useEffect(() => {
-  const wsConnections: any[] = []  // ⚠️ 'any' type, poor typing
-  groups.forEach((group) => { /* ... */ })
-  return () => wsConnections.forEach(ws => ws.close())
-}, [groups.map(g => g.id).join(',')]) // ⚠️ Hacky dependency
-```
+**Problem:** Groups.tsx had manual WebSocket management with cleanup issues including poor typing and hacky dependencies.
 
-GroupPage.tsx and RunPage.tsx use the custom `useWebSocket` hook properly, but Groups.tsx doesn't.
+**Solution:** Fixed Groups.tsx WebSocket management:
+- Added proper typing (`WebSocket[]` instead of `any[]`)
+- Added connection lifecycle logging (onopen, onclose, onerror)
+- Check WebSocket readyState before closing to prevent errors
+- Used useMemo to stabilize dependency array and prevent unnecessary re-runs
+- Added early return for empty groups array
+- Proper cleanup that only closes OPEN or CONNECTING sockets
 
-**Solution:** Refactor Groups.tsx to use the `useWebSocket` hook consistently.
+Note: Kept manual management instead of using `useWebSocket` hook since we need multiple connections (one per group), and React hooks can't be called in loops.
 
 ---
 

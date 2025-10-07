@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './Groups.css'
 import { API_BASE_URL, WS_BASE_URL } from '../config'
 import type { ProductSearchResult } from '../types/product'
@@ -85,12 +85,46 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     fetchGroups()
   }, [])
 
-  // WebSocket connections for real-time updates
+  // Track current group IDs to avoid reconnecting when group data changes
+  const groupIdsRef = useRef<string>('')
+  const wsConnectionsRef = useRef<WebSocket[]>([])
+
+  // WebSocket connections for real-time updates - one per group
   useEffect(() => {
-    const wsConnections: any[] = []
+    if (groups.length === 0) {
+      // Clean up any existing connections
+      wsConnectionsRef.current.forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close()
+        }
+      })
+      wsConnectionsRef.current = []
+      return
+    }
+
+    const currentGroupIds = groups.map(g => g.id).join(',')
+
+    // Only recreate connections if group IDs actually changed
+    if (groupIdsRef.current === currentGroupIds) {
+      return
+    }
+
+    // Clean up old connections before creating new ones
+    wsConnectionsRef.current.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close()
+      }
+    })
+    wsConnectionsRef.current = []
+
+    groupIdsRef.current = currentGroupIds
 
     groups.forEach((group) => {
       const ws = new WebSocket(`${WS_BASE_URL}/ws/groups/${group.id}`)
+
+      ws.onopen = () => {
+        console.log(`WebSocket connected for group: ${group.id}`)
+      }
 
       ws.onmessage = (event) => {
         try {
@@ -144,14 +178,27 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
         }
       }
 
-      wsConnections.push(ws)
+      ws.onerror = (error) => {
+        console.error(`WebSocket error for group ${group.id}:`, error)
+      }
+
+      ws.onclose = () => {
+        console.log(`WebSocket closed for group: ${group.id}`)
+      }
+
+      wsConnectionsRef.current.push(ws)
     })
 
-    // Cleanup on unmount or when groups change
+    // Cleanup on unmount
     return () => {
-      wsConnections.forEach(ws => ws.close())
+      wsConnectionsRef.current.forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close()
+        }
+      })
+      wsConnectionsRef.current = []
     }
-  }, [groups.map(g => g.id).join(',')]) // Re-run when group IDs change
+  }, [groups]) // Run when groups changes, but early return if IDs haven't changed
 
   const handleGroupClick = (groupId: string) => {
     onGroupSelect(groupId)
