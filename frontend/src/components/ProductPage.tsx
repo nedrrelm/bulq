@@ -50,13 +50,20 @@ function PriceGraph({ prices }: { prices: PriceEntry[] }) {
 
   const graphHeight = 200
   const graphWidth = 600
+  const marginLeft = 60
+  const marginRight = 30
+  const marginTop = 10
+  const marginBottom = 30
+  const plotWidth = graphWidth - marginLeft - marginRight
+  const plotHeight = graphHeight - marginTop - marginBottom
+
   const yMin = minPrice - padding
   const yMax = maxPrice + padding
   const yRange = yMax - yMin
 
   // Convert price to y-coordinate
   const priceToY = (price: number) => {
-    return graphHeight - ((price - yMin) / yRange) * graphHeight
+    return marginTop + plotHeight - ((price - yMin) / yRange) * plotHeight
   }
 
   // Convert date to x-coordinate
@@ -65,23 +72,23 @@ function PriceGraph({ prices }: { prices: PriceEntry[] }) {
   const timeRange = maxTime - minTime || 1
 
   const dateToX = (date: Date) => {
-    return ((date.getTime() - minTime) / timeRange) * (graphWidth - 40) + 20
+    return marginLeft + ((date.getTime() - minTime) / timeRange) * plotWidth
   }
 
   return (
     <div className="price-graph">
       <h4>Price Over Time</h4>
-      <svg width={graphWidth} height={graphHeight + 40} className="price-chart">
+      <svg width={graphWidth} height={graphHeight} className="price-chart">
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
-          const y = graphHeight * (1 - ratio)
+          const y = marginTop + plotHeight * (1 - ratio)
           const price = yMin + yRange * ratio
           return (
             <g key={ratio}>
               <line
-                x1={20}
+                x1={marginLeft}
                 y1={y}
-                x2={graphWidth - 20}
+                x2={graphWidth - marginRight}
                 y2={y}
                 className="grid-line"
               />
@@ -91,6 +98,21 @@ function PriceGraph({ prices }: { prices: PriceEntry[] }) {
             </g>
           )
         })}
+
+        {/* Data points with horizontal lines */}
+        {pricesWithTime.map((p, i) => (
+          <line
+            key={`hline-${i}`}
+            x1={marginLeft}
+            y1={priceToY(p.price)}
+            x2={dateToX(p.date)}
+            y2={priceToY(p.price)}
+            stroke="#e0e0e0"
+            strokeWidth="1"
+            strokeDasharray="2,2"
+            opacity="0.5"
+          />
+        ))}
 
         {/* Data points */}
         {pricesWithTime.map((p, i) => (
@@ -112,7 +134,7 @@ function PriceGraph({ prices }: { prices: PriceEntry[] }) {
               <text
                 key={i}
                 x={dateToX(p.date)}
-                y={graphHeight + 20}
+                y={graphHeight - 10}
                 className="x-axis-label"
                 textAnchor="middle"
               >
@@ -240,20 +262,6 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
                     </div>
 
                     <PriceGraph prices={allPrices} />
-
-                    <div className="price-history">
-                      <h4>Price History</h4>
-                      <div className="price-entries">
-                        {allPrices
-                          .sort((a, b) => b.price - a.price)
-                          .map((entry, index) => (
-                            <div key={index} className="price-entry">
-                              <span className="price-amount">${entry.price.toFixed(2)}</span>
-                              {entry.notes && <span className="price-notes">{entry.notes}</span>}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
                   </>
                 )}
               </div>
