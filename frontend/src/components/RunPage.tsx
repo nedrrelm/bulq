@@ -198,15 +198,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
         throw new Error(errorText || 'Failed to retract bid')
       }
 
-      // Refresh run details
-      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
-        credentials: 'include'
-      })
-
-      if (refreshResponse.ok) {
-        const runData: RunDetail = await refreshResponse.json()
-        setRun(runData)
-      }
+      // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error retracting bid:', err)
       alert(err instanceof Error ? err.message : 'Failed to retract bid. Please try again.')
@@ -234,16 +226,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
         throw new Error('Failed to place bid')
       }
 
-      // Refresh run details
-      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
-        credentials: 'include'
-      })
-
-      if (refreshResponse.ok) {
-        const runData: RunDetail = await refreshResponse.json()
-        setRun(runData)
-      }
-
+      // WebSocket will update the run data automatically
       setShowBidPopup(false)
       setSelectedProduct(null)
     } catch (err) {

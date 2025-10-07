@@ -157,23 +157,10 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     onGroupSelect(groupId)
   }
 
-  const handleNewGroupSuccess = () => {
+  const handleNewGroupSuccess = (newGroup: Group) => {
     setShowNewGroupPopup(false)
-    // Refresh the groups list
-    const fetchGroups = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/groups/my-groups`, {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const groupsData: Group[] = await response.json()
-          setGroups(groupsData)
-        }
-      } catch (err) {
-        console.error('Failed to refresh groups:', err)
-      }
-    }
-    fetchGroups()
+    // Add the new group to the list optimistically
+    setGroups(prev => [...prev, newGroup])
   }
 
   return (

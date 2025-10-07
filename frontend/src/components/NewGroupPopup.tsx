@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react'
 import { API_BASE_URL } from '../config'
 
+interface Group {
+  id: string
+  name: string
+  member_count: number
+  completed_runs_count: number
+  active_runs_count: number
+  active_runs: any[]
+}
+
 interface NewGroupPopupProps {
   onClose: () => void
-  onSuccess: () => void
+  onSuccess: (newGroup: Group) => void
 }
 
 export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps) {
@@ -47,7 +56,8 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
         throw new Error(errorData.detail || 'Failed to create group')
       }
 
-      onSuccess()
+      const newGroup: Group = await response.json()
+      onSuccess(newGroup)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create group')
       setSubmitting(false)
