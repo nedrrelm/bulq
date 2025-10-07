@@ -171,29 +171,12 @@
 }
 
 /* Using .modal-overlay and .modal from utilities.css */
-
-.popup-content h3 {
-  margin: 0 0 8px 0;
-  color: var(--color-text);
-  font-size: 24px;
-}
-
-.popup-content p {
-  margin: 0 0 24px 0;
-  color: var(--color-text-light);
-}
+/* Using .form-group and .form-input from utilities.css */
+/* Using .button-group from utilities.css */
 
 .requested-hint {
   font-size: 14px;
   color: var(--color-gray-600);
   font-style: italic;
-}
-
-/* Using .form-group and .form-input-lg from utilities.css */
-
-.popup-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 24px;
+  margin: 0 0 16px 0;
 }

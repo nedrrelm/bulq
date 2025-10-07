@@ -330,8 +330,8 @@ function PricePopup({
   }
 
   return (
-    <div className="popup-overlay" onClick={onClose}>
-      <div className="popup-content" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
         <h3>Add Encountered Price</h3>
         <p><strong>{item.product_name}</strong></p>
         <form onSubmit={handleSubmit}>
@@ -343,6 +343,7 @@ function PricePopup({
               value={price}
               onChange={e => setPrice(e.target.value)}
               placeholder="24.99"
+              className="form-input"
               autoFocus
               required
             />
@@ -354,9 +355,10 @@ function PricePopup({
               value={notes}
               onChange={e => setNotes(e.target.value)}
               placeholder="e.g., aisle 3, vendor A"
+              className="form-input"
             />
           </div>
-          <div className="popup-actions">
+          <div className="button-group">
             <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancel
             </button>
@@ -436,8 +438,8 @@ function PurchasePopup({
   }
 
   return (
-    <div className="popup-overlay" onClick={onClose}>
-      <div className="popup-content" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
         <h3>Mark as Purchased</h3>
         <p><strong>{item.product_name}</strong></p>
         <p className="requested-hint">Requested: {item.requested_quantity}</p>
@@ -448,6 +450,7 @@ function PurchasePopup({
               type="number"
               value={quantity}
               onChange={e => handleQuantityChange(e.target.value)}
+              className="form-input"
               autoFocus
               required
             />
@@ -460,6 +463,7 @@ function PurchasePopup({
               value={pricePerUnit}
               onChange={e => handlePricePerUnitChange(e.target.value)}
               placeholder="12.99"
+              className="form-input"
               required
             />
           </div>
@@ -471,10 +475,11 @@ function PurchasePopup({
               value={total}
               onChange={e => handleTotalChange(e.target.value)}
               placeholder="25.98"
+              className="form-input"
               required
             />
           </div>
-          <div className="popup-actions">
+          <div className="button-group">
             <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancel
             </button>

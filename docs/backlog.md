@@ -279,28 +279,6 @@ Apply to:
 
 ---
 
-### 🔴 CRITICAL: Hardcoded Backend URL
-**Status**: Critical - Blocks Deployment
-**Affected files**: All 14+ component files (App.tsx:49, Login.tsx:42, Groups.tsx:43, GroupPage.tsx:33, RunPage.tsx:66, ShoppingPage.tsx:35, DistributionPage.tsx:37, ProductPage.tsx:157, JoinGroup.tsx:23, NewGroupPopup.tsx:13, NewRunPopup.tsx:23, AddProductPopup.tsx:25)
-
-**Problem:** Every component has `const BACKEND_URL = 'http://localhost:8000'` hardcoded, making deployment impossible without code changes.
-
-**Solution:**
-```typescript
-// src/config.ts
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-
-// vite.config.ts - add env variable support
-export default defineConfig({
-  plugins: [react()],
-  define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL)
-  }
-})
-```
-
----
-
 ### 🔴 CRITICAL: Duplicate Interface Definitions
 **Status**: High Priority - Maintainability Issue
 **Affected files**: App.tsx, Login.tsx, Groups.tsx, RunPage.tsx, AddProductPopup.tsx
