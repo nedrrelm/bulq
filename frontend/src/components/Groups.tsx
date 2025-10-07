@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './Groups.css'
+import { API_BASE_URL } from '../config'
 import NewGroupPopup from './NewGroupPopup'
 import { useWebSocket } from '../hooks/useWebSocket'
 
@@ -40,8 +41,6 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
   const [error, setError] = useState('')
   const [showNewGroupPopup, setShowNewGroupPopup] = useState(false)
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   const getStateLabel = (state: string) => {
     switch (state) {
       case 'planning':
@@ -71,7 +70,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`${BACKEND_URL}/groups/my-groups`, {
+        const response = await fetch(`${API_BASE_URL}/groups/my-groups`, {
           credentials: 'include'
         })
 
@@ -169,7 +168,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     // Refresh the groups list
     const fetchGroups = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/groups/my-groups`, {
+        const response = await fetch(`${API_BASE_URL}/groups/my-groups`, {
           credentials: 'include'
         })
         if (response.ok) {

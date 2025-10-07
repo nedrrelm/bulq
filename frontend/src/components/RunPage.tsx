@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './RunPage.css'
+import { API_BASE_URL } from '../config'
 import BidPopup from './BidPopup'
 import AddProductPopup from './AddProductPopup'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -63,15 +64,13 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   useEffect(() => {
     const fetchRunDetails = async () => {
       try {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+        const response = await fetch(`${API_BASE_URL}/runs/${runId}`, {
           credentials: 'include'
         })
 
@@ -193,7 +192,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
 
   const handleRetractBid = async (product: Product) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/runs/${runId}/bids/${product.id}`, {
+      const response = await fetch(`${API_BASE_URL}/runs/${runId}/bids/${product.id}`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -204,7 +203,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
       }
 
       // Refresh run details
-      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
         credentials: 'include'
       })
 
@@ -222,7 +221,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
     if (!selectedProduct) return
 
     try {
-      const response = await fetch(`${BACKEND_URL}/runs/${runId}/bids`, {
+      const response = await fetch(`${API_BASE_URL}/runs/${runId}/bids`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -240,7 +239,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
       }
 
       // Refresh run details
-      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
         credentials: 'include'
       })
 
@@ -294,7 +293,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
 
   const handleToggleReady = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/runs/${runId}/ready`, {
+      const response = await fetch(`${API_BASE_URL}/runs/${runId}/ready`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -304,7 +303,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
       }
 
       // Refresh run details
-      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
         credentials: 'include'
       })
 
@@ -320,7 +319,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
 
   const handleStartShopping = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/runs/${runId}/start-shopping`, {
+      const response = await fetch(`${API_BASE_URL}/runs/${runId}/start-shopping`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -331,7 +330,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
       }
 
       // Refresh run details
-      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
         credentials: 'include'
       })
 
@@ -347,7 +346,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
 
   const handleFinishAdjusting = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/runs/${runId}/finish-adjusting`, {
+      const response = await fetch(`${API_BASE_URL}/runs/${runId}/finish-adjusting`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -358,7 +357,7 @@ export default function RunPage({ runId, onBack, onShoppingSelect, onDistributio
       }
 
       // Refresh run details
-      const refreshResponse = await fetch(`${BACKEND_URL}/runs/${runId}`, {
+      const refreshResponse = await fetch(`${API_BASE_URL}/runs/${runId}`, {
         credentials: 'include'
       })
 

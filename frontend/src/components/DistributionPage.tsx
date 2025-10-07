@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './DistributionPage.css'
+import { API_BASE_URL } from '../config'
 
 interface DistributionProduct {
   bid_id: string
@@ -34,7 +35,7 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
   const loadDistributionData = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`http://localhost:8000/distribution/${runId}`, {
+      const response = await fetch(`${API_BASE_URL}/distribution/${runId}`, {
         credentials: 'include'
       })
 
@@ -57,7 +58,7 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
 
   const handlePickup = async (bidId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/distribution/${runId}/pickup/${bidId}`, {
+      const response = await fetch(`${API_BASE_URL}/distribution/${runId}/pickup/${bidId}`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -79,7 +80,7 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
       const unpickedProducts = user.products.filter(p => !p.is_picked_up)
 
       for (const product of unpickedProducts) {
-        const response = await fetch(`http://localhost:8000/distribution/${runId}/pickup/${product.bid_id}`, {
+        const response = await fetch(`${API_BASE_URL}/distribution/${runId}/pickup/${product.bid_id}`, {
           method: 'POST',
           credentials: 'include'
         })
@@ -98,7 +99,7 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
 
   const handleCompleteRun = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/distribution/${runId}/complete`, {
+      const response = await fetch(`${API_BASE_URL}/distribution/${runId}/complete`, {
         method: 'POST',
         credentials: 'include'
       })

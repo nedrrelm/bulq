@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './GroupPage.css'
+import { API_BASE_URL } from '../config'
 import NewRunPopup from './NewRunPopup'
 import { useWebSocket } from '../hooks/useWebSocket'
 
@@ -30,8 +31,6 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   const [error, setError] = useState('')
   const [showNewRunPopup, setShowNewRunPopup] = useState(false)
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -39,7 +38,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
         setError('')
 
         // Fetch group details
-        const groupResponse = await fetch(`${BACKEND_URL}/groups/${groupId}`, {
+        const groupResponse = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
           credentials: 'include'
         })
 
@@ -52,7 +51,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
         setGroup(groupData)
 
         // Fetch runs
-        const runsResponse = await fetch(`${BACKEND_URL}/groups/${groupId}/runs`, {
+        const runsResponse = await fetch(`${API_BASE_URL}/groups/${groupId}/runs`, {
           credentials: 'include'
         })
 
@@ -153,7 +152,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     // Refresh the runs list
     const fetchRuns = async () => {
       try {
-        const runsResponse = await fetch(`${BACKEND_URL}/groups/${groupId}/runs`, {
+        const runsResponse = await fetch(`${API_BASE_URL}/groups/${groupId}/runs`, {
           credentials: 'include'
         })
         if (runsResponse.ok) {
@@ -191,7 +190,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/regenerate-invite`, {
+      const response = await fetch(`${API_BASE_URL}/groups/${groupId}/regenerate-invite`, {
         method: 'POST',
         credentials: 'include'
       })

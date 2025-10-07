@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { API_BASE_URL } from '../config'
 
 interface NewGroupPopupProps {
   onClose: () => void
@@ -9,8 +10,6 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
   const [groupName, setGroupName] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  const BACKEND_URL = 'http://localhost:8000'
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -34,7 +33,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
       setSubmitting(true)
       setError('')
 
-      const response = await fetch(`${BACKEND_URL}/groups/create`, {
+      const response = await fetch(`${API_BASE_URL}/groups/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './AddProductPopup.css'
+import { API_BASE_URL } from '../config'
 
 interface AvailableProduct {
   id: string
@@ -22,15 +23,13 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   useEffect(() => {
     const fetchAvailableProducts = async () => {
       try {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`${BACKEND_URL}/runs/${runId}/available-products`, {
+        const response = await fetch(`${API_BASE_URL}/runs/${runId}/available-products`, {
           credentials: 'include'
         })
 

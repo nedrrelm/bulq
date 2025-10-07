@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './Login.css'
+import { API_BASE_URL } from '../config'
 
 interface User {
   id: string
@@ -39,8 +40,6 @@ export default function Login({ onLogin }: LoginProps) {
     password: ''
   })
 
-  const BACKEND_URL = 'http://localhost:8000'
-
   useEffect(() => {
     if (!isRegister && emailInputRef.current) {
       emailInputRef.current.focus()
@@ -53,7 +52,7 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const response = await fetch(`${BACKEND_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +80,7 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const response = await fetch(`${BACKEND_URL}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

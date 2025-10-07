@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import { API_BASE_URL } from './config'
 import Login from './components/Login'
 import Groups from './components/Groups'
 import GroupPage from './components/GroupPage'
@@ -45,8 +46,6 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([])
   const [searching, setSearching] = useState(false)
-
-  const BACKEND_URL = 'http://localhost:8000'
 
   // Parse URL and set initial view based on pathname
   useEffect(() => {
@@ -108,7 +107,7 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/auth/me`, {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
           credentials: 'include'
         })
         if (response.ok) {
@@ -130,7 +129,7 @@ function App() {
         setError('')
 
         // Test hello world endpoint
-        const helloResponse = await fetch(`${BACKEND_URL}/`)
+        const helloResponse = await fetch(`${API_BASE_URL}/`)
         if (!helloResponse.ok) {
           throw new Error(`HTTP error! status: ${helloResponse.status}`)
         }
@@ -138,7 +137,7 @@ function App() {
         setBackendMessage(helloData.message)
 
         // Test health endpoint
-        const healthResponse = await fetch(`${BACKEND_URL}/health`)
+        const healthResponse = await fetch(`${API_BASE_URL}/health`)
         if (!healthResponse.ok) {
           throw new Error(`HTTP error! status: ${healthResponse.status}`)
         }
@@ -167,7 +166,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${BACKEND_URL}/auth/logout`, {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -260,7 +259,7 @@ function App() {
 
     try {
       setSearching(true)
-      const response = await fetch(`${BACKEND_URL}/products/search?q=${encodeURIComponent(query)}`, {
+      const response = await fetch(`${API_BASE_URL}/products/search?q=${encodeURIComponent(query)}`, {
         credentials: 'include'
       })
 
