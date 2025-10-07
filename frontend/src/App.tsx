@@ -293,8 +293,6 @@ function App() {
   }
 
   // Show main app if authenticated
-  console.log('🔵 App: Rendering main app. currentView:', currentView, 'user:', user)
-
   return (
     <div className="app">
       <header>
