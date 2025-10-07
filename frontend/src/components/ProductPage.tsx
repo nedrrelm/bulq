@@ -158,29 +158,29 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        setLoading(true)
-        setError('')
+  const fetchProduct = async () => {
+    try {
+      setLoading(true)
+      setError('')
 
-        const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
-          credentials: 'include'
-        })
+      const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+        credentials: 'include'
+      })
 
-        if (!response.ok) {
-          throw new Error(`Failed to load product: ${response.status}`)
-        }
-
-        const data: ProductDetails = await response.json()
-        setProduct(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load product')
-      } finally {
-        setLoading(false)
+      if (!response.ok) {
+        throw new Error(`Failed to load product: ${response.status}`)
       }
-    }
 
+      const data: ProductDetails = await response.json()
+      setProduct(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load product')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchProduct()
   }, [productId])
 

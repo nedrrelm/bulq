@@ -132,7 +132,7 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
   }
 
   if (error) {
-    return <ErrorAlert message={error} onRetry={fetchDistribution} />
+    return <ErrorAlert message={error} onRetry={loadDistributionData} />
   }
 
   return (
