@@ -726,25 +726,35 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
         </div>
       )}
 
-      {showBidPopup && selectedProduct && (
-        <BidPopup
-          productName={selectedProduct.name}
-          currentQuantity={selectedProduct.current_user_bid?.quantity}
-          onSubmit={handleSubmitBid}
-          onCancel={handleCancelBid}
-          adjustingMode={run?.state === 'adjusting'}
-          minAllowed={
-            run?.state === 'adjusting' && selectedProduct.current_user_bid && selectedProduct.purchased_quantity !== null
-              ? Math.max(0, selectedProduct.current_user_bid.quantity - (selectedProduct.total_quantity - selectedProduct.purchased_quantity))
-              : undefined
-          }
-          maxAllowed={
-            run?.state === 'adjusting' && selectedProduct.current_user_bid
-              ? selectedProduct.current_user_bid.quantity
-              : undefined
-          }
-        />
-      )}
+      {showBidPopup && selectedProduct && (() => {
+        const isAdjustingMode = run?.state === 'adjusting'
+        const currentBid = selectedProduct.current_user_bid
+        const hasPurchasedQuantity = selectedProduct.purchased_quantity !== null
+
+        const shortage = hasPurchasedQuantity
+          ? selectedProduct.total_quantity - selectedProduct.purchased_quantity
+          : 0
+
+        const minAllowed = isAdjustingMode && currentBid && hasPurchasedQuantity
+          ? Math.max(0, currentBid.quantity - shortage)
+          : undefined
+
+        const maxAllowed = isAdjustingMode && currentBid
+          ? currentBid.quantity
+          : undefined
+
+        return (
+          <BidPopup
+            productName={selectedProduct.name}
+            currentQuantity={currentBid?.quantity}
+            onSubmit={handleSubmitBid}
+            onCancel={handleCancelBid}
+            adjustingMode={isAdjustingMode}
+            minAllowed={minAllowed}
+            maxAllowed={maxAllowed}
+          />
+        )
+      })()}
 
       {showAddProductPopup && (
         <AddProductPopup
