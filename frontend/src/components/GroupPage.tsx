@@ -9,6 +9,7 @@ import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
+import { useModal } from '../hooks/useModal'
 
 interface Run {
   id: string
@@ -35,7 +36,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [showNewRunPopup, setShowNewRunPopup] = useState(false)
+  const newRunModal = useModal()
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
@@ -130,11 +131,11 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   const pastRuns = runs.filter(run => ['completed', 'cancelled'].includes(run.state))
 
   const handleNewRunClick = () => {
-    setShowNewRunPopup(true)
+    newRunModal.open()
   }
 
   const handleNewRunSuccess = () => {
-    setShowNewRunPopup(false)
+    newRunModal.close()
     // WebSocket will update the runs list automatically
   }
 
@@ -187,10 +188,10 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
 
   return (
     <div className="group-page">
-      {showNewRunPopup && (
+      {newRunModal.isOpen && (
         <NewRunPopup
           groupId={groupId}
-          onClose={() => setShowNewRunPopup(false)}
+          onClose={newRunModal.close}
           onSuccess={handleNewRunSuccess}
         />
       )}
