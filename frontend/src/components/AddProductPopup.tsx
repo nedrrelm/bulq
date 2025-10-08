@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './AddProductPopup.css'
-import { API_BASE_URL } from '../config'
+import { runsApi, ApiError } from '../api'
 import type { AvailableProduct } from '../types/product'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
@@ -28,19 +28,11 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
         setLoading(true)
         setError('')
 
-        const response = await fetch(`${API_BASE_URL}/runs/${runId}/available-products`, {
-          credentials: 'include'
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch available products')
-        }
-
-        const productsData: AvailableProduct[] = await response.json()
-        setProducts(productsData)
-        setFilteredProducts(productsData)
+        const productsData = await runsApi.getAvailableProducts(runId)
+        setProducts(productsData as any)
+        setFilteredProducts(productsData as any)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load products')
+        setError(err instanceof ApiError ? err.message : 'Failed to load products')
       } finally {
         setLoading(false)
       }

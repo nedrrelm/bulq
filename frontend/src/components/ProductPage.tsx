@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './ProductPage.css'
-import { API_BASE_URL } from '../config'
+import { productsApi, ApiError } from '../api'
 import LoadingSpinner from './LoadingSpinner'
 import './LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
@@ -163,16 +163,8 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
       setLoading(true)
       setError('')
 
-      const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to load product: ${response.status}`)
-      }
-
-      const data: ProductDetails = await response.json()
-      setProduct(data)
+      const data = await productsApi.getProduct(productId)
+      setProduct(data as any)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load product')
     } finally {
