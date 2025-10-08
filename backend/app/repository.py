@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 class AbstractRepository(ABC):
     """Abstract base class defining the repository interface."""
 
+    # ==================== User Methods ====================
+
     @abstractmethod
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         """Get user by ID."""
@@ -36,6 +38,8 @@ class AbstractRepository(ABC):
     def get_user_groups(self, user: User) -> List[Group]:
         """Get all groups that a user is a member of."""
         raise NotImplementedError("Subclass must implement get_user_groups")
+
+    # ==================== Group Methods ====================
 
     @abstractmethod
     def get_group_by_id(self, group_id: UUID) -> Optional[Group]:
@@ -62,15 +66,21 @@ class AbstractRepository(ABC):
         """Add a user to a group."""
         raise NotImplementedError("Subclass must implement add_group_member")
 
+    # ==================== Store Methods ====================
+
     @abstractmethod
     def get_all_stores(self) -> List[Store]:
         """Get all stores."""
         raise NotImplementedError("Subclass must implement get_all_stores")
 
+    # ==================== Run Methods ====================
+
     @abstractmethod
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
         """Get all runs for a group."""
         raise NotImplementedError("Subclass must implement get_runs_by_group")
+
+    # ==================== Product Methods ====================
 
     @abstractmethod
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
@@ -86,6 +96,8 @@ class AbstractRepository(ABC):
     def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
         """Get product by ID."""
         raise NotImplementedError("Subclass must implement get_product_by_id")
+
+    # ==================== Product Bid Methods ====================
 
     @abstractmethod
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
@@ -103,10 +115,14 @@ class AbstractRepository(ABC):
         """
         raise NotImplementedError("Subclass must implement get_bids_by_run_with_participations")
 
+    # ==================== Auth Methods ====================
+
     @abstractmethod
     def verify_password(self, password: str, stored_hash: str) -> bool:
         """Verify a password."""
         raise NotImplementedError("Subclass must implement verify_password")
+
+    # ==================== Run & Participation Methods ====================
 
     @abstractmethod
     def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
@@ -153,6 +169,8 @@ class AbstractRepository(ABC):
     def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
         """Update the state of a run."""
         raise NotImplementedError("Subclass must implement update_run_state")
+
+    # ==================== Shopping List Methods ====================
 
     @abstractmethod
     def create_shopping_list_item(self, run_id: UUID, product_id: UUID, requested_quantity: int) -> ShoppingListItem:
