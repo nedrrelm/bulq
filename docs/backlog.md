@@ -292,24 +292,6 @@ Apply to:
 
 ---
 
-### 🟢 LOW: Overly Nested Ternary Operators
-**Status**: Low Priority - Readability
-**Affected files**: RunPage.tsx:804-815
-
-**Problem:** Complex nested ternaries hurt readability:
-```typescript
-adjustingMode={run?.state === 'adjusting'}
-minAllowed={
-  run?.state === 'adjusting' && selectedProduct.current_user_bid && selectedProduct.purchased_quantity !== null
-    ? Math.max(0, selectedProduct.current_user_bid.quantity - ...)
-    : undefined
-}
-```
-
-**Solution:** Extract to computed variables for readability.
-
----
-
 ### 🟢 LOW: Missing PropTypes/Runtime Validation
 **Status**: Low Priority - Type Safety
 **Affected files**: All components
