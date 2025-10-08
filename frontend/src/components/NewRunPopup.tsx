@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import './NewRunPopup.css'
 import { API_BASE_URL } from '../config'
 import type { Store } from '../types/store'
+import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
 interface NewRunPopupProps {
   groupId: string
@@ -16,6 +17,9 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   const [error, setError] = useState('')
   const overlayRef = useRef<HTMLDivElement>(null)
   const selectRef = useRef<HTMLSelectElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useModalFocusTrap(modalRef)
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -104,7 +108,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
 
   return (
     <div className="modal-overlay" onClick={handleOverlayClick} tabIndex={-1} ref={overlayRef}>
-      <div className="modal modal-sm new-run-popup" onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal-sm new-run-popup" onClick={(e) => e.stopPropagation()}>
         <h3>Create New Run</h3>
         <p className="popup-description">Select a store to start a new shopping run</p>
 
