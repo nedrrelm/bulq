@@ -70,7 +70,7 @@ async def startup_event():
     import os
     if os.getenv("ENV") == "development":
         try:
-            from ..seed_data import create_seed_data
+            from .scripts.seed_data import create_seed_data
             create_seed_data()
         except ImportError:
             print("Warning: Could not import seed data. Skipping seed data creation.")
