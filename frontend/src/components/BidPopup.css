@@ -37,6 +37,28 @@
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
+.quantity-input.input-error {
+  border-color: var(--color-danger);
+}
+
+.quantity-input.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.error-message {
+  display: block;
+  color: var(--color-danger);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.input-hint {
+  display: block;
+  color: var(--color-text-light);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 .checkbox-label {
   display: flex !important;
   align-items: center;

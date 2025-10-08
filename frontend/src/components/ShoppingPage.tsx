@@ -9,6 +9,7 @@ import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
+import { validateDecimal, parseDecimal, sanitizeString } from '../utils/validation'
 
 // Using ShoppingListItem type from API layer
 
@@ -300,6 +301,8 @@ function ShoppingItem({
   )
 }
 
+const MAX_NOTES_LENGTH = 200
+
 function PricePopup({
   item,
   onSubmit,
@@ -311,18 +314,45 @@ function PricePopup({
 }) {
   const [price, setPrice] = useState('')
   const [notes, setNotes] = useState('')
+  const [priceError, setPriceError] = useState('')
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef)
 
+  const validatePrice = (value: string): boolean => {
+    setPriceError('')
+
+    const validation = validateDecimal(value, 0.01, 99999.99, 2, 'Price')
+    if (!validation.isValid) {
+      setPriceError(validation.error || 'Invalid price')
+      return false
+    }
+
+    return true
+  }
+
+  const handlePriceChange = (value: string) => {
+    setPrice(value)
+    setPriceError('')
+  }
+
+  const handleNotesChange = (value: string) => {
+    const sanitized = sanitizeString(value, MAX_NOTES_LENGTH)
+    setNotes(sanitized)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const priceNum = parseFloat(price)
-    if (isNaN(priceNum) || priceNum <= 0) {
+
+    if (!validatePrice(price)) {
       return
     }
-    onSubmit(priceNum, notes)
+
+    const priceNum = parseDecimal(price)
+    onSubmit(priceNum, notes.trim())
   }
+
+  const notesCharCount = notes.length
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -331,28 +361,30 @@ function PricePopup({
         <p><strong>{item.product_name}</strong></p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Price ($)</label>
+            <label>Price</label>
             <input
               type="number"
               step="0.01"
               value={price}
-              onChange={e => setPrice(e.target.value)}
+              onChange={e => handlePriceChange(e.target.value)}
               placeholder="24.99"
-              className="form-input"
+              className={`form-input ${priceError ? 'input-error' : ''}`}
               autoFocus
               required
               min="0.01"
             />
+            {priceError && <span className="error-message">{priceError}</span>}
           </div>
           <div className="form-group">
             <label>Notes (optional)</label>
             <input
               type="text"
               value={notes}
-              onChange={e => setNotes(e.target.value)}
+              onChange={e => handleNotesChange(e.target.value)}
               placeholder="e.g., aisle 3, vendor A"
               className="form-input"
             />
+            <span className="char-counter">{notesCharCount}/{MAX_NOTES_LENGTH}</span>
           </div>
           <div className="button-group">
             <button type="button" onClick={onClose} className="btn btn-secondary">
@@ -381,48 +413,113 @@ function PurchasePopup({
   const [pricePerUnit, setPricePerUnit] = useState('')
   const [total, setTotal] = useState('')
   const [priceMode, setPriceMode] = useState<'unit' | 'total'>('unit')
+  const [quantityError, setQuantityError] = useState('')
+  const [priceError, setPriceError] = useState('')
+  const [totalError, setTotalError] = useState('')
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef)
 
+  const validateQuantity = (value: string): boolean => {
+    setQuantityError('')
+
+    const validation = validateDecimal(value, 0.01, 9999, 2, 'Quantity')
+    if (!validation.isValid) {
+      setQuantityError(validation.error || 'Invalid quantity')
+      return false
+    }
+
+    const qty = parseDecimal(value)
+    if (qty === 0) {
+      setQuantityError('Quantity must be greater than 0')
+      return false
+    }
+
+    return true
+  }
+
+  const validatePrice = (value: string): boolean => {
+    setPriceError('')
+
+    const validation = validateDecimal(value, 0.01, 99999.99, 2, 'Price per unit')
+    if (!validation.isValid) {
+      setPriceError(validation.error || 'Invalid price')
+      return false
+    }
+
+    return true
+  }
+
+  const validateTotal = (value: string): boolean => {
+    setTotalError('')
+
+    const validation = validateDecimal(value, 0.01, 999999.99, 2, 'Total')
+    if (!validation.isValid) {
+      setTotalError(validation.error || 'Invalid total')
+      return false
+    }
+
+    return true
+  }
+
   const handleQuantityChange = (newQuantity: string) => {
     setQuantity(newQuantity)
+    setQuantityError('')
     if (priceMode === 'unit' && pricePerUnit) {
-      const calc = parseFloat(newQuantity) * parseFloat(pricePerUnit)
-      setTotal(calc.toFixed(2))
+      const qtyNum = parseFloat(newQuantity)
+      const priceNum = parseFloat(pricePerUnit)
+      if (!isNaN(qtyNum) && !isNaN(priceNum)) {
+        setTotal((qtyNum * priceNum).toFixed(2))
+      }
     } else if (priceMode === 'total' && total) {
-      const calc = parseFloat(total) / parseFloat(newQuantity)
-      setPricePerUnit(calc.toFixed(2))
+      const qtyNum = parseFloat(newQuantity)
+      const totalNum = parseFloat(total)
+      if (!isNaN(qtyNum) && !isNaN(totalNum) && qtyNum !== 0) {
+        setPricePerUnit((totalNum / qtyNum).toFixed(2))
+      }
     }
   }
 
   const handlePricePerUnitChange = (newPrice: string) => {
     setPricePerUnit(newPrice)
+    setPriceError('')
     setPriceMode('unit')
     if (quantity && newPrice) {
-      const calc = parseFloat(quantity) * parseFloat(newPrice)
-      setTotal(calc.toFixed(2))
+      const qtyNum = parseFloat(quantity)
+      const priceNum = parseFloat(newPrice)
+      if (!isNaN(qtyNum) && !isNaN(priceNum)) {
+        setTotal((qtyNum * priceNum).toFixed(2))
+      }
     }
   }
 
   const handleTotalChange = (newTotal: string) => {
     setTotal(newTotal)
+    setTotalError('')
     setPriceMode('total')
     if (quantity && newTotal) {
-      const calc = parseFloat(newTotal) / parseFloat(quantity)
-      setPricePerUnit(calc.toFixed(2))
+      const qtyNum = parseFloat(quantity)
+      const totalNum = parseFloat(newTotal)
+      if (!isNaN(qtyNum) && !isNaN(totalNum) && qtyNum !== 0) {
+        setPricePerUnit((totalNum / qtyNum).toFixed(2))
+      }
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const qtyNum = parseInt(quantity)
-    const priceNum = parseFloat(pricePerUnit)
-    const totalNum = parseFloat(total)
 
-    if (isNaN(qtyNum) || qtyNum <= 0 || isNaN(priceNum) || priceNum <= 0 || isNaN(totalNum) || totalNum <= 0) {
+    const isQuantityValid = validateQuantity(quantity)
+    const isPriceValid = validatePrice(pricePerUnit)
+    const isTotalValid = validateTotal(total)
+
+    if (!isQuantityValid || !isPriceValid || !isTotalValid) {
       return
     }
+
+    const qtyNum = parseDecimal(quantity)
+    const priceNum = parseDecimal(pricePerUnit)
+    const totalNum = parseDecimal(total)
 
     onSubmit(qtyNum, priceNum, totalNum)
   }
@@ -438,36 +535,43 @@ function PurchasePopup({
             <label>Quantity Purchased</label>
             <input
               type="number"
+              step="0.01"
               value={quantity}
               onChange={e => handleQuantityChange(e.target.value)}
-              className="form-input"
+              className={`form-input ${quantityError ? 'input-error' : ''}`}
               autoFocus
               required
+              min="0.01"
             />
+            {quantityError && <span className="error-message">{quantityError}</span>}
           </div>
           <div className="form-group">
-            <label>Price per Unit ($)</label>
+            <label>Price per Unit</label>
             <input
               type="number"
               step="0.01"
               value={pricePerUnit}
               onChange={e => handlePricePerUnitChange(e.target.value)}
               placeholder="12.99"
-              className="form-input"
+              className={`form-input ${priceError ? 'input-error' : ''}`}
               required
+              min="0.01"
             />
+            {priceError && <span className="error-message">{priceError}</span>}
           </div>
           <div className="form-group">
-            <label>Total Price ($)</label>
+            <label>Total Price</label>
             <input
               type="number"
               step="0.01"
               value={total}
               onChange={e => handleTotalChange(e.target.value)}
               placeholder="25.98"
-              className="form-input"
+              className={`form-input ${totalError ? 'input-error' : ''}`}
               required
+              min="0.01"
             />
+            {totalError && <span className="error-message">{totalError}</span>}
           </div>
           <div className="button-group">
             <button type="button" onClick={onClose} className="btn btn-secondary">

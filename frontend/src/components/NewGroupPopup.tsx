@@ -2,11 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { groupsApi, ApiError } from '../api'
 import type { Group } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 
 interface NewGroupPopupProps {
   onClose: () => void
   onSuccess: (newGroup: Group) => void
 }
+
+const MAX_LENGTH = 100
+const MIN_LENGTH = 2
 
 export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps) {
   const [groupName, setGroupName] = useState('')
@@ -26,11 +30,48 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
     return () => window.removeEventListener('keydown', handleEscape)
   }, [onClose])
 
+  const validateGroupName = (value: string): boolean => {
+    setError('')
+
+    const trimmed = value.trim()
+
+    if (trimmed.length === 0) {
+      setError('Group name is required')
+      return false
+    }
+
+    const lengthValidation = validateLength(trimmed, MIN_LENGTH, MAX_LENGTH, 'Group name')
+    if (!lengthValidation.isValid) {
+      setError(lengthValidation.error || 'Invalid group name')
+      return false
+    }
+
+    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', 'Group name')
+    if (!alphanumericValidation.isValid) {
+      setError(alphanumericValidation.error || 'Group name contains invalid characters')
+      return false
+    }
+
+    return true
+  }
+
+  const handleNameChange = (value: string) => {
+    // Limit input to max length
+    const sanitized = sanitizeString(value, MAX_LENGTH)
+    setGroupName(sanitized)
+    setError('') // Clear error on change
+  }
+
+  const handleBlur = () => {
+    if (groupName.trim()) {
+      validateGroupName(groupName)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!groupName.trim()) {
-      setError('Group name is required')
+    if (!validateGroupName(groupName)) {
       return
     }
 
@@ -45,6 +86,9 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
       setSubmitting(false)
     }
   }
+
+  const charCount = groupName.length
+  const isOverLimit = charCount > MAX_LENGTH
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -65,13 +109,23 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
             <input
               id="group-name"
               type="text"
-              className="form-input"
+              className={`form-input ${error ? 'input-error' : ''}`}
               value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
+              onBlur={handleBlur}
               placeholder="e.g., Friends & Family"
               autoFocus
               disabled={submitting}
             />
+            <div className="input-footer">
+              {error && <span className="error-message">{error}</span>}
+              <span className={`char-counter ${isOverLimit ? 'over-limit' : ''}`}>
+                {charCount}/{MAX_LENGTH}
+              </span>
+            </div>
+            <small className="input-hint">
+              Use letters, numbers, spaces, and - _ & '
+            </small>
           </div>
 
           <div className="modal-actions">

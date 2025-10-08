@@ -1,9 +1,10 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { productsApi } from './api'
 import type { ProductSearchResult } from './types/product'
+import { debounce } from './utils/validation'
 import Login from './components/Login'
 import Groups from './components/Groups'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -157,9 +158,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!user) return null
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query)
-
+  const performSearch = async (query: string) => {
     if (query.trim().length < 2) {
       setSearchResults([])
       return
@@ -175,6 +174,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     } finally {
       setSearching(false)
     }
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSearch = useCallback(debounce(performSearch, 300), [])
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    debouncedSearch(query)
   }
 
   // Close search dropdown on ESC key
