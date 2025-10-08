@@ -1,7 +1,9 @@
 import { useState, useEffect, memo } from 'react'
 import './RunPage.css'
 import '../styles/run-states.css'
-import { API_BASE_URL, WS_BASE_URL } from '../config'
+import { WS_BASE_URL } from '../config'
+import { runsApi, ApiError } from '../api'
+import type { RunDetail } from '../api'
 import type { AvailableProduct } from '../types/product'
 import BidPopup from './BidPopup'
 import AddProductPopup from './AddProductPopup'
@@ -11,43 +13,10 @@ import { getStateDisplay } from '../utils/runStates'
 import Toast from './Toast'
 import { useToast } from '../hooks/useToast'
 
-interface UserBid {
-  user_id: string
-  user_name: string
-  quantity: number
-  interested_only: boolean
-}
-
-interface Product {
-  id: string
-  name: string
-  base_price: string
-  total_quantity: number
-  interested_count: number
-  user_bids: UserBid[]
-  current_user_bid: UserBid | null
-  purchased_quantity: number | null
-}
-
-interface Participant {
-  user_id: string
-  user_name: string
-  is_leader: boolean
-  is_ready: boolean
-}
-
-interface RunDetail {
-  id: string
-  group_id: string
-  group_name: string
-  store_id: string
-  store_name: string
-  state: string
-  products: Product[]
-  participants: Participant[]
-  current_user_is_ready: boolean
-  current_user_is_leader: boolean
-}
+// Using RunDetail type from API layer
+type Product = RunDetail['products'][0]
+type UserBid = Product['user_bids'][0]
+type Participant = RunDetail['participants'][0]
 
 interface RunPageProps {
   runId: string
@@ -197,19 +166,10 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       }
       setError('')
 
-      const response = await fetch(`${API_BASE_URL}/runs/${runId}`, {
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
-      }
-
-      const runData: RunDetail = await response.json()
+      const runData = await runsApi.getRunDetails(runId)
       setRun(runData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load run details')
+      setError(err instanceof ApiError ? err.message : 'Failed to load run details')
     } finally {
       if (!silent) {
         setLoading(false)
@@ -333,20 +293,11 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
 
   const handleRetractBid = async (product: Product) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/runs/${runId}/bids/${product.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Failed to retract bid')
-      }
-
+      await runsApi.retractBid(runId, product.id)
       // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error retracting bid:', err)
-      showToast(err instanceof Error ? err.message : 'Failed to retract bid. Please try again.', 'error')
+      showToast(err instanceof ApiError ? err.message : 'Failed to retract bid. Please try again.', 'error')
     }
   }
 
@@ -354,22 +305,11 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     if (!selectedProduct) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/runs/${runId}/bids`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          product_id: selectedProduct.id,
-          quantity: quantity,
-          interested_only: interestedOnly
-        })
+      await runsApi.placeBid(runId, {
+        product_id: selectedProduct.id,
+        quantity,
+        interested_only: interestedOnly
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to place bid')
-      }
 
       // WebSocket will update the run data automatically
       setShowBidPopup(false)
@@ -417,15 +357,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
 
   const handleToggleReady = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/runs/${runId}/ready`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to toggle ready status')
-      }
-
+      await runsApi.toggleReady(runId)
       // Refetch run data silently to avoid page jump
       await fetchRunDetails(true)
     } catch (err) {
@@ -436,16 +368,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
 
   const handleStartShopping = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/runs/${runId}/start-shopping`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Failed to start shopping')
-      }
-
+      await runsApi.startShopping(runId)
       // Refetch run data to ensure UI is updated
       await fetchRunDetails()
     } catch (err) {
@@ -456,21 +379,12 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
 
   const handleFinishAdjusting = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/runs/${runId}/finish-adjusting`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Failed to finish adjusting')
-      }
-
+      await runsApi.finishAdjusting(runId)
       // Refetch run data to ensure UI is updated
       await fetchRunDetails()
     } catch (err) {
       console.error('Error finishing adjusting:', err)
-      showToast(err instanceof Error ? err.message : 'Failed to finish adjusting. Please try again.', 'error')
+      showToast(err instanceof ApiError ? err.message : 'Failed to finish adjusting. Please try again.', 'error')
     }
   }
 

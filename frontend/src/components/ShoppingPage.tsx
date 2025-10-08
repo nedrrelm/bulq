@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import './ShoppingPage.css'
-import { API_BASE_URL, WS_BASE_URL } from '../config'
+import { WS_BASE_URL } from '../config'
+import { shoppingApi, ApiError } from '../api'
+import type { ShoppingListItem } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { useWebSocket } from '../hooks/useWebSocket'
 import Toast from './Toast'
@@ -8,23 +10,7 @@ import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 
-interface EncounteredPrice {
-  price: number
-  notes: string
-}
-
-interface ShoppingListItem {
-  id: string
-  product_id: string
-  product_name: string
-  requested_quantity: number
-  encountered_prices: EncounteredPrice[]
-  purchased_quantity: number | null
-  purchased_price_per_unit: string | null
-  purchased_total: string | null
-  is_purchased: boolean
-  purchase_order: number | null
-}
+// Using ShoppingListItem type from API layer
 
 interface ShoppingPageProps {
   runId: string
@@ -46,18 +32,10 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
       setLoading(true)
       setError('')
 
-      const response = await fetch(`${API_BASE_URL}/shopping/${runId}/items`, {
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to load shopping list')
-      }
-
-      const data: ShoppingListItem[] = await response.json()
+      const data = await shoppingApi.getShoppingList(runId)
       setItems(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load shopping list')
+      setError(err instanceof ApiError ? err.message : 'Failed to load shopping list')
     } finally {
       setLoading(false)
     }
@@ -94,18 +72,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
     if (!selectedItem) return
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/shopping/${runId}/items/${selectedItem.id}/encountered-price`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ price, notes })
-        }
-      )
-
-      if (!response.ok) throw new Error('Failed to add price')
-
+      await shoppingApi.addEncounteredPrice(runId, selectedItem.id, { price, notes })
       // Refetch shopping list to ensure UI is updated
       await fetchShoppingList()
       setShowPricePopup(false)
@@ -120,22 +87,11 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
     if (!selectedItem) return
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/shopping/${runId}/items/${selectedItem.id}/purchase`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            quantity,
-            price_per_unit: pricePerUnit,
-            total
-          })
-        }
-      )
-
-      if (!response.ok) throw new Error('Failed to mark as purchased')
-
+      await shoppingApi.markPurchased(runId, selectedItem.id, {
+        quantity,
+        price_per_unit: pricePerUnit,
+        total
+      })
       // Refetch shopping list to ensure UI is updated
       await fetchShoppingList()
       setShowPurchasePopup(false)
@@ -149,13 +105,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
   const handleCompleteShopping = async () => {
     const completeShoppingAction = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/shopping/${runId}/complete`, {
-          method: 'POST',
-          credentials: 'include'
-        })
-
-        if (!response.ok) throw new Error('Failed to complete shopping')
-
+        await shoppingApi.completeShopping(runId)
         // Navigate back to run page
         onBack()
       } catch (err) {
