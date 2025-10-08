@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './Groups.css'
 import { WS_BASE_URL } from '../config'
 import { groupsApi, ApiError } from '../api'
@@ -45,6 +45,9 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
   const wsConnectionsRef = useRef<WebSocket[]>([])
 
   // WebSocket connections for real-time updates - one per group
+  // Memoize group IDs to avoid unnecessary reconnections
+  const groupIds = useMemo(() => groups.map(g => g.id).join(','), [groups])
+
   useEffect(() => {
     if (groups.length === 0) {
       // Clean up any existing connections
@@ -57,10 +60,8 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       return
     }
 
-    const currentGroupIds = groups.map(g => g.id).join(',')
-
     // Only recreate connections if group IDs actually changed
-    if (groupIdsRef.current === currentGroupIds) {
+    if (groupIdsRef.current === groupIds) {
       return
     }
 
@@ -72,7 +73,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     })
     wsConnectionsRef.current = []
 
-    groupIdsRef.current = currentGroupIds
+    groupIdsRef.current = groupIds
 
     groups.forEach((group) => {
       const ws = new WebSocket(`${WS_BASE_URL}/ws/groups/${group.id}`)
@@ -153,7 +154,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       })
       wsConnectionsRef.current = []
     }
-  }, [groups]) // Run when groups changes, but early return if IDs haven't changed
+  }, [groupIds, groups]) // Only run when group IDs change, not when group data changes
 
   const handleGroupClick = (groupId: string) => {
     onGroupSelect(groupId)

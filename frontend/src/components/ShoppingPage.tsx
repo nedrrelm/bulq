@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import './ShoppingPage.css'
 import { WS_BASE_URL } from '../config'
 import { shoppingApi, ApiError } from '../api'
@@ -47,15 +47,17 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
   }, [runId])
 
   // WebSocket for real-time updates
+  const handleWebSocketMessage = useCallback((message: any) => {
+    if (message.type === 'shopping_item_updated') {
+      // Refetch the shopping list to get updates (silently to avoid scroll jump)
+      fetchShoppingList(true)
+    }
+  }, [fetchShoppingList])
+
   useWebSocket(
     runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
     {
-      onMessage: (message) => {
-        if (message.type === 'shopping_item_updated') {
-          // Refetch the shopping list to get updates (silently to avoid scroll jump)
-          fetchShoppingList(true)
-        }
-      }
+      onMessage: handleWebSocketMessage
     }
   )
 
