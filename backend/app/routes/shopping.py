@@ -5,12 +5,10 @@ from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
 from ..repository import get_repository
-from ..websocket_manager import manager
-from ..exceptions import NotFoundError, ForbiddenError
-from ..run_state import RunState
-from pydantic import BaseModel
+from ..services import ShoppingService
+from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
+from pydantic import BaseModel, validator, Field
 import logging
-import uuid
 
 router = APIRouter(prefix="/shopping", tags=["shopping"])
 logger = logging.getLogger(__name__)
@@ -35,13 +33,53 @@ class ShoppingListItemResponse(BaseModel):
         from_attributes = True
 
 class AddEncounteredPriceRequest(BaseModel):
-    price: float
-    notes: str = ""
+    price: float = Field(gt=0, le=99999.99)
+    notes: str = Field(default="", max_length=200)
+
+    @validator('price')
+    def validate_price(cls, v):
+        if v <= 0:
+            raise ValueError('Price must be greater than 0')
+        # Check max 2 decimal places
+        if round(v, 2) != v:
+            raise ValueError('Price can have at most 2 decimal places')
+        return v
+
+    @validator('notes')
+    def validate_notes(cls, v):
+        return v.strip()[:200]
 
 class MarkPurchasedRequest(BaseModel):
-    quantity: int
-    price_per_unit: float
-    total: float
+    quantity: float = Field(gt=0, le=9999)
+    price_per_unit: float = Field(gt=0, le=99999.99)
+    total: float = Field(gt=0, le=999999.99)
+
+    @validator('quantity')
+    def validate_quantity(cls, v):
+        if v <= 0:
+            raise ValueError('Quantity must be greater than 0')
+        # Check max 2 decimal places
+        if round(v, 2) != v:
+            raise ValueError('Quantity can have at most 2 decimal places')
+        return v
+
+    @validator('price_per_unit')
+    def validate_price_per_unit(cls, v):
+        if v <= 0:
+            raise ValueError('Price per unit must be greater than 0')
+        # Check max 2 decimal places
+        if round(v, 2) != v:
+            raise ValueError('Price per unit can have at most 2 decimal places')
+        return v
+
+    @validator('total')
+    def validate_total(cls, v):
+        if v <= 0:
+            raise ValueError('Total must be greater than 0')
+        # Check max 2 decimal places
+        if round(v, 2) != v:
+            raise ValueError('Total can have at most 2 decimal places')
+        return v
 
 @router.get("/{run_id}/items", response_model=List[ShoppingListItemResponse])
 async def get_shopping_list(
@@ -51,53 +89,17 @@ async def get_shopping_list(
 ):
     """Get shopping list for a run."""
     repo = get_repository(db)
+    service = ShoppingService(repo)
 
-    # Validate run ID
     try:
-        run_uuid = uuid.UUID(run_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid run ID format")
-
-    # Get the run
-    run = repo.get_run_by_id(run_uuid)
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
-
-    # Verify user has access to this run
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == run.group_id for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to view this run")
-
-    # Only allow viewing shopping list in shopping or later states
-    if run.state not in ['shopping', 'distributing', 'completed']:
-        raise HTTPException(status_code=400, detail="Shopping list only available in shopping state")
-
-    # Get shopping list items
-    items = repo.get_shopping_list_items(run_uuid)
-
-    # Convert to response format
-    response_items = []
-    for item in items:
-        product = repo.get_products_by_store(item.product.store_id) if hasattr(item, 'product') and item.product else []
-        product = next((p for p in product if p.id == item.product_id), None) if product else None
-
-        response_items.append(ShoppingListItemResponse(
-            id=str(item.id),
-            product_id=str(item.product_id),
-            product_name=product.name if product else "Unknown Product",
-            requested_quantity=item.requested_quantity,
-            encountered_prices=item.encountered_prices or [],
-            purchased_quantity=item.purchased_quantity,
-            purchased_price_per_unit=str(item.purchased_price_per_unit) if item.purchased_price_per_unit else None,
-            purchased_total=str(item.purchased_total) if item.purchased_total else None,
-            is_purchased=item.is_purchased,
-            purchase_order=item.purchase_order
-        ))
-
-    # Sort: unpurchased first, then purchased by purchase order
-    response_items.sort(key=lambda x: (x.is_purchased, x.purchase_order if x.purchase_order else 999))
-
-    return response_items
+        items = await service.get_shopping_list(run_id, current_user)
+        return [ShoppingListItemResponse(**item) for item in items]
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 @router.post("/{run_id}/items/{item_id}/encountered-price")
 async def add_encountered_price(
@@ -109,30 +111,23 @@ async def add_encountered_price(
 ):
     """Add an encountered price for a shopping list item."""
     repo = get_repository(db)
+    service = ShoppingService(repo)
 
-    # Validate IDs
     try:
-        run_uuid = uuid.UUID(run_id)
-        item_uuid = uuid.UUID(item_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-
-    # Get the run
-    run = repo.get_run_by_id(run_uuid)
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
-
-    # Verify user is the run leader
-    participation = repo.get_participation(current_user.id, run_uuid)
-    if not participation or not participation.is_leader:
-        raise HTTPException(status_code=403, detail="Only the run leader can add prices")
-
-    # Add encountered price
-    item = repo.add_encountered_price(item_uuid, request.price, request.notes)
-    if not item:
-        raise HTTPException(status_code=404, detail="Shopping list item not found")
-
-    return {"message": "Price added successfully"}
+        result = await service.add_encountered_price(
+            run_id,
+            item_id,
+            request.price,
+            request.notes,
+            current_user
+        )
+        return result
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 @router.post("/{run_id}/items/{item_id}/purchase")
 async def mark_purchased(
@@ -144,41 +139,24 @@ async def mark_purchased(
 ):
     """Mark a shopping list item as purchased."""
     repo = get_repository(db)
+    service = ShoppingService(repo)
 
-    # Validate IDs
     try:
-        run_uuid = uuid.UUID(run_id)
-        item_uuid = uuid.UUID(item_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-
-    # Get the run
-    run = repo.get_run_by_id(run_uuid)
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
-
-    # Verify user is the run leader
-    participation = repo.get_participation(current_user.id, run_uuid)
-    if not participation or not participation.is_leader:
-        raise HTTPException(status_code=403, detail="Only the run leader can mark items as purchased")
-
-    # Get next purchase order number
-    existing_items = repo.get_shopping_list_items(run_uuid)
-    max_order = max([item.purchase_order for item in existing_items if item.purchase_order is not None], default=0)
-    next_order = max_order + 1
-
-    # Mark as purchased
-    item = repo.mark_item_purchased(
-        item_uuid,
-        request.quantity,
-        request.price_per_unit,
-        request.total,
-        next_order
-    )
-    if not item:
-        raise HTTPException(status_code=404, detail="Shopping list item not found")
-
-    return {"message": "Item marked as purchased", "purchase_order": next_order}
+        result = await service.mark_purchased(
+            run_id,
+            item_id,
+            request.quantity,
+            request.price_per_unit,
+            request.total,
+            current_user
+        )
+        return result
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 @router.post("/{run_id}/complete")
 async def complete_shopping(
@@ -192,104 +170,14 @@ async def complete_shopping(
         extra={"user_id": str(current_user.id), "run_id": run_id}
     )
     repo = get_repository(db)
+    service = ShoppingService(repo)
 
-    # Validate run ID
     try:
-        run_uuid = uuid.UUID(run_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid run ID format")
-
-    # Get the run
-    run = repo.get_run_by_id(run_uuid)
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
-
-    # Verify user is the run leader
-    participation = repo.get_participation(current_user.id, run_uuid)
-    if not participation or not participation.is_leader:
-        raise HTTPException(status_code=403, detail="Only the run leader can complete shopping")
-
-    # Only allow completing from shopping state
-    if run.state != 'shopping':
-        raise HTTPException(status_code=400, detail="Can only complete shopping from shopping state")
-
-    # Check if any items have insufficient quantities
-    shopping_items = repo.get_shopping_list_items(run_uuid)
-    all_bids = repo.get_bids_by_run(run_uuid)
-
-    has_insufficient = False
-    for shopping_item in shopping_items:
-        if not shopping_item.is_purchased:
-            continue
-
-        # Check if purchased quantity is less than requested
-        if shopping_item.purchased_quantity < shopping_item.requested_quantity:
-            has_insufficient = True
-            break
-
-    # If we have insufficient quantities, transition to adjusting state
-    if has_insufficient:
-        repo.update_run_state(run_uuid, RunState.ADJUSTING)
-
-        # Broadcast state change to both run and group
-        await manager.broadcast(f"run:{run_uuid}", {
-            "type": "state_changed",
-            "data": {
-                "run_id": str(run_uuid),
-                "new_state": RunState.ADJUSTING
-            }
-        })
-        await manager.broadcast(f"group:{run.group_id}", {
-            "type": "run_state_changed",
-            "data": {
-                "run_id": str(run_uuid),
-                "new_state": RunState.ADJUSTING
-            }
-        })
-
-        return {"message": "Some items have insufficient quantities. Participants need to adjust their bids.", "state": RunState.ADJUSTING}
-
-    # Otherwise, proceed with distribution
-    # For each shopping item (purchased product), distribute to users who bid
-    for shopping_item in shopping_items:
-        if not shopping_item.is_purchased:
-            continue
-
-        # Get all bids for this product
-        product_bids = [bid for bid in all_bids if bid.product_id == shopping_item.product_id and not bid.interested_only]
-
-        # Distribute the purchased items to bidders (all quantities match)
-        for bid in product_bids:
-            if hasattr(repo, '_bids'):  # Memory mode
-                bid.distributed_quantity = bid.quantity
-                bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
-            else:  # Database mode
-                from ..models import ProductBid
-                db_bid = db.query(ProductBid).filter(ProductBid.id == bid.id).first()
-                if db_bid:
-                    db_bid.distributed_quantity = bid.quantity
-                    db_bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
-
-    if not hasattr(repo, '_bids'):  # Database mode
-        db.commit()
-
-    # Transition to distributing state
-    repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
-
-    # Broadcast state change to both run and group
-    await manager.broadcast(f"run:{run_uuid}", {
-        "type": "state_changed",
-        "data": {
-            "run_id": str(run_uuid),
-            "new_state": RunState.DISTRIBUTING
-        }
-    })
-    await manager.broadcast(f"group:{run.group_id}", {
-        "type": "run_state_changed",
-        "data": {
-            "run_id": str(run_uuid),
-            "new_state": RunState.DISTRIBUTING
-        }
-    })
-
-    return {"message": "Shopping completed! Moving to distribution.", "state": RunState.DISTRIBUTING}
+        result = await service.complete_shopping(run_id, current_user, db)
+        return result
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=str(e))

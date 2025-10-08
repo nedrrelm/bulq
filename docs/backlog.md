@@ -18,26 +18,6 @@ Feature backlog and technical debt for Bulq development.
 
 ---
 
-### Add input validation
-**Status**: Medium Priority
-**Affected files**: `app/routes/*.py`
-
-**Items to validate:**
-- Quantity cannot be negative (Pydantic validator)
-- Price cannot be negative (Pydantic validator)
-- Other validations can wait
-
-**Solution:** Add Pydantic validators to request models:
-```python
-@validator('quantity')
-def quantity_non_negative(cls, v):
-    if v < 0:
-        raise ValueError('Quantity cannot be negative')
-    return v
-```
-
----
-
 ### Database migrations with Alembic
 **Status**: Future (before production)
 **Affected files**: New `alembic/` directory, `app/main.py`
@@ -65,80 +45,6 @@ alembic upgrade head
 5. Rollback if needed: `alembic downgrade -1`
 
 Remove `create_tables()` call from `main.py` once migrations are in place.
-
----
-
-### Introduce Service Pattern
-**Status**: Medium Priority - Future
-**Affected files**: New `app/services/` directory, all route files
-
-**Problem:** Business logic is scattered across route handlers, making it:
-- Hard to test (coupled to HTTP concerns)
-- Difficult to reuse (when Android app is added)
-- Mixed with authorization, validation, and response formatting
-- Complex operations span 100+ lines in routes
-
-**Current examples of complex route logic:**
-- `place_bid()` in runs.py (264-421): 157 lines with validation, state checks, auto-transitions
-- `complete_shopping()` in shopping.py (179-287): Shortage detection, distribution logic
-- `finish_adjusting()` in runs.py (671-777): Quantity matching, distribution updates
-
-**Solution:** Introduce service layer incrementally:
-
-**Architecture:**
-```
-Routes → Services → Repository → Database/Memory
-```
-
-**Start with RunService first** (most complex domain logic):
-```python
-# app/services/run_service.py
-class RunService:
-    def __init__(self, repo: AbstractRepository):
-        self.repo = repo
-        self.state_machine = RunStateMachine()
-
-    def place_bid(self, user_id, run_id, product_id, quantity, interested_only):
-        """Handle bid placement logic, validation, and state transitions."""
-        # All business logic here
-
-    def transition_to_shopping(self, user_id, run_id):
-        """Generate shopping list and transition state."""
-        # Shopping list generation logic
-
-    def complete_shopping(self, user_id, run_id):
-        """Handle shopping completion, shortage detection, distribution."""
-        # Shopping completion logic
-```
-
-**Then routes become thin:**
-```python
-@router.post("/{run_id}/bids")
-async def place_bid(...):
-    service = RunService(get_repository(db))
-    result = await service.place_bid(...)
-    await manager.broadcast(...)
-    return {"message": "Success"}
-```
-
-**Implementation order:**
-1. **RunService** - Most complex, highest value (state machine, bid logic, shopping)
-2. **GroupService** - Group creation, membership, invite management
-3. **DistributionService** - Distribution tracking and pickup management
-4. **ProductService** - Product search, price history
-
-**Benefits:**
-- Testable business logic (no HTTP mocking needed)
-- Reusable across HTTP API and future Android app
-- Centralized transaction management
-- Clearer separation of concerns
-- Easier to reason about complex operations
-
-**When to implement:**
-- After completing high-priority repository cleanup
-- When routes exceed ~150 lines
-- Before starting Android app development
-- When you need to share logic between platforms
 
 ---
 

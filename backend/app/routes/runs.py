@@ -5,10 +5,11 @@ from ..database import get_db
 from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipation
 from ..routes.auth import require_auth
 from ..repository import get_repository
+from ..services import RunService
 from ..websocket_manager import manager
-from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError
+from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError, BadRequestError, AppException
 from ..run_state import RunState
-from pydantic import BaseModel
+from pydantic import BaseModel, validator, Field
 import logging
 import uuid
 
@@ -35,59 +36,37 @@ async def create_run(
     db: Session = Depends(get_db)
 ):
     """Create a new run for a group."""
-    logger.info(
-        f"Creating run for group",
-        extra={"user_id": str(current_user.id), "group_id": request.group_id, "store_id": request.store_id}
-    )
     repo = get_repository(db)
+    service = RunService(repo)
 
-    # Validate IDs
     try:
-        group_uuid = uuid.UUID(request.group_id)
-        store_uuid = uuid.UUID(request.store_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
+        result = service.create_run(request.group_id, request.store_id, current_user)
 
-    # Verify group exists and user is a member
-    group = repo.get_group_by_id(group_uuid)
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+        # Broadcast to group room
+        await manager.broadcast(f"group:{result['group_id']}", {
+            "type": "run_created",
+            "data": {
+                "run_id": result['id'],
+                "store_id": result['store_id'],
+                "store_name": result['store_name'],
+                "state": result['state']
+            }
+        })
 
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == group_uuid for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to create runs for this group")
-
-    # Verify store exists
-    all_stores = repo.get_all_stores()
-    store = next((s for s in all_stores if s.id == store_uuid), None)
-    if not store:
-        raise HTTPException(status_code=404, detail="Store not found")
-
-    # Create the run with current user as leader
-    run = repo.create_run(group_uuid, store_uuid, current_user.id)
-
-    logger.info(
-        f"Run created successfully",
-        extra={"user_id": str(current_user.id), "run_id": str(run.id), "group_id": str(group_uuid)}
-    )
-
-    # Broadcast to group room
-    await manager.broadcast(f"group:{group_uuid}", {
-        "type": "run_created",
-        "data": {
-            "run_id": str(run.id),
-            "store_id": str(run.store_id),
-            "store_name": store.name,
-            "state": run.state
-        }
-    })
-
-    return CreateRunResponse(
-        id=str(run.id),
-        group_id=str(run.group_id),
-        store_id=str(run.store_id),
-        state=run.state
-    )
+        return CreateRunResponse(
+            id=result['id'],
+            group_id=result['group_id'],
+            store_id=result['store_id'],
+            state=result['state']
+        )
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 class UserBidResponse(BaseModel):
     user_id: str
@@ -144,142 +123,66 @@ async def get_run_details(
 ):
     """Get detailed information about a specific run."""
     repo = get_repository(db)
+    service = RunService(repo)
 
-    # Validate run ID format
     try:
-        run_uuid = uuid.UUID(run_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid run ID format")
+        result = service.get_run_details(run_id, current_user)
 
-    # Find the run
-    runs = [run for run in repo._runs.values() if run.id == run_uuid] if hasattr(repo, '_runs') else []
-    if not runs:
-        # Try database if using database mode
-        run = db.query(Run).filter(Run.id == run_uuid).first() if hasattr(db, 'query') else None
-        if not run:
-            raise HTTPException(status_code=404, detail="Run not found")
-        runs = [run]
+        # Convert dict data to Pydantic models
+        products = [
+            ProductResponse(
+                id=p['id'],
+                name=p['name'],
+                base_price=p['base_price'],
+                total_quantity=p['total_quantity'],
+                interested_count=p['interested_count'],
+                user_bids=[UserBidResponse(**ub) for ub in p['user_bids']],
+                current_user_bid=UserBidResponse(**p['current_user_bid']) if p['current_user_bid'] else None,
+                purchased_quantity=p.get('purchased_quantity')
+            )
+            for p in result['products']
+        ]
 
-    run = runs[0]
+        participants = [
+            ParticipantResponse(**p)
+            for p in result['participants']
+        ]
 
-    # Verify user has access to this run (member of the group)
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == run.group_id for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to view this run")
-
-    # Get group and store information
-    group = repo.get_group_by_id(run.group_id)
-    all_stores = repo.get_all_stores()
-    store = next((s for s in all_stores if s.id == run.store_id), None)
-
-    if not group or not store:
-        raise HTTPException(status_code=404, detail="Group or store not found")
-
-    # Get participants with users eagerly loaded to avoid N+1 queries
-    participants_data = []
-    current_user_is_ready = False
-    current_user_is_leader = False
-    leader_name = "Unknown"
-    participations = repo.get_run_participations_with_users(run.id)
-
-    for participation in participations:
-        # Check if this is the current user's participation
-        if participation.user_id == current_user.id:
-            current_user_is_ready = participation.is_ready
-            current_user_is_leader = participation.is_leader
-
-        # Find the leader
-        if participation.is_leader and participation.user:
-            leader_name = participation.user.name
-
-        # Add to participants list if user data is available
-        if participation.user:
-            participants_data.append(ParticipantResponse(
-                user_id=str(participation.user_id),
-                user_name=participation.user.name,
-                is_leader=participation.is_leader,
-                is_ready=participation.is_ready
-            ))
-
-    # Get products and bids for this run
-    if hasattr(repo, '_runs'):  # Memory mode
-        # Get all products for the store
-        store_products = repo.get_products_by_store(run.store_id)
-        # Get bids with participations and users eagerly loaded to avoid N+1 queries
-        run_bids = repo.get_bids_by_run_with_participations(run.id)
-
-        # Get shopping list items if in adjusting state
-        shopping_list_map = {}
-        if run.state == 'adjusting':
-            shopping_items = repo.get_shopping_list_items(run.id)
-            for item in shopping_items:
-                shopping_list_map[item.product_id] = item
-
-        # Calculate product statistics
-        products_data = []
-        for product in store_products:
-            product_bids = [bid for bid in run_bids if bid.product_id == product.id]
-
-            if len(product_bids) > 0:  # Only include products with bids
-                total_quantity = sum(bid.quantity for bid in product_bids)
-                interested_count = len([bid for bid in product_bids if bid.interested_only or bid.quantity > 0])
-
-                # Get user details for each bid
-                user_bids_data = []
-                current_user_bid = None
-
-                for bid in product_bids:
-                    # Participation and user are eagerly loaded on the bid object
-                    if bid.participation and bid.participation.user:
-                        bid_response = UserBidResponse(
-                            user_id=str(bid.participation.user_id),
-                            user_name=bid.participation.user.name,
-                            quantity=bid.quantity,
-                            interested_only=bid.interested_only
-                        )
-                        user_bids_data.append(bid_response)
-
-                        # Check if this is the current user's bid
-                        if bid.participation.user_id == current_user.id:
-                            current_user_bid = bid_response
-
-                # Get purchased quantity if in adjusting state
-                purchased_qty = None
-                if run.state == 'adjusting' and product.id in shopping_list_map:
-                    purchased_qty = shopping_list_map[product.id].purchased_quantity
-
-                products_data.append(ProductResponse(
-                    id=str(product.id),
-                    name=product.name,
-                    base_price=str(product.base_price),
-                    total_quantity=total_quantity,
-                    interested_count=interested_count,
-                    user_bids=user_bids_data,
-                    current_user_bid=current_user_bid,
-                    purchased_quantity=purchased_qty
-                ))
-    else:
-        # Database mode - would need proper joins
-        products_data = []
-
-    return RunDetailResponse(
-        id=str(run.id),
-        group_id=str(run.group_id),
-        group_name=group.name,
-        store_id=str(run.store_id),
-        store_name=store.name,
-        state=run.state,
-        products=products_data,
-        participants=participants_data,
-        current_user_is_ready=current_user_is_ready,
-        current_user_is_leader=current_user_is_leader,
-        leader_name=leader_name
-    )
+        return RunDetailResponse(
+            id=result['id'],
+            group_id=result['group_id'],
+            group_name=result['group_name'],
+            store_id=result['store_id'],
+            store_name=result['store_name'],
+            state=result['state'],
+            products=products,
+            participants=participants,
+            current_user_is_ready=result['current_user_is_ready'],
+            current_user_is_leader=result['current_user_is_leader'],
+            leader_name=result['leader_name']
+        )
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 class PlaceBidRequest(BaseModel):
     product_id: str
-    quantity: int
+    quantity: float = Field(gt=0, le=9999)
     interested_only: bool = False
+
+    @validator('quantity')
+    def validate_quantity(cls, v):
+        if v <= 0:
+            raise ValueError('Quantity must be greater than 0')
+        # Check max 2 decimal places
+        if round(v, 2) != v:
+            raise ValueError('Quantity can have at most 2 decimal places')
+        return v
 
 @router.post("/{run_id}/bids")
 async def place_bid(
@@ -289,160 +192,57 @@ async def place_bid(
     db: Session = Depends(get_db)
 ):
     """Place or update a bid on a product in a run."""
-    logger.info(
-        f"Placing bid on product",
-        extra={"user_id": str(current_user.id), "run_id": run_id, "product_id": bid_request.product_id, "quantity": bid_request.quantity}
-    )
     repo = get_repository(db)
+    service = RunService(repo)
 
-    # Validate IDs
     try:
-        run_uuid = uuid.UUID(run_id)
-        product_uuid = uuid.UUID(bid_request.product_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-
-    # Verify run exists and user has access
-    runs = [run for run in repo._runs.values() if run.id == run_uuid] if hasattr(repo, '_runs') else []
-    if not runs:
-        raise HTTPException(status_code=404, detail="Run not found")
-
-    run = runs[0]
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == run.group_id for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to bid on this run")
-
-    # Check if run allows bidding
-    if run.state not in ['planning', 'active', 'adjusting']:
-        raise HTTPException(status_code=400, detail="Bidding not allowed in current run state")
-
-    # Verify product exists
-    store_products = repo.get_products_by_store(run.store_id)
-    product = next((p for p in store_products if p.id == product_uuid), None)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    # Validate quantity
-    if bid_request.quantity < 0:
-        raise HTTPException(status_code=400, detail="Quantity cannot be negative")
-
-    # In adjusting state, only allow downward adjustments
-    if run.state == 'adjusting':
-        # Get shopping list to check purchased quantity
-        shopping_items = repo.get_shopping_list_items(run_uuid)
-        shopping_item = next((item for item in shopping_items if item.product_id == product_uuid), None)
-
-        if not shopping_item:
-            raise HTTPException(status_code=400, detail="Product not in shopping list")
-
-        # Calculate how much we need to reduce
-        purchased_qty = shopping_item.purchased_quantity or 0
-        requested_qty = shopping_item.requested_quantity
-        shortage = requested_qty - purchased_qty
-
-        # Get current bid (only in memory mode for now)
-        participation = repo.get_participation(current_user.id, run_uuid)
-        existing_bid = None
-        if participation and hasattr(repo, '_bids'):
-            for bid in repo._bids.values():
-                if (bid.participation_id == participation.id and
-                    bid.product_id == product_uuid):
-                    existing_bid = bid
-                    break
-
-            if existing_bid:
-                # Can only reduce, and at most to accommodate the shortage
-                min_allowed = max(0, existing_bid.quantity - shortage)
-                if bid_request.quantity > existing_bid.quantity:
-                    raise HTTPException(status_code=400, detail=f"Can only reduce bids in adjusting state (current: {existing_bid.quantity}, new: {bid_request.quantity})")
-                if bid_request.quantity < min_allowed:
-                    raise HTTPException(status_code=400, detail=f"Cannot reduce bid below {min_allowed} (current: {existing_bid.quantity}, shortage: {shortage}, would remove more than needed)")
-
-    if hasattr(repo, '_bids'):  # Memory mode
-        # Get or create participation for this user in this run
-        participation = repo.get_participation(current_user.id, run_uuid)
-        is_new_participant = False
-        if not participation:
-            # Don't allow new participants in adjusting state
-            if run.state == 'adjusting':
-                raise HTTPException(status_code=400, detail="Cannot join run in adjusting state")
-            # Create participation (not as leader)
-            participation = repo.create_participation(current_user.id, run_uuid, is_leader=False)
-            is_new_participant = True
-
-        # Check if user already has a bid for this product
-        existing_bid = None
-        for bid in repo._bids.values():
-            if (bid.participation_id == participation.id and
-                bid.product_id == product_uuid):
-                existing_bid = bid
-                break
-
-        if existing_bid:
-            # Update existing bid
-            existing_bid.quantity = bid_request.quantity
-            existing_bid.interested_only = bid_request.interested_only
-        else:
-            # Don't allow new bids on products in adjusting state
-            if run.state == 'adjusting':
-                raise HTTPException(status_code=400, detail="Cannot bid on new products in adjusting state")
-            # Create new bid
-            from uuid import uuid4
-            new_bid = ProductBid(
-                id=uuid4(),
-                participation_id=participation.id,
-                product_id=product_uuid,
-                quantity=bid_request.quantity,
-                interested_only=bid_request.interested_only
-            )
-            # Set up relationships
-            new_bid.participation = participation
-            new_bid.product = product
-            repo._bids[new_bid.id] = new_bid
-
-        # Automatic state transition: planning → active
-        # When a non-leader places their first bid, transition from planning to active
-        state_changed = False
-        if is_new_participant and not participation.is_leader and run.state == RunState.PLANNING:
-            repo.update_run_state(run_uuid, RunState.ACTIVE)
-            state_changed = True
-
-        # Calculate new totals for broadcasting
-        all_bids = repo.get_bids_by_run(run_uuid)
-        product_bids = [bid for bid in all_bids if bid.product_id == product_uuid]
-        new_total = sum(bid.quantity for bid in product_bids if not bid.interested_only)
+        result = service.place_bid(
+            run_id,
+            bid_request.product_id,
+            bid_request.quantity,
+            bid_request.interested_only,
+            current_user
+        )
 
         # Broadcast to run room
-        await manager.broadcast(f"run:{run_uuid}", {
+        await manager.broadcast(f"run:{result['run_id']}", {
             "type": "bid_updated",
             "data": {
-                "product_id": str(product_uuid),
-                "user_id": str(current_user.id),
-                "user_name": current_user.name,
-                "quantity": bid_request.quantity,
-                "interested_only": bid_request.interested_only,
-                "new_total": new_total
+                "product_id": result['product_id'],
+                "user_id": result['user_id'],
+                "user_name": result['user_name'],
+                "quantity": result['quantity'],
+                "interested_only": result['interested_only'],
+                "new_total": result['new_total']
             }
         })
 
         # If state changed, broadcast to both run and group
-        if state_changed:
-            await manager.broadcast(f"run:{run_uuid}", {
+        if result.get('state_changed'):
+            await manager.broadcast(f"run:{result['run_id']}", {
                 "type": "state_changed",
                 "data": {
-                    "run_id": str(run_uuid),
-                    "new_state": RunState.ACTIVE
+                    "run_id": result['run_id'],
+                    "new_state": result['new_state']
                 }
             })
-            await manager.broadcast(f"group:{run.group_id}", {
+            await manager.broadcast(f"group:{result['group_id']}", {
                 "type": "run_state_changed",
                 "data": {
-                    "run_id": str(run_uuid),
-                    "new_state": RunState.ACTIVE
+                    "run_id": result['run_id'],
+                    "new_state": result['new_state']
                 }
             })
 
-    return {"message": "Bid placed successfully"}
+        return {"message": result['message']}
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 @router.delete("/{run_id}/bids/{product_id}")
 async def retract_bid(
@@ -553,73 +353,50 @@ async def toggle_ready(
 ):
     """Toggle the current user's ready status for a run."""
     repo = get_repository(db)
+    service = RunService(repo)
 
-    # Validate run ID
     try:
-        run_uuid = uuid.UUID(run_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid run ID format")
+        result = service.toggle_ready(run_id, current_user)
 
-    # Get the run
-    run = repo.get_run_by_id(run_uuid)
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
+        # Broadcast ready toggle to run room
+        await manager.broadcast(f"run:{result['run_id']}", {
+            "type": "ready_toggled",
+            "data": {
+                "user_id": result['user_id'],
+                "is_ready": result['is_ready']
+            }
+        })
 
-    # Verify user has access to this run (member of the group)
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == run.group_id for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to modify this run")
+        # If state changed, broadcast state change to both run and group
+        if result.get('state_changed'):
+            await manager.broadcast(f"run:{result['run_id']}", {
+                "type": "state_changed",
+                "data": {
+                    "run_id": result['run_id'],
+                    "new_state": result['new_state']
+                }
+            })
+            await manager.broadcast(f"group:{result['group_id']}", {
+                "type": "run_state_changed",
+                "data": {
+                    "run_id": result['run_id'],
+                    "new_state": result['new_state']
+                }
+            })
 
-    # Only allow toggling ready in active state
-    if run.state != 'active':
-        raise HTTPException(status_code=400, detail="Can only mark ready in active state")
-
-    # Get user's participation
-    participation = repo.get_participation(current_user.id, run_uuid)
-    if not participation:
-        raise HTTPException(status_code=404, detail="You are not participating in this run")
-
-    # Toggle ready status
-    new_ready_status = not participation.is_ready
-    repo.update_participation_ready(participation.id, new_ready_status)
-
-    # Check if all participants are ready
-    all_participations = repo.get_run_participations(run_uuid)
-    all_ready = all(p.is_ready for p in all_participations)
-
-    # Broadcast ready toggle to run room
-    await manager.broadcast(f"run:{run_uuid}", {
-        "type": "ready_toggled",
-        "data": {
-            "user_id": str(current_user.id),
-            "is_ready": new_ready_status
+        return {
+            "message": result['message'],
+            "is_ready": result['is_ready'],
+            "state_changed": result.get('state_changed', False)
         }
-    })
-
-    # Automatic state transition: active → confirmed
-    # When all participants mark themselves as ready
-    if all_ready and len(all_participations) > 0:
-        repo.update_run_state(run_uuid, RunState.CONFIRMED)
-
-        # Broadcast state change to both run and group
-        await manager.broadcast(f"run:{run_uuid}", {
-            "type": "state_changed",
-            "data": {
-                "run_id": str(run_uuid),
-                "new_state": RunState.CONFIRMED
-            }
-        })
-        await manager.broadcast(f"group:{run.group_id}", {
-            "type": "run_state_changed",
-            "data": {
-                "run_id": str(run_uuid),
-                "new_state": RunState.CONFIRMED
-            }
-        })
-
-        return {"message": "All participants ready! Run confirmed.", "is_ready": new_ready_status, "state_changed": True}
-
-    return {"message": f"Ready status updated to {new_ready_status}", "is_ready": new_ready_status, "state_changed": False}
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 @router.post("/{run_id}/start-shopping")
 async def start_shopping(
@@ -629,68 +406,36 @@ async def start_shopping(
 ):
     """Start shopping - transition from confirmed to shopping state (leader only)."""
     repo = get_repository(db)
+    service = RunService(repo)
 
-    # Validate run ID
     try:
-        run_uuid = uuid.UUID(run_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid run ID format")
+        result = service.start_run(run_id, current_user)
 
-    # Get the run
-    run = repo.get_run_by_id(run_uuid)
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
+        # Broadcast state change to both run and group
+        await manager.broadcast(f"run:{result['run_id']}", {
+            "type": "state_changed",
+            "data": {
+                "run_id": result['run_id'],
+                "new_state": result['state']
+            }
+        })
+        await manager.broadcast(f"group:{result['group_id']}", {
+            "type": "run_state_changed",
+            "data": {
+                "run_id": result['run_id'],
+                "new_state": result['state']
+            }
+        })
 
-    # Verify user has access to this run (member of the group)
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == run.group_id for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to modify this run")
-
-    # Only allow starting shopping from confirmed state
-    if run.state != 'confirmed':
-        raise HTTPException(status_code=400, detail="Can only start shopping from confirmed state")
-
-    # Check if user is the run leader
-    participation = repo.get_participation(current_user.id, run_uuid)
-    if not participation or not participation.is_leader:
-        raise HTTPException(status_code=403, detail="Only the run leader can start shopping")
-
-    # Generate shopping list items from bids
-    # Get all bids for this run and aggregate by product
-    bids = repo.get_bids_by_run(run_uuid)
-    product_quantities = {}
-
-    for bid in bids:
-        if not bid.interested_only and bid.quantity > 0:
-            product_id = bid.product_id
-            if product_id not in product_quantities:
-                product_quantities[product_id] = 0
-            product_quantities[product_id] += bid.quantity
-
-    # Create shopping list items
-    for product_id, quantity in product_quantities.items():
-        repo.create_shopping_list_item(run_uuid, product_id, quantity)
-
-    # Transition to shopping state
-    repo.update_run_state(run_uuid, RunState.SHOPPING)
-
-    # Broadcast state change to both run and group
-    await manager.broadcast(f"run:{run_uuid}", {
-        "type": "state_changed",
-        "data": {
-            "run_id": str(run_uuid),
-            "new_state": RunState.SHOPPING
-        }
-    })
-    await manager.broadcast(f"group:{run.group_id}", {
-        "type": "run_state_changed",
-        "data": {
-            "run_id": str(run_uuid),
-            "new_state": RunState.SHOPPING
-        }
-    })
-
-    return {"message": "Shopping started!", "state": RunState.SHOPPING}
+        return {"message": result['message'], "state": result['state']}
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 @router.post("/{run_id}/finish-adjusting")
 async def finish_adjusting(
@@ -700,105 +445,36 @@ async def finish_adjusting(
 ):
     """Finish adjusting bids - transition from adjusting to distributing state (leader only)."""
     repo = get_repository(db)
+    service = RunService(repo)
 
-    # Validate run ID
     try:
-        run_uuid = uuid.UUID(run_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid run ID format")
+        result = service.finish_adjusting(run_id, current_user)
 
-    # Get the run
-    run = repo.get_run_by_id(run_uuid)
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
+        # Broadcast state change to both run and group
+        await manager.broadcast(f"run:{result['run_id']}", {
+            "type": "state_changed",
+            "data": {
+                "run_id": result['run_id'],
+                "new_state": result['state']
+            }
+        })
+        await manager.broadcast(f"group:{result['group_id']}", {
+            "type": "run_state_changed",
+            "data": {
+                "run_id": result['run_id'],
+                "new_state": result['state']
+            }
+        })
 
-    # Verify user has access to this run (member of the group)
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == run.group_id for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to modify this run")
-
-    # Only allow finishing adjusting from adjusting state
-    if run.state != 'adjusting':
-        raise HTTPException(status_code=400, detail="Can only finish adjusting from adjusting state")
-
-    # Check if user is the run leader
-    participation = repo.get_participation(current_user.id, run_uuid)
-    if not participation or not participation.is_leader:
-        raise HTTPException(status_code=403, detail="Only the run leader can finish adjusting")
-
-    # Verify that quantities now match
-    shopping_items = repo.get_shopping_list_items(run_uuid)
-    all_bids = repo.get_bids_by_run(run_uuid)
-
-    for shopping_item in shopping_items:
-        if not shopping_item.is_purchased:
-            continue
-
-        # Calculate new total from bids
-        product_bids = [bid for bid in all_bids if bid.product_id == shopping_item.product_id and not bid.interested_only]
-        total_requested = sum(bid.quantity for bid in product_bids)
-
-        # Check if it matches purchased quantity
-        if total_requested != shopping_item.purchased_quantity:
-            shortage = total_requested - shopping_item.purchased_quantity
-            raise HTTPException(
-                status_code=400,
-                detail=f"Quantities still don't match. Need to reduce {shortage} more items across all bids."
-            )
-
-    # All quantities match, proceed with distribution
-    for shopping_item in shopping_items:
-        if not shopping_item.is_purchased:
-            continue
-
-        # Get all bids for this product
-        product_bids = [bid for bid in all_bids if bid.product_id == shopping_item.product_id and not bid.interested_only]
-
-        # Update shopping list item's requested_quantity to match adjusted bids
-        total_requested = sum(bid.quantity for bid in product_bids)
-        if hasattr(repo, '_shopping_list_items'):  # Memory mode
-            shopping_item.requested_quantity = total_requested
-        else:  # Database mode
-            from ..models import ShoppingListItem
-            db_item = db.query(ShoppingListItem).filter(ShoppingListItem.id == shopping_item.id).first()
-            if db_item:
-                db_item.requested_quantity = total_requested
-
-        # Distribute the purchased items to bidders
-        for bid in product_bids:
-            if hasattr(repo, '_bids'):  # Memory mode
-                bid.distributed_quantity = bid.quantity
-                bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
-            else:  # Database mode
-                from ..models import ProductBid
-                db_bid = db.query(ProductBid).filter(ProductBid.id == bid.id).first()
-                if db_bid:
-                    db_bid.distributed_quantity = bid.quantity
-                    db_bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
-
-    if not hasattr(repo, '_bids'):  # Database mode
-        db.commit()
-
-    # Transition to distributing state
-    repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
-
-    # Broadcast state change to both run and group
-    await manager.broadcast(f"run:{run_uuid}", {
-        "type": "state_changed",
-        "data": {
-            "run_id": str(run_uuid),
-            "new_state": RunState.DISTRIBUTING
-        }
-    })
-    await manager.broadcast(f"group:{run.group_id}", {
-        "type": "run_state_changed",
-        "data": {
-            "run_id": str(run_uuid),
-            "new_state": RunState.DISTRIBUTING
-        }
-    })
-
-    return {"message": "Adjustments complete! Moving to distribution.", "state": RunState.DISTRIBUTING}
+        return {"message": result['message'], "state": result['state']}
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 @router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
 async def get_available_products(
@@ -808,42 +484,94 @@ async def get_available_products(
 ):
     """Get products available for bidding (products from the store that don't have bids yet)."""
     repo = get_repository(db)
+    service = RunService(repo)
 
-    # Validate run ID
     try:
-        run_uuid = uuid.UUID(run_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid run ID format")
+        result = service.get_available_products(run_id, current_user)
 
-    # Verify run exists and user has access
-    runs = [run for run in repo._runs.values() if run.id == run_uuid] if hasattr(repo, '_runs') else []
-    if not runs:
-        raise HTTPException(status_code=404, detail="Run not found")
+        return [
+            AvailableProductResponse(
+                id=p['id'],
+                name=p['name'],
+                base_price=p['base_price']
+            )
+            for p in result
+        ]
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
-    run = runs[0]
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == run.group_id for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to view this run")
+@router.post("/{run_id}/transition-shopping")
+async def transition_to_shopping(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Transition to shopping state (alias for start-shopping)."""
+    repo = get_repository(db)
+    service = RunService(repo)
 
-    if hasattr(repo, '_runs'):  # Memory mode
-        # Get all products for the store
-        store_products = repo.get_products_by_store(run.store_id)
-        run_bids = repo.get_bids_by_run(run.id)
+    try:
+        result = service.transition_to_shopping(run_id, current_user)
 
-        # Get products that have bids
-        products_with_bids = set(bid.product_id for bid in run_bids)
+        # Broadcast state change to both run and group
+        await manager.broadcast(f"run:{result['run_id']}", {
+            "type": "state_changed",
+            "data": {
+                "run_id": result['run_id'],
+                "new_state": result['state']
+            }
+        })
+        await manager.broadcast(f"group:{result['group_id']}", {
+            "type": "run_state_changed",
+            "data": {
+                "run_id": result['run_id'],
+                "new_state": result['state']
+            }
+        })
 
-        # Return products that don't have bids
-        available_products = []
-        for product in store_products:
-            if product.id not in products_with_bids:
-                available_products.append(AvailableProductResponse(
-                    id=str(product.id),
-                    name=product.name,
-                    base_price=str(product.base_price)
-                ))
+        return {"message": result['message'], "state": result['state']}
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
-        return available_products
-    else:
-        # Database mode - would need proper joins
-        return []
+@router.delete("/{run_id}")
+async def delete_run(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Delete a run (cancels it)."""
+    repo = get_repository(db)
+    service = RunService(repo)
+
+    try:
+        result = service.delete_run(run_id, current_user)
+
+        # Broadcast to group room
+        await manager.broadcast(f"group:{result['group_id']}", {
+            "type": "run_deleted",
+            "data": {
+                "run_id": result['run_id']
+            }
+        })
+
+        return {"message": result['message']}
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
