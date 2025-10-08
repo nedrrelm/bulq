@@ -5,6 +5,10 @@ import NewRunPopup from './NewRunPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateLabel } from '../utils/runStates'
+import Toast from './Toast'
+import ConfirmDialog from './ConfirmDialog'
+import { useToast } from '../hooks/useToast'
+import { useConfirm } from '../hooks/useConfirm'
 
 interface Run {
   id: string
@@ -32,6 +36,8 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showNewRunPopup, setShowNewRunPopup] = useState(false)
+  const { toast, showToast, hideToast } = useToast()
+  const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -141,37 +147,42 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     const inviteUrl = `${window.location.origin}/invite/${group.invite_token}`
     navigator.clipboard.writeText(inviteUrl)
       .then(() => {
-        alert('Invite link copied to clipboard!')
+        showToast('Invite link copied to clipboard!', 'success')
       })
       .catch(err => {
         console.error('Failed to copy:', err)
-        alert('Failed to copy invite link')
+        showToast('Failed to copy invite link', 'error')
       })
   }
 
   const handleRegenerateToken = async () => {
     if (!group) return
-    if (!confirm('Are you sure you want to regenerate the invite link? The old link will stop working.')) {
-      return
-    }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/groups/${groupId}/regenerate-invite`, {
-        method: 'POST',
-        credentials: 'include'
-      })
+    const regenerateAction = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/groups/${groupId}/regenerate-invite`, {
+          method: 'POST',
+          credentials: 'include'
+        })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to regenerate invite token')
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.detail || 'Failed to regenerate invite token')
+        }
+
+        const data = await response.json()
+        setGroup({ ...group, invite_token: data.invite_token })
+        showToast('Invite link regenerated successfully!', 'success')
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Failed to regenerate invite link', 'error')
       }
-
-      const data = await response.json()
-      setGroup({ ...group, invite_token: data.invite_token })
-      alert('Invite link regenerated successfully!')
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to regenerate invite link')
     }
+
+    showConfirm(
+      'Are you sure you want to regenerate the invite link? The old link will stop working.',
+      regenerateAction,
+      { danger: true }
+    )
   }
 
   return (
@@ -270,6 +281,23 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
             )}
           </div>
         </>
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
+      )}
+
+      {confirmState && (
+        <ConfirmDialog
+          message={confirmState.message}
+          onConfirm={handleConfirm}
+          onCancel={hideConfirm}
+          danger={confirmState.danger}
+        />
       )}
     </div>
   )

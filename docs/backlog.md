@@ -292,20 +292,6 @@ Apply to:
 
 ---
 
-### 🟢 LOW: Alert/Confirm Dialogs Instead of UI Components
-**Status**: Low Priority - UX
-**Affected files**: RunPage.tsx:217, 256, 317, 344; GroupPage.tsx:189, 208
-
-**Problem:** Native browser dialogs break UI consistency:
-```typescript
-alert('Failed to place bid. Please try again.')
-if (!confirm('Are you sure...'))
-```
-
-**Solution:** Create custom `<Toast />` notification and `<ConfirmDialog />` components.
-
----
-
 ### 🟢 LOW: Overly Nested Ternary Operators
 **Status**: Low Priority - Readability
 **Affected files**: RunPage.tsx:804-815
