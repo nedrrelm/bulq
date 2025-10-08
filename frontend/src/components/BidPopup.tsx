@@ -35,11 +35,9 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
     // Validation
     if (qty < 0) return
     if (adjustingMode && minAllowed !== undefined && qty < minAllowed) {
-      alert(`Minimum allowed quantity is ${minAllowed}`)
       return
     }
     if (adjustingMode && maxAllowed !== undefined && qty > maxAllowed) {
-      alert(`Maximum allowed quantity is ${maxAllowed}`)
       return
     }
 

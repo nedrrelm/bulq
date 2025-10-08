@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import './ShoppingPage.css'
 import { API_BASE_URL } from '../config'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import Toast from './Toast'
+import ConfirmDialog from './ConfirmDialog'
+import { useToast } from '../hooks/useToast'
+import { useConfirm } from '../hooks/useConfirm'
 
 interface EncounteredPrice {
   price: number
@@ -33,6 +37,8 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
   const [showPurchasePopup, setShowPurchasePopup] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ShoppingListItem | null>(null)
   const [showPricePopup, setShowPricePopup] = useState(false)
+  const { toast, showToast, hideToast } = useToast()
+  const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
   const fetchShoppingList = async () => {
     try {
@@ -91,7 +97,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
       setSelectedItem(null)
     } catch (err) {
       console.error('Error adding price:', err)
-      alert('Failed to add price. Please try again.')
+      showToast('Failed to add price. Please try again.', 'error')
     }
   }
 
@@ -120,31 +126,35 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
       setSelectedItem(null)
     } catch (err) {
       console.error('Error marking purchased:', err)
-      alert('Failed to mark as purchased. Please try again.')
+      showToast('Failed to mark as purchased. Please try again.', 'error')
     }
   }
 
   const handleCompleteShopping = async () => {
-    if (unpurchasedItems.length > 0) {
-      const confirm = window.confirm(
-        `You still have ${unpurchasedItems.length} items not purchased. Are you sure you want to complete shopping?`
-      )
-      if (!confirm) return
+    const completeShoppingAction = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/shopping/${runId}/complete`, {
+          method: 'POST',
+          credentials: 'include'
+        })
+
+        if (!response.ok) throw new Error('Failed to complete shopping')
+
+        // Navigate back to run page
+        onBack()
+      } catch (err) {
+        console.error('Error completing shopping:', err)
+        showToast('Failed to complete shopping. Please try again.', 'error')
+      }
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/shopping/${runId}/complete`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (!response.ok) throw new Error('Failed to complete shopping')
-
-      // Navigate back to run page
-      onBack()
-    } catch (err) {
-      console.error('Error completing shopping:', err)
-      alert('Failed to complete shopping. Please try again.')
+    if (unpurchasedItems.length > 0) {
+      showConfirm(
+        `You still have ${unpurchasedItems.length} items not purchased. Are you sure you want to complete shopping?`,
+        completeShoppingAction
+      )
+    } else {
+      completeShoppingAction()
     }
   }
 
@@ -239,6 +249,22 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
           }}
         />
       )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
+      )}
+
+      {confirmState && (
+        <ConfirmDialog
+          message={confirmState.message}
+          onConfirm={handleConfirm}
+          onCancel={hideConfirm}
+        />
+      )}
     </div>
   )
 }
@@ -327,7 +353,6 @@ function PricePopup({
     e.preventDefault()
     const priceNum = parseFloat(price)
     if (isNaN(priceNum) || priceNum <= 0) {
-      alert('Please enter a valid price')
       return
     }
     onSubmit(priceNum, notes)
@@ -350,6 +375,8 @@ function PricePopup({
               className="form-input"
               autoFocus
               required
+              min="0.01"
+              step="0.01"
             />
           </div>
           <div className="form-group">
@@ -428,16 +455,7 @@ function PurchasePopup({
     const priceNum = parseFloat(pricePerUnit)
     const totalNum = parseFloat(total)
 
-    if (isNaN(qtyNum) || qtyNum <= 0) {
-      alert('Please enter a valid quantity')
-      return
-    }
-    if (isNaN(priceNum) || priceNum <= 0) {
-      alert('Please enter a valid price')
-      return
-    }
-    if (isNaN(totalNum) || totalNum <= 0) {
-      alert('Please enter a valid total')
+    if (isNaN(qtyNum) || qtyNum <= 0 || isNaN(priceNum) || priceNum <= 0 || isNaN(totalNum) || totalNum <= 0) {
       return
     }
 
