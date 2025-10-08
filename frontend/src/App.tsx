@@ -1,8 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
-import { API_BASE_URL } from './config'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { productsApi } from './api'
 import type { ProductSearchResult } from './types/product'
 import Login from './components/Login'
 import Groups from './components/Groups'
@@ -167,16 +167,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
     try {
       setSearching(true)
-      const response = await fetch(`${API_BASE_URL}/products/search?q=${encodeURIComponent(query)}`, {
-        credentials: 'include'
-      })
-
-      if (response.ok) {
-        const results: ProductSearchResult[] = await response.json()
-        setSearchResults(results)
-      } else {
-        setSearchResults([])
-      }
+      const results = await productsApi.search(query)
+      setSearchResults(results)
     } catch (err) {
       console.error('Search failed:', err)
       setSearchResults([])

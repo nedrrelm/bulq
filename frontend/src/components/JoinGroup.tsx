@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './JoinGroup.css'
-import { API_BASE_URL } from '../config'
+import { groupsApi, ApiError } from '../api'
 
 interface JoinGroupProps {
   inviteToken: string
@@ -50,17 +50,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
       setJoining(true)
       setError('')
 
-      const response = await fetch(`${API_BASE_URL}/groups/join/${inviteToken}`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to join group')
-      }
-
-      const data = await response.json()
+      const data = await groupsApi.joinGroup(inviteToken)
       setJoinedGroup({
         id: data.group_id,
         name: data.group_name,
@@ -73,7 +63,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
         onJoinSuccess()
       }, 1500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to join group')
+      setError(err instanceof ApiError ? err.message : 'Failed to join group')
       setJoining(false)
     }
   }
