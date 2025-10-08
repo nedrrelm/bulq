@@ -322,19 +322,6 @@ Apply to:
 
 ---
 
-### No Input Validation
-**Status**: Medium Priority - Data Quality
-**Affected files**: BidPopup, Login, NewGroupPopup, NewRunPopup, ShoppingPage
-
-**Problem:** Forms trust user input and send it directly to the backend:
-- BidPopup allows negative quantities (checked after submission)
-- Email format not validated client-side
-- No max length on text inputs
-
-**Solution:** Add client-side validation with a library (react-hook-form, formik) or custom validation.
-
----
-
 ## Product Discovery
 
 ### Product families

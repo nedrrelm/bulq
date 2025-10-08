@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './BidPopup.css'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import { validateDecimal, parseDecimal } from '../utils/validation'
 
 interface BidPopupProps {
   productName: string
@@ -15,6 +16,7 @@ interface BidPopupProps {
 export default function BidPopup({ productName, currentQuantity, onSubmit, onCancel, adjustingMode, minAllowed, maxAllowed }: BidPopupProps) {
   const [quantity, setQuantity] = useState(currentQuantity?.toString() || '1')
   const [interestedOnly, setInterestedOnly] = useState(false)
+  const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -28,20 +30,46 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
     }
   }, [])
 
+  const validateQuantity = (value: string): boolean => {
+    setError('')
+
+    if (interestedOnly) {
+      return true // No quantity validation for "interested only"
+    }
+
+    const min = adjustingMode && minAllowed !== undefined ? minAllowed : 0
+    const max = adjustingMode && maxAllowed !== undefined ? maxAllowed : 9999
+
+    const validation = validateDecimal(value, min, max, 2, 'Quantity')
+
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid quantity')
+      return false
+    }
+
+    const qty = parseDecimal(value)
+    if (qty === 0) {
+      setError('Quantity must be greater than 0')
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const qty = parseInt(quantity) || 0
 
-    // Validation
-    if (qty < 0) return
-    if (adjustingMode && minAllowed !== undefined && qty < minAllowed) {
-      return
-    }
-    if (adjustingMode && maxAllowed !== undefined && qty > maxAllowed) {
+    if (!validateQuantity(quantity)) {
       return
     }
 
+    const qty = parseDecimal(quantity)
     onSubmit(qty, interestedOnly)
+  }
+
+  const handleQuantityChange = (value: string) => {
+    setQuantity(value)
+    setError('') // Clear error on change
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -75,12 +103,16 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
               ref={inputRef}
               id="quantity"
               type="number"
+              step="0.01"
               min={adjustingMode && minAllowed !== undefined ? minAllowed : 0}
               max={adjustingMode && maxAllowed !== undefined ? maxAllowed : undefined}
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="quantity-input"
+              onChange={(e) => handleQuantityChange(e.target.value)}
+              className={`quantity-input ${error ? 'input-error' : ''}`}
+              disabled={interestedOnly}
             />
+            {error && <span className="error-message">{error}</span>}
+            <small className="input-hint">You can enter decimals (e.g., 0.5, 1.25)</small>
           </div>
 
           <div className="form-group">
