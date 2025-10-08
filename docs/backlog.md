@@ -322,36 +322,6 @@ Apply to:
 
 ---
 
-### API Layer Missing
-**Status**: High Priority - Code Organization
-**Affected files**: All components doing fetch() calls
-
-**Problem:** Every component does its own `fetch()` calls with duplicated:
-- credentials: 'include'
-- Error handling
-- JSON parsing
-- URL construction
-
-**Solution:** Create `src/api/` module:
-```typescript
-// src/api/client.ts
-export const api = {
-  get: (endpoint) => fetch(`${API_BASE_URL}${endpoint}`, { credentials: 'include' }),
-  post: (endpoint, data) => { ... },
-  delete: (endpoint) => { ... },
-  // ... with proper error handling
-}
-
-// src/api/runs.ts
-export const runsApi = {
-  getDetails: (runId: string) => api.get(`/runs/${runId}`),
-  placeBid: (runId: string, data: BidData) => api.post(`/runs/${runId}/bids`, data),
-  // ...
-}
-```
-
----
-
 ### No Input Validation
 **Status**: Medium Priority - Data Quality
 **Affected files**: BidPopup, Login, NewGroupPopup, NewRunPopup, ShoppingPage
