@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react'
+import { useState, useEffect, memo, useCallback } from 'react'
 import './RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
@@ -182,13 +182,10 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   }, [runId])
 
   // WebSocket for real-time updates
-  useWebSocket(
-    runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
-    {
-      onMessage: (message) => {
-        if (!run) return
+  const handleWebSocketMessage = useCallback((message: any) => {
+    if (!run) return
 
-        if (message.type === 'bid_updated') {
+    if (message.type === 'bid_updated') {
           // Update product with new bid or updated bid
           setRun(prev => {
             if (!prev) return prev
@@ -270,17 +267,22 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
               current_user_is_ready: isCurrentUser ? message.data.is_ready : prev.current_user_is_ready
             }
           })
-        } else if (message.type === 'state_changed') {
-          // Update run state
-          setRun(prev => {
-            if (!prev) return prev
-            return {
-              ...prev,
-              state: message.data.new_state
-            }
-          })
-        }
+      } else if (message.type === 'state_changed') {
+        // Update run state
+        setRun(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            state: message.data.new_state
+          }
+        })
       }
+  }, [run, userId])
+
+  useWebSocket(
+    runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
+    {
+      onMessage: handleWebSocketMessage
     }
   )
 

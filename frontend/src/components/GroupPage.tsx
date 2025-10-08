@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './GroupPage.css'
 import { WS_BASE_URL } from '../config'
 import { groupsApi, ApiError } from '../api'
@@ -55,34 +55,36 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   }, [groupId])
 
   // WebSocket for real-time updates
+  const handleWebSocketMessage = useCallback((message: any) => {
+    if (message.type === 'run_created') {
+      // Check if run already exists (to avoid duplicates from handleNewRunSuccess)
+      setRuns(prev => {
+        if (prev.some(run => run.id === message.data.run_id)) {
+          return prev
+        }
+        const newRun: Run = {
+          id: message.data.run_id,
+          group_id: groupId,
+          store_id: message.data.store_id,
+          store_name: message.data.store_name,
+          state: message.data.state
+        }
+        return [newRun, ...prev]
+      })
+    } else if (message.type === 'run_state_changed') {
+      // Update run state
+      setRuns(prev => prev.map(run =>
+        run.id === message.data.run_id
+          ? { ...run, state: message.data.new_state }
+          : run
+      ))
+    }
+  }, [groupId])
+
   useWebSocket(
     groupId ? `${WS_BASE_URL}/ws/groups/${groupId}` : null,
     {
-      onMessage: (message) => {
-        if (message.type === 'run_created') {
-          // Check if run already exists (to avoid duplicates from handleNewRunSuccess)
-          setRuns(prev => {
-            if (prev.some(run => run.id === message.data.run_id)) {
-              return prev
-            }
-            const newRun: Run = {
-              id: message.data.run_id,
-              group_id: groupId,
-              store_id: message.data.store_id,
-              store_name: message.data.store_name,
-              state: message.data.state
-            }
-            return [newRun, ...prev]
-          })
-        } else if (message.type === 'run_state_changed') {
-          // Update run state
-          setRuns(prev => prev.map(run =>
-            run.id === message.data.run_id
-              ? { ...run, state: message.data.new_state }
-              : run
-          ))
-        }
-      }
+      onMessage: handleWebSocketMessage
     }
   )
 

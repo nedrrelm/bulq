@@ -71,12 +71,19 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
         wsRef.current = null
         if (onDisconnect) onDisconnect()
 
-        // Attempt to reconnect
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+        // Don't reconnect on authentication errors (code 1008) or normal closure (code 1000)
+        // Authentication errors mean the session is invalid and reconnecting won't help
+        const shouldNotReconnect = event.code === 1008 || event.code === 1000
+
+        // Attempt to reconnect for network/server errors
+        if (!shouldNotReconnect && reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++
           reconnectTimeoutRef.current = setTimeout(() => {
             connect()
           }, reconnectInterval)
+        } else if (shouldNotReconnect) {
+          // Log why we're not reconnecting
+          console.log(`WebSocket closed (code ${event.code}): ${event.reason || 'No reason provided'}. Not reconnecting.`)
         }
       }
     } catch (err) {
@@ -92,6 +99,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
       wsRef.current.close()
       wsRef.current = null
     }
+    reconnectAttemptsRef.current = 0
     setIsConnected(false)
   }, [])
 
