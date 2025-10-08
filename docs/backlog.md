@@ -320,23 +320,6 @@ Apply to:
 
 ## Frontend Architecture Improvements
 
-### No Custom Hook Reuse
-**Status**: Medium Priority - Code Reusability
-**Affected files**: Multiple components with repeated patterns
-
-**Problem:** Only one custom hook (`useWebSocket`), but many patterns repeat:
-- Fetching with loading/error states
-- Form handling
-- Modal open/close logic
-
-**Suggested hooks:**
-```typescript
-useApi(endpoint, options)  // Handles fetch, loading, error
-useModal()                 // Handles open/close, ESC key
-useForm(initialValues)     // Handles form state, validation
-```
-
----
 
 ### No Context for Global State
 **Status**: Medium Priority - State Management
