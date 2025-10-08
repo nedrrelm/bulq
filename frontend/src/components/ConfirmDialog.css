@@ -1,0 +1,19 @@
+.confirm-dialog {
+  text-align: center;
+}
+
+.confirm-message {
+  margin: 1.5rem 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}

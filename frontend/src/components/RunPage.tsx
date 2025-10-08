@@ -8,6 +8,8 @@ import AddProductPopup from './AddProductPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
+import Toast from './Toast'
+import { useToast } from '../hooks/useToast'
 
 interface UserBid {
   user_id: string
@@ -62,6 +64,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   const [showBidPopup, setShowBidPopup] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
+  const { toast, showToast, hideToast } = useToast()
 
   useEffect(() => {
     const fetchRunDetails = async () => {
@@ -215,7 +218,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error retracting bid:', err)
-      alert(err instanceof Error ? err.message : 'Failed to retract bid. Please try again.')
+      showToast(err instanceof Error ? err.message : 'Failed to retract bid. Please try again.', 'error')
     }
   }
 
@@ -245,7 +248,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       setSelectedProduct(null)
     } catch (err) {
       console.error('Error placing bid:', err)
-      alert('Failed to place bid. Please try again.')
+      showToast('Failed to place bid. Please try again.', 'error')
     }
   }
 
@@ -298,7 +301,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error toggling ready:', err)
-      alert('Failed to update ready status. Please try again.')
+      showToast('Failed to update ready status. Please try again.', 'error')
     }
   }
 
@@ -317,7 +320,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error starting shopping:', err)
-      alert('Failed to start shopping. Please try again.')
+      showToast('Failed to start shopping. Please try again.', 'error')
     }
   }
 
@@ -336,7 +339,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       // WebSocket will update the run data automatically
     } catch (err) {
       console.error('Error finishing adjusting:', err)
-      alert(err instanceof Error ? err.message : 'Failed to finish adjusting. Please try again.')
+      showToast(err instanceof Error ? err.message : 'Failed to finish adjusting. Please try again.', 'error')
     }
   }
 
@@ -748,6 +751,14 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
           runId={runId}
           onProductSelected={handleProductSelected}
           onCancel={handleCancelAddProduct}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
         />
       )}
     </div>
