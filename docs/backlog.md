@@ -304,19 +304,6 @@ Apply to:
 
 ---
 
-### 🟢 LOW: CSS Organization Duplication
-**Status**: Low Priority - Maintainability
-**Affected files**: Groups.css, GroupPage.css, RunPage.css, multiple component CSS files
-
-**Problem:** Component-specific CSS files have duplication:
-- Similar grid layouts in Groups.css, GroupPage.css, RunPage.css
-- Repeated `.run-state` styles in multiple files
-- Inconsistent spacing (some use px, some use rem)
-
-**Solution:** Extract more common patterns to utilities.css.
-
----
-
 ## Frontend Performance
 
 ### Unnecessary Re-renders

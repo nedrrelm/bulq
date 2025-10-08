@@ -30,10 +30,6 @@
   font-weight: 600;
 }
 
-.run-state {
-  display: inline-block;
-  white-space: nowrap;
-}
 
 .run-info {
   margin-bottom: 40px;
@@ -49,13 +45,13 @@
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
+  gap: 1rem;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .info-item label {
@@ -103,7 +99,7 @@
 
 .products-list {
   display: grid;
-  gap: 16px;
+  gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 }
 
