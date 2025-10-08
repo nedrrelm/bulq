@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { API_BASE_URL } from '../config'
+import { authApi } from '../api'
 import type { User } from '../types/user'
 
 interface AuthContextType {
@@ -19,13 +19,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const userData: User = await response.json()
-          setUser(userData)
-        }
+        const userData = await authApi.getCurrentUser()
+        setUser(userData)
       } catch (err) {
         // User not logged in, which is fine
       } finally {
@@ -42,10 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      })
+      await authApi.logout()
       setUser(null)
       window.location.href = '/'
     } catch (err) {
