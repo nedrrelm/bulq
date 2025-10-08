@@ -320,18 +320,6 @@ Apply to:
 
 ## Frontend Architecture Improvements
 
-
-### No Context for Global State
-**Status**: Medium Priority - State Management
-**Affected files**: App.tsx (prop drilling throughout)
-
-**Problem:** User, current view, selected IDs are all prop-drilled through App.tsx.
-
-**Solution:** Use React Context for:
-- Authentication (user, login, logout)
-- Navigation state
-- Theme/preferences
-
 ---
 
 ### API Layer Missing
