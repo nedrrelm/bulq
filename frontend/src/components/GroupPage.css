@@ -70,10 +70,6 @@
   font-weight: 600;
 }
 
-.run-state {
-  display: inline-block;
-  white-space: nowrap;
-}
 
 .run-id {
   color: var(--color-text-light);
