@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
 import { API_BASE_URL } from './config'
@@ -6,13 +6,15 @@ import type { User } from './types/user'
 import type { ProductSearchResult } from './types/product'
 import Login from './components/Login'
 import Groups from './components/Groups'
-import GroupPage from './components/GroupPage'
-import RunPage from './components/RunPage'
-import JoinGroup from './components/JoinGroup'
-import ShoppingPage from './components/ShoppingPage'
-import DistributionPage from './components/DistributionPage'
-import ProductPage from './components/ProductPage'
 import ErrorBoundary from './components/ErrorBoundary'
+
+// Lazy load route components for code splitting
+const GroupPage = lazy(() => import('./components/GroupPage'))
+const RunPage = lazy(() => import('./components/RunPage'))
+const JoinGroup = lazy(() => import('./components/JoinGroup'))
+const ShoppingPage = lazy(() => import('./components/ShoppingPage'))
+const DistributionPage = lazy(() => import('./components/DistributionPage'))
+const ProductPage = lazy(() => import('./components/ProductPage'))
 
 interface BackendResponse {
   message: string
@@ -343,15 +345,30 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DashboardWrapper user={user} onLogout={handleLogout} />} />
-        <Route path="/groups/:groupId" element={<GroupPageWrapper user={user} onLogout={handleLogout} />} />
-        <Route path="/runs/:runId" element={<RunPageWrapper user={user} onLogout={handleLogout} />} />
-        <Route path="/shopping/:runId" element={<ShoppingPageWrapper user={user} onLogout={handleLogout} />} />
-        <Route path="/distribution/:runId" element={<DistributionPageWrapper user={user} onLogout={handleLogout} />} />
-        <Route path="/products/:productId" element={<ProductPageWrapper user={user} onLogout={handleLogout} />} />
-        <Route path="/invite/:inviteToken" element={<JoinGroupWrapper user={user} onLogout={handleLogout} />} />
-      </Routes>
+      <Suspense fallback={
+        <div className="app">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            fontSize: '1.2rem',
+            color: 'var(--color-text)'
+          }}>
+            Loading...
+          </div>
+        </div>
+      }>
+        <Routes>
+          <Route path="/" element={<DashboardWrapper user={user} onLogout={handleLogout} />} />
+          <Route path="/groups/:groupId" element={<GroupPageWrapper user={user} onLogout={handleLogout} />} />
+          <Route path="/runs/:runId" element={<RunPageWrapper user={user} onLogout={handleLogout} />} />
+          <Route path="/shopping/:runId" element={<ShoppingPageWrapper user={user} onLogout={handleLogout} />} />
+          <Route path="/distribution/:runId" element={<DistributionPageWrapper user={user} onLogout={handleLogout} />} />
+          <Route path="/products/:productId" element={<ProductPageWrapper user={user} onLogout={handleLogout} />} />
+          <Route path="/invite/:inviteToken" element={<JoinGroupWrapper user={user} onLogout={handleLogout} />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
