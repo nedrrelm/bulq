@@ -18,6 +18,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check if user is already logged in
   useEffect(() => {
     const checkAuth = async () => {
+      // Skip auth check if we just logged out (to avoid 401 error)
+      const justLoggedOut = sessionStorage.getItem('just_logged_out')
+      if (justLoggedOut) {
+        sessionStorage.removeItem('just_logged_out')
+        setLoading(false)
+        return
+      }
+
+      // Check if session_token cookie exists before making request
+      const hasSessionCookie = document.cookie.split(';').some(cookie =>
+        cookie.trim().startsWith('session_token=')
+      )
+
+      if (!hasSessionCookie) {
+        // No session cookie, so user is definitely not logged in
+        setLoading(false)
+        return
+      }
+
       try {
         const userData = await authApi.getCurrentUser()
         setUser(userData)
@@ -28,7 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    checkAuth()
+    // Add small delay to avoid duplicate requests from React strict mode
+    const authCheckTimeout = setTimeout(() => {
+      checkAuth()
+    }, 100)
+
+    return () => clearTimeout(authCheckTimeout)
   }, [])
 
   const login = (userData: User) => {
@@ -39,6 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.logout()
       setUser(null)
+      // Set flag to skip auth check after redirect (prevents 401 error)
+      sessionStorage.setItem('just_logged_out', 'true')
       window.location.href = '/'
     } catch (err) {
       console.error('Logout failed:', err)
