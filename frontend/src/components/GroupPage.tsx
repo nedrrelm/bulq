@@ -4,6 +4,7 @@ import { API_BASE_URL, WS_BASE_URL } from '../config'
 import NewRunPopup from './NewRunPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { getStateLabel } from '../utils/runStates'
 
 interface Run {
   id: string
@@ -105,28 +106,6 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     }
   )
 
-  const getStateLabel = (state: string) => {
-    switch (state) {
-      case 'planning':
-        return 'Planning'
-      case 'active':
-        return 'Active'
-      case 'confirmed':
-        return 'Confirmed'
-      case 'shopping':
-        return 'Shopping'
-      case 'adjusting':
-        return 'Adjusting'
-      case 'distributing':
-        return 'Distributing'
-      case 'completed':
-        return 'Completed'
-      case 'cancelled':
-        return 'Cancelled'
-      default:
-        return state
-    }
-  }
 
   // State ordering for sorting (reverse order: distributing > adjusting > shopping > confirmed > active > planning)
   const stateOrder: Record<string, number> = {

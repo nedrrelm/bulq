@@ -5,6 +5,7 @@ import type { ProductSearchResult } from '../types/product'
 import NewGroupPopup from './NewGroupPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { getStateLabel } from '../utils/runStates'
 
 interface RunSummary {
   id: string
@@ -33,29 +34,6 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showNewGroupPopup, setShowNewGroupPopup] = useState(false)
-
-  const getStateLabel = (state: string) => {
-    switch (state) {
-      case 'planning':
-        return 'Planning'
-      case 'active':
-        return 'Active'
-      case 'confirmed':
-        return 'Confirmed'
-      case 'shopping':
-        return 'Shopping'
-      case 'adjusting':
-        return 'Adjusting'
-      case 'distributing':
-        return 'Distributing'
-      case 'completed':
-        return 'Completed'
-      case 'cancelled':
-        return 'Cancelled'
-      default:
-        return state
-    }
-  }
 
   useEffect(() => {
     const fetchGroups = async () => {

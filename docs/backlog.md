@@ -292,20 +292,6 @@ Apply to:
 
 ---
 
-### 🟢 LOW: Duplicate getStateLabel Functions
-**Status**: Low Priority - DRY Violation
-**Affected files**: Groups.tsx:45-66, GroupPage.tsx:108-129, RunPage.tsx:375-396
-
-**Problem:** The same state label mapping logic is copied 3 times.
-
-**Solution:** Extract to `src/utils/runStates.ts`:
-```typescript
-export const getStateLabel = (state: string) => { ... }
-export const getStateColor = (state: string) => { ... }
-```
-
----
-
 ### 🟢 LOW: No Keyboard Navigation in Modals
 **Status**: Low Priority - Accessibility
 **Affected files**: All modal components

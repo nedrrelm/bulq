@@ -7,6 +7,7 @@ import BidPopup from './BidPopup'
 import AddProductPopup from './AddProductPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { getStateDisplay } from '../utils/runStates'
 
 interface UserBid {
   user_id: string
@@ -336,29 +337,6 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     } catch (err) {
       console.error('Error finishing adjusting:', err)
       alert(err instanceof Error ? err.message : 'Failed to finish adjusting. Please try again.')
-    }
-  }
-
-  const getStateDisplay = (state: string) => {
-    switch (state) {
-      case 'planning':
-        return { label: 'Planning', color: '#fbbf24', description: 'Collecting product interest' }
-      case 'active':
-        return { label: 'Active', color: '#10b981', description: 'Users placing bids and quantities' }
-      case 'confirmed':
-        return { label: 'Confirmed', color: '#3b82f6', description: 'Shopping list finalized' }
-      case 'shopping':
-        return { label: 'Shopping', color: '#8b5cf6', description: 'Designated shoppers executing the run' }
-      case 'adjusting':
-        return { label: 'Adjusting', color: '#f59e0b', description: 'Adjusting bids due to insufficient quantities' }
-      case 'distributing':
-        return { label: 'Distributing', color: '#14b8a6', description: 'Items being distributed to members' }
-      case 'completed':
-        return { label: 'Completed', color: '#6b7280', description: 'Run finished, costs calculated' }
-      case 'cancelled':
-        return { label: 'Cancelled', color: '#ef4444', description: 'Run was cancelled' }
-      default:
-        return { label: state, color: '#6b7280', description: '' }
     }
   }
 
