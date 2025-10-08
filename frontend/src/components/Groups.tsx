@@ -26,7 +26,6 @@ interface Group {
 interface GroupsProps {
   onGroupSelect: (groupId: string) => void
   onRunSelect: (runId: string) => void
-  onProductSelect: (productId: string) => void
 }
 
 export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
