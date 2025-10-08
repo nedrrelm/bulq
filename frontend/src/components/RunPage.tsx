@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import './RunPage.css'
 import '../styles/run-states.css'
 import { API_BASE_URL, WS_BASE_URL } from '../config'
@@ -56,6 +56,130 @@ interface RunPageProps {
   onShoppingSelect?: (runId: string) => void
   onDistributionSelect?: (runId: string) => void
 }
+
+interface ProductItemProps {
+  product: Product
+  runState: string
+  canBid: boolean
+  onPlaceBid: (product: Product) => void
+  onRetractBid: (product: Product) => void
+  getUserInitials: (name: string) => string
+}
+
+const ProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid, getUserInitials }: ProductItemProps) => {
+  const needsAdjustment = runState === 'adjusting' &&
+                          product.purchased_quantity !== null &&
+                          product.total_quantity > product.purchased_quantity
+  const adjustmentOk = runState === 'adjusting' &&
+                       product.purchased_quantity !== null &&
+                       product.total_quantity === product.purchased_quantity
+
+  const shortage = product.purchased_quantity !== null ? product.total_quantity - product.purchased_quantity : 0
+  const canRetract = !adjustmentOk && !(runState === 'adjusting' && product.current_user_bid && !product.current_user_bid.interested_only && product.current_user_bid.quantity > shortage)
+
+  return (
+    <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : ''}`}>
+      <div className="product-header">
+        <h4>{product.name}</h4>
+        <span className="product-price">${product.base_price}</span>
+      </div>
+
+      {runState === 'adjusting' && product.purchased_quantity !== null && (
+        <div className={`adjustment-info ${needsAdjustment ? 'needs-adjustment' : 'adjustment-ok'}`}>
+          <strong>Purchased:</strong> {product.purchased_quantity} | <strong>Requested:</strong> {product.total_quantity}
+          {needsAdjustment && (
+            <span className="adjustment-warning">
+              ⚠ Reduce by {product.total_quantity - product.purchased_quantity}
+            </span>
+          )}
+          {adjustmentOk && (
+            <span className="adjustment-ok-badge">
+              ✓ OK
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className="product-stats">
+        <div className="stat">
+          <span className="stat-value">{product.total_quantity}</span>
+          <span className="stat-label">Total Quantity</span>
+        </div>
+        <div className="stat">
+          <span className="stat-value">{product.interested_count}</span>
+          <span className="stat-label">People Interested</span>
+        </div>
+      </div>
+
+      <div className="bid-users">
+        <h5>Bidders:</h5>
+        <div className="user-avatars">
+          {product.user_bids.map((bid, index) => (
+            <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? 'Interested' : `${bid.quantity} items`}`}>
+              <span className="avatar-initials">{getUserInitials(bid.user_name)}</span>
+              <span className="bid-quantity">
+                {bid.interested_only ? '?' : bid.quantity}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {canBid && (
+        <div className="bid-actions">
+          {product.current_user_bid ? (
+            <div className="user-bid-status">
+              <span className="current-bid">
+                Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
+              </span>
+              <div className="bid-buttons">
+                <button
+                  onClick={() => onPlaceBid(product)}
+                  className="edit-bid-button"
+                  title={adjustmentOk ? "No adjustment needed" : "Edit bid"}
+                  disabled={adjustmentOk}
+                  style={adjustmentOk ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => onRetractBid(product)}
+                  className="retract-bid-button"
+                  title={!canRetract ? "Cannot fully retract - would remove more than needed" : adjustmentOk ? "No adjustment needed" : "Retract bid"}
+                  disabled={!canRetract}
+                  style={!canRetract ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                >
+                  −
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => onPlaceBid(product)}
+              className="place-bid-button"
+              title="Place bid"
+            >
+              +
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}, (prevProps, nextProps) => {
+  // Only re-render if relevant props changed
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.product.total_quantity === nextProps.product.total_quantity &&
+    prevProps.product.interested_count === nextProps.product.interested_count &&
+    prevProps.product.user_bids.length === nextProps.product.user_bids.length &&
+    prevProps.product.current_user_bid?.quantity === nextProps.product.current_user_bid?.quantity &&
+    prevProps.product.current_user_bid?.interested_only === nextProps.product.current_user_bid?.interested_only &&
+    prevProps.product.purchased_quantity === nextProps.product.purchased_quantity &&
+    prevProps.runState === nextProps.runState &&
+    prevProps.canBid === nextProps.canBid
+  )
+})
 
 export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDistributionSelect }: RunPageProps) {
   const [run, setRun] = useState<RunDetail | null>(null)
@@ -568,112 +692,18 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
                 }
                 return 0
               })
-              .map((product) => {
-              const needsAdjustment = run.state === 'adjusting' &&
-                                       product.purchased_quantity !== null &&
-                                       product.total_quantity > product.purchased_quantity
-              const adjustmentOk = run.state === 'adjusting' &&
-                                    product.purchased_quantity !== null &&
-                                    product.total_quantity === product.purchased_quantity
-
-              // In adjusting state, disable retract if user's bid is larger than the shortage
-              const shortage = product.purchased_quantity !== null ? product.total_quantity - product.purchased_quantity : 0
-              const canRetract = !adjustmentOk && !(run.state === 'adjusting' && product.current_user_bid && !product.current_user_bid.interested_only && product.current_user_bid.quantity > shortage)
-
-              return (
-              <ErrorBoundary key={product.id}>
-              <div
-                className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : ''}`}
-              >
-                <div className="product-header">
-                  <h4>{product.name}</h4>
-                  <span className="product-price">${product.base_price}</span>
-                </div>
-
-                {run.state === 'adjusting' && product.purchased_quantity !== null && (
-                  <div className={`adjustment-info ${needsAdjustment ? 'needs-adjustment' : 'adjustment-ok'}`}>
-                    <strong>Purchased:</strong> {product.purchased_quantity} | <strong>Requested:</strong> {product.total_quantity}
-                    {needsAdjustment && (
-                      <span className="adjustment-warning">
-                        ⚠ Reduce by {product.total_quantity - product.purchased_quantity}
-                      </span>
-                    )}
-                    {adjustmentOk && (
-                      <span className="adjustment-ok-badge">
-                        ✓ OK
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                <div className="product-stats">
-                  <div className="stat">
-                    <span className="stat-value">{product.total_quantity}</span>
-                    <span className="stat-label">Total Quantity</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-value">{product.interested_count}</span>
-                    <span className="stat-label">People Interested</span>
-                  </div>
-                </div>
-
-                <div className="bid-users">
-                  <h5>Bidders:</h5>
-                  <div className="user-avatars">
-                    {product.user_bids.map((bid, index) => (
-                      <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? 'Interested' : `${bid.quantity} items`}`}>
-                        <span className="avatar-initials">{getUserInitials(bid.user_name)}</span>
-                        <span className="bid-quantity">
-                          {bid.interested_only ? '?' : bid.quantity}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {canBid && (
-                  <div className="bid-actions">
-                    {product.current_user_bid ? (
-                      <div className="user-bid-status">
-                        <span className="current-bid">
-                          Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
-                        </span>
-                        <div className="bid-buttons">
-                          <button
-                            onClick={() => handlePlaceBid(product)}
-                            className="edit-bid-button"
-                            title={adjustmentOk ? "No adjustment needed" : "Edit bid"}
-                            disabled={adjustmentOk}
-                            style={adjustmentOk ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleRetractBid(product)}
-                            className="retract-bid-button"
-                            title={!canRetract ? "Cannot fully retract - would remove more than needed" : adjustmentOk ? "No adjustment needed" : "Retract bid"}
-                            disabled={!canRetract}
-                            style={!canRetract ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                          >
-                            −
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handlePlaceBid(product)}
-                        className="place-bid-button"
-                        title="Place bid"
-                      >
-                        +
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-              </ErrorBoundary>
-              )
-            })}
+              .map((product) => (
+                <ErrorBoundary key={product.id}>
+                  <ProductItem
+                    product={product}
+                    runState={run.state}
+                    canBid={canBid}
+                    onPlaceBid={handlePlaceBid}
+                    onRetractBid={handleRetractBid}
+                    getUserInitials={getUserInitials}
+                  />
+                </ErrorBoundary>
+              ))}
           </div>
         )}
       </div>

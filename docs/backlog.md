@@ -306,14 +306,6 @@ Apply to:
 
 ## Frontend Performance
 
-### Unnecessary Re-renders
-**Status**: Medium Priority
-**Affected files**: RunPage.tsx
-
-**Problem:** RunPage.tsx with large product lists re-renders on every WebSocket message, even for unrelated products.
-
-**Solution:** Use `React.memo` for ProductItem components or implement shouldComponentUpdate logic.
-
 ---
 
 ### No Code Splitting
