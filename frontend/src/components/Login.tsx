@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './Login.css'
-import { API_BASE_URL } from '../config'
+import { authApi, ApiError } from '../api'
 import type { User } from '../types/user'
 
 interface LoginProps {
@@ -47,23 +47,10 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Important for cookies
-        body: JSON.stringify(loginData)
-      })
-
-      if (!response.ok) {
-        throw new Error('Invalid email or password')
-      }
-
-      const user: User = await response.json()
+      const user = await authApi.login(loginData)
       onLogin(user)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof ApiError ? err.message : 'Login failed')
     } finally {
       setLoading(false)
     }
@@ -75,24 +62,10 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Important for cookies
-        body: JSON.stringify(registerData)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Registration failed')
-      }
-
-      const user: User = await response.json()
+      const user = await authApi.register(registerData)
       onLogin(user)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      setError(err instanceof ApiError ? err.message : 'Registration failed')
     } finally {
       setLoading(false)
     }
