@@ -1,15 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { API_BASE_URL } from '../config'
+import { groupsApi, ApiError } from '../api'
+import type { Group } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
-
-interface Group {
-  id: string
-  name: string
-  member_count: number
-  completed_runs_count: number
-  active_runs_count: number
-  active_runs: any[]
-}
 
 interface NewGroupPopupProps {
   onClose: () => void
@@ -46,24 +38,10 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
       setSubmitting(true)
       setError('')
 
-      const response = await fetch(`${API_BASE_URL}/groups/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ name: groupName.trim() })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to create group')
-      }
-
-      const newGroup: Group = await response.json()
+      const newGroup = await groupsApi.createGroup({ name: groupName.trim() })
       onSuccess(newGroup)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create group')
+      setError(err instanceof ApiError ? err.message : 'Failed to create group')
       setSubmitting(false)
     }
   }

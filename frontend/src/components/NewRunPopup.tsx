@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import './NewRunPopup.css'
-import { API_BASE_URL } from '../config'
-import type { Store } from '../types/store'
+import { storesApi, runsApi, ApiError } from '../api'
+import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
 interface NewRunPopupProps {
@@ -35,16 +35,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   useEffect(() => {
     const fetchStores = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/stores`, {
-          credentials: 'include'
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`Failed to fetch stores: ${response.status} - ${errorText}`)
-        }
-
-        const data: Store[] = await response.json()
+        const data = await storesApi.getStores()
         setStores(data)
 
         // Auto-select first store if available
@@ -56,7 +47,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
         setTimeout(() => selectRef.current?.focus(), 0)
       } catch (err) {
         console.error('Error fetching stores:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load stores')
+        setError(err instanceof ApiError ? err.message : 'Failed to load stores')
       }
     }
 
@@ -75,26 +66,13 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/runs/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          group_id: groupId,
-          store_id: selectedStoreId
-        })
+      await runsApi.createRun({
+        group_id: groupId,
+        store_id: selectedStoreId
       })
-
-      if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(errorData || 'Failed to create run')
-      }
-
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create run')
+      setError(err instanceof ApiError ? err.message : 'Failed to create run')
     } finally {
       setLoading(false)
     }

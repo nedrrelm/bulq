@@ -1,28 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import './Groups.css'
-import { API_BASE_URL, WS_BASE_URL } from '../config'
+import { WS_BASE_URL } from '../config'
+import { groupsApi, ApiError } from '../api'
+import type { Group } from '../api'
 import type { ProductSearchResult } from '../types/product'
 import NewGroupPopup from './NewGroupPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateLabel } from '../utils/runStates'
 
-interface RunSummary {
-  id: string
-  store_name: string
-  state: string
-}
-
-interface Group {
-  id: string
-  name: string
-  description: string
-  member_count: number
-  active_runs_count: number
-  completed_runs_count: number
-  active_runs: RunSummary[]
-  created_at: string
-}
+// Using Group type from API layer
 
 interface GroupsProps {
   onGroupSelect: (groupId: string) => void
@@ -41,19 +28,10 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`${API_BASE_URL}/groups/my-groups`, {
-          credentials: 'include'
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
-        }
-
-        const groupsData: Group[] = await response.json()
+        const groupsData = await groupsApi.getMyGroups()
         setGroups(groupsData)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load groups')
+        setError(err instanceof ApiError ? err.message : 'Failed to load groups')
       } finally {
         setLoading(false)
       }
