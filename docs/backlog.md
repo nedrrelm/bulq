@@ -292,19 +292,6 @@ Apply to:
 
 ---
 
-### 🟢 LOW: No Keyboard Navigation in Modals
-**Status**: Low Priority - Accessibility
-**Affected files**: All modal components
-
-**Problem:** Most modals handle `Escape` to close, but:
-- No `Tab` trapping (focus escapes modal)
-- No `Enter` to submit from anywhere in form
-- BidPopup.tsx and AddProductPopup.tsx handle some keyboard events, but inconsistently
-
-**Solution:** Use a modal library or implement proper focus management.
-
----
-
 ### 🟢 LOW: Alert/Confirm Dialogs Instead of UI Components
 **Status**: Low Priority - UX
 **Affected files**: RunPage.tsx:217, 256, 317, 344; GroupPage.tsx:189, 208

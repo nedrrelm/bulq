@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import './AddProductPopup.css'
 import { API_BASE_URL } from '../config'
 import type { AvailableProduct } from '../types/product'
+import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
 interface AddProductPopupProps {
   runId: string
@@ -17,6 +18,9 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   const [error, setError] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useModalFocusTrap(modalRef)
 
   useEffect(() => {
     const fetchAvailableProducts = async () => {
@@ -90,7 +94,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
 
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal modal-md add-product-popup" onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal-md add-product-popup" onClick={(e) => e.stopPropagation()}>
         <h3>Add Product to Run</h3>
         <p className="popup-description">Select a product to start bidding on</p>
 

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './BidPopup.css'
+import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
 interface BidPopupProps {
   productName: string
@@ -15,6 +16,9 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
   const [quantity, setQuantity] = useState(currentQuantity?.toString() || '1')
   const [interestedOnly, setInterestedOnly] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useModalFocusTrap(modalRef)
 
   useEffect(() => {
     // Autofocus the input when component mounts
@@ -50,7 +54,7 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
 
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal modal-sm" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
+      <div ref={modalRef} className="modal modal-sm" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
         <h3>{adjustingMode ? 'Adjust Bid' : 'Place Bid'}</h3>
         <p className="product-name">{productName}</p>
 

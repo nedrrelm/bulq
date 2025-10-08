@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './ShoppingPage.css'
 import { API_BASE_URL } from '../config'
+import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
 interface EncounteredPrice {
   price: number
@@ -318,6 +319,9 @@ function PricePopup({
 }) {
   const [price, setPrice] = useState('')
   const [notes, setNotes] = useState('')
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useModalFocusTrap(modalRef)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -331,7 +335,7 @@ function PricePopup({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
         <h3>Add Encountered Price</h3>
         <p><strong>{item.product_name}</strong></p>
         <form onSubmit={handleSubmit}>
@@ -385,6 +389,9 @@ function PurchasePopup({
   const [pricePerUnit, setPricePerUnit] = useState('')
   const [total, setTotal] = useState('')
   const [priceMode, setPriceMode] = useState<'unit' | 'total'>('unit')
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useModalFocusTrap(modalRef)
 
   const handleQuantityChange = (newQuantity: string) => {
     setQuantity(newQuantity)
@@ -439,7 +446,7 @@ function PurchasePopup({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
         <h3>Mark as Purchased</h3>
         <p><strong>{item.product_name}</strong></p>
         <p className="requested-hint">Requested: {item.requested_quantity}</p>

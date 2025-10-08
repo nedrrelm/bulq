@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { API_BASE_URL } from '../config'
+import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
 interface Group {
   id: string
@@ -19,6 +20,9 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
   const [groupName, setGroupName] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useModalFocusTrap(modalRef)
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -66,7 +70,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Create New Group</h2>
         </div>
