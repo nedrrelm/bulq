@@ -132,6 +132,10 @@ header h1 {
   margin-bottom: 0.5rem;
 }
 
+header h1.clickable {
+  cursor: pointer;
+}
+
 header h2 {
   color: rgba(255, 255, 255, 0.9);
   font-size: 1.2em;

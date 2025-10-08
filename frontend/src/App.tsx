@@ -204,7 +204,7 @@ function AppLayout({ user, onLogout, children }: { user: User; onLogout: () => v
   return (
     <div className="app">
       <header>
-        <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>Bulq 📦</h1>
+        <h1 onClick={() => navigate('/')} className="clickable">Bulq 📦</h1>
 
         <div className="header-search">
           <input

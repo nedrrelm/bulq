@@ -292,18 +292,6 @@ Apply to:
 
 ---
 
-### 🟢 LOW: Inconsistent Button Styling
-**Status**: Low Priority - Polish
-**Affected files**: App.tsx:313, 355
-
-**Problem:** Some buttons use inline styles, some use CSS classes:
-- App.tsx:313 uses inline `style={{ cursor: 'pointer' }}`
-- App.tsx:355 uses `className="logout-button"`
-
-**Solution:** Standardize on CSS classes from utilities.css.
-
----
-
 ### 🟢 LOW: Duplicate getStateLabel Functions
 **Status**: Low Priority - DRY Violation
 **Affected files**: Groups.tsx:45-66, GroupPage.tsx:108-129, RunPage.tsx:375-396
