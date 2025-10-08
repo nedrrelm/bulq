@@ -190,30 +190,30 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
   const { toast, showToast, hideToast } = useToast()
 
-  useEffect(() => {
-    const fetchRunDetails = async () => {
-      try {
-        setLoading(true)
-        setError('')
+  const fetchRunDetails = async () => {
+    try {
+      setLoading(true)
+      setError('')
 
-        const response = await fetch(`${API_BASE_URL}/runs/${runId}`, {
-          credentials: 'include'
-        })
+      const response = await fetch(`${API_BASE_URL}/runs/${runId}`, {
+        credentials: 'include'
+      })
 
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
-        }
-
-        const runData: RunDetail = await response.json()
-        setRun(runData)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load run details')
-      } finally {
-        setLoading(false)
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
       }
-    }
 
+      const runData: RunDetail = await response.json()
+      setRun(runData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load run details')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchRunDetails()
   }, [runId])
 
@@ -422,7 +422,8 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
         throw new Error('Failed to toggle ready status')
       }
 
-      // WebSocket will update the run data automatically
+      // Refetch run data to ensure UI is updated
+      await fetchRunDetails()
     } catch (err) {
       console.error('Error toggling ready:', err)
       showToast('Failed to update ready status. Please try again.', 'error')
@@ -441,7 +442,8 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
         throw new Error(errorText || 'Failed to start shopping')
       }
 
-      // WebSocket will update the run data automatically
+      // Refetch run data to ensure UI is updated
+      await fetchRunDetails()
     } catch (err) {
       console.error('Error starting shopping:', err)
       showToast('Failed to start shopping. Please try again.', 'error')
@@ -460,7 +462,8 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
         throw new Error(errorText || 'Failed to finish adjusting')
       }
 
-      // WebSocket will update the run data automatically
+      // Refetch run data to ensure UI is updated
+      await fetchRunDetails()
     } catch (err) {
       console.error('Error finishing adjusting:', err)
       showToast(err instanceof Error ? err.message : 'Failed to finish adjusting. Please try again.', 'error')

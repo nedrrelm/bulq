@@ -132,7 +132,10 @@ async def create_group(
     return {
         "id": str(group.id),
         "name": group.name,
-        "message": "Group created successfully"
+        "member_count": 1,
+        "active_runs_count": 0,
+        "completed_runs_count": 0,
+        "active_runs": []
     }
 
 @router.get("/{group_id}")
