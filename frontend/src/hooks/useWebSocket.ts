@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 const WEBSOCKET_RECONNECT_INTERVAL_MS = 3000 // 3 seconds between reconnection attempts
 const WEBSOCKET_MAX_RECONNECT_ATTEMPTS = 5 // Maximum number of reconnection attempts
 const WEBSOCKET_HEARTBEAT_INTERVAL_MS = 30000 // 30 seconds between heartbeat pings
+const WEBSOCKET_INITIAL_DELAY_MS = 100 // Small delay before initial connection to avoid React strict mode conflicts
 
 interface WebSocketMessage {
   type: string
@@ -122,11 +123,15 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
   }, [])
 
   useEffect(() => {
-    if (url) {
+    if (!url) return
+
+    // Add a small delay before connecting to avoid race conditions with React strict mode
+    const connectionTimeout = setTimeout(() => {
       connect()
-    }
+    }, WEBSOCKET_INITIAL_DELAY_MS)
 
     return () => {
+      clearTimeout(connectionTimeout)
       disconnect()
     }
   }, [url, connect, disconnect])
