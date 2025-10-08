@@ -6,6 +6,61 @@ Feature backlog and technical debt for Bulq development.
 
 ---
 
+### Environment variables & secrets management
+**Status**: Critical (before production)
+**Affected files**: `app/auth.py`, `docker-compose.yml`, `app/config.py`
+
+**Problem:** Hardcoded secrets in code and docker-compose. No proper environment variable structure.
+
+**Current issues:**
+- `SECRET_KEY = "your-secret-key-change-in-production"` hardcoded in `auth.py`
+- Database credentials hardcoded in `docker-compose.yml`
+- No `.env` file structure
+
+**Solution:**
+1. Create `.env.example` template
+2. Use python-dotenv for environment loading
+3. Enforce required secrets at startup:
+```python
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable must be set!")
+```
+4. Update docker-compose to use env_file
+5. Add `.env` to `.gitignore`
+
+---
+
+### Redis session storage
+**Status**: Critical (before production)
+**Affected files**: `app/auth.py`
+
+**Problem:** Sessions stored in-memory dictionary. All users logged out on server restart.
+
+**Current code (auth.py:8):**
+```python
+sessions: Dict[str, dict] = {}
+```
+
+**Solution:** Use Redis for persistent session storage:
+```python
+import redis
+redis_client = redis.Redis(host='redis', port=6379, decode_responses=True)
+
+def create_session(user_id: str) -> str:
+    session_token = secrets.token_urlsafe(32)
+    redis_client.setex(
+        f"session:{session_token}",
+        SESSION_EXPIRY_HOURS * 3600,
+        json.dumps({"user_id": user_id, ...})
+    )
+    return session_token
+```
+
+Add Redis to docker-compose.yml.
+
+---
+
 ### Add transaction management
 **Status**: High Priority
 **Affected files**: `app/repository.py`
@@ -18,8 +73,27 @@ Feature backlog and technical debt for Bulq development.
 
 ---
 
+### Switch from in-memory to database repository
+**Status**: Critical (before production)
+**Affected files**: `app/repository.py`, `app/config.py`
+
+**Problem:** Currently using `MemoryRepository` with test data in development. Need to switch to `DatabaseRepository` for production.
+
+**Current setup:**
+- `REPO_MODE` in `app/config.py` determines which repository implementation to use
+- Memory mode has hardcoded test data
+- Database mode uses PostgreSQL
+
+**Solution:**
+1. Ensure `REPO_MODE=database` in production environment
+2. Remove or disable memory mode in production builds
+3. Verify all repository methods work correctly with DatabaseRepository
+4. Test data migrations from memory to database if needed
+
+---
+
 ### Database migrations with Alembic
-**Status**: Future (before production)
+**Status**: Critical (before production)
 **Affected files**: New `alembic/` directory, `app/main.py`
 
 **Problem:** Using `create_tables()` which can't handle schema changes. No migration history.
@@ -67,7 +141,7 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 ---
 
 ### Secure password hashing (bcrypt)
-**Status**: Future (critical before production)
+**Status**: Critical (before production)
 **Affected files**: `app/auth.py`
 
 **Problem:** Currently using SHA-256 for password hashing, which is extremely insecure (fast = vulnerable to brute force).
@@ -101,7 +175,7 @@ if not SECRET_KEY:
 ---
 
 ### Add database indexes
-**Status**: Future (before production)
+**Status**: Important (before production)
 **Affected files**: `app/models.py`
 
 **Problem:** No indexes defined on frequently queried fields, will cause slow queries at scale.
@@ -156,7 +230,7 @@ Implement in repository methods with `OFFSET` and `LIMIT`.
 ---
 
 ### Rate limiting
-**Status**: Future (before production)
+**Status**: Critical (before production)
 **Affected files**: `app/main.py`, `app/routes/auth.py`
 
 **Problem:** No protection against abuse - login, registration, bid placement all unprotected.
@@ -178,6 +252,144 @@ Apply to:
 - Login/registration: 5 requests/minute
 - Bid placement: 20 requests/minute
 - General API: 100 requests/minute
+
+---
+
+### HTTPS/SSL configuration with Caddy
+**Status**: Critical (before production)
+**Affected files**: New `Caddyfile`, `docker-compose.yml`
+
+**Problem:** No SSL/HTTPS configured. Passwords and session tokens sent in plaintext.
+
+**Solution:** Set up Caddy as reverse proxy:
+1. Create Caddyfile:
+```
+yourdomain.com {
+    reverse_proxy backend:8000
+}
+```
+2. Add Caddy service to docker-compose
+3. Configure automatic Let's Encrypt certificates
+4. Update CORS settings for production domain
+
+---
+
+### Production CORS configuration
+**Status**: Critical (before production)
+**Affected files**: `app/main.py`
+
+**Problem:** CORS currently only allows localhost:
+```python
+allow_origins=[
+    "http://localhost:3000",
+    "http://localhost:5173",
+]
+```
+
+**Solution:** Add production domain and configure properly:
+```python
+origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+if not origins:
+    raise RuntimeError("ALLOWED_ORIGINS must be set in production!")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+---
+
+### Database connection pooling
+**Status**: Important (before production)
+**Affected files**: `app/database.py`
+
+**Problem:** Using default SQLAlchemy settings which may not be suitable for production load.
+
+**Solution:** Configure connection pool:
+```python
+engine = create_engine(
+    DATABASE_URL,
+    poolclass=QueuePool,
+    pool_size=20,           # Number of connections to maintain
+    max_overflow=10,        # Extra connections if pool exhausted
+    pool_timeout=30,        # Seconds to wait for connection
+    pool_recycle=3600,      # Recycle connections after 1 hour
+    pool_pre_ping=True      # Verify connections before use
+)
+```
+
+---
+
+### Production logging configuration
+**Status**: Important (before production)
+**Affected files**: `app/logging_config.py`, `app/main.py`
+
+**Problem:** Basic logging setup needs production-grade configuration.
+
+**Solution:**
+1. Structured JSON logging for log aggregation
+2. Log to files with rotation
+3. Different log levels for different environments
+4. Consider integrating error tracking (Sentry)
+```python
+if os.getenv("ENV") == "production":
+    # JSON structured logging
+    # File rotation
+    # Error tracking integration
+```
+
+---
+
+### Build and serve static frontend files
+**Status**: Critical (before production)
+**Affected files**: `frontend/Dockerfile`, `docker-compose.yml`, `Caddyfile`
+
+**Problem:** Frontend currently served by Vite dev server, not suitable for production.
+
+**Solution:**
+1. Update frontend Dockerfile to build static files:
+```dockerfile
+# Build stage
+FROM node:18 AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Production stage - serve with Caddy
+FROM caddy:2
+COPY --from=builder /app/dist /srv
+COPY Caddyfile /etc/caddy/Caddyfile
+```
+2. Configure Caddy to serve static files and proxy API
+
+---
+
+### Database backup strategy
+**Status**: Important (before production)
+**Affected files**: New backup scripts
+
+**Problem:** No automated database backups. Risk of data loss.
+
+**Solution:**
+1. Automated daily backups using pg_dump
+2. Store backups in separate location (S3, separate volume)
+3. Test restore procedure
+4. Retention policy (e.g., keep daily for 7 days, weekly for 4 weeks)
+
+Example backup script:
+```bash
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+pg_dump -h db -U bulq bulq | gzip > /backups/bulq_$DATE.sql.gz
+# Upload to S3 or other storage
+# Clean old backups
+```
 
 ---
 
