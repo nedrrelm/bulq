@@ -53,6 +53,11 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
       }
 
       ws.onmessage = (event) => {
+        // Ignore pong responses (heartbeat)
+        if (event.data === 'pong') {
+          return
+        }
+
         try {
           const message: WebSocketMessage = JSON.parse(event.data)
           setLastMessage(message)
@@ -63,6 +68,11 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
       }
 
       ws.onerror = (error) => {
+        // Don't log errors if we're intentionally closing or reconnecting
+        // These are expected during normal reconnection flow
+        if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSING) {
+          return
+        }
         console.error('WebSocket error:', error)
       }
 

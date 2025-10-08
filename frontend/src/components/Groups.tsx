@@ -135,7 +135,10 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       }
 
       ws.onerror = (error) => {
-        console.error(`WebSocket error for group ${group.id}:`, error)
+        // Only log errors if the connection isn't intentionally closing
+        if (ws.readyState !== WebSocket.CLOSING && ws.readyState !== WebSocket.CLOSED) {
+          console.error(`WebSocket error for group ${group.id}:`, error)
+        }
       }
 
       ws.onclose = () => {
