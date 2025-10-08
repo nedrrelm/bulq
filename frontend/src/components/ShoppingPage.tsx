@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import './ShoppingPage.css'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, WS_BASE_URL } from '../config'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import { useWebSocket } from '../hooks/useWebSocket'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
@@ -66,6 +67,19 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
     fetchShoppingList()
   }, [runId])
 
+  // WebSocket for real-time updates
+  useWebSocket(
+    runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
+    {
+      onMessage: (message) => {
+        if (message.type === 'shopping_item_updated') {
+          // Refetch the shopping list to get updates
+          fetchShoppingList()
+        }
+      }
+    }
+  )
+
   const handleAddPrice = (item: ShoppingListItem) => {
     setSelectedItem(item)
     setShowPricePopup(true)
@@ -92,7 +106,8 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
 
       if (!response.ok) throw new Error('Failed to add price')
 
-      // WebSocket will update the shopping list automatically
+      // Refetch shopping list to ensure UI is updated
+      await fetchShoppingList()
       setShowPricePopup(false)
       setSelectedItem(null)
     } catch (err) {
@@ -121,7 +136,8 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
 
       if (!response.ok) throw new Error('Failed to mark as purchased')
 
-      // WebSocket will update the shopping list automatically
+      // Refetch shopping list to ensure UI is updated
+      await fetchShoppingList()
       setShowPurchasePopup(false)
       setSelectedItem(null)
     } catch (err) {
@@ -376,7 +392,6 @@ function PricePopup({
               autoFocus
               required
               min="0.01"
-              step="0.01"
             />
           </div>
           <div className="form-group">
