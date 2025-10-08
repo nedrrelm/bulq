@@ -28,9 +28,9 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
-  const fetchShoppingList = async () => {
+  const fetchShoppingList = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError('')
 
       const data = await shoppingApi.getShoppingList(runId)
@@ -38,7 +38,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load shopping list')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -52,8 +52,8 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
     {
       onMessage: (message) => {
         if (message.type === 'shopping_item_updated') {
-          // Refetch the shopping list to get updates
-          fetchShoppingList()
+          // Refetch the shopping list to get updates (silently to avoid scroll jump)
+          fetchShoppingList(true)
         }
       }
     }
@@ -74,8 +74,8 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
 
     try {
       await shoppingApi.addEncounteredPrice(runId, selectedItem.id, { price, notes })
-      // Refetch shopping list to ensure UI is updated
-      await fetchShoppingList()
+      // Refetch shopping list to ensure UI is updated (silently to avoid scroll jump)
+      await fetchShoppingList(true)
       setShowPricePopup(false)
       setSelectedItem(null)
     } catch (err) {
@@ -93,8 +93,8 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
         price_per_unit: pricePerUnit,
         total
       })
-      // Refetch shopping list to ensure UI is updated
-      await fetchShoppingList()
+      // Refetch shopping list to ensure UI is updated (silently to avoid scroll jump)
+      await fetchShoppingList(true)
       setShowPurchasePopup(false)
       setSelectedItem(null)
     } catch (err) {
