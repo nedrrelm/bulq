@@ -75,7 +75,9 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
 
     groupIdsRef.current = groupIds
 
-    groups.forEach((group) => {
+    // Add a small delay before connecting to avoid React strict mode race conditions
+    const connectionTimeout = setTimeout(() => {
+      groups.forEach((group) => {
       const ws = new WebSocket(`${WS_BASE_URL}/ws/groups/${group.id}`)
 
       ws.onopen = () => {
@@ -146,10 +148,12 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       }
 
       wsConnectionsRef.current.push(ws)
-    })
+      })
+    }, 100) // 100ms delay to let React strict mode settle
 
     // Cleanup on unmount
     return () => {
+      clearTimeout(connectionTimeout)
       wsConnectionsRef.current.forEach(ws => {
         if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
           ws.close()
