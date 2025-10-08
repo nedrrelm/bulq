@@ -292,26 +292,6 @@ Apply to:
 
 ---
 
-### 🟡 MEDIUM: Magic Numbers Throughout
-**Status**: Low Priority - Code Quality
-**Affected files**: useWebSocket.ts:22, 120; ShoppingPage.tsx:256; RunPage.tsx:619
-
-**Problem:** Unexplained constants:
-```typescript
-reconnectInterval = 3000,  // What's 3000?
-maxReconnectAttempts = 5   // Why 5?
-sendMessage('ping'), 30000 // Why 30 seconds?
-```
-
-**Solution:** Extract to named constants:
-```typescript
-const WEBSOCKET_RECONNECT_INTERVAL = 3000 // ms
-const WEBSOCKET_MAX_RECONNECT_ATTEMPTS = 5
-const WEBSOCKET_HEARTBEAT_INTERVAL = 30000 // ms
-```
-
----
-
 ### 🟢 LOW: Unused Props/Variables
 **Status**: Low Priority - Cleanup
 **Affected files**: Groups.tsx:37, ShoppingPage.tsx:31

@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
+// WebSocket configuration constants
+const WEBSOCKET_RECONNECT_INTERVAL_MS = 3000 // 3 seconds between reconnection attempts
+const WEBSOCKET_MAX_RECONNECT_ATTEMPTS = 5 // Maximum number of reconnection attempts
+const WEBSOCKET_HEARTBEAT_INTERVAL_MS = 30000 // 30 seconds between heartbeat pings
+
 interface WebSocketMessage {
   type: string
   data: any
@@ -19,8 +24,8 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
     onMessage,
     onConnect,
     onDisconnect,
-    reconnectInterval = 3000,
-    maxReconnectAttempts = 5
+    reconnectInterval = WEBSOCKET_RECONNECT_INTERVAL_MS,
+    maxReconnectAttempts = WEBSOCKET_MAX_RECONNECT_ATTEMPTS
   } = options
 
   const [isConnected, setIsConnected] = useState(false)
@@ -114,7 +119,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
 
     const interval = setInterval(() => {
       sendMessage('ping')
-    }, 30000) // Send ping every 30 seconds
+    }, WEBSOCKET_HEARTBEAT_INTERVAL_MS)
 
     return () => clearInterval(interval)
   }, [isConnected, sendMessage])
