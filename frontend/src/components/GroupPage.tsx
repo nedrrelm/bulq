@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import './GroupPage.css'
-import { API_BASE_URL, WS_BASE_URL } from '../config'
+import { WS_BASE_URL } from '../config'
+import { groupsApi, ApiError } from '../api'
+import type { GroupDetails } from '../api'
 import NewRunPopup from './NewRunPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -11,19 +13,8 @@ import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useModal } from '../hooks/useModal'
 
-interface Run {
-  id: string
-  group_id: string
-  store_id: string
-  store_name: string
-  state: string
-}
-
-interface Group {
-  id: string
-  name: string
-  invite_token: string
-}
+// Using GroupDetails type from API layer
+type Run = GroupDetails['runs'][0]
 
 interface GroupPageProps {
   groupId: string
@@ -33,7 +24,7 @@ interface GroupPageProps {
 
 export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPageProps) {
   const [runs, setRuns] = useState<Run[]>([])
-  const [group, setGroup] = useState<Group | null>(null)
+  const [group, setGroup] = useState<GroupDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const newRunModal = useModal()
@@ -47,32 +38,14 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
         setError('')
 
         // Fetch group details
-        const groupResponse = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
-          credentials: 'include'
-        })
-
-        if (!groupResponse.ok) {
-          const errorText = await groupResponse.text()
-          throw new Error(`HTTP error! status: ${groupResponse.status} - ${errorText}`)
-        }
-
-        const groupData: Group = await groupResponse.json()
+        const groupData = await groupsApi.getGroup(groupId)
         setGroup(groupData)
 
         // Fetch runs
-        const runsResponse = await fetch(`${API_BASE_URL}/groups/${groupId}/runs`, {
-          credentials: 'include'
-        })
-
-        if (!runsResponse.ok) {
-          const errorText = await runsResponse.text()
-          throw new Error(`HTTP error! status: ${runsResponse.status} - ${errorText}`)
-        }
-
-        const runsData: Run[] = await runsResponse.json()
+        const runsData = await groupsApi.getGroupRuns(groupId)
         setRuns(runsData)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data')
+        setError(err instanceof ApiError ? err.message : 'Failed to load data')
       } finally {
         setLoading(false)
       }
@@ -161,21 +134,11 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
 
     const regenerateAction = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/groups/${groupId}/regenerate-invite`, {
-          method: 'POST',
-          credentials: 'include'
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.detail || 'Failed to regenerate invite token')
-        }
-
-        const data = await response.json()
+        const data = await groupsApi.regenerateInvite(groupId)
         setGroup({ ...group, invite_token: data.invite_token })
         showToast('Invite link regenerated successfully!', 'success')
       } catch (err) {
-        showToast(err instanceof Error ? err.message : 'Failed to regenerate invite link', 'error')
+        showToast(err instanceof ApiError ? err.message : 'Failed to regenerate invite link', 'error')
       }
     }
 
