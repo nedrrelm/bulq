@@ -190,9 +190,11 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
   const { toast, showToast, hideToast } = useToast()
 
-  const fetchRunDetails = async () => {
+  const fetchRunDetails = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) {
+        setLoading(true)
+      }
       setError('')
 
       const response = await fetch(`${API_BASE_URL}/runs/${runId}`, {
@@ -209,7 +211,9 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load run details')
     } finally {
-      setLoading(false)
+      if (!silent) {
+        setLoading(false)
+      }
     }
   }
 
@@ -422,8 +426,8 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
         throw new Error('Failed to toggle ready status')
       }
 
-      // Refetch run data to ensure UI is updated
-      await fetchRunDetails()
+      // Refetch run data silently to avoid page jump
+      await fetchRunDetails(true)
     } catch (err) {
       console.error('Error toggling ready:', err)
       showToast('Failed to update ready status. Please try again.', 'error')
