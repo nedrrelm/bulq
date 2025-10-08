@@ -292,18 +292,6 @@ Apply to:
 
 ---
 
-### 🟢 LOW: Unused Props/Variables
-**Status**: Low Priority - Cleanup
-**Affected files**: Groups.tsx:37, ShoppingPage.tsx:31
-
-**Problem:**
-- Groups.tsx:37 - `onProductSelect` prop is destructured but never used
-- ShoppingPage.tsx:31 - `showPricePopup` state read but logic could be simplified
-
-**Solution:** Remove unused code or implement the missing functionality.
-
----
-
 ### 🟢 LOW: Inconsistent Button Styling
 **Status**: Low Priority - Polish
 **Affected files**: App.tsx:313, 355
