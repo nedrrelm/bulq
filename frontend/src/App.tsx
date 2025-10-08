@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
 import { API_BASE_URL } from './config'
-import type { User } from './types/user'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import type { ProductSearchResult } from './types/product'
 import Login from './components/Login'
 import Groups from './components/Groups'
@@ -16,16 +16,8 @@ const ShoppingPage = lazy(() => import('./components/ShoppingPage'))
 const DistributionPage = lazy(() => import('./components/DistributionPage'))
 const ProductPage = lazy(() => import('./components/ProductPage'))
 
-interface BackendResponse {
-  message: string
-}
-
-interface HealthResponse {
-  status: string
-}
-
 // Wrapper components that use params and navigation
-function GroupPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+function GroupPageWrapper() {
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
 
@@ -35,7 +27,7 @@ function GroupPageWrapper({ user, onLogout }: { user: User; onLogout: () => void
   }
 
   return (
-    <AppLayout user={user} onLogout={onLogout}>
+    <AppLayout>
       <GroupPage
         groupId={groupId}
         onBack={() => navigate('/')}
@@ -45,17 +37,18 @@ function GroupPageWrapper({ user, onLogout }: { user: User; onLogout: () => void
   )
 }
 
-function RunPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+function RunPageWrapper() {
   const { runId } = useParams<{ runId: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
-  if (!runId) {
+  if (!runId || !user) {
     navigate('/')
     return null
   }
 
   return (
-    <AppLayout user={user} onLogout={onLogout}>
+    <AppLayout>
       <RunPage
         runId={runId}
         userId={user.id}
@@ -67,7 +60,7 @@ function RunPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }
   )
 }
 
-function ShoppingPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+function ShoppingPageWrapper() {
   const { runId } = useParams<{ runId: string }>()
   const navigate = useNavigate()
 
@@ -77,7 +70,7 @@ function ShoppingPageWrapper({ user, onLogout }: { user: User; onLogout: () => v
   }
 
   return (
-    <AppLayout user={user} onLogout={onLogout}>
+    <AppLayout>
       <ShoppingPage
         runId={runId}
         onBack={() => navigate(`/runs/${runId}`)}
@@ -86,7 +79,7 @@ function ShoppingPageWrapper({ user, onLogout }: { user: User; onLogout: () => v
   )
 }
 
-function DistributionPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+function DistributionPageWrapper() {
   const { runId } = useParams<{ runId: string }>()
   const navigate = useNavigate()
 
@@ -96,7 +89,7 @@ function DistributionPageWrapper({ user, onLogout }: { user: User; onLogout: () 
   }
 
   return (
-    <AppLayout user={user} onLogout={onLogout}>
+    <AppLayout>
       <DistributionPage
         runId={runId}
         onBack={() => navigate(`/runs/${runId}`)}
@@ -105,7 +98,7 @@ function DistributionPageWrapper({ user, onLogout }: { user: User; onLogout: () 
   )
 }
 
-function ProductPageWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+function ProductPageWrapper() {
   const { productId } = useParams<{ productId: string }>()
   const navigate = useNavigate()
 
@@ -115,7 +108,7 @@ function ProductPageWrapper({ user, onLogout }: { user: User; onLogout: () => vo
   }
 
   return (
-    <AppLayout user={user} onLogout={onLogout}>
+    <AppLayout>
       <ProductPage
         productId={productId}
         onBack={() => navigate('/')}
@@ -124,7 +117,7 @@ function ProductPageWrapper({ user, onLogout }: { user: User; onLogout: () => vo
   )
 }
 
-function JoinGroupWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+function JoinGroupWrapper() {
   const { inviteToken } = useParams<{ inviteToken: string }>()
   const navigate = useNavigate()
 
@@ -141,26 +134,28 @@ function JoinGroupWrapper({ user, onLogout }: { user: User; onLogout: () => void
   )
 }
 
-function DashboardWrapper({ user, onLogout }: { user: User; onLogout: () => void }) {
+function DashboardWrapper() {
   const navigate = useNavigate()
 
   return (
-    <AppLayout user={user} onLogout={onLogout}>
+    <AppLayout>
       <Groups
         onGroupSelect={(groupId) => navigate(`/groups/${groupId}`)}
         onRunSelect={(runId) => navigate(`/runs/${runId}`)}
-        onProductSelect={(productId) => navigate(`/products/${productId}`)}
       />
     </AppLayout>
   )
 }
 
 // Shared layout component with header
-function AppLayout({ user, onLogout, children }: { user: User; onLogout: () => void; children: React.ReactNode }) {
+function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([])
   const [searching, setSearching] = useState(false)
+
+  if (!user) return null
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query)
@@ -248,7 +243,7 @@ function AppLayout({ user, onLogout, children }: { user: User; onLogout: () => v
 
         <div className="user-info">
           <span>Welcome, {user.name}!</span>
-          <button onClick={onLogout} className="logout-button">
+          <button onClick={logout} className="logout-button">
             Logout
           </button>
         </div>
@@ -263,84 +258,30 @@ function AppLayout({ user, onLogout, children }: { user: User; onLogout: () => v
   )
 }
 
-function App() {
-  const [user, setUser] = useState<User | null>(null)
-  const [backendMessage, setBackendMessage] = useState<string>('')
-  const [healthStatus, setHealthStatus] = useState<string>('')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string>('')
+function AppRoutes() {
+  const { user, login, loading } = useAuth()
 
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const userData: User = await response.json()
-          setUser(userData)
-        }
-      } catch (err) {
-        // User not logged in, which is fine
-      }
-    }
-
-    checkAuth()
-  }, [])
-
-  useEffect(() => {
-    const fetchBackendData = async () => {
-      try {
-        setLoading(true)
-        setError('')
-
-        // Test hello world endpoint
-        const helloResponse = await fetch(`${API_BASE_URL}/`)
-        if (!helloResponse.ok) {
-          throw new Error(`HTTP error! status: ${helloResponse.status}`)
-        }
-        const helloData: BackendResponse = await helloResponse.json()
-        setBackendMessage(helloData.message)
-
-        // Test health endpoint
-        const healthResponse = await fetch(`${API_BASE_URL}/health`)
-        if (!healthResponse.ok) {
-          throw new Error(`HTTP error! status: ${healthResponse.status}`)
-        }
-        const healthData: HealthResponse = await healthResponse.json()
-        setHealthStatus(healthData.status)
-
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to connect to backend')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchBackendData()
-  }, [])
-
-  const handleLogin = (userData: User) => {
-    setUser(userData)
-  }
-
-  const handleLogout = async () => {
-    try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-      setUser(null)
-      window.location.href = '/'
-    } catch (err) {
-      console.error('Logout failed:', err)
-    }
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="app">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '1.2rem',
+          color: 'var(--color-text)'
+        }}>
+          Loading...
+        </div>
+      </div>
+    )
   }
 
   // Show login page if not authenticated
   if (!user) {
-    return <Login onLogin={handleLogin} />
+    return <Login onLogin={login} />
   }
 
   return (
@@ -360,16 +301,24 @@ function App() {
         </div>
       }>
         <Routes>
-          <Route path="/" element={<DashboardWrapper user={user} onLogout={handleLogout} />} />
-          <Route path="/groups/:groupId" element={<GroupPageWrapper user={user} onLogout={handleLogout} />} />
-          <Route path="/runs/:runId" element={<RunPageWrapper user={user} onLogout={handleLogout} />} />
-          <Route path="/shopping/:runId" element={<ShoppingPageWrapper user={user} onLogout={handleLogout} />} />
-          <Route path="/distribution/:runId" element={<DistributionPageWrapper user={user} onLogout={handleLogout} />} />
-          <Route path="/products/:productId" element={<ProductPageWrapper user={user} onLogout={handleLogout} />} />
-          <Route path="/invite/:inviteToken" element={<JoinGroupWrapper user={user} onLogout={handleLogout} />} />
+          <Route path="/" element={<DashboardWrapper />} />
+          <Route path="/groups/:groupId" element={<GroupPageWrapper />} />
+          <Route path="/runs/:runId" element={<RunPageWrapper />} />
+          <Route path="/shopping/:runId" element={<ShoppingPageWrapper />} />
+          <Route path="/distribution/:runId" element={<DistributionPageWrapper />} />
+          <Route path="/products/:productId" element={<ProductPageWrapper />} />
+          <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   )
 }
 
