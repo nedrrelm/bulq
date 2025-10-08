@@ -440,6 +440,47 @@ pg_dump -h db -U bulq bulq | gzip > /backups/bulq_$DATE.sql.gz
 
 ---
 
+## Feature Requests
+
+### Allow run leader to cancel run at any stage
+**Status**: Planned
+**Affected files**: `app/services/run_service.py`, `app/routes/runs.py`, `frontend/src/components/RunPage.tsx`
+
+**Problem:** Currently, runs can only be cancelled before the `distributing` state (per state machine rules). Leaders have no way to cancel a run once it reaches certain stages, even if needed.
+
+**Solution:**
+1. Backend: Add `cancel_run` endpoint that allows the leader to cancel a run from any state
+2. Update state machine to allow transitions to `cancelled` from all states (not just before `distributing`)
+3. Add business logic to handle cancellation at different stages:
+   - Before `shopping`: Simple state change
+   - During `shopping`: May need to handle partial purchases
+   - During `distributing`: May need to handle returns/refunds
+4. Frontend: Add "Cancel Run" button visible only to leader
+5. Add confirmation dialog explaining consequences based on current state
+6. Consider adding a `cancellation_reason` field for tracking
+
+**State machine change in `app/run_state.py`:**
+```python
+# Add transitions from all states to cancelled
+state_machine.add_transition('cancel', '*', 'cancelled')
+```
+
+**API endpoint:**
+```python
+@router.post("/runs/{run_id}/cancel")
+async def cancel_run(
+    run_id: str,
+    reason: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Verify user is leader
+    # Cancel run
+    # Notify participants via WebSocket
+```
+
+---
+
 ## Product Discovery
 
 ### Product families
