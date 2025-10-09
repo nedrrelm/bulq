@@ -412,31 +412,32 @@ class MemoryRepository(AbstractRepository):
     """In-memory implementation for testing and development - Singleton."""
 
     _instance = None
+    _initialized = False
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._init_storage()
         return cls._instance
 
-    def __init__(self):
-        # Only initialize once
-        if not hasattr(self, '_initialized'):
-            # Storage dictionaries
-            self._users: Dict[UUID, User] = {}
-            self._users_by_email: Dict[str, User] = {}
-            self._groups: Dict[UUID, Group] = {}
-            self._group_memberships: Dict[UUID, List[UUID]] = {}  # group_id -> [user_ids]
-            self._stores: Dict[UUID, Store] = {}
-            self._runs: Dict[UUID, Run] = {}
-            self._products: Dict[UUID, Product] = {}
-            self._participations: Dict[UUID, RunParticipation] = {}
-            self._bids: Dict[UUID, ProductBid] = {}
-            self._shopping_list_items: Dict[UUID, ShoppingListItem] = {}
-            self._encountered_prices: Dict[UUID, EncounteredPrice] = {}
+    def _init_storage(self):
+        """Initialize storage dictionaries and create test data. Called once by __new__."""
+        # Storage dictionaries
+        self._users: Dict[UUID, User] = {}
+        self._users_by_email: Dict[str, User] = {}
+        self._groups: Dict[UUID, Group] = {}
+        self._group_memberships: Dict[UUID, List[UUID]] = {}  # group_id -> [user_ids]
+        self._stores: Dict[UUID, Store] = {}
+        self._runs: Dict[UUID, Run] = {}
+        self._products: Dict[UUID, Product] = {}
+        self._participations: Dict[UUID, RunParticipation] = {}
+        self._bids: Dict[UUID, ProductBid] = {}
+        self._shopping_list_items: Dict[UUID, ShoppingListItem] = {}
+        self._encountered_prices: Dict[UUID, EncounteredPrice] = {}
 
-            # Create test data
-            self._create_test_data()
-            self._initialized = True
+        # Create test data
+        self._create_test_data()
+        MemoryRepository._initialized = True
 
     def _create_test_data(self):
         """Create test data for memory mode."""
@@ -1383,11 +1384,6 @@ class MemoryRepository(AbstractRepository):
 
     def get_encountered_prices(self, product_id: UUID, store_id: UUID, start_date: Any = None, end_date: Any = None) -> List:
         """Get encountered prices for a product at a store, optionally filtered by date range."""
-        from .models import EncounteredPrice
-
-        if not hasattr(self, '_encountered_prices'):
-            self._encountered_prices = {}
-
         results = []
         for ep in self._encountered_prices.values():
             if ep.product_id == product_id and ep.store_id == store_id:
@@ -1400,11 +1396,7 @@ class MemoryRepository(AbstractRepository):
 
     def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
         """Create a new encountered price."""
-        from .models import EncounteredPrice
         from datetime import datetime
-
-        if not hasattr(self, '_encountered_prices'):
-            self._encountered_prices = {}
 
         ep = EncounteredPrice(
             id=uuid4(),
