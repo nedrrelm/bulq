@@ -565,7 +565,6 @@ class MemoryRepository(AbstractRepository):
 
         # Create shopping list items
         shopping_item1 = self._create_shopping_list_item(run_shopping.id, detergent.id, 4)
-        shopping_item1.encountered_prices = [{"price": 16.50, "notes": "aisle 7"}, {"price": 17.00, "notes": "end cap"}]
         shopping_item1.purchased_quantity = 4
         shopping_item1.purchased_price_per_unit = Decimal("16.50")
         shopping_item1.purchased_total = Decimal("66.00")
@@ -573,7 +572,6 @@ class MemoryRepository(AbstractRepository):
         shopping_item1.purchase_order = 1
 
         shopping_item2 = self._create_shopping_list_item(run_shopping.id, laundry_pods.id, 3)
-        shopping_item2.encountered_prices = [{"price": 18.98, "notes": "front display"}]
         shopping_item2.purchased_quantity = 3
         shopping_item2.purchased_price_per_unit = Decimal("18.98")
         shopping_item2.purchased_total = Decimal("56.94")
@@ -602,7 +600,6 @@ class MemoryRepository(AbstractRepository):
 
         # Create shopping list items (as if shopping was completed)
         adj_item1 = self._create_shopping_list_item(run_adjusting.id, olive_oil.id, 3)
-        adj_item1.encountered_prices = [{"price": 24.99, "notes": "aisle 12"}]
         adj_item1.purchased_quantity = 3  # Fully purchased
         adj_item1.purchased_price_per_unit = Decimal("24.99")
         adj_item1.purchased_total = Decimal("74.97")
@@ -610,7 +607,6 @@ class MemoryRepository(AbstractRepository):
         adj_item1.purchase_order = 1
 
         adj_item2 = self._create_shopping_list_item(run_adjusting.id, quinoa.id, 4)
-        adj_item2.encountered_prices = [{"price": 18.99, "notes": "organic section"}]
         adj_item2.purchased_quantity = 4  # Fully purchased
         adj_item2.purchased_price_per_unit = Decimal("18.99")
         adj_item2.purchased_total = Decimal("75.96")
@@ -618,7 +614,6 @@ class MemoryRepository(AbstractRepository):
         adj_item2.purchase_order = 2
 
         adj_item3 = self._create_shopping_list_item(run_adjusting.id, paper_towels.id, 6)
-        adj_item3.encountered_prices = [{"price": 19.99, "notes": "only 3 left"}]
         adj_item3.purchased_quantity = 3  # SHORTAGE: only 3 out of 6 bought
         adj_item3.purchased_price_per_unit = Decimal("19.99")
         adj_item3.purchased_total = Decimal("59.97")
@@ -748,7 +743,6 @@ class MemoryRepository(AbstractRepository):
 
         # Create shopping list for run_completed_2
         shopping_item3 = self._create_shopping_list_item(run_completed_2.id, olive_oil.id, 3)
-        shopping_item3.encountered_prices = [{"price": 25.99, "notes": "aisle 12"}]
         shopping_item3.purchased_quantity = 3
         shopping_item3.purchased_price_per_unit = Decimal("25.99")
         shopping_item3.purchased_total = Decimal("77.97")
@@ -756,7 +750,6 @@ class MemoryRepository(AbstractRepository):
         shopping_item3.purchase_order = 1
 
         shopping_item4 = self._create_shopping_list_item(run_completed_2.id, quinoa.id, 3)
-        shopping_item4.encountered_prices = [{"price": 19.49, "notes": "aisle 8"}]
         shopping_item4.purchased_quantity = 3
         shopping_item4.purchased_price_per_unit = Decimal("19.49")
         shopping_item4.purchased_total = Decimal("58.47")
@@ -764,7 +757,6 @@ class MemoryRepository(AbstractRepository):
         shopping_item4.purchase_order = 2
 
         shopping_item5 = self._create_shopping_list_item(run_completed_2.id, paper_towels.id, 2)
-        shopping_item5.encountered_prices = [{"price": 20.99, "notes": "aisle 5"}]
         shopping_item5.purchased_quantity = 2
         shopping_item5.purchased_price_per_unit = Decimal("20.99")
         shopping_item5.purchased_total = Decimal("41.98")
@@ -802,7 +794,6 @@ class MemoryRepository(AbstractRepository):
 
         # Create shopping list for run_completed_3
         shopping_item6 = self._create_shopping_list_item(run_completed_3.id, detergent.id, 3)
-        shopping_item6.encountered_prices = [{"price": 15.98, "notes": "special sale"}]
         shopping_item6.purchased_quantity = 3
         shopping_item6.purchased_price_per_unit = Decimal("15.98")
         shopping_item6.purchased_total = Decimal("47.94")
@@ -810,7 +801,6 @@ class MemoryRepository(AbstractRepository):
         shopping_item6.purchase_order = 1
 
         shopping_item7 = self._create_shopping_list_item(run_completed_3.id, laundry_pods.id, 2)
-        shopping_item7.encountered_prices = [{"price": 17.98, "notes": "member special"}]
         shopping_item7.purchased_quantity = 2
         shopping_item7.purchased_price_per_unit = Decimal("17.98")
         shopping_item7.purchased_total = Decimal("35.96")
@@ -818,7 +808,6 @@ class MemoryRepository(AbstractRepository):
         shopping_item7.purchase_order = 2
 
         shopping_item8 = self._create_shopping_list_item(run_completed_3.id, ground_beef.id, 2)
-        shopping_item8.encountered_prices = [{"price": 15.99, "notes": "fresh section"}]
         shopping_item8.purchased_quantity = 2
         shopping_item8.purchased_price_per_unit = Decimal("15.99")
         shopping_item8.purchased_total = Decimal("31.98")
@@ -861,7 +850,6 @@ class MemoryRepository(AbstractRepository):
 
         # Create shopping list for run_completed_4
         shopping_item9 = self._create_shopping_list_item(run_completed_4.id, olive_oil.id, 3)
-        shopping_item9.encountered_prices = [{"price": 26.99, "notes": "regular price"}]
         shopping_item9.purchased_quantity = 3
         shopping_item9.purchased_price_per_unit = Decimal("26.99")
         shopping_item9.purchased_total = Decimal("80.97")
@@ -869,7 +857,6 @@ class MemoryRepository(AbstractRepository):
         shopping_item9.purchase_order = 1
 
         shopping_item10 = self._create_shopping_list_item(run_completed_4.id, quinoa.id, 1)
-        shopping_item10.encountered_prices = [{"price": 20.99, "notes": "aisle 8"}]
         shopping_item10.purchased_quantity = 1
         shopping_item10.purchased_price_per_unit = Decimal("20.99")
         shopping_item10.purchased_total = Decimal("20.99")
@@ -877,7 +864,6 @@ class MemoryRepository(AbstractRepository):
         shopping_item10.purchase_order = 2
 
         shopping_item11 = self._create_shopping_list_item(run_completed_4.id, coffee_beans.id, 4)
-        shopping_item11.encountered_prices = [{"price": 15.49, "notes": "aisle 14"}]
         shopping_item11.purchased_quantity = 4
         shopping_item11.purchased_price_per_unit = Decimal("15.49")
         shopping_item11.purchased_total = Decimal("61.96")
@@ -909,7 +895,6 @@ class MemoryRepository(AbstractRepository):
 
         # Create shopping list for run_completed_5
         shopping_item12 = self._create_shopping_list_item(run_completed_5.id, detergent.id, 3)
-        shopping_item12.encountered_prices = [{"price": 17.48, "notes": "aisle 6"}]
         shopping_item12.purchased_quantity = 3
         shopping_item12.purchased_price_per_unit = Decimal("17.48")
         shopping_item12.purchased_total = Decimal("52.44")
@@ -917,7 +902,6 @@ class MemoryRepository(AbstractRepository):
         shopping_item12.purchase_order = 1
 
         shopping_item13 = self._create_shopping_list_item(run_completed_5.id, cheese_sticks.id, 2)
-        shopping_item13.encountered_prices = [{"price": 9.48, "notes": "dairy section"}]
         shopping_item13.purchased_quantity = 2
         shopping_item13.purchased_price_per_unit = Decimal("9.48")
         shopping_item13.purchased_total = Decimal("18.96")
@@ -925,12 +909,32 @@ class MemoryRepository(AbstractRepository):
         shopping_item13.purchase_order = 2
 
         shopping_item14 = self._create_shopping_list_item(run_completed_5.id, bananas.id, 1)
-        shopping_item14.encountered_prices = [{"price": 4.48, "notes": "produce"}]
         shopping_item14.purchased_quantity = 1
         shopping_item14.purchased_price_per_unit = Decimal("4.48")
         shopping_item14.purchased_total = Decimal("4.48")
         shopping_item14.is_purchased = True
         shopping_item14.purchase_order = 3
+
+        # Create EncounteredPrice entities for products at stores
+        # These show up on the store page
+        from datetime import datetime, timedelta
+
+        # Costco prices
+        self.create_encountered_price(olive_oil.id, costco.id, Decimal("24.99"), "aisle 12", alice.id)
+        self.create_encountered_price(quinoa.id, costco.id, Decimal("18.99"), "organic section", test_user.id)
+        self.create_encountered_price(paper_towels.id, costco.id, Decimal("19.99"), "household", bob.id)
+        self.create_encountered_price(rotisserie_chicken.id, costco.id, Decimal("4.99"), "deli section", alice.id)
+        self.create_encountered_price(almond_butter.id, costco.id, Decimal("9.99"), "aisle 8", test_user.id)
+        self.create_encountered_price(frozen_berries.id, costco.id, Decimal("12.99"), "frozen section", carol.id)
+        self.create_encountered_price(toilet_paper.id, costco.id, Decimal("22.99"), "aisle 2", bob.id)
+        self.create_encountered_price(coffee_beans.id, costco.id, Decimal("14.99"), "aisle 10", alice.id)
+
+        # Sam's Club prices
+        self.create_encountered_price(detergent.id, sams.id, Decimal("16.98"), "aisle 7", test_user.id)
+        self.create_encountered_price(laundry_pods.id, sams.id, Decimal("18.98"), "front display", bob.id)
+        self.create_encountered_price(ground_beef.id, sams.id, Decimal("16.48"), "meat department", alice.id)
+        self.create_encountered_price(bananas.id, sams.id, Decimal("4.98"), "produce", carol.id)
+        self.create_encountered_price(cheese_sticks.id, sams.id, Decimal("8.98"), "dairy section", test_user.id)
 
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         return self._users.get(user_id)
@@ -1358,13 +1362,13 @@ class MemoryRepository(AbstractRepository):
         return items
 
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
+        """
+        DEPRECATED: This method used to add encountered prices to shopping list items.
+        Now use create_encountered_price() to create proper EncounteredPrice entities instead.
+        This method is kept for backwards compatibility but does nothing.
+        """
         item = self._shopping_list_items.get(item_id)
-        if item:
-            if item.encountered_prices is None:
-                item.encountered_prices = []
-            item.encountered_prices.append({"price": float(price), "notes": notes})
-            return item
-        return None
+        return item
 
     def get_shopping_list_item(self, item_id: UUID) -> Optional[ShoppingListItem]:
         return self._shopping_list_items.get(item_id)
