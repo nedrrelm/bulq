@@ -221,27 +221,6 @@ app.add_middleware(
 
 ---
 
-### Database connection pooling
-**Status**: Important (before production)
-**Affected files**: `app/database.py`
-
-**Problem:** Using default SQLAlchemy settings which may not be suitable for production load.
-
-**Solution:** Configure connection pool:
-```python
-engine = create_engine(
-    DATABASE_URL,
-    poolclass=QueuePool,
-    pool_size=20,           # Number of connections to maintain
-    max_overflow=10,        # Extra connections if pool exhausted
-    pool_timeout=30,        # Seconds to wait for connection
-    pool_recycle=3600,      # Recycle connections after 1 hour
-    pool_pre_ping=True      # Verify connections before use
-)
-```
-
----
-
 ### Build and serve static frontend files
 **Status**: Critical (before production)
 **Affected files**: `frontend/Dockerfile`, `docker-compose.yml`, `Caddyfile`
