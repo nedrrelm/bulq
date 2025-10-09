@@ -66,6 +66,10 @@ def client(db):
     # Clear sessions before each test
     sessions.clear()
 
+    # Ensure clean database state
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
     with TestClient(app) as c:
         yield c
 
@@ -79,14 +83,14 @@ def authenticated_client(client):
     Provide a test client with an authenticated user.
     Useful for tests that require authentication.
     """
-    # Register and login a user
+    # Register and login a user with unique email to avoid conflicts with seed data
     client.post("/auth/register", json={
-        "name": "Test User",
-        "email": "test@example.com",
+        "name": "Authenticated Test User",
+        "email": "authenticated@test.com",
         "password": "testpassword123"
     })
     client.post("/auth/login", json={
-        "email": "test@example.com",
+        "email": "authenticated@test.com",
         "password": "testpassword123"
     })
 

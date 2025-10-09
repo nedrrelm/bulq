@@ -9,13 +9,13 @@ def test_user_creation(db):
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = SessionLocal()
 
-    user = User(name="Test User", email="test@example.com")
+    user = User(name="Model Test User", email="modeltest@example.com", password_hash="hashed_password")
     session.add(user)
     session.commit()
 
     assert user.id is not None
-    assert user.name == "Test User"
-    assert user.email == "test@example.com"
+    assert user.name == "Model Test User"
+    assert user.email == "modeltest@example.com"
 
     session.close()
 
@@ -25,16 +25,16 @@ def test_group_creation(db):
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = SessionLocal()
 
-    user = User(name="Creator", email="creator@example.com")
+    user = User(name="Group Creator", email="groupcreator@example.com", password_hash="hashed_password")
     session.add(user)
     session.commit()
 
-    group = Group(name="Test Group", created_by=user.id)
+    group = Group(name="Model Test Group", created_by=user.id)
     session.add(group)
     session.commit()
 
     assert group.id is not None
-    assert group.name == "Test Group"
+    assert group.name == "Model Test Group"
     assert group.created_by == user.id
 
     session.close()
@@ -59,28 +59,29 @@ def test_store_and_product_creation(db):
 
     assert store.id is not None
     assert product.store_id == store.id
-    assert product.base_price == 29.99
+    assert float(product.base_price) == 29.99
 
     session.close()
 
 
 def test_product_bid_creation(db):
     from app.database import engine
+    from app.models import RunParticipation
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = SessionLocal()
 
     # Create required entities
-    user = User(name="Bidder", email="bidder@example.com")
-    creator = User(name="Creator", email="creator@example.com")
-    store = Store(name="Test Store")
+    user = User(name="Bid User", email="biduser@example.com", password_hash="hashed_password")
+    creator = User(name="Bid Creator", email="bidcreator@example.com", password_hash="hashed_password")
+    store = Store(name="Bid Test Store")
     session.add_all([user, creator, store])
     session.commit()
 
-    group = Group(name="Test Group", created_by=creator.id)
+    group = Group(name="Bid Test Group", created_by=creator.id)
     session.add(group)
     session.commit()
 
-    product = Product(store_id=store.id, name="Test Product", base_price=19.99)
+    product = Product(store_id=store.id, name="Bid Test Product", base_price=19.99)
     session.add(product)
     session.commit()
 
@@ -88,10 +89,14 @@ def test_product_bid_creation(db):
     session.add(run)
     session.commit()
 
-    # Create product bid
+    # Create participation for user
+    participation = RunParticipation(user_id=user.id, run_id=run.id, is_leader=False)
+    session.add(participation)
+    session.commit()
+
+    # Create product bid (using participation_id instead of user_id)
     bid = ProductBid(
-        user_id=user.id,
-        run_id=run.id,
+        participation_id=participation.id,
         product_id=product.id,
         quantity=5,
         interested_only=False
