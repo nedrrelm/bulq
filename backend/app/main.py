@@ -12,6 +12,7 @@ from .routes.distribution import router as distribution_router
 from .routes.products import router as products_router
 from .routes.websocket import router as websocket_router
 from .routes.search import router as search_router
+from .routes.notifications import router as notifications_router
 from .exceptions import AppException
 from .error_handlers import (
     app_exception_handler,
@@ -47,6 +48,7 @@ app.include_router(shopping_router)
 app.include_router(distribution_router)
 app.include_router(products_router)
 app.include_router(search_router)
+app.include_router(notifications_router)
 app.include_router(websocket_router)
 
 # Add CORS middleware

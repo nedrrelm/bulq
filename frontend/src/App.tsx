@@ -2,12 +2,14 @@ import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import { searchApi } from './api'
 import type { SearchResults } from './api'
 import { debounce } from './utils/validation'
 import Login from './components/Login'
 import Groups from './components/Groups'
 import ErrorBoundary from './components/ErrorBoundary'
+import { NotificationBadge } from './components/NotificationBadge'
 
 // Lazy load route components for code splitting
 const GroupPage = lazy(() => import('./components/GroupPage'))
@@ -18,6 +20,7 @@ const ShoppingPage = lazy(() => import('./components/ShoppingPage'))
 const DistributionPage = lazy(() => import('./components/DistributionPage'))
 const ProductPage = lazy(() => import('./components/ProductPage'))
 const StorePage = lazy(() => import('./components/StorePage'))
+const NotificationPage = lazy(() => import('./pages/NotificationPage'))
 
 // Wrapper components that use params and navigation
 function GroupPageWrapper() {
@@ -343,6 +346,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="user-info">
+          <NotificationBadge />
           <span>Welcome, {user.name}!</span>
           <button onClick={logout} className="logout-button">
             Logout
@@ -410,6 +414,7 @@ function AppRoutes() {
           <Route path="/distribution/:runId" element={<DistributionPageWrapper />} />
           <Route path="/products/:productId" element={<ProductPageWrapper />} />
           <Route path="/stores/:storeId" element={<StorePageWrapper />} />
+          <Route path="/notifications" element={<NotificationPage />} />
           <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />
         </Routes>
       </Suspense>
@@ -420,7 +425,9 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <NotificationProvider>
+        <AppRoutes />
+      </NotificationProvider>
     </AuthProvider>
   )
 }

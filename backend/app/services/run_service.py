@@ -368,8 +368,12 @@ class RunService(BaseService):
             # When a non-leader places their first bid, transition from planning to active
             state_changed = False
             if is_new_participant and not participation.is_leader and run.state == RunState.PLANNING:
+                old_state = run.state
                 self.repo.update_run_state(run_uuid, RunState.ACTIVE)
                 state_changed = True
+
+                # Create notifications for all participants
+                self._notify_run_state_change(run, old_state, RunState.ACTIVE)
 
             # Calculate new totals for broadcasting
             all_bids = self.repo.get_bids_by_run(run_uuid)
@@ -447,8 +451,12 @@ class RunService(BaseService):
         # When all participants mark themselves as ready
         state_changed = False
         if all_ready and len(all_participations) > 0:
+            old_state = run.state
             self.repo.update_run_state(run_uuid, RunState.CONFIRMED)
             state_changed = True
+
+            # Create notifications for all participants
+            self._notify_run_state_change(run, old_state, RunState.CONFIRMED)
 
             return {
                 "message": "All participants ready! Run confirmed.",
@@ -528,7 +536,11 @@ class RunService(BaseService):
             self.repo.create_shopping_list_item(run_uuid, product_id, quantity)
 
         # Transition to shopping state
+        old_state = run.state
         self.repo.update_run_state(run_uuid, RunState.SHOPPING)
+
+        # Create notifications for all participants
+        self._notify_run_state_change(run, old_state, RunState.SHOPPING)
 
         return {
             "message": "Shopping started!",
@@ -694,7 +706,11 @@ class RunService(BaseService):
                     bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
 
         # Transition to distributing state
+        old_state = run.state
         self.repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
+
+        # Create notifications for all participants
+        self._notify_run_state_change(run, old_state, RunState.DISTRIBUTING)
 
         return {
             "message": "Adjustments complete! Moving to distribution.",
@@ -747,14 +763,18 @@ class RunService(BaseService):
             raise ForbiddenError("Only the run leader can cancel the run")
 
         # Transition to cancelled state
+        old_state = run.state
         self.repo.update_run_state(run_uuid, RunState.CANCELLED)
+
+        # Create notifications for all participants
+        self._notify_run_state_change(run, old_state, RunState.CANCELLED)
 
         logger.info(
             f"Run cancelled by leader",
             extra={
                 "run_id": str(run_uuid),
                 "user_id": str(user.id),
-                "previous_state": run.state
+                "previous_state": old_state
             }
         )
 
@@ -782,3 +802,47 @@ class RunService(BaseService):
             ForbiddenError: If user is not the leader or not authorized
         """
         return self.cancel_run(run_id, user)
+
+    def _notify_run_state_change(self, run: Run, old_state: str, new_state: str) -> None:
+        """
+        Create notifications for all participants when run state changes.
+
+        Args:
+            run: The run that changed state
+            old_state: Previous state
+            new_state: New state
+        """
+        # Get store name for notification
+        all_stores = self.repo.get_all_stores()
+        store = next((s for s in all_stores if s.id == run.store_id), None)
+        store_name = store.name if store else "Unknown Store"
+
+        # Get all participants of this run
+        participations = self.repo.get_run_participations(run.id)
+
+        # Create notification data
+        notification_data = {
+            "run_id": str(run.id),
+            "store_name": store_name,
+            "old_state": old_state,
+            "new_state": new_state,
+            "group_id": str(run.group_id)
+        }
+
+        # Create notification for each participant
+        for participation in participations:
+            self.repo.create_notification(
+                user_id=participation.user_id,
+                type="run_state_changed",
+                data=notification_data
+            )
+
+        logger.debug(
+            f"Created notifications for run state change",
+            extra={
+                "run_id": str(run.id),
+                "old_state": old_state,
+                "new_state": new_state,
+                "participant_count": len(participations)
+            }
+        )
