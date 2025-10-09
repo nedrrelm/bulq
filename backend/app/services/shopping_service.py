@@ -61,18 +61,45 @@ class ShoppingService(BaseService):
         # Get shopping list items
         items = self.repo.get_shopping_list_items(run_uuid)
 
+        # Get encountered prices from the same day at the same store
+        from datetime import datetime, timedelta
+
+        # Get run's shopping_at timestamp to determine the day
+        shopping_date = run.shopping_at if run.shopping_at else datetime.now()
+        day_start = datetime(shopping_date.year, shopping_date.month, shopping_date.day)
+        day_end = day_start + timedelta(days=1)
+
         # Convert to response format
         response_items = []
         for item in items:
             product = self.repo.get_products_by_store(item.product.store_id) if hasattr(item, 'product') and item.product else []
             product = next((p for p in product if p.id == item.product_id), None) if product else None
 
+            # Get encountered prices for this product at this store on the same day
+            encountered_prices = self.repo.get_encountered_prices(
+                product_id=item.product_id,
+                store_id=run.store_id,
+                start_date=day_start,
+                end_date=day_end
+            )
+
+            # Convert to response format
+            encountered_prices_list = [
+                {
+                    "price": float(ep.price),
+                    "notes": ep.notes or "",
+                    "minimum_quantity": ep.minimum_quantity,
+                    "encountered_at": ep.encountered_at.isoformat()
+                }
+                for ep in encountered_prices
+            ]
+
             response_items.append({
                 "id": str(item.id),
                 "product_id": str(item.product_id),
                 "product_name": product.name if product else "Unknown Product",
                 "requested_quantity": item.requested_quantity,
-                "encountered_prices": item.encountered_prices or [],
+                "encountered_prices": encountered_prices_list,
                 "purchased_quantity": item.purchased_quantity,
                 "purchased_price_per_unit": str(item.purchased_price_per_unit) if item.purchased_price_per_unit else None,
                 "purchased_total": str(item.purchased_total) if item.purchased_total else None,
@@ -128,10 +155,19 @@ class ShoppingService(BaseService):
         if not participation or not participation.is_leader:
             raise ForbiddenError("Only the run leader can add prices")
 
-        # Add encountered price
-        item = self.repo.add_encountered_price(item_uuid, price, notes)
+        # Get the shopping list item to find the product
+        item = self.repo.get_shopping_list_item(item_uuid)
         if not item:
             raise NotFoundError("Shopping list item", item_id)
+
+        # Create encountered price entity
+        encountered_price = self.repo.create_encountered_price(
+            product_id=item.product_id,
+            store_id=run.store_id,
+            price=Decimal(str(price)),
+            notes=notes,
+            user_id=user.id
+        )
 
         return {"message": "Price added successfully"}
 
