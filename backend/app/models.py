@@ -36,6 +36,7 @@ class User(Base):
     created_stores = relationship("Store", foreign_keys="[Store.created_by]", back_populates="creator")
     verified_stores = relationship("Store", foreign_keys="[Store.verified_by]", back_populates="verifier")
     encountered_prices = relationship("EncounteredPrice", back_populates="user")
+    notifications = relationship("Notification", back_populates="user", order_by="desc(Notification.created_at)")
 
 class Group(Base):
     __tablename__ = "groups"
@@ -190,3 +191,14 @@ class ShoppingListItem(Base):
     run = relationship("Run")
     product = relationship("Product")
 
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    type = Column(String, nullable=False)  # e.g., "run_state_changed"
+    data = Column(JSON, nullable=False)    # Flexible JSON data: {run_id, store_name, old_state, new_state, etc.}
+    read = Column(Boolean, nullable=False, default=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="notifications")

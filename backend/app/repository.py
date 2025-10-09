@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 import logging
 
-from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, EncounteredPrice
+from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, EncounteredPrice, Notification
 from .config import get_repo_mode
 from .run_state import RunState, state_machine
 
@@ -279,6 +279,43 @@ class AbstractRepository(ABC):
         """Create a new encountered price."""
         raise NotImplementedError("Subclass must implement create_encountered_price")
 
+    # ==================== Notification Methods ====================
+
+    @abstractmethod
+    def create_notification(self, user_id: UUID, type: str, data: Dict[str, Any]):
+        """Create a new notification for a user."""
+        raise NotImplementedError("Subclass must implement create_notification")
+
+    @abstractmethod
+    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> List:
+        """Get notifications for a user (paginated)."""
+        raise NotImplementedError("Subclass must implement get_user_notifications")
+
+    @abstractmethod
+    def get_unread_notifications(self, user_id: UUID) -> List:
+        """Get all unread notifications for a user."""
+        raise NotImplementedError("Subclass must implement get_unread_notifications")
+
+    @abstractmethod
+    def get_unread_count(self, user_id: UUID) -> int:
+        """Get count of unread notifications for a user."""
+        raise NotImplementedError("Subclass must implement get_unread_count")
+
+    @abstractmethod
+    def mark_notification_as_read(self, notification_id: UUID) -> bool:
+        """Mark a notification as read."""
+        raise NotImplementedError("Subclass must implement mark_notification_as_read")
+
+    @abstractmethod
+    def mark_all_notifications_as_read(self, user_id: UUID) -> int:
+        """Mark all notifications as read for a user. Returns count of marked notifications."""
+        raise NotImplementedError("Subclass must implement mark_all_notifications_as_read")
+
+    @abstractmethod
+    def get_notification_by_id(self, notification_id: UUID):
+        """Get a notification by ID."""
+        raise NotImplementedError("Subclass must implement get_notification_by_id")
+
 
 class DatabaseRepository(AbstractRepository):
     """
@@ -439,6 +476,27 @@ class DatabaseRepository(AbstractRepository):
     def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
+    def create_notification(self, user_id: UUID, type: str, data: Dict[str, Any]):
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> List:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_unread_notifications(self, user_id: UUID) -> List:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_unread_count(self, user_id: UUID) -> int:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def mark_notification_as_read(self, notification_id: UUID) -> bool:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def mark_all_notifications_as_read(self, user_id: UUID) -> int:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_notification_by_id(self, notification_id: UUID):
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
 
 class MemoryRepository(AbstractRepository):
     """In-memory implementation for testing and development - Singleton."""
@@ -467,6 +525,7 @@ class MemoryRepository(AbstractRepository):
         self._bids: Dict[UUID, ProductBid] = {}
         self._shopping_list_items: Dict[UUID, ShoppingListItem] = {}
         self._encountered_prices: Dict[UUID, EncounteredPrice] = {}
+        self._notifications: Dict[UUID, Notification] = {}
 
         # Create test data
         self._create_test_data()
@@ -1488,6 +1547,59 @@ class MemoryRepository(AbstractRepository):
         )
         self._encountered_prices[ep.id] = ep
         return ep
+
+    # ==================== Notification Methods ====================
+
+    def create_notification(self, user_id: UUID, type: str, data: Dict[str, Any]) -> Notification:
+        """Create a new notification for a user."""
+        notification = Notification(
+            id=uuid4(),
+            user_id=user_id,
+            type=type,
+            data=data,
+            read=False
+        )
+        self._notifications[notification.id] = notification
+        return notification
+
+    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> List[Notification]:
+        """Get notifications for a user (paginated)."""
+        user_notifications = [n for n in self._notifications.values() if n.user_id == user_id]
+        # Sort by created_at descending (most recent first)
+        user_notifications.sort(key=lambda n: n.created_at, reverse=True)
+        return user_notifications[offset:offset + limit]
+
+    def get_unread_notifications(self, user_id: UUID) -> List[Notification]:
+        """Get all unread notifications for a user."""
+        unread = [n for n in self._notifications.values() if n.user_id == user_id and not n.read]
+        # Sort by created_at descending
+        unread.sort(key=lambda n: n.created_at, reverse=True)
+        return unread
+
+    def get_unread_count(self, user_id: UUID) -> int:
+        """Get count of unread notifications for a user."""
+        return sum(1 for n in self._notifications.values() if n.user_id == user_id and not n.read)
+
+    def mark_notification_as_read(self, notification_id: UUID) -> bool:
+        """Mark a notification as read."""
+        notification = self._notifications.get(notification_id)
+        if notification:
+            notification.read = True
+            return True
+        return False
+
+    def mark_all_notifications_as_read(self, user_id: UUID) -> int:
+        """Mark all notifications as read for a user. Returns count of marked notifications."""
+        count = 0
+        for notification in self._notifications.values():
+            if notification.user_id == user_id and not notification.read:
+                notification.read = True
+                count += 1
+        return count
+
+    def get_notification_by_id(self, notification_id: UUID) -> Optional[Notification]:
+        """Get a notification by ID."""
+        return self._notifications.get(notification_id)
 
 
 def get_repository(db: Session = None) -> AbstractRepository:
