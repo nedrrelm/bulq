@@ -49,7 +49,8 @@ async def create_run(
                 "run_id": result['id'],
                 "store_id": result['store_id'],
                 "store_name": result['store_name'],
-                "state": result['state']
+                "state": result['state'],
+                "leader_name": result['leader_name']
             }
         })
 

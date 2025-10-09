@@ -23,8 +23,12 @@ export interface GroupDetails {
   }>
   runs: Array<{
     id: string
+    group_id: string
+    store_id: string
     store_name: string
     state: string
+    leader_name: string
+    planned_on: string | null
   }>
 }
 
