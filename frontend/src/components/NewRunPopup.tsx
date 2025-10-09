@@ -21,9 +21,6 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
 
   useModalFocusTrap(modalRef, true, onClose)
 
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [onClose])
-
   useEffect(() => {
     const fetchStores = async () => {
       try {

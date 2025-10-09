@@ -69,6 +69,11 @@ class AbstractRepository(ABC):
     # ==================== Store Methods ====================
 
     @abstractmethod
+    def search_stores(self, query: str) -> List[Store]:
+        """Search stores by name."""
+        raise NotImplementedError("Subclass must implement search_stores")
+
+    @abstractmethod
     def get_all_stores(self) -> List[Store]:
         """Get all stores."""
         raise NotImplementedError("Subclass must implement get_all_stores")
@@ -286,6 +291,9 @@ class DatabaseRepository(AbstractRepository):
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def add_group_member(self, group_id: UUID, user: User) -> bool:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def search_stores(self, query: str) -> List[Store]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_all_stores(self) -> List[Store]:
@@ -960,6 +968,13 @@ class MemoryRepository(AbstractRepository):
             self._group_memberships[group_id].append(user.id)
             return True
         return False
+
+    def search_stores(self, query: str) -> List[Store]:
+        query_lower = query.lower()
+        return [
+            store for store in self._stores.values()
+            if query_lower in store.name.lower()
+        ]
 
     def get_all_stores(self) -> List[Store]:
         return list(self._stores.values())
