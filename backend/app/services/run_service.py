@@ -701,9 +701,71 @@ class RunService(BaseService):
             "group_id": str(run.group_id)
         }
 
+    def cancel_run(self, run_id: str, user: User) -> Dict[str, Any]:
+        """
+        Cancel a run. Can be called by leader from any state except completed/cancelled.
+
+        Args:
+            run_id: Run ID as string
+            user: Current user (must be leader)
+
+        Returns:
+            Dict with success message
+
+        Raises:
+            BadRequestError: If run ID format is invalid or run already in terminal state
+            NotFoundError: If run not found
+            ForbiddenError: If user is not the leader
+        """
+        # Validate run ID
+        try:
+            run_uuid = uuid.UUID(run_id)
+        except ValueError:
+            raise BadRequestError("Invalid run ID format")
+
+        # Get the run
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError("Run", run_id)
+
+        # Check if run is already in a terminal state
+        if run.state == RunState.COMPLETED.value:
+            raise BadRequestError("Cannot cancel a completed run")
+        if run.state == RunState.CANCELLED.value:
+            raise BadRequestError("Run is already cancelled")
+
+        # Verify user has access to this run (member of the group)
+        user_groups = self.repo.get_user_groups(user)
+        if not any(g.id == run.group_id for g in user_groups):
+            raise ForbiddenError("Not authorized to cancel this run")
+
+        # Check if user is the run leader
+        participation = self.repo.get_participation(user.id, run_uuid)
+        if not participation or not participation.is_leader:
+            raise ForbiddenError("Only the run leader can cancel the run")
+
+        # Transition to cancelled state
+        self.repo.update_run_state(run_uuid, RunState.CANCELLED)
+
+        logger.info(
+            f"Run cancelled by leader",
+            extra={
+                "run_id": str(run_uuid),
+                "user_id": str(user.id),
+                "previous_state": run.state
+            }
+        )
+
+        return {
+            "message": "Run cancelled successfully",
+            "run_id": str(run_uuid),
+            "group_id": str(run.group_id),
+            "state": RunState.CANCELLED.value
+        }
+
     def delete_run(self, run_id: str, user: User) -> Dict[str, Any]:
         """
-        Delete a run (cancels it).
+        Delete a run (alias for cancel_run for backward compatibility).
 
         Args:
             run_id: Run ID as string
@@ -717,32 +779,4 @@ class RunService(BaseService):
             NotFoundError: If run not found
             ForbiddenError: If user is not the leader or not authorized
         """
-        # Validate run ID
-        try:
-            run_uuid = uuid.UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
-
-        # Get the run
-        run = self.repo.get_run_by_id(run_uuid)
-        if not run:
-            raise NotFoundError("Run", run_id)
-
-        # Verify user has access to this run (member of the group)
-        user_groups = self.repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError("Not authorized to delete this run")
-
-        # Check if user is the run leader
-        participation = self.repo.get_participation(user.id, run_uuid)
-        if not participation or not participation.is_leader:
-            raise ForbiddenError("Only the run leader can delete the run")
-
-        # Transition to cancelled state
-        self.repo.update_run_state(run_uuid, RunState.CANCELLED)
-
-        return {
-            "message": "Run deleted successfully",
-            "run_id": str(run_uuid),
-            "group_id": str(run.group_id)
-        }
+        return self.cancel_run(run_id, user)

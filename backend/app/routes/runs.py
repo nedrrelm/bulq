@@ -545,22 +545,55 @@ async def transition_to_shopping(
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
+@router.post("/{run_id}/cancel")
+async def cancel_run(
+    run_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Cancel a run. Leader only. Can be done from any state except completed/cancelled."""
+    repo = get_repository(db)
+    service = RunService(repo)
+
+    try:
+        result = service.cancel_run(run_id, current_user)
+
+        # Broadcast to group room
+        await manager.broadcast(f"group:{result['group_id']}", {
+            "type": "run_cancelled",
+            "data": {
+                "run_id": result['run_id'],
+                "state": result['state']
+            }
+        })
+
+        return result
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=403, detail=e.message)
+    except AppException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+
 @router.delete("/{run_id}")
 async def delete_run(
     run_id: str,
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
-    """Delete a run (cancels it)."""
+    """Delete a run (cancels it). Alias for cancel_run for backward compatibility."""
     repo = get_repository(db)
     service = RunService(repo)
 
     try:
         result = service.delete_run(run_id, current_user)
 
-        # Broadcast to group room
-        await manager.broadcast(f"group:{result['group_id']}", {
-            "type": "run_deleted",
+        # Broadcast to group room (try to get from service result)
+        group_id = result.get('group_id', 'unknown')
+        await manager.broadcast(f"group:{group_id}", {
+            "type": "run_cancelled",
             "data": {
                 "run_id": result['run_id']
             }

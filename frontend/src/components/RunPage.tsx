@@ -390,6 +390,24 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     }
   }
 
+  const handleCancelRun = async () => {
+    if (!window.confirm('Are you sure you want to cancel this run? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await runsApi.cancelRun(runId)
+      showToast('Run cancelled successfully', 'success')
+      // Navigate back to group page after a short delay
+      setTimeout(() => {
+        onBack(run?.group_id)
+      }, 1500)
+    } catch (err) {
+      console.error('Error cancelling run:', err)
+      showToast(err instanceof ApiError ? err.message : 'Failed to cancel run. Please try again.', 'error')
+    }
+  }
+
   if (loading) {
     return (
       <div className="run-page">
@@ -451,6 +469,15 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             {stateDisplay.label}
           </span>
         </div>
+        {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
+          <button
+            onClick={handleCancelRun}
+            className="btn btn-danger cancel-run-button"
+            title="Cancel this run"
+          >
+            ✕ Cancel Run
+          </button>
+        )}
       </div>
 
       <div className="run-info">

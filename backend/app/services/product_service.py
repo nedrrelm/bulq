@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 from uuid import UUID
 from ..models import Product, Store
 from .base_service import BaseService
+from ..exceptions import ValidationError, NotFoundError
 
 
 class ProductService(BaseService):
@@ -89,3 +90,20 @@ class ProductService(BaseService):
             "name": product.name,
             "stores": stores_data
         }
+
+    def create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
+        """Create a new product."""
+        # Validate inputs
+        if not name or not name.strip():
+            raise ValidationError("Product name cannot be empty")
+        if base_price < 0:
+            raise ValidationError("Product price cannot be negative")
+        if base_price == 0:
+            raise ValidationError("Product price cannot be zero")
+
+        # Verify store exists
+        store = self.repo.get_all_stores()
+        if not any(s.id == store_id for s in store):
+            raise NotFoundError("Store not found")
+
+        return self.repo.create_product(store_id, name.strip(), base_price)

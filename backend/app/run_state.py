@@ -34,7 +34,7 @@ class RunStateMachine:
         RunState.CONFIRMED: [RunState.SHOPPING, RunState.ACTIVE, RunState.CANCELLED],
         RunState.SHOPPING: [RunState.ADJUSTING, RunState.DISTRIBUTING, RunState.CANCELLED],
         RunState.ADJUSTING: [RunState.DISTRIBUTING, RunState.CANCELLED],
-        RunState.DISTRIBUTING: [RunState.COMPLETED],
+        RunState.DISTRIBUTING: [RunState.COMPLETED, RunState.CANCELLED],
         RunState.COMPLETED: [],  # Terminal state
         RunState.CANCELLED: [],  # Terminal state
     }

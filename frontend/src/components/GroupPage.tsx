@@ -71,11 +71,11 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
         }
         return [newRun, ...prev]
       })
-    } else if (message.type === 'run_state_changed') {
+    } else if (message.type === 'run_state_changed' || message.type === 'run_cancelled') {
       // Update run state
       setRuns(prev => prev.map(run =>
         run.id === message.data.run_id
-          ? { ...run, state: message.data.new_state }
+          ? { ...run, state: message.data.new_state || message.data.state }
           : run
       ))
     }
@@ -103,7 +103,8 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     .filter(run => !['completed', 'cancelled'].includes(run.state))
     .sort((a, b) => (stateOrder[b.state] || 0) - (stateOrder[a.state] || 0))
 
-  const pastRuns = runs.filter(run => ['completed', 'cancelled'].includes(run.state))
+  const completedRuns = runs.filter(run => run.state === 'completed')
+  const cancelledRuns = runs.filter(run => run.state === 'cancelled')
 
   const handleNewRunClick = () => {
     newRunModal.open()
@@ -220,14 +221,14 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
           </div>
 
           <div className="runs-section">
-            <h3>Past Runs ({pastRuns.length})</h3>
-            {pastRuns.length === 0 ? (
+            <h3>Completed Runs ({completedRuns.length})</h3>
+            {completedRuns.length === 0 ? (
               <div className="no-runs">
-                <p>No past runs yet.</p>
+                <p>No completed runs yet.</p>
               </div>
             ) : (
               <div className="runs-list">
-                {pastRuns.map((run) => (
+                {completedRuns.map((run) => (
                   <ErrorBoundary key={run.id}>
                     <div
                       className="run-item past"
@@ -235,12 +236,40 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
                     >
                       <div className="run-header">
                         <h4>{run.store_name}</h4>
-                      <span className={`run-state state-${run.state}`}>
-                        {getStateLabel(run.state)}
-                      </span>
+                        <span className={`run-state state-${run.state}`}>
+                          {getStateLabel(run.state)}
+                        </span>
+                      </div>
+                      <p className="run-id">ID: {run.id}</p>
                     </div>
-                    <p className="run-id">ID: {run.id}</p>
-                  </div>
+                  </ErrorBoundary>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="runs-section">
+            <h3>Cancelled Runs ({cancelledRuns.length})</h3>
+            {cancelledRuns.length === 0 ? (
+              <div className="no-runs">
+                <p>No cancelled runs.</p>
+              </div>
+            ) : (
+              <div className="runs-list">
+                {cancelledRuns.map((run) => (
+                  <ErrorBoundary key={run.id}>
+                    <div
+                      className="run-item cancelled"
+                      onClick={() => handleRunClick(run.id)}
+                    >
+                      <div className="run-header">
+                        <h4>{run.store_name}</h4>
+                        <span className={`run-state state-${run.state}`}>
+                          {getStateLabel(run.state)}
+                        </span>
+                      </div>
+                      <p className="run-id">ID: {run.id}</p>
+                    </div>
                   </ErrorBoundary>
                 ))}
               </div>
