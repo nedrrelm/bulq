@@ -1,15 +1,11 @@
 import hashlib
 import secrets
-import os
 from typing import Optional, Dict
 from datetime import datetime, timedelta
+from app.config import SESSION_EXPIRY_HOURS, SECRET_KEY
 
 # In-memory session storage (use Redis in production)
 sessions: Dict[str, dict] = {}
-
-# Session configuration
-SESSION_EXPIRY_HOURS = 24
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 
 def hash_password(password: str) -> str:
     """Hash a password using SHA-256 with salt."""

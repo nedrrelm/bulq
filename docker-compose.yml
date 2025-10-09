@@ -1,17 +1,15 @@
 services:
   db:
     image: postgres:15
-    environment:
-      - POSTGRES_DB=bulq
-      - POSTGRES_USER=bulq
-      - POSTGRES_PASSWORD=bulq_dev_pass
+    env_file:
+      - .env
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bulq -d bulq"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,9 +18,8 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-    environment:
-      - ENV=development
-      - DATABASE_URL=postgresql://bulq:bulq_dev_pass@db:5432/bulq
+    env_file:
+      - .env
     volumes:
       - ./backend:/app
     depends_on:

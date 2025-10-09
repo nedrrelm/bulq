@@ -1,9 +1,24 @@
 """Application configuration."""
 
+import os
 from typing import Literal
 
-# Repository mode configuration - Change this line to switch modes
-REPO_MODE: Literal["database", "memory"] = "memory"  # Change to "memory" for test data
+# Repository mode configuration
+REPO_MODE: Literal["database", "memory"] = os.getenv("REPO_MODE", "memory")  # type: ignore
+
+# Database configuration
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Security configuration
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable must be set!")
+
+# Session configuration
+SESSION_EXPIRY_HOURS = int(os.getenv("SESSION_EXPIRY_HOURS", "24"))
+
+# CORS configuration
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
 
 def get_repo_mode() -> str:
     """Get current repository mode."""
