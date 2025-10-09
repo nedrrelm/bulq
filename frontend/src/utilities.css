@@ -536,3 +536,54 @@
   color: var(--color-danger);
   font-weight: 600;
 }
+
+/* ============================================
+   PAGE LAYOUT UTILITIES
+   ============================================ */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* ============================================
+   CARD HEADER
+   ============================================ */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.card-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ============================================
+   NOTIFICATION LIST
+   ============================================ */
+.notification-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   BUTTON VARIANTS
+   ============================================ */
+.btn-ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.btn-ghost:hover {
+  background: var(--color-gray-100);
+  color: var(--color-primary-hover);
+}
