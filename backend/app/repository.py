@@ -39,6 +39,11 @@ class AbstractRepository(ABC):
         """Get all groups that a user is a member of."""
         raise NotImplementedError("Subclass must implement get_user_groups")
 
+    @abstractmethod
+    def get_all_users(self) -> List[User]:
+        """Get all users."""
+        raise NotImplementedError("Subclass must implement get_all_users")
+
     # ==================== Group Methods ====================
 
     @abstractmethod
@@ -146,6 +151,11 @@ class AbstractRepository(ABC):
     def create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
         """Create a new product."""
         raise NotImplementedError("Subclass must implement create_product")
+
+    @abstractmethod
+    def get_all_products(self) -> List[Product]:
+        """Get all products."""
+        raise NotImplementedError("Subclass must implement get_all_products")
 
     # ==================== Product Bid Methods ====================
 
@@ -597,6 +607,7 @@ class MemoryRepository(AbstractRepository):
         bob = self.create_user("Bob Smith", "bob@test.com", "hashed_password")
         carol = self.create_user("Carol Davis", "carol@test.com", "hashed_password")
         test_user = self.create_user("Test User", "test@example.com", "hashed_password")
+        test_user.is_admin = True
 
         # Create test groups
         friends_group = self.create_group("Test Friends", alice.id)
@@ -1094,10 +1105,13 @@ class MemoryRepository(AbstractRepository):
         return self._users_by_email.get(email)
 
     def create_user(self, name: str, email: str, password_hash: str) -> User:
-        user = User(id=uuid4(), name=name, email=email, password_hash=password_hash)
+        user = User(id=uuid4(), name=name, email=email, password_hash=password_hash, verified=False, is_admin=False)
         self._users[user.id] = user
         self._users_by_email[email] = user
         return user
+
+    def get_all_users(self) -> List[User]:
+        return list(self._users.values())
 
     def get_user_groups(self, user: User) -> List[Group]:
         user_groups = []
@@ -1290,6 +1304,9 @@ class MemoryRepository(AbstractRepository):
         )
         self._products[product.id] = product
         return product
+
+    def get_all_products(self) -> List[Product]:
+        return list(self._products.values())
 
     def create_or_update_bid(self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
         """Create or update a product bid."""
