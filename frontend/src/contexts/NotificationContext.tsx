@@ -95,20 +95,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setNotifications([])
       setUnreadCount(0)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  // Poll for new notifications every 10 seconds
-  useEffect(() => {
-    if (!user) return
-
-    const interval = setInterval(() => {
-      refreshUnreadCount()
-    }, 10000) // Poll every 10 seconds
-
-    return () => clearInterval(interval)
-  }, [user])
-
-  const fetchNotifications = async (limit: number = 20) => {
+  const fetchNotifications = useCallback(async (limit: number = 20) => {
     if (!user) return
 
     setLoading(true)
@@ -120,9 +110,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
-  const refreshUnreadCount = async () => {
+  const refreshUnreadCount = useCallback(async () => {
     if (!user) return
 
     try {
@@ -131,7 +121,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Failed to fetch unread count:', err)
     }
-  }
+  }, [user])
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -142,8 +132,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       )
 
-      // Refresh unread count
-      await refreshUnreadCount()
+      // Decrement unread count locally
+      setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (err) {
       console.error('Failed to mark notification as read:', err)
     }

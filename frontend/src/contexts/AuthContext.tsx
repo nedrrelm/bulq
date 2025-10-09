@@ -49,8 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (userData: User) => {
     setUser(userData)
-    // Redirect to dashboard on login
-    window.location.href = '/'
   }
 
   const logout = async () => {
