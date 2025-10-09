@@ -319,7 +319,7 @@ function PricePopup({
   const [priceError, setPriceError] = useState('')
   const modalRef = useRef<HTMLDivElement>(null)
 
-  useModalFocusTrap(modalRef)
+  useModalFocusTrap(modalRef, true, onClose)
 
   const validatePrice = (value: string): boolean => {
     setPriceError('')

@@ -5,11 +5,17 @@ const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:
 /**
  * Traps focus within a modal dialog for accessibility.
  * Ensures Tab and Shift+Tab cycle through focusable elements within the modal.
+ * Closes modal on Escape key press.
  *
  * @param modalRef - Reference to the modal container element
  * @param isOpen - Whether the modal is currently open
+ * @param onClose - Optional callback to close the modal on Escape key
  */
-export function useModalFocusTrap(modalRef: RefObject<HTMLElement>, isOpen: boolean = true) {
+export function useModalFocusTrap(
+  modalRef: RefObject<HTMLElement>,
+  isOpen: boolean = true,
+  onClose?: () => void
+) {
   useEffect(() => {
     if (!isOpen || !modalRef.current) return
 
@@ -26,7 +32,15 @@ export function useModalFocusTrap(modalRef: RefObject<HTMLElement>, isOpen: bool
       firstElement.focus()
     }
 
-    const handleTabKey = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle Escape key
+      if (e.key === 'Escape' && onClose) {
+        e.preventDefault()
+        onClose()
+        return
+      }
+
+      // Handle Tab key
       if (e.key !== 'Tab') return
 
       // If only one focusable element, prevent tabbing
@@ -51,14 +65,14 @@ export function useModalFocusTrap(modalRef: RefObject<HTMLElement>, isOpen: bool
       }
     }
 
-    modalElement.addEventListener('keydown', handleTabKey)
+    modalElement.addEventListener('keydown', handleKeyDown)
 
     // Cleanup: restore focus to previous element when modal closes
     return () => {
-      modalElement.removeEventListener('keydown', handleTabKey)
+      modalElement.removeEventListener('keydown', handleKeyDown)
       if (previouslyFocusedElement && previouslyFocusedElement.focus) {
         previouslyFocusedElement.focus()
       }
     }
-  }, [modalRef, isOpen])
+  }, [modalRef, isOpen, onClose])
 }

@@ -20,7 +20,7 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
   const inputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
-  useModalFocusTrap(modalRef)
+  useModalFocusTrap(modalRef, true, onClose)
 
   useEffect(() => {
     // Autofocus the input when component mounts

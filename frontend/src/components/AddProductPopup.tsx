@@ -20,7 +20,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   const inputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
-  useModalFocusTrap(modalRef)
+  useModalFocusTrap(modalRef, true, onClose)
 
   useEffect(() => {
     const fetchAvailableProducts = async () => {
