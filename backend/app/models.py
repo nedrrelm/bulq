@@ -202,3 +202,19 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="notifications")
+
+
+class LeaderReassignmentRequest(Base):
+    __tablename__ = "leader_reassignment_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
+    from_user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    to_user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    status = Column(String, nullable=False, default="pending", index=True)  # pending, accepted, declined
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+
+    run = relationship("Run")
+    from_user = relationship("User", foreign_keys=[from_user_id])
+    to_user = relationship("User", foreign_keys=[to_user_id])
