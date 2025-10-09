@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 import logging
 
-from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem
+from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, EncounteredPrice
 from .config import get_repo_mode
 from .run_state import RunState, state_machine
 
@@ -82,6 +82,21 @@ class AbstractRepository(ABC):
     def create_store(self, name: str) -> Store:
         """Create a new store."""
         raise NotImplementedError("Subclass must implement create_store")
+
+    @abstractmethod
+    def get_store_by_id(self, store_id: UUID) -> Optional[Store]:
+        """Get store by ID."""
+        raise NotImplementedError("Subclass must implement get_store_by_id")
+
+    @abstractmethod
+    def get_products_by_store_from_encountered_prices(self, store_id: UUID) -> List[Product]:
+        """Get all unique products that have encountered prices at a store."""
+        raise NotImplementedError("Subclass must implement get_products_by_store_from_encountered_prices")
+
+    @abstractmethod
+    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
+        """Get all active runs for a store across all user's groups."""
+        raise NotImplementedError("Subclass must implement get_active_runs_by_store_for_user")
 
     # ==================== Run Methods ====================
 
@@ -302,6 +317,15 @@ class DatabaseRepository(AbstractRepository):
     def create_store(self, name: str) -> Store:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
+    def get_store_by_id(self, store_id: UUID) -> Optional[Store]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_products_by_store_from_encountered_prices(self, store_id: UUID) -> List[Product]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
@@ -408,6 +432,7 @@ class MemoryRepository(AbstractRepository):
             self._participations: Dict[UUID, RunParticipation] = {}
             self._bids: Dict[UUID, ProductBid] = {}
             self._shopping_list_items: Dict[UUID, ShoppingListItem] = {}
+            self._encountered_prices: Dict[UUID, EncounteredPrice] = {}
 
             # Create test data
             self._create_test_data()
@@ -978,6 +1003,30 @@ class MemoryRepository(AbstractRepository):
 
     def get_all_stores(self) -> List[Store]:
         return list(self._stores.values())
+
+    def get_store_by_id(self, store_id: UUID) -> Optional[Store]:
+        return self._stores.get(store_id)
+
+    def get_products_by_store_from_encountered_prices(self, store_id: UUID) -> List[Product]:
+        """Get all unique products that have encountered prices at a store."""
+        product_ids = set()
+        for ep in self._encountered_prices.values():
+            if ep.store_id == store_id:
+                product_ids.add(ep.product_id)
+        return [self._products[pid] for pid in product_ids if pid in self._products]
+
+    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
+        """Get all active runs for a store across all user's groups."""
+        # Get user's groups
+        user_group_ids = self._group_memberships.get(user_id, [])
+
+        # Get runs for those groups that target this store and are active
+        active_states = ['planning', 'active', 'confirmed', 'shopping', 'adjusting', 'distributing']
+        runs = []
+        for run in self._runs.values():
+            if run.store_id == store_id and run.state in active_states and run.group_id in user_group_ids:
+                runs.append(run)
+        return runs
 
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
         return [run for run in self._runs.values() if run.group_id == group_id]

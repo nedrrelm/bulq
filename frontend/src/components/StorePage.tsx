@@ -1,0 +1,161 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import './StorePage.css'
+import LoadingSpinner from './LoadingSpinner'
+import './LoadingSpinner.css'
+import ErrorAlert from './ErrorAlert'
+import '../styles/run-states.css'
+
+interface Product {
+  id: string
+  name: string
+  brand: string | null
+  unit: string | null
+  base_price: string | null
+}
+
+interface ActiveRun {
+  id: string
+  state: string
+  group_id: string
+  group_name: string
+}
+
+interface StorePageData {
+  store: {
+    id: string
+    name: string
+  }
+  products: Product[]
+  active_runs: ActiveRun[]
+}
+
+interface StorePageProps {
+  storeId: string
+  onBack: () => void
+}
+
+function StorePage({ storeId, onBack }: StorePageProps) {
+  const [data, setData] = useState<StorePageData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchStoreData()
+  }, [storeId])
+
+  const fetchStoreData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch(`http://localhost:8000/stores/${storeId}`, {
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Store not found')
+        }
+        throw new Error('Failed to load store data')
+      }
+
+      const storeData = await response.json()
+      setData(storeData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  if (error) {
+    return (
+      <div className="store-page">
+        <button className="btn btn-secondary back-btn" onClick={onBack}>
+          ← Back
+        </button>
+        <ErrorAlert message={error} />
+      </div>
+    )
+  }
+
+  if (!data) {
+    return null
+  }
+
+  return (
+    <div className="store-page">
+      <button className="btn btn-secondary back-btn" onClick={onBack}>
+        ← Back
+      </button>
+
+      <div className="store-header">
+        <h1>{data.store.name}</h1>
+      </div>
+
+      {data.active_runs.length > 0 && (
+        <section className="active-runs-section">
+          <h2>Active Runs</h2>
+          <div className="active-runs-list">
+            {data.active_runs.map(run => (
+              <Link
+                key={run.id}
+                to={`/runs/${run.id}`}
+                className="active-run-card card"
+              >
+                <div className="run-info">
+                  <div className="run-group">{run.group_name}</div>
+                  <span className={`state-badge state-${run.state}`}>
+                    {run.state}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="products-section">
+        <h2>Products</h2>
+        {data.products.length === 0 ? (
+          <div className="empty-state">
+            <p>No products with recorded prices yet</p>
+            <p className="empty-state-hint">
+              Products will appear here once prices are encountered during shopping runs
+            </p>
+          </div>
+        ) : (
+          <div className="products-list">
+            {data.products.map(product => (
+              <Link
+                key={product.id}
+                to={`/products/${product.id}`}
+                className="product-card card"
+              >
+                <div className="product-info">
+                  <div className="product-name">{product.name}</div>
+                  {product.brand && (
+                    <div className="product-brand">{product.brand}</div>
+                  )}
+                  <div className="product-details">
+                    {product.unit && <span className="product-unit">{product.unit}</span>}
+                    {product.base_price && (
+                      <span className="product-price">≈ ${product.base_price}</span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
+
+export default StorePage

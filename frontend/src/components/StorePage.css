@@ -1,0 +1,122 @@
+.store-page {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.back-btn {
+  margin-bottom: 1rem;
+}
+
+.store-header {
+  margin-bottom: 2rem;
+}
+
+.store-header h1 {
+  font-size: 2rem;
+  color: var(--color-gray-900);
+  margin: 0;
+}
+
+/* Active Runs Section */
+.active-runs-section {
+  margin-bottom: 3rem;
+}
+
+.active-runs-section h2 {
+  font-size: 1.5rem;
+  color: var(--color-gray-900);
+  margin-bottom: 1rem;
+}
+
+.active-runs-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.active-run-card {
+  padding: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.active-run-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.run-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.run-group {
+  font-weight: 600;
+  color: var(--color-gray-900);
+  font-size: 1.1rem;
+}
+
+/* Products Section */
+.products-section h2 {
+  font-size: 1.5rem;
+  color: var(--color-gray-900);
+  margin-bottom: 1rem;
+}
+
+.products-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.product-card {
+  padding: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.product-name {
+  font-weight: 600;
+  color: var(--color-gray-900);
+  font-size: 1.1rem;
+}
+
+.product-brand {
+  color: var(--color-gray-600);
+  font-size: 0.9rem;
+}
+
+.product-details {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.product-unit {
+  color: var(--color-gray-600);
+}
+
+.product-price {
+  color: var(--color-primary);
+  font-weight: 500;
+}

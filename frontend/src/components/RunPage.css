@@ -30,6 +30,17 @@
   font-weight: 600;
 }
 
+.store-link {
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.store-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
 
 .run-info {
   margin-bottom: 40px;
@@ -65,6 +76,18 @@
 .info-item span {
   color: var(--color-text);
   font-size: 16px;
+}
+
+.info-link {
+  color: var(--color-text);
+  font-size: 16px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.info-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
 }
 
 .run-id {

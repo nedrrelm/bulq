@@ -16,6 +16,7 @@ const JoinGroup = lazy(() => import('./components/JoinGroup'))
 const ShoppingPage = lazy(() => import('./components/ShoppingPage'))
 const DistributionPage = lazy(() => import('./components/DistributionPage'))
 const ProductPage = lazy(() => import('./components/ProductPage'))
+const StorePage = lazy(() => import('./components/StorePage'))
 
 // Wrapper components that use params and navigation
 function GroupPageWrapper() {
@@ -112,6 +113,25 @@ function ProductPageWrapper() {
     <AppLayout>
       <ProductPage
         productId={productId}
+        onBack={() => navigate('/')}
+      />
+    </AppLayout>
+  )
+}
+
+function StorePageWrapper() {
+  const { storeId } = useParams<{ storeId: string }>()
+  const navigate = useNavigate()
+
+  if (!storeId) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <AppLayout>
+      <StorePage
+        storeId={storeId}
         onBack={() => navigate('/')}
       />
     </AppLayout>
@@ -256,8 +276,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                       key={`store-${store.id}`}
                       className="search-result-item"
                       onClick={() => {
-                        // TODO: Navigate to store page when implemented
-                        console.log('Store clicked:', store.id)
+                        navigate(`/stores/${store.id}`)
                         closeSearch()
                       }}
                     >
@@ -368,6 +387,7 @@ function AppRoutes() {
           <Route path="/shopping/:runId" element={<ShoppingPageWrapper />} />
           <Route path="/distribution/:runId" element={<DistributionPageWrapper />} />
           <Route path="/products/:productId" element={<ProductPageWrapper />} />
+          <Route path="/stores/:storeId" element={<StorePageWrapper />} />
           <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />
         </Routes>
       </Suspense>
