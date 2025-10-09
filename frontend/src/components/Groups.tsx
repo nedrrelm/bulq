@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './Groups.css'
 import { WS_BASE_URL } from '../config'
 import { groupsApi, ApiError } from '../api'
-import type { Group } from '../api'
+import type { Group, Store } from '../api'
 import type { ProductSearchResult } from '../types/product'
 import NewGroupPopup from './NewGroupPopup'
+import NewStorePopup from './NewStorePopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateLabel } from '../utils/runStates'
@@ -21,6 +22,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showNewGroupPopup, setShowNewGroupPopup] = useState(false)
+  const [showNewStorePopup, setShowNewStorePopup] = useState(false)
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -173,6 +175,12 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     setGroups(prev => [...prev, newGroup])
   }
 
+  const handleNewStoreSuccess = (newStore: Store) => {
+    setShowNewStorePopup(false)
+    // Store has been added, no need to update state here
+    // It will be available when creating new runs
+  }
+
   return (
     <>
       {showNewGroupPopup && (
@@ -182,12 +190,24 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
         />
       )}
 
+      {showNewStorePopup && (
+        <NewStorePopup
+          onClose={() => setShowNewStorePopup(false)}
+          onSuccess={handleNewStoreSuccess}
+        />
+      )}
+
       <div className="groups-container">
         <div className="groups-header">
           <h3>My Groups</h3>
-          <button onClick={() => setShowNewGroupPopup(true)} className="btn btn-primary">
-            + New Group
-          </button>
+          <div className="header-buttons">
+            <button onClick={() => setShowNewStorePopup(true)} className="btn btn-secondary">
+              + New Store
+            </button>
+            <button onClick={() => setShowNewGroupPopup(true)} className="btn btn-primary">
+              + New Group
+            </button>
+          </div>
         </div>
 
       {loading && <p>Loading groups...</p>}

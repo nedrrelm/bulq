@@ -5,7 +5,14 @@ export interface Store {
   name: string
 }
 
+export interface CreateStoreRequest {
+  name: string
+}
+
 export const storesApi = {
   getStores: () =>
-    api.get<Store[]>('/stores')
+    api.get<Store[]>('/stores'),
+
+  createStore: (request: CreateStoreRequest) =>
+    api.post<Store>('/stores/create', request)
 }

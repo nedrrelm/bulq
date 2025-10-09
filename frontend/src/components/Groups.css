@@ -17,6 +17,11 @@
   font-size: 1.2rem;
 }
 
+.header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
 .groups-list {
   display: flex;
   flex-direction: column;
