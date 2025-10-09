@@ -1,4 +1,4 @@
-import hashlib
+import bcrypt
 import secrets
 from typing import Optional, Dict
 from datetime import datetime, timedelta
@@ -8,17 +8,14 @@ from app.config import SESSION_EXPIRY_HOURS, SECRET_KEY
 sessions: Dict[str, dict] = {}
 
 def hash_password(password: str) -> str:
-    """Hash a password using SHA-256 with salt."""
-    salt = secrets.token_hex(32)
-    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
-    return f"{salt}:{password_hash}"
+    """Hash a password using bcrypt."""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(password: str, hashed: str) -> bool:
-    """Verify a password against its hash."""
+    """Verify a password against its bcrypt hash."""
     try:
-        salt, password_hash = hashed.split(":")
-        return hashlib.sha256((password + salt).encode()).hexdigest() == password_hash
-    except ValueError:
+        return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+    except Exception:
         return False
 
 def create_session(user_id: str) -> str:

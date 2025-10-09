@@ -115,40 +115,6 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 ---
 
-### Secure password hashing (bcrypt)
-**Status**: Critical (before production)
-**Affected files**: `app/auth.py`
-
-**Problem:** Currently using SHA-256 for password hashing, which is extremely insecure (fast = vulnerable to brute force).
-
-**Current code (auth.py:14-26):**
-```python
-def hash_password(password: str) -> str:
-    salt = secrets.token_hex(32)
-    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
-    return f"{salt}:{password_hash}"
-```
-
-**Solution:** Use bcrypt (designed to be slow for security):
-```python
-import bcrypt
-
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
-```
-
-Also fix hardcoded SECRET_KEY fallback (auth.py:12) - should fail if not set:
-```python
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY environment variable must be set!")
-```
-
----
-
 ### Add database indexes
 **Status**: Important (before production)
 **Affected files**: `app/models.py`
