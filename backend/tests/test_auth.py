@@ -94,15 +94,15 @@ class TestAuthIntegration:
     def test_register_success(self, client):
         """Test successful user registration"""
         response = client.post("/auth/register", json={
-            "name": "Test User",
-            "email": "test@example.com",
+            "name": "New Test User",
+            "email": "newtest@example.com",
             "password": "password123"
         })
 
         assert response.status_code == 200
         data = response.json()
-        assert data["name"] == "Test User"
-        assert data["email"] == "test@example.com"
+        assert data["name"] == "New Test User"
+        assert data["email"] == "newtest@example.com"
         assert "id" in data
         assert "password" not in data  # Password should not be returned
 
@@ -128,7 +128,7 @@ class TestAuthIntegration:
     def test_register_invalid_email(self, client):
         """Test registration with invalid email format"""
         response = client.post("/auth/register", json={
-            "name": "Test User",
+            "name": "Invalid Email User",
             "email": "not-an-email",
             "password": "password123"
         })
@@ -167,14 +167,14 @@ class TestAuthIntegration:
         """Test login with wrong password"""
         # Register user
         client.post("/auth/register", json={
-            "name": "Test User",
-            "email": "test@example.com",
+            "name": "Wrong Password User",
+            "email": "wrongpw@example.com",
             "password": "correctpassword"
         })
 
         # Try to login with wrong password
         response = client.post("/auth/login", json={
-            "email": "test@example.com",
+            "email": "wrongpw@example.com",
             "password": "wrongpassword"
         })
 
@@ -194,12 +194,12 @@ class TestAuthIntegration:
         """Test logout"""
         # Register and login
         client.post("/auth/register", json={
-            "name": "Test User",
-            "email": "test@example.com",
+            "name": "Logout User",
+            "email": "logout@example.com",
             "password": "password123"
         })
         login_response = client.post("/auth/login", json={
-            "email": "test@example.com",
+            "email": "logout@example.com",
             "password": "password123"
         })
 
@@ -242,12 +242,12 @@ class TestAuthIntegration:
         """Test that session persists across multiple requests"""
         # Register and login
         client.post("/auth/register", json={
-            "name": "Test User",
-            "email": "test@example.com",
+            "name": "Session User",
+            "email": "session@example.com",
             "password": "password123"
         })
         client.post("/auth/login", json={
-            "email": "test@example.com",
+            "email": "session@example.com",
             "password": "password123"
         })
 
