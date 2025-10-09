@@ -2,8 +2,8 @@ import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { productsApi } from './api'
-import type { ProductSearchResult } from './types/product'
+import { searchApi } from './api'
+import type { SearchResults } from './api'
 import { debounce } from './utils/validation'
 import Login from './components/Login'
 import Groups from './components/Groups'
@@ -153,24 +153,24 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([])
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null)
   const [searching, setSearching] = useState(false)
 
   if (!user) return null
 
   const performSearch = async (query: string) => {
     if (query.trim().length < 2) {
-      setSearchResults([])
+      setSearchResults(null)
       return
     }
 
     try {
       setSearching(true)
-      const results = await productsApi.search(query)
+      const results = await searchApi.searchAll(query)
       setSearchResults(results)
     } catch (err) {
       console.error('Search failed:', err)
-      setSearchResults([])
+      setSearchResults(null)
     } finally {
       setSearching(false)
     }
@@ -189,13 +189,24 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSearchQuery('')
-        setSearchResults([])
+        setSearchResults(null)
       }
     }
 
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [])
+
+  const hasResults = searchResults && (
+    searchResults.products.length > 0 ||
+    searchResults.stores.length > 0 ||
+    searchResults.groups.length > 0
+  )
+
+  const closeSearch = () => {
+    setSearchQuery('')
+    setSearchResults(null)
+  }
 
   return (
     <div className="app">
@@ -205,37 +216,88 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="header-search">
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Search products, stores, groups..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="form-input"
           />
-          {searchResults.length > 0 && (
+          {hasResults && (
             <div className="search-dropdown">
-              {searchResults.map((product) => (
-                <div
-                  key={product.id}
-                  className="search-result-item"
-                  onClick={() => {
-                    navigate(`/products/${product.id}`)
-                    setSearchQuery('')
-                    setSearchResults([])
-                  }}
-                >
-                  <div className="product-info">
-                    <strong>{product.name}</strong>
-                    <span className="product-store">{product.store_name}</span>
-                  </div>
-                  {product.base_price && (
-                    <span className="product-price">${product.base_price.toFixed(2)}</span>
+              {searchResults!.products.length > 0 && (
+                <>
+                  <div className="search-category-label">Products</div>
+                  {searchResults!.products.map((product) => (
+                    <div
+                      key={`product-${product.id}`}
+                      className="search-result-item"
+                      onClick={() => {
+                        navigate(`/products/${product.id}`)
+                        closeSearch()
+                      }}
+                    >
+                      <div className="product-info">
+                        <strong>{product.name}</strong>
+                        <span className="product-store">{product.store_name}</span>
+                      </div>
+                      {product.base_price && (
+                        <span className="product-price">${product.base_price.toFixed(2)}</span>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {searchResults!.stores.length > 0 && (
+                <>
+                  {searchResults!.products.length > 0 && <div className="search-divider" />}
+                  <div className="search-category-label">Stores</div>
+                  {searchResults!.stores.map((store) => (
+                    <div
+                      key={`store-${store.id}`}
+                      className="search-result-item"
+                      onClick={() => {
+                        // TODO: Navigate to store page when implemented
+                        console.log('Store clicked:', store.id)
+                        closeSearch()
+                      }}
+                    >
+                      <div className="product-info">
+                        <strong>{store.name}</strong>
+                        {store.address && <span className="product-store">{store.address}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {searchResults!.groups.length > 0 && (
+                <>
+                  {(searchResults!.products.length > 0 || searchResults!.stores.length > 0) && (
+                    <div className="search-divider" />
                   )}
-                </div>
-              ))}
+                  <div className="search-category-label">Groups</div>
+                  {searchResults!.groups.map((group) => (
+                    <div
+                      key={`group-${group.id}`}
+                      className="search-result-item"
+                      onClick={() => {
+                        navigate(`/groups/${group.id}`)
+                        closeSearch()
+                      }}
+                    >
+                      <div className="product-info">
+                        <strong>{group.name}</strong>
+                        <span className="product-store">{group.member_count} members</span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           )}
-          {searchQuery.trim().length >= 2 && !searching && searchResults.length === 0 && (
+          {searchQuery.trim().length >= 2 && !searching && !hasResults && (
             <div className="search-dropdown">
-              <div className="search-no-results">No products found</div>
+              <div className="search-no-results">No results found</div>
             </div>
           )}
         </div>

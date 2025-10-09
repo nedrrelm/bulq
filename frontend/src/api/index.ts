@@ -6,6 +6,7 @@ export { shoppingApi } from './shopping'
 export { storesApi } from './stores'
 export { productsApi } from './products'
 export { distributionApi } from './distribution'
+export { searchApi } from './search'
 
 export type { LoginRequest, RegisterRequest } from './auth'
 export type { Group, GroupDetails, CreateGroupRequest } from './groups'
@@ -14,3 +15,4 @@ export type { ShoppingListItem, EncounteredPriceRequest, PurchaseRequest } from 
 export type { Store, CreateStoreRequest } from './stores'
 export type { ProductSearchResult, ProductDetail, CreateProductRequest } from './products'
 export type { DistributionItem, TogglePickupRequest } from './distribution'
+export type { SearchResults, SearchProduct, SearchStore, SearchGroup } from './search'
