@@ -118,6 +118,7 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
   - is_group_admin
 - Run:
   - adjusted_at
+  - planed_on (day the leader wants to go)
   - state to enum (necessary?)
 - Run participation:
   - joined_at
@@ -147,6 +148,18 @@ Can remove users from group
 ## Consolidate search bar
 
 Allow for searching for products, stores and groups
+
+## Allow leader reassigning
+
+Has to be confirmed by the other user.
+
+Button on run page to reassign, which opens a dropdown of group users.
+
+Once selected in the place of the button we have a waiting for answer div.
+
+If a user accepts, the leader gets a popup on next login that it was successful (what would this require to function?)
+
+For the other user, on the run page he gets a big section at the top which says the leader want to reassign, do you accept.
 
 ## 🔧 Future Enhancements
 
