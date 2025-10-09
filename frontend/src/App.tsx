@@ -192,6 +192,14 @@ function DashboardWrapper() {
   )
 }
 
+function NotificationPageWrapper() {
+  return (
+    <AppLayout>
+      <NotificationPage />
+    </AppLayout>
+  )
+}
+
 // Shared layout component with header
 function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -414,7 +422,7 @@ function AppRoutes() {
           <Route path="/distribution/:runId" element={<DistributionPageWrapper />} />
           <Route path="/products/:productId" element={<ProductPageWrapper />} />
           <Route path="/stores/:storeId" element={<StorePageWrapper />} />
-          <Route path="/notifications" element={<NotificationPage />} />
+          <Route path="/notifications" element={<NotificationPageWrapper />} />
           <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />
         </Routes>
       </Suspense>
