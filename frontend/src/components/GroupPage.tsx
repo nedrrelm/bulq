@@ -12,6 +12,7 @@ import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useModal } from '../hooks/useModal'
+import RunCard from './RunCard'
 
 // Using GroupDetails type from API layer
 type Run = GroupDetails['runs'][0]
@@ -202,18 +203,11 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
               <div className="runs-list">
                 {currentRuns.map((run) => (
                   <ErrorBoundary key={run.id}>
-                    <div
-                      className="run-item"
-                      onClick={() => handleRunClick(run.id)}
-                    >
-                      <div className="run-header">
-                        <h4>{run.store_name}</h4>
-                        <span className={`run-state state-${run.state}`}>
-                          {getStateLabel(run.state)}
-                        </span>
-                      </div>
-                      <p className="run-id">ID: {run.id}</p>
-                    </div>
+                    <RunCard
+                      run={run}
+                      onClick={handleRunClick}
+                      showAsLink={false}
+                    />
                   </ErrorBoundary>
                 ))}
               </div>
@@ -230,18 +224,11 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
               <div className="runs-list">
                 {completedRuns.map((run) => (
                   <ErrorBoundary key={run.id}>
-                    <div
-                      className="run-item past"
-                      onClick={() => handleRunClick(run.id)}
-                    >
-                      <div className="run-header">
-                        <h4>{run.store_name}</h4>
-                        <span className={`run-state state-${run.state}`}>
-                          {getStateLabel(run.state)}
-                        </span>
-                      </div>
-                      <p className="run-id">ID: {run.id}</p>
-                    </div>
+                    <RunCard
+                      run={run}
+                      onClick={handleRunClick}
+                      showAsLink={false}
+                    />
                   </ErrorBoundary>
                 ))}
               </div>
@@ -258,18 +245,11 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
               <div className="runs-list">
                 {cancelledRuns.map((run) => (
                   <ErrorBoundary key={run.id}>
-                    <div
-                      className="run-item cancelled"
-                      onClick={() => handleRunClick(run.id)}
-                    >
-                      <div className="run-header">
-                        <h4>{run.store_name}</h4>
-                        <span className={`run-state state-${run.state}`}>
-                          {getStateLabel(run.state)}
-                        </span>
-                      </div>
-                      <p className="run-id">ID: {run.id}</p>
-                    </div>
+                    <RunCard
+                      run={run}
+                      onClick={handleRunClick}
+                      showAsLink={false}
+                    />
                   </ErrorBoundary>
                 ))}
               </div>

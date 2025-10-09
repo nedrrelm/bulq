@@ -4,7 +4,7 @@ import './StorePage.css'
 import LoadingSpinner from './LoadingSpinner'
 import './LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
-import '../styles/run-states.css'
+import RunCard from './RunCard'
 
 interface Product {
   id: string
@@ -19,6 +19,9 @@ interface ActiveRun {
   state: string
   group_id: string
   group_name: string
+  store_name: string
+  leader_name: string
+  planned_on: string | null
 }
 
 interface StorePageData {
@@ -100,21 +103,10 @@ function StorePage({ storeId, onBack }: StorePageProps) {
 
       {data.active_runs.length > 0 && (
         <section className="active-runs-section">
-          <h2>Active Runs</h2>
+          <h2>Active Runs ({data.active_runs.length})</h2>
           <div className="active-runs-list">
             {data.active_runs.map(run => (
-              <Link
-                key={run.id}
-                to={`/runs/${run.id}`}
-                className="active-run-card card"
-              >
-                <div className="run-info">
-                  <div className="run-group">{run.group_name}</div>
-                  <span className={`state-badge state-${run.state}`}>
-                    {run.state}
-                  </span>
-                </div>
-              </Link>
+              <RunCard key={run.id} run={run} showGroupName={true} />
             ))}
           </div>
         </section>

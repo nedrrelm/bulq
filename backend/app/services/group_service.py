@@ -201,12 +201,19 @@ class GroupService(BaseService):
 
         run_responses = []
         for run in runs:
+            # Get leader from participations
+            participations = self.repo.get_run_participations(run.id)
+            leader = next((p for p in participations if p.is_leader), None)
+            leader_name = leader.user.name if leader and leader.user else "Unknown"
+
             run_responses.append({
                 "id": str(run.id),
                 "group_id": str(run.group_id),
                 "store_id": str(run.store_id),
                 "store_name": store_lookup.get(run.store_id, "Unknown Store"),
-                "state": run.state
+                "state": run.state,
+                "leader_name": leader_name,
+                "planned_on": run.planned_on.isoformat() if run.planned_on else None
             })
 
         return run_responses

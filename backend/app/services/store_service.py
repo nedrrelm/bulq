@@ -24,7 +24,7 @@ class StoreService(BaseService):
         """Get store by ID."""
         store = self.repo.get_store_by_id(store_id)
         if not store:
-            raise NotFoundError(f"Store with ID {store_id} not found")
+            raise NotFoundError("Store", store_id)
         return store
 
     def get_store_page_data(self, store_id: UUID, user_id: UUID) -> Dict[str, Any]:

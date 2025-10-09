@@ -37,6 +37,9 @@ class RunResponse(BaseModel):
     state: str
     group_id: str
     group_name: str
+    store_name: str
+    leader_name: str
+    planned_on: str | None
 
     class Config:
         from_attributes = True
@@ -92,15 +95,24 @@ async def get_store_page(
         for p in data["products"]
     ]
 
-    runs_response = [
-        RunResponse(
+    runs_response = []
+    for r in data["active_runs"]:
+        group = repo.get_group_by_id(r.group_id)
+        store = repo.get_store_by_id(r.store_id)
+        # Get leader from participations
+        participations = repo.get_run_participations(r.id)
+        leader = next((p for p in participations if p.is_leader), None)
+        leader_name = leader.user.name if leader and leader.user else "Unknown"
+
+        runs_response.append(RunResponse(
             id=str(r.id),
             state=r.state,
             group_id=str(r.group_id),
-            group_name=repo.get_group_by_id(r.group_id).name
-        )
-        for r in data["active_runs"]
-    ]
+            group_name=group.name if group else "Unknown",
+            store_name=store.name if store else "Unknown",
+            leader_name=leader_name,
+            planned_on=r.planned_on.isoformat() if r.planned_on else None
+        ))
 
     return StorePageResponse(
         store=store_response,

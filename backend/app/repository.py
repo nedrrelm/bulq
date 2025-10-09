@@ -1022,8 +1022,11 @@ class MemoryRepository(AbstractRepository):
 
     def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
         """Get all active runs for a store across all user's groups."""
-        # Get user's groups
-        user_group_ids = self._group_memberships.get(user_id, [])
+        # Get user's groups by checking which groups have this user as a member
+        user_group_ids = []
+        for group_id, member_ids in self._group_memberships.items():
+            if user_id in member_ids:
+                user_group_ids.append(group_id)
 
         # Get runs for those groups that target this store and are active
         active_states = ['planning', 'active', 'confirmed', 'shopping', 'adjusting', 'distributing']
