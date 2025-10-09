@@ -265,26 +265,6 @@ engine = create_engine(
 
 ---
 
-### Production logging configuration
-**Status**: Important (before production)
-**Affected files**: `app/logging_config.py`, `app/main.py`
-
-**Problem:** Basic logging setup needs production-grade configuration.
-
-**Solution:**
-1. Structured JSON logging for log aggregation
-2. Log to files with rotation
-3. Different log levels for different environments
-4. Consider integrating error tracking (Sentry)
-```python
-if os.getenv("ENV") == "production":
-    # JSON structured logging
-    # File rotation
-    # Error tracking integration
-```
-
----
-
 ### Build and serve static frontend files
 **Status**: Critical (before production)
 **Affected files**: `frontend/Dockerfile`, `docker-compose.yml`, `Caddyfile`
