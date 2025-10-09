@@ -58,6 +58,8 @@ class RunResponse(BaseModel):
     store_id: str
     store_name: str
     state: str
+    leader_name: str
+    planned_on: str | None
 
     class Config:
         from_attributes = True
