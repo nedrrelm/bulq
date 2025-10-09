@@ -436,6 +436,30 @@
   margin-left: 8px;
 }
 
+/* Cancel run button */
+.run-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.cancel-run-button {
+  background-color: #dc2626;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.cancel-run-button:hover {
+  background-color: #b91c1c;
+}
+
 /* Loading state */
 .run-page p {
   color: var(--color-text-light);

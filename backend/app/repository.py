@@ -73,6 +73,11 @@ class AbstractRepository(ABC):
         """Get all stores."""
         raise NotImplementedError("Subclass must implement get_all_stores")
 
+    @abstractmethod
+    def create_store(self, name: str) -> Store:
+        """Create a new store."""
+        raise NotImplementedError("Subclass must implement create_store")
+
     # ==================== Run Methods ====================
 
     @abstractmethod
@@ -97,6 +102,11 @@ class AbstractRepository(ABC):
         """Get product by ID."""
         raise NotImplementedError("Subclass must implement get_product_by_id")
 
+    @abstractmethod
+    def create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
+        """Create a new product."""
+        raise NotImplementedError("Subclass must implement create_product")
+
     # ==================== Product Bid Methods ====================
 
     @abstractmethod
@@ -114,6 +124,21 @@ class AbstractRepository(ABC):
         will have its user object populated.
         """
         raise NotImplementedError("Subclass must implement get_bids_by_run_with_participations")
+
+    @abstractmethod
+    def create_or_update_bid(self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
+        """Create or update a product bid."""
+        raise NotImplementedError("Subclass must implement create_or_update_bid")
+
+    @abstractmethod
+    def delete_bid(self, participation_id: UUID, product_id: UUID) -> bool:
+        """Delete a product bid."""
+        raise NotImplementedError("Subclass must implement delete_bid")
+
+    @abstractmethod
+    def get_bid(self, participation_id: UUID, product_id: UUID) -> Optional[ProductBid]:
+        """Get a specific bid."""
+        raise NotImplementedError("Subclass must implement get_bid")
 
     # ==================== Auth Methods ====================
 
@@ -249,6 +274,9 @@ class DatabaseRepository(AbstractRepository):
     def get_all_stores(self) -> List[Store]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
+    def create_store(self, name: str) -> Store:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
@@ -261,10 +289,22 @@ class DatabaseRepository(AbstractRepository):
     def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
+    def create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
     def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_bids_by_run_with_participations(self, run_id: UUID) -> List[ProductBid]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def create_or_update_bid(self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def delete_bid(self, participation_id: UUID, product_id: UUID) -> bool:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_bid(self, participation_id: UUID, product_id: UUID) -> Optional[ProductBid]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def verify_password(self, password: str, stored_hash: str) -> bool:
@@ -942,6 +982,78 @@ class MemoryRepository(AbstractRepository):
     def verify_password(self, password: str, stored_hash: str) -> bool:
         # In memory mode, accept any password for ease of testing
         return True
+
+    def create_store(self, name: str) -> Store:
+        """Create a new store."""
+        store = Store(id=uuid4(), name=name)
+        self._stores[store.id] = store
+        return store
+
+    def create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
+        """Create a new product."""
+        from datetime import datetime
+        product = Product(
+            id=uuid4(),
+            store_id=store_id,
+            name=name,
+            base_price=Decimal(str(base_price)),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        self._products[product.id] = product
+        return product
+
+    def create_or_update_bid(self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
+        """Create or update a product bid."""
+        from datetime import datetime
+        # Check if bid already exists
+        existing_bid = self.get_bid(participation_id, product_id)
+        if existing_bid:
+            # Update existing bid
+            existing_bid.quantity = quantity
+            existing_bid.interested_only = interested_only
+            existing_bid.updated_at = datetime.utcnow()
+            return existing_bid
+        else:
+            # Create new bid
+            bid = ProductBid(
+                id=uuid4(),
+                participation_id=participation_id,
+                product_id=product_id,
+                quantity=quantity,
+                interested_only=interested_only,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            # Set up relationships
+            bid.participation = self._participations.get(participation_id)
+            bid.product = self._products.get(product_id)
+            self._bids[bid.id] = bid
+            return bid
+
+    def delete_bid(self, participation_id: UUID, product_id: UUID) -> bool:
+        """Delete a product bid."""
+        # Find the bid to delete
+        bid_to_delete = None
+        for bid_id, bid in self._bids.items():
+            if bid.participation_id == participation_id and bid.product_id == product_id:
+                bid_to_delete = bid_id
+                break
+
+        if bid_to_delete:
+            del self._bids[bid_to_delete]
+            return True
+        return False
+
+    def get_bid(self, participation_id: UUID, product_id: UUID) -> Optional[ProductBid]:
+        """Get a specific bid."""
+        for bid in self._bids.values():
+            if bid.participation_id == participation_id and bid.product_id == product_id:
+                # Set up relationships
+                bid.participation = self._participations.get(participation_id)
+                bid.product = self._products.get(product_id)
+                return bid
+        return None
 
     # Helper methods for test data creation
     def _create_store(self, name: str) -> Store:

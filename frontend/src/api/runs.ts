@@ -70,6 +70,9 @@ export const runsApi = {
   finishAdjusting: (runId: string) =>
     api.post(`/runs/${runId}/finish-adjusting`),
 
+  cancelRun: (runId: string) =>
+    api.post(`/runs/${runId}/cancel`),
+
   getAvailableProducts: (runId: string) =>
     api.get(`/runs/${runId}/available-products`)
 }

@@ -49,7 +49,7 @@ class GroupService(BaseService):
         for group in groups:
             # Get runs for this group
             runs = self.repo.get_runs_by_group(group.id)
-            active_runs = [run for run in runs if run.state != 'completed']
+            active_runs = [run for run in runs if run.state not in ('completed', 'cancelled')]
             completed_runs = [run for run in runs if run.state == 'completed']
 
             # Sort active runs by state (reverse state order)
