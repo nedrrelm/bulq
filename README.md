@@ -187,6 +187,50 @@ The frontend will be available at `http://localhost:3000` and includes a backend
 3. Frontend includes backend connectivity test for integration verification
 4. API documentation available at `/docs` endpoint
 
+## Testing
+
+The backend includes a comprehensive test suite covering all components.
+
+### Running Tests
+
+**Run all tests:**
+```bash
+docker compose run --rm backend uv run --extra dev pytest tests/ -v
+```
+
+**Run specific test file:**
+```bash
+docker compose run --rm backend uv run --extra dev pytest tests/test_state_machine.py -v
+```
+
+**Run with coverage report:**
+```bash
+docker compose run --rm backend uv run --extra dev pytest tests/ --cov=app --cov-report=html
+```
+
+**Run only unit tests:**
+```bash
+docker compose run --rm backend uv run --extra dev pytest -m unit
+```
+
+**Run only integration tests:**
+```bash
+docker compose run --rm backend uv run --extra dev pytest -m integration
+```
+
+### Test Coverage
+
+The test suite includes:
+- ✅ **Authentication tests** - Registration, login, sessions, password hashing
+- ✅ **Repository tests** - Database and in-memory implementations
+- ✅ **Service layer tests** - Business logic for all services
+- ✅ **Route integration tests** - All API endpoints
+- ✅ **State machine tests** - Run state transitions and validation
+- ✅ **Model tests** - Database models, relationships, constraints
+- ✅ **WebSocket tests** - Real-time communication
+
+For detailed testing documentation, see [`backend/tests/README.md`](backend/tests/README.md).
+
 ## Project Status
 
 🚧 Project in initial development phase
