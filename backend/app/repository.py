@@ -99,8 +99,8 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement search_stores")
 
     @abstractmethod
-    def get_all_stores(self) -> List[Store]:
-        """Get all stores."""
+    def get_all_stores(self, limit: int = None, offset: int = 0) -> List[Store]:
+        """Get all stores (optionally paginated)."""
         raise NotImplementedError("Subclass must implement get_all_stores")
 
     @abstractmethod
@@ -129,6 +129,11 @@ class AbstractRepository(ABC):
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
         """Get all runs for a group."""
         raise NotImplementedError("Subclass must implement get_runs_by_group")
+
+    @abstractmethod
+    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> List[Run]:
+        """Get completed and cancelled runs for a group (paginated)."""
+        raise NotImplementedError("Subclass must implement get_completed_cancelled_runs_by_group")
 
     # ==================== Product Methods ====================
 
@@ -427,7 +432,7 @@ class DatabaseRepository(AbstractRepository):
     def search_stores(self, query: str) -> List[Store]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
-    def get_all_stores(self) -> List[Store]:
+    def get_all_stores(self, limit: int = None, offset: int = 0) -> List[Store]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def create_store(self, name: str) -> Store:
@@ -443,6 +448,9 @@ class DatabaseRepository(AbstractRepository):
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> List[Run]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
@@ -1210,8 +1218,13 @@ class MemoryRepository(AbstractRepository):
             if query_lower in store.name.lower()
         ]
 
-    def get_all_stores(self) -> List[Store]:
-        return list(self._stores.values())
+    def get_all_stores(self, limit: int = None, offset: int = 0) -> List[Store]:
+        stores = list(self._stores.values())
+        # Sort by name for consistent ordering
+        stores.sort(key=lambda s: s.name)
+        if limit is not None:
+            return stores[offset:offset + limit]
+        return stores
 
     def get_store_by_id(self, store_id: UUID) -> Optional[Store]:
         return self._stores.get(store_id)
@@ -1242,6 +1255,24 @@ class MemoryRepository(AbstractRepository):
 
     def get_runs_by_group(self, group_id: UUID) -> List[Run]:
         return [run for run in self._runs.values() if run.group_id == group_id]
+
+    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> List[Run]:
+        """Get completed and cancelled runs for a group (paginated)."""
+        from datetime import datetime, timezone
+        # Get all completed and cancelled runs for the group
+        runs = [run for run in self._runs.values()
+                if run.group_id == group_id and run.state in ('completed', 'cancelled')]
+        # Sort by completion/cancellation timestamp (most recent first)
+        # Use completed_at for completed runs, cancelled_at for cancelled runs
+        def get_timestamp(run):
+            if run.state == 'completed' and run.completed_at:
+                return run.completed_at
+            elif run.state == 'cancelled' and run.cancelled_at:
+                return run.cancelled_at
+            return datetime.min.replace(tzinfo=timezone.utc)
+
+        runs.sort(key=get_timestamp, reverse=True)
+        return runs[offset:offset + limit]
 
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
         return [product for product in self._products.values() if product.store_id == store_id]
@@ -1609,9 +1640,29 @@ class MemoryRepository(AbstractRepository):
         return results
 
     def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
-        """Create a new encountered price."""
-        from datetime import datetime
+        """Create a new encountered price. Deduplicates by same product, store, and day."""
+        from datetime import datetime, date
 
+        today = date.today()
+
+        # Check if we already have a price for this product at this store today
+        for ep in self._encountered_prices.values():
+            if (ep.product_id == product_id and
+                ep.store_id == store_id and
+                ep.encountered_at.date() == today):
+                # Update the existing entry instead of creating a new one
+                logger.debug(
+                    f"Encountered price already exists for today, updating",
+                    extra={"product_id": str(product_id), "store_id": str(store_id), "date": str(today)}
+                )
+                ep.price = price
+                ep.notes = notes if notes else ep.notes
+                ep.encountered_at = datetime.now()
+                if user_id:
+                    ep.encountered_by = user_id
+                return ep
+
+        # No existing entry for today, create new one
         ep = EncounteredPrice(
             id=uuid4(),
             product_id=product_id,

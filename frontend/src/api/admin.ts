@@ -28,10 +28,12 @@ export interface AdminStore {
 }
 
 export const adminApi = {
-  async getUsers(search?: string, verified?: boolean): Promise<AdminUser[]> {
+  async getUsers(search?: string, verified?: boolean, limit: number = 100, offset: number = 0): Promise<AdminUser[]> {
     const params = new URLSearchParams()
     if (search) params.append('search', search)
     if (verified !== undefined && verified !== null) params.append('verified', verified.toString())
+    params.append('limit', limit.toString())
+    params.append('offset', offset.toString())
 
     return await api.get<AdminUser[]>(`/admin/users?${params}`)
   },
@@ -40,10 +42,12 @@ export const adminApi = {
     return await api.post<AdminUser>(`/admin/users/${userId}/verify`)
   },
 
-  async getProducts(search?: string, verified?: boolean): Promise<AdminProduct[]> {
+  async getProducts(search?: string, verified?: boolean, limit: number = 100, offset: number = 0): Promise<AdminProduct[]> {
     const params = new URLSearchParams()
     if (search) params.append('search', search)
     if (verified !== undefined && verified !== null) params.append('verified', verified.toString())
+    params.append('limit', limit.toString())
+    params.append('offset', offset.toString())
 
     return await api.get<AdminProduct[]>(`/admin/products?${params}`)
   },
@@ -52,10 +56,12 @@ export const adminApi = {
     return await api.post<AdminProduct>(`/admin/products/${productId}/verify`)
   },
 
-  async getStores(search?: string, verified?: boolean): Promise<AdminStore[]> {
+  async getStores(search?: string, verified?: boolean, limit: number = 100, offset: number = 0): Promise<AdminStore[]> {
     const params = new URLSearchParams()
     if (search) params.append('search', search)
     if (verified !== undefined && verified !== null) params.append('verified', verified.toString())
+    params.append('limit', limit.toString())
+    params.append('offset', offset.toString())
 
     return await api.get<AdminStore[]>(`/admin/stores?${params}`)
   },

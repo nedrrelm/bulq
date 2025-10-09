@@ -26,10 +26,12 @@ def require_admin(current_user: User = Depends(require_auth)) -> User:
 async def get_users(
     search: Optional[str] = Query(None),
     verified: Optional[bool] = Query(None),
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ) -> List[Dict[str, Any]]:
-    """Get all users with optional search and filtering."""
+    """Get all users with optional search and filtering (paginated, max 100 per page)."""
     repo = get_repository(db)
     users = repo.get_all_users()
 
@@ -46,6 +48,12 @@ async def get_users(
     if verified is not None:
         users = [u for u in users if u.verified == verified]
 
+    # Sort by created_at (most recent first) or by name if no created_at
+    users.sort(key=lambda u: u.created_at if u.created_at else datetime.min, reverse=True)
+
+    # Apply pagination
+    paginated_users = users[offset:offset + limit]
+
     return [
         {
             "id": str(u.id),
@@ -55,7 +63,7 @@ async def get_users(
             "is_admin": u.is_admin,
             "created_at": u.created_at.isoformat() if u.created_at else None
         }
-        for u in users
+        for u in paginated_users
     ]
 
 
@@ -87,10 +95,12 @@ async def toggle_user_verification(
 async def get_products(
     search: Optional[str] = Query(None),
     verified: Optional[bool] = Query(None),
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ) -> List[Dict[str, Any]]:
-    """Get all products with optional search and filtering."""
+    """Get all products with optional search and filtering (paginated, max 100 per page)."""
     repo = get_repository(db)
     products = repo.get_all_products()
 
@@ -107,6 +117,12 @@ async def get_products(
     if verified is not None:
         products = [p for p in products if p.verified == verified]
 
+    # Sort by created_at (most recent first) or by name if no created_at
+    products.sort(key=lambda p: p.created_at if p.created_at else datetime.min, reverse=True)
+
+    # Apply pagination
+    paginated_products = products[offset:offset + limit]
+
     return [
         {
             "id": str(p.id),
@@ -116,7 +132,7 @@ async def get_products(
             "verified": p.verified,
             "created_at": p.created_at.isoformat() if p.created_at else None
         }
-        for p in products
+        for p in paginated_products
     ]
 
 
@@ -154,10 +170,12 @@ async def toggle_product_verification(
 async def get_stores(
     search: Optional[str] = Query(None),
     verified: Optional[bool] = Query(None),
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ) -> List[Dict[str, Any]]:
-    """Get all stores with optional search and filtering."""
+    """Get all stores with optional search and filtering (paginated, max 100 per page)."""
     repo = get_repository(db)
     stores = repo.get_all_stores()
 
@@ -175,6 +193,12 @@ async def get_stores(
     if verified is not None:
         stores = [s for s in stores if s.verified == verified]
 
+    # Sort by created_at (most recent first) or by name if no created_at
+    stores.sort(key=lambda s: s.created_at if s.created_at else datetime.min, reverse=True)
+
+    # Apply pagination
+    paginated_stores = stores[offset:offset + limit]
+
     return [
         {
             "id": str(s.id),
@@ -184,7 +208,7 @@ async def get_stores(
             "verified": s.verified,
             "created_at": s.created_at.isoformat() if s.created_at else None
         }
-        for s in stores
+        for s in paginated_stores
     ]
 
 
