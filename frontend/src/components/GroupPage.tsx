@@ -6,6 +6,7 @@ import type { GroupDetails } from '../api'
 import NewRunPopup from './NewRunPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { useAuth } from '../contexts/AuthContext'
 import { getStateLabel } from '../utils/runStates'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
@@ -21,9 +22,10 @@ interface GroupPageProps {
   groupId: string
   onBack: () => void
   onRunSelect: (runId: string) => void
+  onManageSelect?: (groupId: string) => void
 }
 
-export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPageProps) {
+export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect }: GroupPageProps) {
   const [runs, setRuns] = useState<Run[]>([])
   const [group, setGroup] = useState<GroupDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -31,6 +33,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
   const newRunModal = useModal()
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,8 +82,16 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
           ? { ...run, state: message.data.new_state || message.data.state }
           : run
       ))
+    } else if (message.type === 'member_removed') {
+      // If current user was removed, redirect to main page
+      if (user && message.data.removed_user_id === user.id) {
+        showToast('You have been removed from this group', 'error')
+        setTimeout(() => {
+          window.location.href = '/'
+        }, 1500)
+      }
     }
-  }, [groupId])
+  }, [groupId, user, showToast])
 
   useWebSocket(
     groupId ? `${WS_BASE_URL}/ws/groups/${groupId}` : null,
@@ -120,37 +131,10 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
     onRunSelect(runId)
   }
 
-  const handleCopyInviteLink = () => {
-    if (!group) return
-    const inviteUrl = `${window.location.origin}/invite/${group.invite_token}`
-    navigator.clipboard.writeText(inviteUrl)
-      .then(() => {
-        showToast('Invite link copied to clipboard!', 'success')
-      })
-      .catch(err => {
-        console.error('Failed to copy:', err)
-        showToast('Failed to copy invite link', 'error')
-      })
-  }
-
-  const handleRegenerateToken = async () => {
-    if (!group) return
-
-    const regenerateAction = async () => {
-      try {
-        const data = await groupsApi.regenerateInvite(groupId)
-        setGroup({ ...group, invite_token: data.invite_token })
-        showToast('Invite link regenerated successfully!', 'success')
-      } catch (err) {
-        showToast(err instanceof ApiError ? err.message : 'Failed to regenerate invite link', 'error')
-      }
+  const handleManageClick = () => {
+    if (onManageSelect) {
+      onManageSelect(groupId)
     }
-
-    showConfirm(
-      'Are you sure you want to regenerate the invite link? The old link will stop working.',
-      regenerateAction,
-      { danger: true }
-    )
   }
 
   return (
@@ -173,14 +157,9 @@ export default function GroupPage({ groupId, onBack, onRunSelect }: GroupPagePro
         <button onClick={handleNewRunClick} className="new-run-button">
           + New Run
         </button>
-        <div className="invite-actions">
-          <button onClick={handleCopyInviteLink} className="btn btn-secondary">
-            📋 Copy Invite Link
-          </button>
-          <button onClick={handleRegenerateToken} className="btn btn-secondary">
-            🔄 Regenerate Link
-          </button>
-        </div>
+        <button onClick={handleManageClick} className="btn btn-secondary">
+          ⚙️ Manage Group
+        </button>
       </div>
 
       {loading && <p>Loading runs...</p>}
