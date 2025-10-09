@@ -21,6 +21,7 @@ const DistributionPage = lazy(() => import('./components/DistributionPage'))
 const ProductPage = lazy(() => import('./components/ProductPage'))
 const StorePage = lazy(() => import('./components/StorePage'))
 const NotificationPage = lazy(() => import('./pages/NotificationPage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
 
 // Wrapper components that use params and navigation
 function GroupPageWrapper() {
@@ -200,6 +201,14 @@ function NotificationPageWrapper() {
   )
 }
 
+function AdminPageWrapper() {
+  return (
+    <AppLayout>
+      <AdminPage />
+    </AppLayout>
+  )
+}
+
 // Shared layout component with header
 function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -355,6 +364,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="user-info">
           <NotificationBadge />
+          {user.is_admin && (
+            <button onClick={() => navigate('/admin')} className="admin-button">
+              Admin
+            </button>
+          )}
           <span>Welcome, {user.name}!</span>
           <button onClick={logout} className="logout-button">
             Logout
@@ -426,6 +440,7 @@ function AppRoutes() {
         <Route path="/products/:productId" element={<ProductPageWrapper />} />
         <Route path="/stores/:storeId" element={<StorePageWrapper />} />
         <Route path="/notifications" element={<NotificationPageWrapper />} />
+        <Route path="/admin" element={<AdminPageWrapper />} />
         <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />
       </Routes>
     </Suspense>

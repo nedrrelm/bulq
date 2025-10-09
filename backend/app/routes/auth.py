@@ -30,6 +30,7 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: str
+    is_admin: bool = False
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
     """Get current user from session cookie."""
@@ -138,7 +139,8 @@ async def login(user_data: UserLogin, response: Response, db: Session = Depends(
     return UserResponse(
         id=str(user.id),
         name=user.name,
-        email=user.email
+        email=user.email,
+        is_admin=user.is_admin
     )
 
 @router.post("/logout")
@@ -158,5 +160,6 @@ async def get_current_user_info(current_user: User = Depends(require_auth)):
     return UserResponse(
         id=str(current_user.id),
         name=current_user.name,
-        email=current_user.email
+        email=current_user.email,
+        is_admin=current_user.is_admin
     )
