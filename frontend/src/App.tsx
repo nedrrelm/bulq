@@ -373,6 +373,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { user, login, loading } = useAuth()
+  const navigate = useNavigate()
 
   // Show loading state while checking auth
   if (loading) {
@@ -394,39 +395,40 @@ function AppRoutes() {
 
   // Show login page if not authenticated
   if (!user) {
-    return <Login onLogin={login} />
+    return <Login onLogin={(userData) => {
+      login(userData)
+      navigate('/')
+    }} />
   }
 
   return (
-    <BrowserRouter>
-      <Suspense fallback={
-        <div className="app">
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            fontSize: '1.2rem',
-            color: 'var(--color-text)'
-          }}>
-            Loading...
-          </div>
+    <Suspense fallback={
+      <div className="app">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '1.2rem',
+          color: 'var(--color-text)'
+        }}>
+          Loading...
         </div>
-      }>
-        <Routes>
-          <Route path="/" element={<DashboardWrapper />} />
-          <Route path="/groups/:groupId" element={<GroupPageWrapper />} />
-          <Route path="/groups/:groupId/manage" element={<ManageGroupPageWrapper />} />
-          <Route path="/runs/:runId" element={<RunPageWrapper />} />
-          <Route path="/shopping/:runId" element={<ShoppingPageWrapper />} />
-          <Route path="/distribution/:runId" element={<DistributionPageWrapper />} />
-          <Route path="/products/:productId" element={<ProductPageWrapper />} />
-          <Route path="/stores/:storeId" element={<StorePageWrapper />} />
-          <Route path="/notifications" element={<NotificationPageWrapper />} />
-          <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+      </div>
+    }>
+      <Routes>
+        <Route path="/" element={<DashboardWrapper />} />
+        <Route path="/groups/:groupId" element={<GroupPageWrapper />} />
+        <Route path="/groups/:groupId/manage" element={<ManageGroupPageWrapper />} />
+        <Route path="/runs/:runId" element={<RunPageWrapper />} />
+        <Route path="/shopping/:runId" element={<ShoppingPageWrapper />} />
+        <Route path="/distribution/:runId" element={<DistributionPageWrapper />} />
+        <Route path="/products/:productId" element={<ProductPageWrapper />} />
+        <Route path="/stores/:storeId" element={<StorePageWrapper />} />
+        <Route path="/notifications" element={<NotificationPageWrapper />} />
+        <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />
+      </Routes>
+    </Suspense>
   )
 }
 
@@ -434,7 +436,9 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <AppRoutes />
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
       </NotificationProvider>
     </AuthProvider>
   )

@@ -35,6 +35,24 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
   const reconnectAttemptsRef = useRef(0)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
 
+  // Store callbacks in refs to avoid reconnecting when they change
+  const onMessageRef = useRef(onMessage)
+  const onConnectRef = useRef(onConnect)
+  const onDisconnectRef = useRef(onDisconnect)
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMessageRef.current = onMessage
+  }, [onMessage])
+
+  useEffect(() => {
+    onConnectRef.current = onConnect
+  }, [onConnect])
+
+  useEffect(() => {
+    onDisconnectRef.current = onDisconnect
+  }, [onDisconnect])
+
   const connect = useCallback(() => {
     if (!url) return
 
@@ -50,7 +68,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
       ws.onopen = () => {
         setIsConnected(true)
         reconnectAttemptsRef.current = 0
-        if (onConnect) onConnect()
+        if (onConnectRef.current) onConnectRef.current()
       }
 
       ws.onmessage = (event) => {
@@ -62,7 +80,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
         try {
           const message: WebSocketMessage = JSON.parse(event.data)
           setLastMessage(message)
-          if (onMessage) onMessage(message)
+          if (onMessageRef.current) onMessageRef.current(message)
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err)
         }
@@ -80,7 +98,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
       ws.onclose = (event) => {
         setIsConnected(false)
         wsRef.current = null
-        if (onDisconnect) onDisconnect()
+        if (onDisconnectRef.current) onDisconnectRef.current()
 
         // Don't reconnect on authentication errors (code 1008) or normal closure (code 1000)
         // Authentication errors mean the session is invalid and reconnecting won't help
@@ -100,7 +118,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
     } catch (err) {
       console.error('Failed to create WebSocket connection:', err)
     }
-  }, [url, onConnect, onMessage, onDisconnect, reconnectInterval, maxReconnectAttempts])
+  }, [url, reconnectInterval, maxReconnectAttempts])
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
