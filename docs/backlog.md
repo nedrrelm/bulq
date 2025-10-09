@@ -51,36 +51,6 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 ---
 
-### Session & Authentication Infrastructure
-**Status**: Critical (before production)
-**Affected files**: `app/auth.py`, `docker-compose.yml`
-
-**Problem:** Sessions stored in-memory dictionary. All users logged out on server restart.
-
-**Current code (auth.py:8):**
-```python
-sessions: Dict[str, dict] = {}
-```
-
-**Solution:** Use Redis for persistent session storage:
-```python
-import redis
-redis_client = redis.Redis(host='redis', port=6379, decode_responses=True)
-
-def create_session(user_id: str) -> str:
-    session_token = secrets.token_urlsafe(32)
-    redis_client.setex(
-        f"session:{session_token}",
-        SESSION_EXPIRY_HOURS * 3600,
-        json.dumps({"user_id": user_id, ...})
-    )
-    return session_token
-```
-
-Add Redis service to docker-compose.yml.
-
----
-
 ### Security & Infrastructure
 **Status**: Critical (before production)
 **Affected files**: `app/main.py`, `app/routes/auth.py`, `Caddyfile`, `docker-compose.yml`
@@ -113,113 +83,70 @@ Add Redis service to docker-compose.yml.
 
 ---
 
-## ✨ Feature Requests
+## ✨ Feature Requests 
 
----
+## Expand entities with necessary fields:
 
-### Add New Store
-**Status**: Planned
-**Affected files**: Frontend components, `app/routes/stores.py`
+- Product:
+  - brand
+  - unit
+  - product category (rice > basmati rice, jasmin rice) - separate entity
+  - allow multiple stores
+  - price not mandatory, only estimate
+  - verified
+  - created at
+  - created by
+  - verified at
+  - verified by
+- Store:
+  - address
+  - chain
+  - opening hours
+  - verified
+  - created at
+  - created by
+  - verified at
+  - verified by
+- User:
+  - is_admin
+  - username (will eventually replace email)
+  - verified
+  - created at
+- Group:
+  - created at
+- GroupMembership:
+  - is_group_admin
+- Run:
+  - adjusted_at
+  - state to enum (necessary?)
+- Run participation:
+  - joined_at
+- ProductBid:
+  - picked_up_at
+- ShoppingListItem:
+  - encountered_price to separate entity
+  - remove updated_encountered_at (since encountered price will become separate entity)
+  - purchased_at
 
-**Description:** Allow users to add new stores to the platform.
+- verified field in the store and product allows admins to confirm a separate entity exists, this avoids duplicates
 
-**Current state:**
-- ✅ Backend route exists: `POST /stores/create`
-- ✅ Service method exists: `StoreService.create_store(name)`
-- ❌ No frontend UI to create stores
 
-**Solution:**
-1. Add "Add Store" button/form in frontend (possibly in Groups page or separate Stores page)
-2. Form with single input field: Store name
-3. Validation: Store name required, minimum 2 characters
-4. On success: Add store to local store list, show success message
-5. Consider: Should all users be able to add stores, or only admins?
 
-**Considerations:**
-- Should stores have additional fields (address, type, etc.)?
-- How to handle duplicate store names?
-- Should stores be verified/approved before appearing for all users?
+## Admin console
 
----
+Allow verifying users, stores and products
 
-### Add New Product
-**Status**: Planned
-**Affected files**: Frontend components, `app/routes/products.py` (to be created)
+## Add Store page:
 
-**Description:** Allow users to add new products to stores.
+Show available products
 
-**Current state:**
-- ✅ Repository method exists: `repo.create_product(store_id, name, base_price)`
-- ✅ Service method exists: `ProductService.create_product(store_id, name, base_price)`
-- ❌ No backend route for creating products
-- ❌ No frontend UI to create products
+## Group admins:
 
-**Solution:**
+Can remove users from group
 
-**Backend:**
-1. Create `POST /products/create` route in new `app/routes/products.py`:
-   ```python
-   @router.post("/create")
-   async def create_product(
-       request: CreateProductRequest,
-       current_user: User = Depends(require_auth),
-       db: Session = Depends(get_db)
-   ):
-       repo = get_repository(db)
-       service = ProductService(repo)
-       product = service.create_product(
-           store_id=request.store_id,
-           name=request.name,
-           base_price=request.base_price
-       )
-       return {"id": str(product.id), "name": product.name, ...}
-   ```
+## Consolidate search bar
 
-**Frontend:**
-1. Add "Add Product" button/form (possibly in product search results or store-specific page)
-2. Form fields:
-   - Store selection (dropdown)
-   - Product name (text input)
-   - Base price (number input)
-3. Validation:
-   - All fields required
-   - Price must be positive
-   - Price cannot be zero
-4. On success: Product available for bidding immediately
-
-**Considerations:**
-- Should products have categories/tags?
-- Should products have descriptions?
-- How to handle duplicate product names in same store?
-- Should there be product moderation/approval?
-- Consider adding product units (e.g., "per lb", "per item")
-
----
-
-### Allow Run Leader to Cancel Run at Any Stage
-**Status**: Planned
-**Affected files**: `app/services/run_service.py`, `app/routes/runs.py`, frontend
-
-**Problem:** Runs can only be cancelled before the `distributing` state. Leaders have no way to cancel once in certain stages.
-
-**Solution:**
-1. Backend: Add `cancel_run` endpoint allowing leader to cancel from any state
-2. Update state machine to allow transitions to `cancelled` from all states
-3. Add business logic for different stages:
-   - Before `shopping`: Simple state change
-   - During `shopping`: Handle partial purchases
-   - During `distributing`: Handle returns/refunds
-4. Frontend: Add "Cancel Run" button visible only to leader
-5. Add confirmation dialog with consequences based on current state
-6. Consider adding `cancellation_reason` field
-
-**State machine change in `app/run_state.py`:**
-```python
-# Add transitions from all states to cancelled
-state_machine.add_transition('cancel', '*', 'cancelled')
-```
-
----
+Allow for searching for products, stores and groups
 
 ## 🔧 Future Enhancements
 
@@ -255,15 +182,6 @@ async def get_items(skip: int = 0, limit: int = 100):
 
 ---
 
-### Product Families
-**Status**: Future exploration
-
-**Description:** Allow using general terms (e.g., "rice") instead of specific variants (e.g., "sushi rice", "jasmine rice", "basmati rice").
-
-Creates a hierarchy/grouping system for products.
-
----
-
 ## 🎨 Code Quality Improvements
 
 ---
@@ -277,10 +195,15 @@ Creates a hierarchy/grouping system for products.
 - Validate API responses match expected shape
 - Validate UUIDs before API calls
 
+
+
+## Separate css and tsx on frontend
+
+
+
 ---
 
 ## 📝 Notes
 
 - **Repository Pattern**: Keep MemoryRepository for development/testing, but ensure DatabaseRepository is primary for production
-- **WebSocket Support**: Already planned in architecture docs - implement after core features stable
 - **Mobile App**: Native Kotlin Android app planned after web platform stable
