@@ -9,6 +9,7 @@ from ..models import User
 from ..auth import hash_password, create_session, get_session, delete_session
 from ..repository import get_repository
 from ..exceptions import UnauthorizedError, BadRequestError
+from ..config import SESSION_EXPIRY_HOURS
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 logger = logging.getLogger(__name__)
@@ -82,9 +83,11 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
     response.set_cookie(
         key="session_token",
         value=session_token,
+        max_age=SESSION_EXPIRY_HOURS * 3600,  # Convert hours to seconds
         httponly=True,
         secure=False,  # Set to True in production with HTTPS
-        samesite="lax"
+        samesite="lax",
+        path="/"
     )
 
     logger.info(
@@ -115,14 +118,21 @@ async def login(user_data: UserLogin, response: Response, db: Session = Depends(
     response.set_cookie(
         key="session_token",
         value=session_token,
+        max_age=SESSION_EXPIRY_HOURS * 3600,  # Convert hours to seconds
         httponly=True,
         secure=False,  # Set to True in production with HTTPS
-        samesite="lax"
+        samesite="lax",
+        path="/"
     )
 
     logger.info(
-        f"User logged in successfully",
-        extra={"user_id": str(user.id), "email": user.email}
+        f"User logged in successfully - Session cookie set",
+        extra={
+            "user_id": str(user.id),
+            "email": user.email,
+            "session_token_length": len(session_token),
+            "max_age": SESSION_EXPIRY_HOURS * 3600
+        }
     )
 
     return UserResponse(

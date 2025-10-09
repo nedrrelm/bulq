@@ -11,7 +11,9 @@ import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
 import Toast from './Toast'
+import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
+import { useConfirm } from '../hooks/useConfirm'
 
 // Using RunDetail type from API layer
 type Product = RunDetail['products'][0]
@@ -158,6 +160,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
   const { toast, showToast, hideToast } = useToast()
+  const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
   const fetchRunDetails = async (silent = false) => {
     try {
@@ -390,22 +393,26 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     }
   }
 
-  const handleCancelRun = async () => {
-    if (!window.confirm('Are you sure you want to cancel this run? This action cannot be undone.')) {
-      return
+  const handleCancelRun = () => {
+    const cancelAction = async () => {
+      try {
+        await runsApi.cancelRun(runId)
+        showToast('Run cancelled successfully', 'success')
+        // Navigate back to group page after a short delay
+        setTimeout(() => {
+          onBack(run?.group_id)
+        }, 1500)
+      } catch (err) {
+        console.error('Error cancelling run:', err)
+        showToast(err instanceof ApiError ? err.message : 'Failed to cancel run. Please try again.', 'error')
+      }
     }
 
-    try {
-      await runsApi.cancelRun(runId)
-      showToast('Run cancelled successfully', 'success')
-      // Navigate back to group page after a short delay
-      setTimeout(() => {
-        onBack(run?.group_id)
-      }, 1500)
-    } catch (err) {
-      console.error('Error cancelling run:', err)
-      showToast(err instanceof ApiError ? err.message : 'Failed to cancel run. Please try again.', 'error')
-    }
+    showConfirm(
+      'Are you sure you want to cancel this run? This action cannot be undone.',
+      cancelAction,
+      { danger: true }
+    )
   }
 
   if (loading) {
@@ -749,6 +756,15 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
           message={toast.message}
           type={toast.type}
           onClose={hideToast}
+        />
+      )}
+
+      {confirmState && (
+        <ConfirmDialog
+          message={confirmState.message}
+          onConfirm={handleConfirm}
+          onCancel={hideConfirm}
+          danger={confirmState.danger}
         />
       )}
     </div>

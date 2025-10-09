@@ -23,9 +23,15 @@ export default function ConfirmDialog({
 
   useModalFocusTrap(modalRef)
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onCancel()
+    }
+  }
+
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div ref={modalRef} className="modal modal-sm confirm-dialog" onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal-sm confirm-dialog" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
         <h3>Confirm Action</h3>
         <p className="confirm-message">{message}</p>
         <div className="button-group">

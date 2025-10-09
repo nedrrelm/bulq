@@ -26,22 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // Check if session_token cookie exists before making request
-      const hasSessionCookie = document.cookie.split(';').some(cookie =>
-        cookie.trim().startsWith('session_token=')
-      )
-
-      if (!hasSessionCookie) {
-        // No session cookie, so user is definitely not logged in
-        setLoading(false)
-        return
-      }
-
+      // Always try to fetch current user - the browser will automatically
+      // send the httpOnly cookie with the request
       try {
         const userData = await authApi.getCurrentUser()
         setUser(userData)
       } catch (err) {
-        // User not logged in, which is fine
+        // User not logged in (or session expired), which is fine
+        // The user will see the login page
       } finally {
         setLoading(false)
       }
