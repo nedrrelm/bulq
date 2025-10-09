@@ -192,6 +192,16 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
           // Update product with new bid or updated bid
           setRun(prev => {
             if (!prev) return prev
+
+            // Check if product exists in the run
+            const productExists = prev.products.some(p => p.id === message.data.product_id)
+
+            // If product doesn't exist (newly added), refetch run details
+            if (!productExists) {
+              fetchRunDetails(true)
+              return prev
+            }
+
             return {
               ...prev,
               products: prev.products.map(p => {
