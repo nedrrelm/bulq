@@ -62,9 +62,29 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement create_group")
 
     @abstractmethod
-    def add_group_member(self, group_id: UUID, user: User) -> bool:
+    def add_group_member(self, group_id: UUID, user: User, is_group_admin: bool = False) -> bool:
         """Add a user to a group."""
         raise NotImplementedError("Subclass must implement add_group_member")
+
+    @abstractmethod
+    def remove_group_member(self, group_id: UUID, user_id: UUID) -> bool:
+        """Remove a user from a group."""
+        raise NotImplementedError("Subclass must implement remove_group_member")
+
+    @abstractmethod
+    def is_user_group_admin(self, group_id: UUID, user_id: UUID) -> bool:
+        """Check if a user is an admin of a group."""
+        raise NotImplementedError("Subclass must implement is_user_group_admin")
+
+    @abstractmethod
+    def get_group_members_with_admin_status(self, group_id: UUID) -> List[Dict]:
+        """Get all members of a group with their admin status."""
+        raise NotImplementedError("Subclass must implement get_group_members_with_admin_status")
+
+    @abstractmethod
+    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Optional[Group]:
+        """Update whether a group allows joining via invite link."""
+        raise NotImplementedError("Subclass must implement update_group_joining_allowed")
 
     # ==================== Store Methods ====================
 
@@ -305,7 +325,19 @@ class DatabaseRepository(AbstractRepository):
     def create_group(self, name: str, created_by: UUID) -> Group:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
-    def add_group_member(self, group_id: UUID, user: User) -> bool:
+    def add_group_member(self, group_id: UUID, user: User, is_group_admin: bool = False) -> bool:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def remove_group_member(self, group_id: UUID, user_id: UUID) -> bool:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def is_user_group_admin(self, group_id: UUID, user_id: UUID) -> bool:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_group_members_with_admin_status(self, group_id: UUID) -> List[Dict]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Optional[Group]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def search_stores(self, query: str) -> List[Store]:
@@ -427,6 +459,7 @@ class MemoryRepository(AbstractRepository):
         self._users_by_email: Dict[str, User] = {}
         self._groups: Dict[UUID, Group] = {}
         self._group_memberships: Dict[UUID, List[UUID]] = {}  # group_id -> [user_ids]
+        self._group_admin_status: Dict[tuple, bool] = {}  # (group_id, user_id) -> is_admin
         self._stores: Dict[UUID, Store] = {}
         self._runs: Dict[UUID, Run] = {}
         self._products: Dict[UUID, Product] = {}
@@ -455,9 +488,9 @@ class MemoryRepository(AbstractRepository):
         self.add_group_member(friends_group.id, alice)
         self.add_group_member(friends_group.id, bob)
         self.add_group_member(friends_group.id, carol)
-        self.add_group_member(friends_group.id, test_user)
+        self.add_group_member(friends_group.id, test_user, is_group_admin=True)  # test user is admin
 
-        self.add_group_member(work_group.id, bob)
+        self.add_group_member(work_group.id, bob, is_group_admin=True)  # bob is admin of work group
         self.add_group_member(work_group.id, carol)
 
         # Create test stores
@@ -993,11 +1026,50 @@ class MemoryRepository(AbstractRepository):
         self._group_memberships[group.id] = []
         return group
 
-    def add_group_member(self, group_id: UUID, user: User) -> bool:
+    def add_group_member(self, group_id: UUID, user: User, is_group_admin: bool = False) -> bool:
         if group_id in self._group_memberships and user.id not in self._group_memberships[group_id]:
             self._group_memberships[group_id].append(user.id)
+            self._group_admin_status[(group_id, user.id)] = is_group_admin
             return True
         return False
+
+    def remove_group_member(self, group_id: UUID, user_id: UUID) -> bool:
+        """Remove a user from a group."""
+        if group_id in self._group_memberships and user_id in self._group_memberships[group_id]:
+            self._group_memberships[group_id].remove(user_id)
+            # Remove admin status
+            key = (group_id, user_id)
+            if key in self._group_admin_status:
+                del self._group_admin_status[key]
+            return True
+        return False
+
+    def is_user_group_admin(self, group_id: UUID, user_id: UUID) -> bool:
+        """Check if a user is an admin of a group."""
+        return self._group_admin_status.get((group_id, user_id), False)
+
+    def get_group_members_with_admin_status(self, group_id: UUID) -> List[Dict]:
+        """Get all members of a group with their admin status."""
+        member_ids = self._group_memberships.get(group_id, [])
+        members = []
+        for user_id in member_ids:
+            user = self._users.get(user_id)
+            if user:
+                members.append({
+                    'id': str(user.id),
+                    'name': user.name,
+                    'email': user.email,
+                    'is_group_admin': self._group_admin_status.get((group_id, user_id), False)
+                })
+        return members
+
+    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Optional[Group]:
+        """Update whether a group allows joining via invite link."""
+        group = self._groups.get(group_id)
+        if group:
+            group.is_joining_allowed = is_joining_allowed
+            return group
+        return None
 
     def search_stores(self, query: str) -> List[Store]:
         query_lower = query.lower()

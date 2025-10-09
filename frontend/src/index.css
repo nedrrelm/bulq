@@ -14,9 +14,12 @@
   --color-success: #10b981;
   --color-success-hover: #059669;
   --color-success-light: #ecfdf5;
+  --color-success-dark: #059669;
   --color-danger: #ef4444;
   --color-danger-hover: #dc2626;
   --color-danger-light: #fef2f2;
+  --color-error: #ef4444;
+  --color-error-dark: #dc2626;
   --color-warning: #f59e0b;
   --color-warning-hover: #d97706;
   --color-warning-light: #fffbeb;

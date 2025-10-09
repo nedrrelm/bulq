@@ -170,3 +170,49 @@ async def join_group_by_invite(
     service = GroupService(repo)
 
     return service.join_group(invite_token, current_user)
+
+@router.get("/{group_id}/members")
+async def get_group_members(
+    group_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Get all members of a group with their admin status."""
+    repo = get_repository(db)
+    service = GroupService(repo)
+
+    try:
+        return service.get_group_members(group_id, current_user)
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/{group_id}/members/{member_id}")
+async def remove_group_member(
+    group_id: str,
+    member_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Remove a member from a group (admin only)."""
+    repo = get_repository(db)
+    service = GroupService(repo)
+
+    try:
+        return service.remove_member(group_id, member_id, current_user)
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/{group_id}/toggle-joining")
+async def toggle_group_joining(
+    group_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Toggle whether a group allows joining via invite link (admin only)."""
+    repo = get_repository(db)
+    service = GroupService(repo)
+
+    try:
+        return service.toggle_joining_allowed(group_id, current_user)
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))

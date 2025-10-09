@@ -44,6 +44,7 @@ class Group(Base):
     name = Column(String, nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     invite_token = Column(String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()), index=True)
+    is_joining_allowed = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     creator = relationship("User", back_populates="created_groups")

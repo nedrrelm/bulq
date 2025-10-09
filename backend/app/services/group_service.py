@@ -8,6 +8,7 @@ from uuid import UUID
 from .base_service import BaseService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..models import User
+from ..websocket_manager import manager
 
 logger = logging.getLogger(__name__)
 
@@ -320,6 +321,14 @@ class GroupService(BaseService):
             logger.warning(f"Invalid invite token used for join")
             raise NotFoundError("Group", invite_token)
 
+        # Check if joining is allowed
+        if not group.is_joining_allowed:
+            logger.warning(
+                f"Attempted to join group with joining disabled",
+                extra={"user_id": str(user.id), "group_id": str(group.id)}
+            )
+            raise ForbiddenError("This group is not accepting new members")
+
         # Check if user is already a member
         user_groups = self.repo.get_user_groups(user)
         if any(g.id == group.id for g in user_groups):
@@ -343,8 +352,184 @@ class GroupService(BaseService):
             extra={"user_id": str(user.id), "group_id": str(group.id)}
         )
 
+        # Broadcast WebSocket event to group room
+        room_id = f"group:{group.id}"
+        import asyncio
+        asyncio.create_task(manager.broadcast(room_id, {
+            "type": "member_joined",
+            "data": {
+                "group_id": str(group.id),
+                "user_id": str(user.id),
+                "user_name": user.name,
+                "user_email": user.email
+            }
+        }))
+
         return {
             "message": "Successfully joined group",
             "group_id": str(group.id),
             "group_name": group.name
+        }
+
+    def get_group_members(self, group_id: str, user: User) -> Dict[str, Any]:
+        """
+        Get all members of a group with their admin status.
+
+        Args:
+            group_id: The UUID string of the group
+            user: The requesting user
+
+        Returns:
+            Dictionary with group info and member list
+
+        Raises:
+            BadRequestError: If group ID format is invalid
+            NotFoundError: If group doesn't exist
+            ForbiddenError: If user is not a member of the group
+        """
+        # Verify group ID format
+        try:
+            group_uuid = uuid.UUID(group_id)
+        except ValueError:
+            raise BadRequestError("Invalid group ID format")
+
+        # Get the group
+        group = self.repo.get_group_by_id(group_uuid)
+        if not group:
+            raise NotFoundError("Group", group_uuid)
+
+        # Check if user is a member of the group
+        user_groups = self.repo.get_user_groups(user)
+        if not any(g.id == group_uuid for g in user_groups):
+            raise ForbiddenError("Not a member of this group")
+
+        # Get members with admin status
+        members = self.repo.get_group_members_with_admin_status(group_uuid)
+
+        # Check if current user is admin
+        is_current_user_admin = self.repo.is_user_group_admin(group_uuid, user.id)
+
+        return {
+            "id": str(group.id),
+            "name": group.name,
+            "invite_token": group.invite_token,
+            "is_joining_allowed": group.is_joining_allowed,
+            "members": members,
+            "is_current_user_admin": is_current_user_admin
+        }
+
+    def remove_member(self, group_id: str, member_id: str, user: User) -> Dict[str, str]:
+        """
+        Remove a member from a group (admin only).
+
+        Args:
+            group_id: The UUID string of the group
+            member_id: The UUID string of the member to remove
+            user: The requesting user (must be group admin)
+
+        Returns:
+            Dictionary with success message
+
+        Raises:
+            BadRequestError: If ID formats are invalid
+            NotFoundError: If group doesn't exist
+            ForbiddenError: If user is not a group admin or trying to remove admin
+        """
+        # Verify ID formats
+        try:
+            group_uuid = uuid.UUID(group_id)
+            member_uuid = uuid.UUID(member_id)
+        except ValueError:
+            raise BadRequestError("Invalid ID format")
+
+        # Get the group
+        group = self.repo.get_group_by_id(group_uuid)
+        if not group:
+            raise NotFoundError("Group", group_uuid)
+
+        # Check if user is a group admin
+        if not self.repo.is_user_group_admin(group_uuid, user.id):
+            logger.warning(
+                f"Non-admin user attempted to remove member",
+                extra={"user_id": str(user.id), "group_id": str(group_uuid)}
+            )
+            raise ForbiddenError("Only group admins can remove members")
+
+        # Check if the member being removed is an admin
+        if self.repo.is_user_group_admin(group_uuid, member_uuid):
+            raise ForbiddenError("Cannot remove group admins")
+
+        # Remove the member
+        success = self.repo.remove_group_member(group_uuid, member_uuid)
+        if not success:
+            raise BadRequestError("Failed to remove member")
+
+        logger.info(
+            f"Member removed from group",
+            extra={"user_id": str(user.id), "group_id": str(group_uuid), "removed_user_id": str(member_uuid)}
+        )
+
+        # Broadcast WebSocket event to group room
+        room_id = f"group:{group_uuid}"
+        import asyncio
+        asyncio.create_task(manager.broadcast(room_id, {
+            "type": "member_removed",
+            "data": {
+                "group_id": str(group_uuid),
+                "removed_user_id": str(member_uuid)
+            }
+        }))
+
+        return {
+            "message": "Member removed successfully"
+        }
+
+    def toggle_joining_allowed(self, group_id: str, user: User) -> Dict[str, Any]:
+        """
+        Toggle whether a group allows joining via invite link (admin only).
+
+        Args:
+            group_id: The UUID string of the group
+            user: The requesting user (must be group admin)
+
+        Returns:
+            Dictionary with new joining status
+
+        Raises:
+            BadRequestError: If group ID format is invalid
+            NotFoundError: If group doesn't exist
+            ForbiddenError: If user is not a group admin
+        """
+        # Verify group ID format
+        try:
+            group_uuid = uuid.UUID(group_id)
+        except ValueError:
+            raise BadRequestError("Invalid group ID format")
+
+        # Get the group
+        group = self.repo.get_group_by_id(group_uuid)
+        if not group:
+            raise NotFoundError("Group", group_uuid)
+
+        # Check if user is a group admin
+        if not self.repo.is_user_group_admin(group_uuid, user.id):
+            logger.warning(
+                f"Non-admin user attempted to toggle joining allowed",
+                extra={"user_id": str(user.id), "group_id": str(group_uuid)}
+            )
+            raise ForbiddenError("Only group admins can change joining settings")
+
+        # Toggle the setting
+        new_value = not group.is_joining_allowed
+        updated_group = self.repo.update_group_joining_allowed(group_uuid, new_value)
+        if not updated_group:
+            raise BadRequestError("Failed to update joining setting")
+
+        logger.info(
+            f"Group joining setting toggled",
+            extra={"user_id": str(user.id), "group_id": str(group_uuid), "is_joining_allowed": new_value}
+        )
+
+        return {
+            "is_joining_allowed": new_value
         }

@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 
 // Lazy load route components for code splitting
 const GroupPage = lazy(() => import('./components/GroupPage'))
+const ManageGroupPage = lazy(() => import('./components/ManageGroupPage'))
 const RunPage = lazy(() => import('./components/RunPage'))
 const JoinGroup = lazy(() => import('./components/JoinGroup'))
 const ShoppingPage = lazy(() => import('./components/ShoppingPage'))
@@ -34,6 +35,7 @@ function GroupPageWrapper() {
         groupId={groupId}
         onBack={() => navigate('/')}
         onRunSelect={(runId) => navigate(`/runs/${runId}`)}
+        onManageSelect={(groupId) => navigate(`/groups/${groupId}/manage`)}
       />
     </AppLayout>
   )
@@ -133,6 +135,25 @@ function StorePageWrapper() {
       <StorePage
         storeId={storeId}
         onBack={() => navigate('/')}
+      />
+    </AppLayout>
+  )
+}
+
+function ManageGroupPageWrapper() {
+  const { groupId } = useParams<{ groupId: string }>()
+  const navigate = useNavigate()
+
+  if (!groupId) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <AppLayout>
+      <ManageGroupPage
+        groupId={groupId}
+        onBack={() => navigate(`/groups/${groupId}`)}
       />
     </AppLayout>
   )
@@ -383,6 +404,7 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<DashboardWrapper />} />
           <Route path="/groups/:groupId" element={<GroupPageWrapper />} />
+          <Route path="/groups/:groupId/manage" element={<ManageGroupPageWrapper />} />
           <Route path="/runs/:runId" element={<RunPageWrapper />} />
           <Route path="/shopping/:runId" element={<ShoppingPageWrapper />} />
           <Route path="/distribution/:runId" element={<DistributionPageWrapper />} />

@@ -85,69 +85,9 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 ## ✨ Feature Requests 
 
-## Expand entities with necessary fields:
-
-- Product:
-  - brand
-  - unit
-  - product category (rice > basmati rice, jasmin rice) - separate entity
-  - allow multiple stores
-  - price not mandatory, only estimate
-  - verified
-  - created at
-  - created by
-  - verified at
-  - verified by
-- Store:
-  - address
-  - chain
-  - opening hours
-  - verified
-  - created at
-  - created by
-  - verified at
-  - verified by
-- User:
-  - is_admin
-  - username (will eventually replace email)
-  - verified
-  - created at
-- Group:
-  - created at
-- GroupMembership:
-  - is_group_admin
-- Run:
-  - adjusted_at
-  - planed_on (day the leader wants to go)
-  - state to enum (necessary?)
-- Run participation:
-  - joined_at
-- ProductBid:
-  - picked_up_at
-- ShoppingListItem:
-  - encountered_price to separate entity
-  - remove updated_encountered_at (since encountered price will become separate entity)
-  - purchased_at
-
-- verified field in the store and product allows admins to confirm a separate entity exists, this avoids duplicates
-
-
-
 ## Admin console
 
 Allow verifying users, stores and products
-
-## Add Store page:
-
-Show available products
-
-## Group admins:
-
-Can remove users from group
-
-## Consolidate search bar
-
-Allow for searching for products, stores and groups
 
 ## Allow leader reassigning
 

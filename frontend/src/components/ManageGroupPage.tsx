@@ -1,0 +1,274 @@
+import { useState, useEffect, useCallback } from 'react'
+import './ManageGroupPage.css'
+import { groupsApi, ApiError } from '../api'
+import type { GroupManageDetails, GroupMember } from '../api'
+import { useToast } from '../hooks/useToast'
+import { useConfirm } from '../hooks/useConfirm'
+import { useWebSocket } from '../hooks/useWebSocket'
+import { useAuth } from '../contexts/AuthContext'
+import { WS_BASE_URL } from '../config'
+import Toast from './Toast'
+import ConfirmDialog from './ConfirmDialog'
+
+interface ManageGroupPageProps {
+  groupId: string
+  onBack: () => void
+}
+
+export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProps) {
+  const [group, setGroup] = useState<GroupManageDetails | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const { toast, showToast, hideToast } = useToast()
+  const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    const fetchGroupMembers = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const data = await groupsApi.getGroupMembers(groupId)
+        setGroup(data)
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'Failed to load group members')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchGroupMembers()
+  }, [groupId])
+
+  // WebSocket handler for real-time updates
+  const handleWebSocketMessage = useCallback((message: any) => {
+    if (message.type === 'member_removed') {
+      // If current user was removed, redirect to main page
+      if (user && message.data.removed_user_id === user.id) {
+        showToast('You have been removed from this group', 'error')
+        setTimeout(() => {
+          window.location.href = '/'
+        }, 1500)
+        return
+      }
+
+      // Otherwise, just update the member list
+      if (group) {
+        setGroup({
+          ...group,
+          members: group.members.filter(m => m.id !== message.data.removed_user_id)
+        })
+      }
+    } else if (message.type === 'member_joined') {
+      // Add new member to the list
+      if (group) {
+        const newMember: GroupMember = {
+          id: message.data.user_id,
+          name: message.data.user_name,
+          email: message.data.user_email,
+          is_group_admin: false
+        }
+        setGroup({
+          ...group,
+          members: [...group.members, newMember]
+        })
+        showToast(`${message.data.user_name} joined the group`, 'success')
+      }
+    }
+  }, [group, user, showToast])
+
+  useWebSocket(
+    groupId ? `${WS_BASE_URL}/ws/groups/${groupId}` : null,
+    {
+      onMessage: handleWebSocketMessage
+    }
+  )
+
+  const handleCopyInviteLink = () => {
+    if (!group) return
+    const inviteUrl = `${window.location.origin}/invite/${group.invite_token}`
+    navigator.clipboard.writeText(inviteUrl)
+      .then(() => {
+        showToast('Invite link copied to clipboard!', 'success')
+      })
+      .catch(err => {
+        console.error('Failed to copy:', err)
+        showToast('Failed to copy invite link', 'error')
+      })
+  }
+
+  const handleRegenerateToken = async () => {
+    if (!group || !group.is_current_user_admin) return
+
+    const regenerateAction = async () => {
+      try {
+        const data = await groupsApi.regenerateInvite(groupId)
+        setGroup({ ...group, invite_token: data.invite_token })
+        showToast('Invite link regenerated successfully!', 'success')
+      } catch (err) {
+        showToast(err instanceof ApiError ? err.message : 'Failed to regenerate invite link', 'error')
+      }
+    }
+
+    showConfirm(
+      'Are you sure you want to regenerate the invite link? The old link will stop working.',
+      regenerateAction,
+      { danger: true }
+    )
+  }
+
+  const handleToggleJoining = async () => {
+    if (!group || !group.is_current_user_admin) return
+
+    try {
+      const data = await groupsApi.toggleJoiningAllowed(groupId)
+      setGroup({ ...group, is_joining_allowed: data.is_joining_allowed })
+      showToast(
+        data.is_joining_allowed ? 'Joining enabled' : 'Joining disabled',
+        'success'
+      )
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : 'Failed to update joining setting', 'error')
+    }
+  }
+
+  const handleRemoveMember = (member: GroupMember) => {
+    if (!group || !group.is_current_user_admin) return
+
+    const removeAction = async () => {
+      try {
+        await groupsApi.removeMember(groupId, member.id)
+        setGroup({
+          ...group,
+          members: group.members.filter(m => m.id !== member.id)
+        })
+        showToast(`${member.name} removed from group`, 'success')
+      } catch (err) {
+        showToast(err instanceof ApiError ? err.message : 'Failed to remove member', 'error')
+      }
+    }
+
+    showConfirm(
+      `Are you sure you want to remove ${member.name} from the group?`,
+      removeAction,
+      { danger: true }
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="manage-group-page">
+        <p>Loading group members...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="manage-group-page">
+        <div className="error">
+          <p>❌ {error}</p>
+          <button onClick={onBack} className="btn btn-secondary">
+            Back
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!group) {
+    return (
+      <div className="manage-group-page">
+        <p>Group not found</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="manage-group-page">
+      <div className="breadcrumb">
+        <span className="breadcrumb-link" onClick={onBack}>
+          {group.name}
+        </span>
+        <span className="breadcrumb-separator"> / </span>
+        <span>Manage</span>
+      </div>
+
+      <h2>Manage Group</h2>
+
+      {/* Invite Link Section */}
+      <section className="manage-section">
+        <h3>Invite Link</h3>
+        <div className="invite-controls">
+          <button onClick={handleCopyInviteLink} className="btn btn-secondary">
+            📋 Copy Invite Link
+          </button>
+          {group.is_current_user_admin && (
+            <>
+              <button onClick={handleRegenerateToken} className="btn btn-secondary">
+                🔄 Regenerate Link
+              </button>
+              <button
+                onClick={handleToggleJoining}
+                className={`btn ${group.is_joining_allowed ? 'btn-danger' : 'btn-success'}`}
+              >
+                {group.is_joining_allowed ? '🔒 Disallow Joining' : '🔓 Allow Joining'}
+              </button>
+            </>
+          )}
+        </div>
+        {!group.is_joining_allowed && (
+          <div className="alert alert-warning">
+            ⚠️ Joining is currently disabled. New members cannot join via invite link.
+          </div>
+        )}
+      </section>
+
+      {/* Members Section */}
+      <section className="manage-section">
+        <h3>Members ({group.members.length})</h3>
+        <div className="members-list">
+          {group.members.map((member) => (
+            <div key={member.id} className="member-item">
+              <div className="member-info">
+                <div className="member-name">
+                  {member.name}
+                  {member.is_group_admin && (
+                    <span className="admin-badge">Admin</span>
+                  )}
+                </div>
+                <div className="member-email">{member.email}</div>
+              </div>
+              {group.is_current_user_admin && !member.is_group_admin && (
+                <button
+                  onClick={() => handleRemoveMember(member)}
+                  className="btn btn-danger btn-small"
+                  title="Remove member"
+                >
+                  −
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
+      )}
+
+      {confirmState && (
+        <ConfirmDialog
+          message={confirmState.message}
+          onConfirm={handleConfirm}
+          onCancel={hideConfirm}
+          danger={confirmState.danger}
+        />
+      )}
+    </div>
+  )
+}

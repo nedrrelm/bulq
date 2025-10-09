@@ -28,6 +28,22 @@ export interface GroupDetails {
   }>
 }
 
+export interface GroupMember {
+  id: string
+  name: string
+  email: string
+  is_group_admin: boolean
+}
+
+export interface GroupManageDetails {
+  id: string
+  name: string
+  invite_token: string
+  is_joining_allowed: boolean
+  members: GroupMember[]
+  is_current_user_admin: boolean
+}
+
 export interface CreateGroupRequest {
   name: string
 }
@@ -49,5 +65,14 @@ export const groupsApi = {
     api.get(`/groups/${groupId}/runs`),
 
   joinGroup: (inviteToken: string) =>
-    api.post(`/groups/join/${inviteToken}`)
+    api.post(`/groups/join/${inviteToken}`),
+
+  getGroupMembers: (groupId: string) =>
+    api.get<GroupManageDetails>(`/groups/${groupId}/members`),
+
+  removeMember: (groupId: string, memberId: string) =>
+    api.delete(`/groups/${groupId}/members/${memberId}`),
+
+  toggleJoiningAllowed: (groupId: string) =>
+    api.post<{ is_joining_allowed: boolean }>(`/groups/${groupId}/toggle-joining`)
 }

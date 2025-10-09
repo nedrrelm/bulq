@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './JoinGroup.css'
 import { groupsApi, ApiError } from '../api'
+import { API_BASE_URL } from '../config'
 
 interface JoinGroupProps {
   inviteToken: string
