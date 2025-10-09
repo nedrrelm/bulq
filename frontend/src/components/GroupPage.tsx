@@ -73,6 +73,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect
           store_name: message.data.store_name,
           state: message.data.state,
           leader_name: message.data.leader_name,
+          leader_is_removed: false,
           planned_on: null
         }
         return [newRun, ...prev]
@@ -91,7 +92,19 @@ export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect
         setTimeout(() => {
           window.location.href = '/'
         }, 1500)
+        return
       }
+
+      // Refresh the runs list to get updated leader_is_removed status
+      const fetchRuns = async () => {
+        try {
+          const runsData = await groupsApi.getGroupRuns(groupId)
+          setRuns(runsData)
+        } catch (err) {
+          console.error('Failed to refresh runs:', err)
+        }
+      }
+      fetchRuns()
     }
   }, [groupId, user, showToast])
 

@@ -290,6 +290,19 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             state: message.data.new_state
           }
         })
+      } else if (message.type === 'participant_removed') {
+        // Mark participant as removed (crossed out)
+        setRun(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            participants: prev.participants.map(p =>
+              p.user_id === message.data.removed_user_id
+                ? { ...p, is_removed: true }
+                : p
+            )
+          }
+        })
       }
   }, [run, userId])
 
@@ -520,7 +533,9 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             </div>
             <div className="info-item">
               <label>Leader:</label>
-              <span>{run.participants.find(p => p.is_leader)?.user_name || 'Unknown'}</span>
+              <span className={run.participants.find(p => p.is_leader)?.is_removed ? 'removed-user' : ''}>
+                {run.participants.find(p => p.is_leader)?.user_name || 'Unknown'}
+              </span>
             </div>
             <div className="info-item">
               <label>Status:</label>
@@ -541,7 +556,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
                 {run.participants.map(participant => (
                   <div key={participant.user_id} className="participant-item">
                     <div className="participant-info">
-                      <span className="participant-name">
+                      <span className={`participant-name ${participant.is_removed ? 'removed-user' : ''}`}>
                         {participant.user_name}
                         {participant.is_leader && <span className="leader-badge">Leader</span>}
                       </span>

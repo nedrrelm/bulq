@@ -8,6 +8,7 @@ interface Run {
   store_name: string
   state: string
   leader_name: string
+  leader_is_removed?: boolean
   planned_on: string | null
   group_name?: string
 }
@@ -37,7 +38,9 @@ function RunCard({ run, onClick, showAsLink = true, showGroupName = false }: Run
         )}
         <div className="run-detail">
           <span className="run-detail-label">Leader:</span>
-          <span className="run-detail-value">{run.leader_name}</span>
+          <span className={`run-detail-value ${run.leader_is_removed ? 'removed-user' : ''}`}>
+            {run.leader_name}
+          </span>
         </div>
         {run.planned_on && (
           <div className="run-detail">

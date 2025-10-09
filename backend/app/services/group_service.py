@@ -206,6 +206,7 @@ class GroupService(BaseService):
             participations = self.repo.get_run_participations(run.id)
             leader = next((p for p in participations if p.is_leader), None)
             leader_name = leader.user.name if leader and leader.user else "Unknown"
+            leader_is_removed = leader.is_removed if leader else False
 
             run_responses.append({
                 "id": str(run.id),
@@ -214,6 +215,7 @@ class GroupService(BaseService):
                 "store_name": store_lookup.get(run.store_id, "Unknown Store"),
                 "state": run.state,
                 "leader_name": leader_name,
+                "leader_is_removed": leader_is_removed,
                 "planned_on": run.planned_on.isoformat() if run.planned_on else None
             })
 
@@ -464,9 +466,34 @@ class GroupService(BaseService):
         if not success:
             raise BadRequestError("Failed to remove member")
 
+        # Mark all participations as removed and cancel runs led by the removed member
+        runs = self.repo.get_runs_by_group(group_uuid)
+        cancelled_runs = []
+        affected_runs = []  # All runs where the user participated (for WebSocket updates)
+
+        for run in runs:
+            # Get participations for this run
+            participations = self.repo.get_run_participations(run.id)
+
+            # Mark removed user's participation as removed
+            user_participated = False
+            for participation in participations:
+                if participation.user_id == member_uuid:
+                    participation.is_removed = True
+                    user_participated = True
+
+            if user_participated:
+                affected_runs.append(str(run.id))
+
+            # If the removed user is the leader and run is not completed, cancel it
+            leader = next((p for p in participations if p.is_leader), None)
+            if leader and leader.user_id == member_uuid and run.state != 'completed':
+                run.state = 'cancelled'
+                cancelled_runs.append(str(run.id))
+
         logger.info(
-            f"Member removed from group",
-            extra={"user_id": str(user.id), "group_id": str(group_uuid), "removed_user_id": str(member_uuid)}
+            f"Member removed from group, cancelled {len(cancelled_runs)} runs",
+            extra={"user_id": str(user.id), "group_id": str(group_uuid), "removed_user_id": str(member_uuid), "cancelled_runs": cancelled_runs}
         )
 
         # Broadcast WebSocket event to group room
@@ -476,9 +503,31 @@ class GroupService(BaseService):
             "type": "member_removed",
             "data": {
                 "group_id": str(group_uuid),
-                "removed_user_id": str(member_uuid)
+                "removed_user_id": str(member_uuid),
+                "cancelled_runs": cancelled_runs
             }
         }))
+
+        # Broadcast participant_removed events for all affected runs
+        for run_id in affected_runs:
+            asyncio.create_task(manager.broadcast(f"run:{run_id}", {
+                "type": "participant_removed",
+                "data": {
+                    "run_id": run_id,
+                    "removed_user_id": str(member_uuid)
+                }
+            }))
+
+        # Also broadcast run_cancelled events for cancelled runs
+        for run_id in cancelled_runs:
+            asyncio.create_task(manager.broadcast(f"run:{run_id}", {
+                "type": "run_cancelled",
+                "data": {
+                    "run_id": run_id,
+                    "state": "cancelled",
+                    "new_state": "cancelled"
+                }
+            }))
 
         return {
             "message": "Member removed successfully"
