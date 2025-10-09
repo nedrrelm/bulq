@@ -89,12 +89,22 @@ erDiagram
         timestamp updated_at
     }
 
+    EncounteredPrice {
+        uuid id PK
+        uuid product_id FK
+        uuid store_id FK
+        decimal price
+        integer minimum_quantity "nullable"
+        text notes "nullable"
+        timestamp encountered_at
+        uuid encountered_by FK "nullable"
+    }
+
     ShoppingListItem {
         uuid id PK
         uuid run_id FK
         uuid product_id FK
         integer requested_quantity
-        json encountered_prices
         integer purchased_quantity "nullable"
         decimal purchased_price_per_unit "nullable"
         decimal purchased_total "nullable"
@@ -125,6 +135,9 @@ erDiagram
     User ||--o{ Product : "verifies"
     User ||--o{ Store : "creates"
     User ||--o{ Store : "verifies"
+    User ||--o{ EncounteredPrice : "reports"
+    Product ||--o{ EncounteredPrice : "has prices"
+    Store ||--o{ EncounteredPrice : "has prices"
     Run ||--o{ ShoppingListItem : "has items"
     Product ||--o{ ShoppingListItem : "included in"
 ```
@@ -183,11 +196,16 @@ Can transition to `cancelled` from any state before `distributing`.
   - Each bid belongs to a participation (which links user + run)
   - Simplifies querying all bids for a user in a run
   - Includes distribution fields: `distributed_quantity`, `distributed_price_per_unit`, `is_picked_up`
+- **EncounteredPrices**: Price observations at stores
+  - Links Product + Store with price and timestamp
+  - Can be reported during shopping runs or standalone
+  - Supports minimum quantity requirements for bulk pricing
+  - User attribution for community price reporting
 - **ShoppingListItems**: Shopping list generation for runs
   - Links Run + Product with requested quantities (sum of all bids)
-  - Tracks encountered prices during shopping with JSON array
   - Records actual purchased quantities and prices
   - `purchase_order` tracks the sequence items were purchased
+  - No longer stores encountered prices (moved to separate entity)
 
 ## Entity Details
 
@@ -253,10 +271,21 @@ Distribution fields for tracking allocation and pickup:
 - **is_picked_up**: Whether the user has collected their allocated items
 - **picked_up_at**: When the user picked up their items
 
+### EncounteredPrice
+A separate entity for tracking price observations at stores:
+- **product_id**: Which product this price is for
+- **store_id**: Which store this price was found at
+- **price**: The price observed
+- **minimum_quantity**: Minimum quantity required for this price (e.g., "must buy 2")
+- **notes**: Additional context (e.g., "aisle 3", "on sale", "clearance")
+- **encountered_at**: When this price was observed (defaults to now)
+- **encountered_by**: User who reported this price (nullable for system-generated entries)
+
+This entity is decoupled from runs, allowing price reporting outside of active shopping trips. When viewing prices during a run, the system shows prices from the same day at the same store.
+
 ### ShoppingListItem
 Manages the shopping process for each product in a run:
 - **requested_quantity**: Total quantity needed (sum of all user bids)
-- **encountered_prices**: JSON array of price observations, e.g., `[{"price": 24.99, "notes": "aisle 3"}]`
 - **purchased_quantity**: Actual quantity purchased (may differ from requested)
 - **purchased_price_per_unit**: Final price paid per unit
 - **purchased_total**: Total cost for this item
@@ -264,4 +293,4 @@ Manages the shopping process for each product in a run:
 - **purchase_order**: Order in which items were purchased (for receipt tracking)
 - **purchased_at**: When the item was purchased
 - **created_at**: When the shopping list item was created
-- **updated_at**: Last time the item was modified (prices encountered, purchased, etc.)
+- **updated_at**: Last time the item was modified

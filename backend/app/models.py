@@ -31,10 +31,11 @@ class User(Base):
     groups = relationship("Group", secondary=group_membership, back_populates="members")
     created_groups = relationship("Group", back_populates="creator")
     run_participations = relationship("RunParticipation", back_populates="user")
-    created_products = relationship("Product", back_populates="creator")
+    created_products = relationship("Product", foreign_keys="[Product.created_by]", back_populates="creator")
     verified_products = relationship("Product", foreign_keys="[Product.verified_by]", back_populates="verifier")
-    created_stores = relationship("Store", back_populates="creator")
+    created_stores = relationship("Store", foreign_keys="[Store.created_by]", back_populates="creator")
     verified_stores = relationship("Store", foreign_keys="[Store.verified_by]", back_populates="verifier")
+    encountered_prices = relationship("EncounteredPrice", back_populates="user")
 
 class Group(Base):
     __tablename__ = "groups"
@@ -67,6 +68,7 @@ class Store(Base):
     products = relationship("Product", back_populates="store")
     creator = relationship("User", foreign_keys=[created_by], back_populates="created_stores")
     verifier = relationship("User", foreign_keys=[verified_by], back_populates="verified_stores")
+    encountered_prices = relationship("EncounteredPrice", back_populates="store")
 
 class Run(Base):
     __tablename__ = "runs"
@@ -111,6 +113,7 @@ class Product(Base):
     product_bids = relationship("ProductBid", back_populates="product")
     creator = relationship("User", foreign_keys=[created_by], back_populates="created_products")
     verifier = relationship("User", foreign_keys=[verified_by], back_populates="verified_products")
+    encountered_prices = relationship("EncounteredPrice", back_populates="product")
 
 class RunParticipation(Base):
     __tablename__ = "run_participations"
@@ -148,6 +151,22 @@ class ProductBid(Base):
     participation = relationship("RunParticipation", back_populates="product_bids")
     product = relationship("Product", back_populates="product_bids")
 
+class EncounteredPrice(Base):
+    __tablename__ = "encountered_prices"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
+    store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
+    price = Column(DECIMAL(10, 2), nullable=False)
+    minimum_quantity = Column(Integer, nullable=True)  # e.g., "must buy 2 to get this price"
+    notes = Column(Text, nullable=True)  # e.g., "aisle 3", "on sale", "clearance"
+    encountered_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    encountered_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
+
+    product = relationship("Product", back_populates="encountered_prices")
+    store = relationship("Store", back_populates="encountered_prices")
+    user = relationship("User", back_populates="encountered_prices")
+
 class ShoppingListItem(Base):
     __tablename__ = "shopping_list_items"
 
@@ -155,7 +174,6 @@ class ShoppingListItem(Base):
     run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
     product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
     requested_quantity = Column(Integer, nullable=False)
-    encountered_prices = Column(JSON, nullable=False, default=list)  # [{"price": 24.99, "notes": "aisle 3"}, ...]
     purchased_quantity = Column(Integer, nullable=True)
     purchased_price_per_unit = Column(DECIMAL(10, 2), nullable=True)
     purchased_total = Column(DECIMAL(10, 2), nullable=True)

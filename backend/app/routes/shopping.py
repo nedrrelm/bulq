@@ -13,16 +13,18 @@ import logging
 router = APIRouter(prefix="/shopping", tags=["shopping"])
 logger = logging.getLogger(__name__)
 
-class EncounteredPrice(BaseModel):
+class EncounteredPriceResponse(BaseModel):
     price: float
     notes: str
+    minimum_quantity: int | None
+    encountered_at: str
 
 class ShoppingListItemResponse(BaseModel):
     id: str
     product_id: str
     product_name: str
     requested_quantity: int
-    encountered_prices: List[dict]
+    encountered_prices: List[EncounteredPriceResponse]
     purchased_quantity: int | None
     purchased_price_per_unit: str | None
     purchased_total: str | None

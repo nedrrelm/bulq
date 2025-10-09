@@ -1,7 +1,7 @@
 """Repository pattern with abstract base class and concrete implementations."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from decimal import Decimal
@@ -213,6 +213,11 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement get_shopping_list_items_by_product")
 
     @abstractmethod
+    def get_shopping_list_item(self, item_id: UUID) -> Optional[ShoppingListItem]:
+        """Get a shopping list item by ID."""
+        raise NotImplementedError("Subclass must implement get_shopping_list_item")
+
+    @abstractmethod
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
         """Add an encountered price to a shopping list item."""
         raise NotImplementedError("Subclass must implement add_encountered_price")
@@ -221,6 +226,18 @@ class AbstractRepository(ABC):
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
         """Mark a shopping list item as purchased."""
         raise NotImplementedError("Subclass must implement mark_item_purchased")
+
+    # ==================== EncounteredPrice Methods ====================
+
+    @abstractmethod
+    def get_encountered_prices(self, product_id: UUID, store_id: UUID, start_date: Any = None, end_date: Any = None) -> List:
+        """Get encountered prices for a product at a store, optionally filtered by date range."""
+        raise NotImplementedError("Subclass must implement get_encountered_prices")
+
+    @abstractmethod
+    def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
+        """Create a new encountered price."""
+        raise NotImplementedError("Subclass must implement create_encountered_price")
 
 
 class DatabaseRepository(AbstractRepository):
@@ -343,10 +360,19 @@ class DatabaseRepository(AbstractRepository):
     def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
+    def get_shopping_list_item(self, item_id: UUID) -> Optional[ShoppingListItem]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_encountered_prices(self, product_id: UUID, store_id: UUID, start_date: Any = None, end_date: Any = None) -> List:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
 
@@ -1134,7 +1160,6 @@ class MemoryRepository(AbstractRepository):
             run_id=run_id,
             product_id=product_id,
             requested_quantity=requested_quantity,
-            encountered_prices=[],
             is_purchased=False,
             created_at=timestamp,
             updated_at=timestamp
@@ -1239,7 +1264,6 @@ class MemoryRepository(AbstractRepository):
             run_id=run_id,
             product_id=product_id,
             requested_quantity=requested_quantity,
-            encountered_prices=[],
             is_purchased=False
         )
         # Set up relationships
@@ -1277,6 +1301,9 @@ class MemoryRepository(AbstractRepository):
             return item
         return None
 
+    def get_shopping_list_item(self, item_id: UUID) -> Optional[ShoppingListItem]:
+        return self._shopping_list_items.get(item_id)
+
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
         item = self._shopping_list_items.get(item_id)
         if item:
@@ -1285,22 +1312,47 @@ class MemoryRepository(AbstractRepository):
             item.purchased_total = Decimal(str(total))
             item.is_purchased = True
             item.purchase_order = purchase_order
-
-            # Add purchased price to encountered prices if not already there
-            if item.encountered_prices is None:
-                item.encountered_prices = []
-
-            # Check if this exact price is already in the list
-            price_already_exists = any(
-                p.get("price") == float(price_per_unit)
-                for p in item.encountered_prices
-            )
-
-            if not price_already_exists:
-                item.encountered_prices.append({"price": float(price_per_unit), "notes": "purchased"})
-
             return item
         return None
+
+    # ==================== EncounteredPrice Methods ====================
+
+    def get_encountered_prices(self, product_id: UUID, store_id: UUID, start_date: Any = None, end_date: Any = None) -> List:
+        """Get encountered prices for a product at a store, optionally filtered by date range."""
+        from .models import EncounteredPrice
+
+        if not hasattr(self, '_encountered_prices'):
+            self._encountered_prices = {}
+
+        results = []
+        for ep in self._encountered_prices.values():
+            if ep.product_id == product_id and ep.store_id == store_id:
+                if start_date and end_date:
+                    if start_date <= ep.encountered_at < end_date:
+                        results.append(ep)
+                else:
+                    results.append(ep)
+        return results
+
+    def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
+        """Create a new encountered price."""
+        from .models import EncounteredPrice
+        from datetime import datetime
+
+        if not hasattr(self, '_encountered_prices'):
+            self._encountered_prices = {}
+
+        ep = EncounteredPrice(
+            id=uuid4(),
+            product_id=product_id,
+            store_id=store_id,
+            price=price,
+            notes=notes,
+            encountered_at=datetime.now(),
+            encountered_by=user_id
+        )
+        self._encountered_prices[ep.id] = ep
+        return ep
 
 
 def get_repository(db: Session = None) -> AbstractRepository:
