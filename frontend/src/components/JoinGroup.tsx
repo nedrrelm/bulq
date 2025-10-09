@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import './JoinGroup.css'
+import '../styles/components/JoinGroup.css'
 import { groupsApi, ApiError } from '../api'
 import { API_BASE_URL } from '../config'
 

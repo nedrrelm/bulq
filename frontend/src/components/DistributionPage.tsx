@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import './DistributionPage.css'
+import '../styles/components/DistributionPage.css'
 import { API_BASE_URL } from '../config'
 import LoadingSpinner from './LoadingSpinner'
-import './LoadingSpinner.css'
+import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
 
 interface DistributionProduct {

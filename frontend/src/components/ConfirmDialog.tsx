@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import './ConfirmDialog.css'
+import '../styles/components/ConfirmDialog.css'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
 interface ConfirmDialogProps {

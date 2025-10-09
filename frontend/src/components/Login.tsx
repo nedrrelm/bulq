@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import './Login.css'
+import '../styles/components/Login.css'
 import { authApi, ApiError } from '../api'
 import type { User } from '../types/user'
 

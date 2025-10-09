@@ -1,6 +1,6 @@
 import { useState, useEffect, memo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import './RunPage.css'
+import '../styles/components/RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
 import { runsApi, reassignmentApi, ApiError } from '../api'

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import './ManageGroupPage.css'
+import '../styles/components/ManageGroupPage.css'
 import { groupsApi, ApiError } from '../api'
 import type { GroupManageDetails, GroupMember } from '../api'
 import { useToast } from '../hooks/useToast'

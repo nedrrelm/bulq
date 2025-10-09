@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import './AddProductPopup.css'
+import '../styles/components/AddProductPopup.css'
 import { runsApi, ApiError } from '../api'
 import type { AvailableProduct } from '../types/product'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'

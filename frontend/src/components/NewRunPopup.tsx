@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import './NewRunPopup.css'
+import '../styles/components/NewRunPopup.css'
 import { storesApi, runsApi, ApiError } from '../api'
 import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
