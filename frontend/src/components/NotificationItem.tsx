@@ -44,29 +44,60 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
 
     // Navigate to the run page
     if (notification.type === 'run_state_changed') {
-      const { run_id, group_id } = notification.data
-      navigate(`/groups/${group_id}/runs/${run_id}`)
+      const { run_id } = notification.data
+      navigate(`/runs/${run_id}`)
     }
   }
 
-  const timeAgo = formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })
+  const timeAgo = (() => {
+    try {
+      if (!notification.created_at) return 'Just now'
+      const date = new Date(notification.created_at)
+      if (isNaN(date.getTime())) return 'Just now'
+      return formatDistanceToNow(date, { addSuffix: true })
+    } catch {
+      return 'Just now'
+    }
+  })()
 
   return (
     <button
       onClick={handleClick}
-      className={`w-full text-left p-4 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-        !notification.read ? 'bg-blue-50' : ''
-      }`}
+      style={{
+        width: '100%',
+        textAlign: 'left',
+        padding: '1rem',
+        backgroundColor: !notification.read ? '#eff6ff' : 'white',
+        border: 'none',
+        borderBottom: '1px solid #f3f4f6',
+        cursor: 'pointer',
+        transition: 'background-color 0.15s'
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = !notification.read ? '#dbeafe' : '#f9fafb'}
+      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = !notification.read ? '#eff6ff' : 'white'}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className={`text-sm ${!notification.read ? 'font-semibold' : ''}`}>
+      <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between' }}>
+        <div style={{ flex: 1 }}>
+          <p style={{
+            fontSize: '0.875rem',
+            fontWeight: !notification.read ? '600' : '400',
+            margin: 0,
+            marginBottom: '0.25rem'
+          }}>
             {getNotificationMessage()}
           </p>
-          <p className="text-xs text-gray-500 mt-1">{timeAgo}</p>
+          <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>{timeAgo}</p>
         </div>
         {!notification.read && (
-          <span className="ml-2 w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1"></span>
+          <span style={{
+            marginLeft: '0.5rem',
+            width: '0.5rem',
+            height: '0.5rem',
+            backgroundColor: '#2563eb',
+            borderRadius: '50%',
+            flexShrink: 0,
+            marginTop: '0.25rem'
+          }}></span>
         )}
       </div>
     </button>

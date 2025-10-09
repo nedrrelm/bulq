@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '../contexts/NotificationContext'
 import { NotificationItem } from './NotificationItem'
@@ -9,11 +8,7 @@ interface NotificationDropdownProps {
 
 export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
   const navigate = useNavigate()
-  const { notifications, fetchNotifications, markAllAsRead, markAsRead } = useNotifications()
-
-  useEffect(() => {
-    fetchNotifications()
-  }, [])
+  const { notifications, markAllAsRead, markAsRead } = useNotifications()
 
   const handleMarkAllAsRead = async () => {
     await markAllAsRead()
@@ -35,22 +30,53 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
   const recentNotifications = notifications.slice(0, 3)
 
   return (
-    <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <h3 className="text-lg font-semibold">Notifications</h3>
+    <div
+      className="notification-dropdown"
+      style={{
+        position: 'absolute',
+        right: 0,
+        top: '100%',
+        marginTop: '0.5rem',
+        width: '24rem',
+        maxWidth: '90vw',
+        backgroundColor: 'white',
+        borderRadius: '0.5rem',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #e5e7eb',
+        zIndex: 9999
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.75rem 1rem',
+          borderBottom: '1px solid #e5e7eb'
+        }}
+      >
+        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>Notifications</h3>
         {notifications.some(n => !n.read) && (
           <button
             onClick={handleMarkAllAsRead}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            style={{
+              fontSize: '0.875rem',
+              color: '#2563eb',
+              fontWeight: '500',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '0.25rem 0.5rem'
+            }}
           >
             Mark all as read
           </button>
         )}
       </div>
 
-      <div className="max-h-96 overflow-y-auto">
+      <div style={{ maxHeight: '24rem', overflowY: 'auto' }}>
         {recentNotifications.length === 0 ? (
-          <div className="px-4 py-8 text-center text-gray-500">
+          <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
             No notifications yet
           </div>
         ) : (
@@ -66,16 +92,24 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
         )}
       </div>
 
-      {notifications.length > 0 && (
-        <div className="px-4 py-3 border-t border-gray-200">
-          <button
-            onClick={handleSeeMore}
-            className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            See all notifications
-          </button>
-        </div>
-      )}
+      <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid #e5e7eb' }}>
+        <button
+          onClick={handleSeeMore}
+          style={{
+            width: '100%',
+            textAlign: 'center',
+            fontSize: '0.875rem',
+            color: '#2563eb',
+            fontWeight: '500',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0.5rem'
+          }}
+        >
+          See all notifications
+        </button>
+      </div>
     </div>
   )
 }

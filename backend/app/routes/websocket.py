@@ -244,3 +244,81 @@ async def websocket_run_endpoint(
         manager.disconnect(websocket, room_id)
     finally:
         db.close()
+
+
+@router.websocket("/ws/user")
+async def websocket_user_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for user-level updates (notifications)."""
+
+    # IMPORTANT: Accept the WebSocket connection FIRST
+    await websocket.accept()
+
+    try:
+        # Get database session manually
+        from ..database import SessionLocal
+        db = SessionLocal()
+
+        # Try to get session token from cookie or query parameter
+        session_token = None
+
+        # Try cookie first
+        if "cookie" in websocket.headers:
+            cookies = websocket.headers["cookie"]
+            for cookie in cookies.split(";"):
+                if "session_token=" in cookie:
+                    session_token = cookie.split("session_token=")[1].strip()
+                    break
+
+        # If no cookie, try query parameter
+        if not session_token and "session_token" in websocket.query_params:
+            session_token = websocket.query_params["session_token"]
+
+        # Authenticate user
+        if not session_token:
+            await websocket.close(code=1008, reason="Not authenticated")
+            return
+
+        session_data = get_session(session_token)
+        if not session_data:
+            await websocket.close(code=1008, reason="Invalid or expired session")
+            return
+
+        repo = get_repository(db)
+        user_id = session_data["user_id"]
+
+        # Convert to UUID if it's a string
+        if isinstance(user_id, str):
+            from uuid import UUID
+            user_id = UUID(user_id)
+
+        user = repo.get_user_by_id(user_id)
+        if not user:
+            await websocket.close(code=1008, reason="User not found")
+            return
+
+        # Connect to user-specific room
+        room_id = f"user:{user_id}"
+        if room_id not in manager.active_connections:
+            manager.active_connections[room_id] = set()
+        manager.active_connections[room_id].add(websocket)
+
+        # Send connection confirmation
+        await manager.send_personal(websocket, {
+            "type": "connected",
+            "data": {"room": room_id}
+        })
+
+        # Keep connection alive and listen for disconnection
+        while True:
+            # Receive messages (for heartbeat/ping-pong)
+            data = await websocket.receive_text()
+
+            # Echo back for heartbeat
+            if data == "ping":
+                await websocket.send_text("pong")
+
+    except WebSocketDisconnect:
+        room_id_disconnect = f"user:{user_id}"
+        manager.disconnect(websocket, room_id_disconnect)
+    finally:
+        db.close()
