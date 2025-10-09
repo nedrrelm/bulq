@@ -8,24 +8,31 @@ erDiagram
         uuid id PK
         string name
         string email
+        string username "nullable, unique"
+        boolean is_admin
+        boolean verified
+        timestamp created_at
     }
-    
+
     Group {
         uuid id PK
         string name
         uuid created_by FK
         string invite_token
+        timestamp created_at
     }
-    
+
     Run {
         uuid id PK
         uuid group_id FK
         uuid store_id FK
         string state
+        timestamp planned_on "nullable"
         timestamp planning_at
         timestamp active_at
         timestamp confirmed_at
         timestamp shopping_at
+        timestamp adjusting_at
         timestamp distributing_at
         timestamp completed_at
         timestamp cancelled_at
@@ -37,20 +44,35 @@ erDiagram
         uuid run_id FK
         boolean is_leader
         boolean is_ready
+        timestamp joined_at
     }
 
     Store {
         uuid id PK
         string name
+        text address "nullable"
+        string chain "nullable"
+        json opening_hours "nullable"
+        boolean verified
+        timestamp created_at
+        uuid created_by FK "nullable"
+        timestamp verified_at "nullable"
+        uuid verified_by FK "nullable"
     }
 
     Product {
         uuid id PK
         uuid store_id FK
         string name
-        decimal base_price
+        string brand "nullable"
+        string unit "nullable"
+        decimal base_price "nullable"
+        boolean verified
         timestamp created_at
         timestamp updated_at
+        uuid created_by FK "nullable"
+        timestamp verified_at "nullable"
+        uuid verified_by FK "nullable"
     }
 
     ProductBid {
@@ -59,9 +81,10 @@ erDiagram
         uuid product_id FK
         integer quantity
         boolean interested_only
-        integer distributed_quantity
-        decimal distributed_price_per_unit
+        integer distributed_quantity "nullable"
+        decimal distributed_price_per_unit "nullable"
         boolean is_picked_up
+        timestamp picked_up_at "nullable"
         timestamp created_at
         timestamp updated_at
     }
@@ -72,18 +95,20 @@ erDiagram
         uuid product_id FK
         integer requested_quantity
         json encountered_prices
-        integer purchased_quantity
-        decimal purchased_price_per_unit
-        decimal purchased_total
+        integer purchased_quantity "nullable"
+        decimal purchased_price_per_unit "nullable"
+        decimal purchased_total "nullable"
         boolean is_purchased
-        integer purchase_order
+        integer purchase_order "nullable"
+        timestamp purchased_at "nullable"
         timestamp created_at
         timestamp updated_at
     }
-    
+
     GroupMembership {
         uuid user_id FK
         uuid group_id FK
+        boolean is_group_admin
     }
 
     User ||--o{ GroupMembership : "belongs to"
@@ -96,6 +121,10 @@ erDiagram
     RunParticipation ||--o{ ProductBid : "places"
     Product ||--o{ ProductBid : "receives"
     User ||--o{ Group : "creates"
+    User ||--o{ Product : "creates"
+    User ||--o{ Product : "verifies"
+    User ||--o{ Store : "creates"
+    User ||--o{ Store : "verifies"
     Run ||--o{ ShoppingListItem : "has items"
     Product ||--o{ ShoppingListItem : "included in"
 ```
@@ -162,29 +191,67 @@ Can transition to `cancelled` from any state before `distributing`.
 
 ## Entity Details
 
+### User
+- **username**: Nullable, unique identifier that will eventually replace email for login
+- **is_admin**: Flag for admin users who can verify stores and products
+- **verified**: Whether the user account has been verified
+- **created_at**: When the user account was created
+- User can create and verify both stores and products (tracked via foreign keys)
+
 ### Group
 - **invite_token**: Unique token for inviting users to join the group
+- **created_at**: When the group was created
+
+### GroupMembership
+- **is_group_admin**: Whether the user has admin privileges within this specific group
+
+### Store
+- **address**: Physical location of the store (text field)
+- **chain**: Chain name (e.g., "Costco", "Sam's Club")
+- **opening_hours**: JSON object with operating hours, e.g., `{"monday": "9:00-21:00", ...}`
+- **verified**: Whether an admin has verified this store exists (prevents duplicates)
+- **created_by**: User who added this store
+- **verified_by**: Admin user who verified this store
+- **created_at**: When the store was added
+- **verified_at**: When the store was verified
+
+### Product
+- **brand**: Brand name (nullable)
+- **unit**: Unit of measurement (e.g., "kg", "lb", "each", "L")
+- **base_price**: Estimated price (now nullable, not mandatory)
+- **verified**: Whether an admin has verified this product exists (prevents duplicates)
+- **created_by**: User who added this product
+- **verified_by**: Admin user who verified this product
+- **created_at**: When the product was added
+- **updated_at**: Last time the product was modified
+- **verified_at**: When the product was verified
 
 ### Run
+- **planned_on**: The day the leader plans to go shopping (nullable)
+
 State transition timestamps track when the run entered each state:
 - **planning_at**: When run was created (always set)
 - **active_at**: When run transitioned to active state
 - **confirmed_at**: When all users marked themselves ready
 - **shopping_at**: When shopping trip began
+- **adjusting_at**: When run entered adjusting state (if quantities were insufficient)
 - **distributing_at**: When items started being distributed
 - **completed_at**: When run was fully completed
 - **cancelled_at**: When run was cancelled (if applicable)
+
+### RunParticipation
+- **joined_at**: When the user joined this run
 
 ### ProductBid
 Timestamps for bid tracking:
 - **created_at**: When the bid was first placed
 - **updated_at**: Last time the bid was modified (quantity or status changed)
 
-
 Distribution fields for tracking allocation and pickup:
 - **distributed_quantity**: Actual quantity allocated to the user (may differ from requested)
 - **distributed_price_per_unit**: The actual price paid per unit during shopping
 - **is_picked_up**: Whether the user has collected their allocated items
+- **picked_up_at**: When the user picked up their items
 
 ### ShoppingListItem
 Manages the shopping process for each product in a run:
@@ -195,5 +262,6 @@ Manages the shopping process for each product in a run:
 - **purchased_total**: Total cost for this item
 - **is_purchased**: Whether the item has been purchased
 - **purchase_order**: Order in which items were purchased (for receipt tracking)
+- **purchased_at**: When the item was purchased
 - **created_at**: When the shopping list item was created
 - **updated_at**: Last time the item was modified (prices encountered, purchased, etc.)
