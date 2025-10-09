@@ -1552,21 +1552,24 @@ class MemoryRepository(AbstractRepository):
 
     def create_notification(self, user_id: UUID, type: str, data: Dict[str, Any]) -> Notification:
         """Create a new notification for a user."""
+        from datetime import datetime, timezone
         notification = Notification(
             id=uuid4(),
             user_id=user_id,
             type=type,
             data=data,
-            read=False
+            read=False,
+            created_at=datetime.now(timezone.utc)
         )
         self._notifications[notification.id] = notification
         return notification
 
     def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> List[Notification]:
         """Get notifications for a user (paginated)."""
+        from datetime import datetime, timezone
         user_notifications = [n for n in self._notifications.values() if n.user_id == user_id]
-        # Sort by created_at descending (most recent first)
-        user_notifications.sort(key=lambda n: n.created_at, reverse=True)
+        # Sort by created_at descending (most recent first), handle None values
+        user_notifications.sort(key=lambda n: n.created_at or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
         return user_notifications[offset:offset + limit]
 
     def get_unread_notifications(self, user_id: UUID) -> List[Notification]:

@@ -1,13 +1,15 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { notificationsApi } from '../api'
 import type { Notification } from '../types/notification'
 import { useAuth } from './AuthContext'
+import { useWebSocket } from '../hooks/useWebSocket'
+import Toast from '../components/Toast'
 
 interface NotificationContextType {
   notifications: Notification[]
   unreadCount: number
   loading: boolean
-  fetchNotifications: () => Promise<void>
+  fetchNotifications: (limit?: number) => Promise<void>
   markAsRead: (notificationId: string) => Promise<void>
   markAllAsRead: () => Promise<void>
   refreshUnreadCount: () => Promise<void>
@@ -20,6 +22,54 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  // Construct WebSocket URL
+  const wsUrl = user ? (() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const host = window.location.hostname
+    const port = import.meta.env.DEV ? '8000' : window.location.port
+    return `${protocol}//${host}:${port}/ws/user`
+  })() : null
+
+  const getNotificationMessage = (notification: Notification): string => {
+    if (notification.type === 'run_state_changed') {
+      const { store_name, new_state } = notification.data
+      const stateMessages: Record<string, string> = {
+        planning: 'is being planned',
+        active: 'is now active',
+        confirmed: 'has been confirmed',
+        shopping: 'shopping has started',
+        adjusting: 'needs bid adjustments',
+        distributing: 'is ready for distribution',
+        completed: 'has been completed',
+        cancelled: 'has been cancelled'
+      }
+      return `Run at ${store_name} ${stateMessages[new_state] || `changed to ${new_state}`}`
+    }
+    return 'New notification'
+  }
+
+  // Handle incoming WebSocket messages
+  const handleWebSocketMessage = useCallback((message: any) => {
+    if (message.type === 'new_notification') {
+      const newNotification: Notification = message.data
+
+      // Add to notifications list
+      setNotifications(prev => [newNotification, ...prev])
+
+      // Increment unread count
+      setUnreadCount(prev => prev + 1)
+
+      // Show toast notification
+      setToastMessage(getNotificationMessage(newNotification))
+    }
+  }, [])
+
+  // Connect to WebSocket for real-time notifications
+  useWebSocket(wsUrl, {
+    onMessage: handleWebSocketMessage
+  })
 
   // Fetch unread count when user logs in
   useEffect(() => {
@@ -31,12 +81,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [user])
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (limit: number = 20) => {
     if (!user) return
 
     setLoading(true)
     try {
-      const data = await notificationsApi.getNotifications({ limit: 20 })
+      const data = await notificationsApi.getNotifications({ limit })
       setNotifications(data)
     } catch (err) {
       console.error('Failed to fetch notifications:', err)
@@ -100,6 +150,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          type="info"
+          onClose={() => setToastMessage(null)}
+          duration={5000}
+        />
+      )}
     </NotificationContext.Provider>
   )
 }

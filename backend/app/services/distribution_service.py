@@ -260,13 +260,31 @@ class DistributionService(BaseService):
             "group_id": str(run.group_id)
         }
 
-        # Create notification for each participant
+        # Create notification for each participant and broadcast via WebSocket
+        from ..websocket_manager import manager
+        import asyncio
+
         for participation in participations:
-            self.repo.create_notification(
+            notification = self.repo.create_notification(
                 user_id=participation.user_id,
                 type="run_state_changed",
                 data=notification_data
             )
+
+            # Broadcast to user's WebSocket connection
+            try:
+                asyncio.create_task(manager.broadcast(f"user:{participation.user_id}", {
+                    "type": "new_notification",
+                    "data": {
+                        "id": str(notification.id),
+                        "type": notification.type,
+                        "data": notification.data,
+                        "read": notification.read,
+                        "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
+                    }
+                }))
+            except Exception as e:
+                logger.warning(f"Failed to broadcast notification via WebSocket: {e}")
 
         logger.debug(
             f"Created notifications for run state change",
