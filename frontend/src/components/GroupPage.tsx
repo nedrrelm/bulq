@@ -71,7 +71,9 @@ export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect
           group_id: groupId,
           store_id: message.data.store_id,
           store_name: message.data.store_name,
-          state: message.data.state
+          state: message.data.state,
+          leader_name: message.data.leader_name,
+          planned_on: null
         }
         return [newRun, ...prev]
       })

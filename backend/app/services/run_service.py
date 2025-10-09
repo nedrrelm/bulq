@@ -74,7 +74,8 @@ class RunService(BaseService):
             "group_id": str(run.group_id),
             "store_id": str(run.store_id),
             "state": run.state,
-            "store_name": store.name
+            "store_name": store.name,
+            "leader_name": user.name
         }
 
     def get_run_details(self, run_id: str, user: User) -> Dict[str, Any]:
