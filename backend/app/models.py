@@ -20,7 +20,7 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
 
     groups = relationship("Group", secondary=group_membership, back_populates="members")
@@ -32,8 +32,8 @@ class Group(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
-    created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
-    invite_token = Column(String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+    created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    invite_token = Column(String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()), index=True)
 
     creator = relationship("User", back_populates="created_groups")
     members = relationship("User", secondary=group_membership, back_populates="groups")
@@ -52,9 +52,9 @@ class Run(Base):
     __tablename__ = "runs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    group_id = Column(UUID(as_uuid=True), ForeignKey('groups.id'), nullable=False)
-    store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False)
-    state = Column(String, nullable=False, default=RunState.PLANNING)
+    group_id = Column(UUID(as_uuid=True), ForeignKey('groups.id'), nullable=False, index=True)
+    store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
+    state = Column(String, nullable=False, default=RunState.PLANNING, index=True)
 
     # State transition timestamps
     planning_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -74,7 +74,7 @@ class Product(Base):
     __tablename__ = "products"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False)
+    store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
     name = Column(String, nullable=False)
     base_price = Column(DECIMAL(10, 2), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -87,8 +87,8 @@ class RunParticipation(Base):
     __tablename__ = "run_participations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
-    run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
     is_leader = Column(Boolean, nullable=False, default=False)
     is_ready = Column(Boolean, nullable=False, default=False)
 
@@ -100,8 +100,8 @@ class ProductBid(Base):
     __tablename__ = "product_bids"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    participation_id = Column(UUID(as_uuid=True), ForeignKey('run_participations.id'), nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False)
+    participation_id = Column(UUID(as_uuid=True), ForeignKey('run_participations.id'), nullable=False, index=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
     quantity = Column(Integer, nullable=False, default=0)
     interested_only = Column(Boolean, nullable=False, default=False)
 
@@ -121,8 +121,8 @@ class ShoppingListItem(Base):
     __tablename__ = "shopping_list_items"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False)
+    run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
     requested_quantity = Column(Integer, nullable=False)
     encountered_prices = Column(JSON, nullable=False, default=list)  # [{"price": 24.99, "notes": "aisle 3"}, ...]
     purchased_quantity = Column(Integer, nullable=True)

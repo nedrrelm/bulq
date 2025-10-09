@@ -115,29 +115,6 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 ---
 
-### Add database indexes
-**Status**: Important (before production)
-**Affected files**: `app/models.py`
-
-**Problem:** No indexes defined on frequently queried fields, will cause slow queries at scale.
-
-**Solution:** Add indexes on:
-- Foreign keys: `group_id`, `store_id`, `user_id`, `run_id`, `product_id`, `participation_id`
-- Unique lookups: `email`, `invite_token`
-- Filtered queries: `state` (in Run model)
-
-Example:
-```python
-class User(Base):
-    email = Column(String, unique=True, nullable=False, index=True)
-
-class Run(Base):
-    state = Column(String, nullable=False, default="planning", index=True)
-    group_id = Column(UUID(as_uuid=True), ForeignKey('groups.id'), nullable=False, index=True)
-```
-
----
-
 ### Implement caching
 **Status**: Future
 **Affected files**: Multiple
