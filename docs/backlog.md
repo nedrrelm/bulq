@@ -6,31 +6,6 @@ Feature backlog and technical debt for Bulq development.
 
 ---
 
-### Environment variables & secrets management
-**Status**: Critical (before production)
-**Affected files**: `app/auth.py`, `docker-compose.yml`, `app/config.py`
-
-**Problem:** Hardcoded secrets in code and docker-compose. No proper environment variable structure.
-
-**Current issues:**
-- `SECRET_KEY = "your-secret-key-change-in-production"` hardcoded in `auth.py`
-- Database credentials hardcoded in `docker-compose.yml`
-- No `.env` file structure
-
-**Solution:**
-1. Create `.env.example` template
-2. Use python-dotenv for environment loading
-3. Enforce required secrets at startup:
-```python
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY environment variable must be set!")
-```
-4. Update docker-compose to use env_file
-5. Add `.env` to `.gitignore`
-
----
-
 ### Redis session storage
 **Status**: Critical (before production)
 **Affected files**: `app/auth.py`
