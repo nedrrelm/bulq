@@ -124,6 +124,7 @@ class RunParticipation(Base):
     run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
     is_leader = Column(Boolean, nullable=False, default=False)
     is_ready = Column(Boolean, nullable=False, default=False)
+    is_removed = Column(Boolean, nullable=False, default=False)  # True if user was removed from group
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="run_participations")

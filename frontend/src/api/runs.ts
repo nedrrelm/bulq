@@ -32,6 +32,7 @@ export interface RunDetail {
     user_name: string
     is_leader: boolean
     is_ready: boolean
+    is_removed: boolean
   }>
   current_user_is_ready: boolean
   current_user_is_leader: boolean

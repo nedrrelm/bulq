@@ -28,6 +28,7 @@ export interface GroupDetails {
     store_name: string
     state: string
     leader_name: string
+    leader_is_removed: boolean
     planned_on: string | null
   }>
 }

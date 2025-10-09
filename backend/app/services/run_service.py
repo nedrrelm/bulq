@@ -143,7 +143,8 @@ class RunService(BaseService):
                     "user_id": str(participation.user_id),
                     "user_name": participation.user.name,
                     "is_leader": participation.is_leader,
-                    "is_ready": participation.is_ready
+                    "is_ready": participation.is_ready,
+                    "is_removed": participation.is_removed
                 })
 
         # Get products and bids for this run
