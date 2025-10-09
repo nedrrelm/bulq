@@ -6,6 +6,7 @@ import type { Group, Store } from '../api'
 import type { ProductSearchResult } from '../types/product'
 import NewGroupPopup from './NewGroupPopup'
 import NewStorePopup from './NewStorePopup'
+import NewProductPopup from './NewProductPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateLabel } from '../utils/runStates'
@@ -23,6 +24,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
   const [error, setError] = useState('')
   const [showNewGroupPopup, setShowNewGroupPopup] = useState(false)
   const [showNewStorePopup, setShowNewStorePopup] = useState(false)
+  const [showNewProductPopup, setShowNewProductPopup] = useState(false)
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -181,6 +183,12 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     // It will be available when creating new runs
   }
 
+  const handleNewProductSuccess = () => {
+    setShowNewProductPopup(false)
+    // Product has been added, no need to update state here
+    // It will be available when searching for products
+  }
+
   return (
     <>
       {showNewGroupPopup && (
@@ -197,10 +205,20 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
         />
       )}
 
+      {showNewProductPopup && (
+        <NewProductPopup
+          onClose={() => setShowNewProductPopup(false)}
+          onSuccess={handleNewProductSuccess}
+        />
+      )}
+
       <div className="groups-container">
         <div className="groups-header">
           <h3>My Groups</h3>
           <div className="header-buttons">
+            <button onClick={() => setShowNewProductPopup(true)} className="btn btn-secondary">
+              + New Product
+            </button>
             <button onClick={() => setShowNewStorePopup(true)} className="btn btn-secondary">
               + New Store
             </button>
