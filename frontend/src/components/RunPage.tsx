@@ -1,4 +1,5 @@
 import { useState, useEffect, memo, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import './RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
@@ -476,12 +477,18 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
           {run.group_name}
         </span>
         {' > '}
-        <span>{run.store_name}</span>
+        <Link to={`/stores/${run.store_id}`} className="breadcrumb-link">
+          {run.store_name}
+        </Link>
       </div>
 
       <div className="run-header">
         <div className="run-title">
-          <h2>{run.store_name}</h2>
+          <h2>
+            <Link to={`/stores/${run.store_id}`} className="store-link">
+              {run.store_name}
+            </Link>
+          </h2>
           <span className={`run-state state-${run.state}`}>
             {stateDisplay.label}
           </span>
@@ -507,7 +514,9 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             </div>
             <div className="info-item">
               <label>Store:</label>
-              <span>{run.store_name}</span>
+              <Link to={`/stores/${run.store_id}`} className="info-link">
+                {run.store_name}
+              </Link>
             </div>
             <div className="info-item">
               <label>Leader:</label>
