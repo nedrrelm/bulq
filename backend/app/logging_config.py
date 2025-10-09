@@ -2,12 +2,44 @@
 
 import logging
 import sys
+import json
+import os
+from pathlib import Path
 from typing import Any
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
+
+
+class JSONFormatter(logging.Formatter):
+    """Formatter that outputs JSON for production log aggregation."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        # Base log data
+        log_data = {
+            "timestamp": datetime.utcfromtimestamp(record.created).isoformat() + "Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+
+        # Add exception info if present
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+
+        # Add extra context from record
+        for attr in ["user_id", "run_id", "group_id", "request_id",
+                     "path", "method", "status_code", "duration_ms"]:
+            if hasattr(record, attr):
+                log_data[attr] = getattr(record, attr)
+
+        return json.dumps(log_data)
 
 
 class StructuredFormatter(logging.Formatter):
-    """Custom formatter that outputs structured log messages."""
+    """Custom formatter that outputs structured log messages for development."""
 
     def format(self, record: logging.LogRecord) -> str:
         # Base log data
@@ -23,22 +55,10 @@ class StructuredFormatter(logging.Formatter):
             log_data["exception"] = self.formatException(record.exc_info)
 
         # Add extra context from record
-        if hasattr(record, "user_id"):
-            log_data["user_id"] = record.user_id
-        if hasattr(record, "run_id"):
-            log_data["run_id"] = record.run_id
-        if hasattr(record, "group_id"):
-            log_data["group_id"] = record.group_id
-        if hasattr(record, "request_id"):
-            log_data["request_id"] = record.request_id
-        if hasattr(record, "path"):
-            log_data["path"] = record.path
-        if hasattr(record, "method"):
-            log_data["method"] = record.method
-        if hasattr(record, "status_code"):
-            log_data["status_code"] = record.status_code
-        if hasattr(record, "duration_ms"):
-            log_data["duration_ms"] = record.duration_ms
+        for attr in ["user_id", "run_id", "group_id", "request_id",
+                     "path", "method", "status_code", "duration_ms"]:
+            if hasattr(record, attr):
+                log_data[attr] = getattr(record, attr)
 
         # Format as key=value pairs for easy parsing
         parts = []
@@ -58,6 +78,10 @@ def setup_logging(level: str = "INFO") -> None:
     Args:
         level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     """
+    env = os.getenv("ENV", "development")
+    log_format = os.getenv("LOG_FORMAT", "structured")
+    log_file = os.getenv("LOG_FILE", "")
+
     # Get root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, level.upper()))
@@ -66,11 +90,32 @@ def setup_logging(level: str = "INFO") -> None:
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    # Console handler with structured formatter
+    # Choose formatter based on environment and configuration
+    if log_format == "json" or env == "production":
+        formatter = JSONFormatter()
+    else:
+        formatter = StructuredFormatter()
+
+    # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(getattr(logging, level.upper()))
-    console_handler.setFormatter(StructuredFormatter())
+    console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
+
+    # File handler with rotation (if LOG_FILE is set)
+    if log_file:
+        log_dir = Path(log_file).parent
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=10 * 1024 * 1024,  # 10 MB
+            backupCount=5,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(getattr(logging, level.upper()))
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
 
     # Reduce noise from third-party libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
