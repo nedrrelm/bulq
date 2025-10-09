@@ -19,15 +19,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   const selectRef = useRef<HTMLSelectElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
-  useModalFocusTrap(modalRef)
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleEscape)
+  useModalFocusTrap(modalRef, true, onClose)
 
     return () => window.removeEventListener('keydown', handleEscape)
   }, [onClose])

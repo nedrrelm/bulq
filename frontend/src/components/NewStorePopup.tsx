@@ -18,17 +18,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
   const [submitting, setSubmitting] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
 
-  useModalFocusTrap(modalRef)
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [onClose])
+  useModalFocusTrap(modalRef, true, onClose)
 
   const validateStoreName = (value: string): boolean => {
     setError('')

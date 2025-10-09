@@ -18,17 +18,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
   const [submitting, setSubmitting] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
 
-  useModalFocusTrap(modalRef)
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [onClose])
+  useModalFocusTrap(modalRef, true, onClose)
 
   const validateGroupName = (value: string): boolean => {
     setError('')

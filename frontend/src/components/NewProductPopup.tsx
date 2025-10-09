@@ -22,7 +22,7 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
   const [loadingStores, setLoadingStores] = useState(true)
   const modalRef = useRef<HTMLDivElement>(null)
 
-  useModalFocusTrap(modalRef)
+  useModalFocusTrap(modalRef, true, onClose)
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -38,16 +38,6 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
 
     fetchStores()
   }, [])
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [onClose])
 
   const validateProductName = (value: string): boolean => {
     const trimmed = value.trim()
