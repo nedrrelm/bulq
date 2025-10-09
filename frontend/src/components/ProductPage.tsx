@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import './ProductPage.css'
+import '../styles/components/ProductPage.css'
 import { productsApi, ApiError } from '../api'
 import LoadingSpinner from './LoadingSpinner'
-import './LoadingSpinner.css'
+import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
 
 interface PriceEntry {

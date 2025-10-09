@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import './StorePage.css'
+import '../styles/components/StorePage.css'
 import LoadingSpinner from './LoadingSpinner'
-import './LoadingSpinner.css'
+import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
 import RunCard from './RunCard'
 

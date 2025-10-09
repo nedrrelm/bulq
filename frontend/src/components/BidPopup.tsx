@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import './BidPopup.css'
+import '../styles/components/BidPopup.css'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateDecimal, parseDecimal } from '../utils/validation'
 

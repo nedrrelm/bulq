@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { reassignmentApi } from '../api'
-import './ReassignLeaderPopup.css'
+import '../styles/components/ReassignLeaderPopup.css'
 
 interface Participant {
   user_id: string

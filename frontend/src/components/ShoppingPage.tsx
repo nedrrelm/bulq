@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import './ShoppingPage.css'
+import '../styles/components/ShoppingPage.css'
 import { WS_BASE_URL } from '../config'
 import { shoppingApi, ApiError } from '../api'
 import type { ShoppingListItem } from '../api'

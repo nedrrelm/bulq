@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import './GroupPage.css'
+import '../styles/components/GroupPage.css'
 import { WS_BASE_URL } from '../config'
 import { groupsApi, ApiError } from '../api'
 import type { GroupDetails } from '../api'

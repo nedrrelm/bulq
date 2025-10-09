@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import './RunCard.css'
+import '../styles/components/RunCard.css'
 import '../styles/run-states.css'
 import { getStateLabel } from '../utils/runStates'
 
