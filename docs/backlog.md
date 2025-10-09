@@ -2,13 +2,58 @@
 
 Feature backlog and technical debt for Bulq development.
 
-## Technical Debt / Code Quality
+## 🚀 Critical: Production Readiness
+
+These items must be completed before production deployment.
 
 ---
 
-### Redis session storage
+### Database Repository Implementation
 **Status**: Critical (before production)
-**Affected files**: `app/auth.py`
+**Affected files**: `app/repository.py`
+
+**Problem:** Currently using `MemoryRepository` with test data. `DatabaseRepository` exists but is not implemented.
+
+**Solution:**
+1. Implement all methods in `DatabaseRepository` using SQLAlchemy queries
+2. Add transaction management (try/commit/rollback blocks)
+3. Test all repository methods work correctly
+4. Set `REPO_MODE=database` in production environment
+
+---
+
+### Database Migrations with Alembic
+**Status**: Critical (before production)
+**Affected files**: New `alembic/` directory, `app/main.py`
+
+**Problem:** Using `create_tables()` which can't handle schema changes. No migration history.
+
+**Current limitations:**
+- Can't add/remove/modify columns safely
+- Can't track what schema version is deployed
+- Can't roll back changes
+
+**Solution:** Set up Alembic for database migrations:
+```bash
+alembic init alembic
+alembic revision --autogenerate -m "Initial migration"
+alembic upgrade head
+```
+
+**Workflow:**
+1. Modify models in `models.py`
+2. Generate migration: `alembic revision --autogenerate -m "description"`
+3. Review generated migration file
+4. Apply: `alembic upgrade head`
+5. Rollback if needed: `alembic downgrade -1`
+
+Remove `create_tables()` call from `main.py` once migrations are in place.
+
+---
+
+### Session & Authentication Infrastructure
+**Status**: Critical (before production)
+**Affected files**: `app/auth.py`, `docker-compose.yml`
 
 **Problem:** Sessions stored in-memory dictionary. All users logged out on server restart.
 
@@ -32,105 +77,170 @@ def create_session(user_id: str) -> str:
     return session_token
 ```
 
-Add Redis to docker-compose.yml.
+Add Redis service to docker-compose.yml.
 
 ---
 
-### Add transaction management
-**Status**: High Priority
-**Affected files**: `app/repository.py`
-
-**Problem:** No explicit transaction boundaries. Multi-step operations (e.g., create run + create participation) can leave inconsistent data on failure.
-
-**Solution:** Implement transaction management within repository methods:
-- Wrap multi-step operations in try/commit/rollback blocks
-- Consider adding repository-level transaction context manager
-
----
-
-### Switch from in-memory to database repository
+### Security & Infrastructure
 **Status**: Critical (before production)
-**Affected files**: `app/repository.py`, `app/config.py`
+**Affected files**: `app/main.py`, `app/routes/auth.py`, `Caddyfile`, `docker-compose.yml`
 
-**Problem:** Currently using `MemoryRepository` with test data in development. Need to switch to `DatabaseRepository` for production.
+**Items:**
 
-**Current setup:**
-- `REPO_MODE` in `app/config.py` determines which repository implementation to use
-- Memory mode has hardcoded test data
-- Database mode uses PostgreSQL
+1. **Rate Limiting** - Use `slowapi` middleware:
+   - Login/registration: 5 requests/minute
+   - Bid placement: 20 requests/minute
+   - General API: 100 requests/minute
+
+2. **HTTPS/SSL with Caddy** - Set up reverse proxy:
+   ```
+   yourdomain.com {
+       reverse_proxy backend:8000
+   }
+   ```
+   Configure automatic Let's Encrypt certificates.
+
+3. **Production CORS** - Configure allowed origins:
+   ```python
+   origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+   if not origins:
+       raise RuntimeError("ALLOWED_ORIGINS must be set in production!")
+   ```
+
+4. **Static Frontend Build** - Build and serve optimized frontend files with Caddy
+
+5. **Database Backups** - Automated daily backups with pg_dump, S3 storage, retention policy
+
+---
+
+## ✨ Feature Requests
+
+---
+
+### Add New Store
+**Status**: Planned
+**Affected files**: Frontend components, `app/routes/stores.py`
+
+**Description:** Allow users to add new stores to the platform.
+
+**Current state:**
+- ✅ Backend route exists: `POST /stores/create`
+- ✅ Service method exists: `StoreService.create_store(name)`
+- ❌ No frontend UI to create stores
 
 **Solution:**
-1. Ensure `REPO_MODE=database` in production environment
-2. Remove or disable memory mode in production builds
-3. Verify all repository methods work correctly with DatabaseRepository
-4. Test data migrations from memory to database if needed
+1. Add "Add Store" button/form in frontend (possibly in Groups page or separate Stores page)
+2. Form with single input field: Store name
+3. Validation: Store name required, minimum 2 characters
+4. On success: Add store to local store list, show success message
+5. Consider: Should all users be able to add stores, or only admins?
+
+**Considerations:**
+- Should stores have additional fields (address, type, etc.)?
+- How to handle duplicate store names?
+- Should stores be verified/approved before appearing for all users?
 
 ---
 
-### Database migrations with Alembic
-**Status**: Critical (before production)
-**Affected files**: New `alembic/` directory, `app/main.py`
+### Add New Product
+**Status**: Planned
+**Affected files**: Frontend components, `app/routes/products.py` (to be created)
 
-**Problem:** Using `create_tables()` which can't handle schema changes. No migration history.
+**Description:** Allow users to add new products to stores.
 
-**Current limitations:**
-- Can't add/remove/modify columns safely
-- Can't track what schema version is deployed
-- Can't roll back changes
-- Breaks when models change in production
+**Current state:**
+- ✅ Repository method exists: `repo.create_product(store_id, name, base_price)`
+- ✅ Service method exists: `ProductService.create_product(store_id, name, base_price)`
+- ❌ No backend route for creating products
+- ❌ No frontend UI to create products
 
-**Solution:** Set up Alembic for database migrations:
-```bash
-alembic init alembic
-alembic revision --autogenerate -m "Initial migration"
-alembic upgrade head
+**Solution:**
+
+**Backend:**
+1. Create `POST /products/create` route in new `app/routes/products.py`:
+   ```python
+   @router.post("/create")
+   async def create_product(
+       request: CreateProductRequest,
+       current_user: User = Depends(require_auth),
+       db: Session = Depends(get_db)
+   ):
+       repo = get_repository(db)
+       service = ProductService(repo)
+       product = service.create_product(
+           store_id=request.store_id,
+           name=request.name,
+           base_price=request.base_price
+       )
+       return {"id": str(product.id), "name": product.name, ...}
+   ```
+
+**Frontend:**
+1. Add "Add Product" button/form (possibly in product search results or store-specific page)
+2. Form fields:
+   - Store selection (dropdown)
+   - Product name (text input)
+   - Base price (number input)
+3. Validation:
+   - All fields required
+   - Price must be positive
+   - Price cannot be zero
+4. On success: Product available for bidding immediately
+
+**Considerations:**
+- Should products have categories/tags?
+- Should products have descriptions?
+- How to handle duplicate product names in same store?
+- Should there be product moderation/approval?
+- Consider adding product units (e.g., "per lb", "per item")
+
+---
+
+### Allow Run Leader to Cancel Run at Any Stage
+**Status**: Planned
+**Affected files**: `app/services/run_service.py`, `app/routes/runs.py`, frontend
+
+**Problem:** Runs can only be cancelled before the `distributing` state. Leaders have no way to cancel once in certain stages.
+
+**Solution:**
+1. Backend: Add `cancel_run` endpoint allowing leader to cancel from any state
+2. Update state machine to allow transitions to `cancelled` from all states
+3. Add business logic for different stages:
+   - Before `shopping`: Simple state change
+   - During `shopping`: Handle partial purchases
+   - During `distributing`: Handle returns/refunds
+4. Frontend: Add "Cancel Run" button visible only to leader
+5. Add confirmation dialog with consequences based on current state
+6. Consider adding `cancellation_reason` field
+
+**State machine change in `app/run_state.py`:**
+```python
+# Add transitions from all states to cancelled
+state_machine.add_transition('cancel', '*', 'cancelled')
 ```
 
-**Workflow:**
-1. Modify models in `models.py`
-2. Generate migration: `alembic revision --autogenerate -m "description"`
-3. Review generated migration file
-4. Apply: `alembic upgrade head`
-5. Rollback if needed: `alembic downgrade -1`
+---
 
-Remove `create_tables()` call from `main.py` once migrations are in place.
+## 🔧 Future Enhancements
 
 ---
 
-## Future Enhancements
-
-### Comprehensive test suite
-**Status**: Future
-**Affected files**: `backend/tests/`
-
-**Problem:** Minimal or no tests currently. Need comprehensive coverage.
-
-**Solution:** Implement:
-- Unit tests for repository methods
-- Integration tests for API endpoints
-- Test fixtures for common scenarios
-- WebSocket connection tests
-- State machine transition tests
-- Use pytest with fixtures and parametrize
-
----
-
-### Implement caching
+### Caching & Performance
 **Status**: Future
 **Affected files**: Multiple
 
-**Problem:** Store lists, product lists fetched on every request - inefficient.
-
-**Solution:**
-- Use Redis for caching
-- Cache store list (rarely changes)
+**Backend:**
+- Cache store lists (rarely change)
 - Cache product lists per store
-- Cache with TTL (time-to-live)
-- Invalidate on updates
+- Use Redis with TTL and invalidation on updates
+
+**Frontend:**
+- Request deduplication (React Query/SWR)
+- Optimize SVG graph rendering (use charting library or memoization)
 
 ---
 
-### Add pagination
+### Pagination
 **Status**: Future
 **Affected files**: `app/routes/*.py`
 
@@ -143,226 +253,34 @@ async def get_items(skip: int = 0, limit: int = 100):
     return repo.get_items(skip=skip, limit=limit)
 ```
 
-Implement in repository methods with `OFFSET` and `LIMIT`.
+---
+
+### Product Families
+**Status**: Future exploration
+
+**Description:** Allow using general terms (e.g., "rice") instead of specific variants (e.g., "sushi rice", "jasmine rice", "basmati rice").
+
+Creates a hierarchy/grouping system for products.
 
 ---
 
-### Rate limiting
-**Status**: Critical (before production)
-**Affected files**: `app/main.py`, `app/routes/auth.py`
-
-**Problem:** No protection against abuse - login, registration, bid placement all unprotected.
-
-**Solution:** Use `slowapi` middleware:
-```python
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-
-@router.post("/login")
-@limiter.limit("5/minute")
-async def login(...):
-```
-
-Apply to:
-- Login/registration: 5 requests/minute
-- Bid placement: 20 requests/minute
-- General API: 100 requests/minute
+## 🎨 Code Quality Improvements
 
 ---
 
-### HTTPS/SSL configuration with Caddy
-**Status**: Critical (before production)
-**Affected files**: New `Caddyfile`, `docker-compose.yml`
-
-**Problem:** No SSL/HTTPS configured. Passwords and session tokens sent in plaintext.
-
-**Solution:** Set up Caddy as reverse proxy:
-1. Create Caddyfile:
-```
-yourdomain.com {
-    reverse_proxy backend:8000
-}
-```
-2. Add Caddy service to docker-compose
-3. Configure automatic Let's Encrypt certificates
-4. Update CORS settings for production domain
-
----
-
-### Production CORS configuration
-**Status**: Critical (before production)
-**Affected files**: `app/main.py`
-
-**Problem:** CORS currently only allows localhost:
-```python
-allow_origins=[
-    "http://localhost:3000",
-    "http://localhost:5173",
-]
-```
-
-**Solution:** Add production domain and configure properly:
-```python
-origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
-if not origins:
-    raise RuntimeError("ALLOWED_ORIGINS must be set in production!")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-```
-
----
-
-### Build and serve static frontend files
-**Status**: Critical (before production)
-**Affected files**: `frontend/Dockerfile`, `docker-compose.yml`, `Caddyfile`
-
-**Problem:** Frontend currently served by Vite dev server, not suitable for production.
-
-**Solution:**
-1. Update frontend Dockerfile to build static files:
-```dockerfile
-# Build stage
-FROM node:18 AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# Production stage - serve with Caddy
-FROM caddy:2
-COPY --from=builder /app/dist /srv
-COPY Caddyfile /etc/caddy/Caddyfile
-```
-2. Configure Caddy to serve static files and proxy API
-
----
-
-### Database backup strategy
-**Status**: Important (before production)
-**Affected files**: New backup scripts
-
-**Problem:** No automated database backups. Risk of data loss.
-
-**Solution:**
-1. Automated daily backups using pg_dump
-2. Store backups in separate location (S3, separate volume)
-3. Test restore procedure
-4. Retention policy (e.g., keep daily for 7 days, weekly for 4 weeks)
-
-Example backup script:
-```bash
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-pg_dump -h db -U bulq bulq | gzip > /backups/bulq_$DATE.sql.gz
-# Upload to S3 or other storage
-# Clean old backups
-```
-
----
-
-## Frontend Technical Debt / Code Quality
-
----
-
-### 🟡 MEDIUM: No Request Deduplication
-**Status**: Medium Priority - Performance
-**Affected files**: App.tsx, Groups.tsx, RunPage.tsx
-
-**Problem:** Multiple components can trigger the same fetch simultaneously:
-- Product search in App.tsx header
-- Product search in Groups.tsx
-- Run details fetched by RunPage when navigating
-
-**Solution:** Implement a simple request cache or use a library like React Query/SWR.
-
----
-
-### 🟢 LOW: Missing PropTypes/Runtime Validation
-**Status**: Low Priority - Type Safety
+### Frontend Type Safety
+**Status**: Low Priority
 **Affected files**: All components
 
-**Problem:** TypeScript interfaces are defined, but no runtime validation:
-- No validation that `runId` is a valid UUID
-- No validation that API responses match expected shape
-
-**Solution:** Consider adding runtime validation with Zod or similar.
-
----
-
-## Frontend Performance
+**Items:**
+- Add runtime validation with Zod
+- Validate API responses match expected shape
+- Validate UUIDs before API calls
 
 ---
 
-### SVG Graph Rendering Performance
-**Status**: Low Priority
-**Affected files**: ProductPage.tsx:30-149
+## 📝 Notes
 
-**Problem:** SVG graphs rendered inline can be expensive with many price points.
-
-**Solution:** Consider using a charting library (Chart.js, Recharts) or memoize the graph component.
-
----
-
-## Frontend Architecture Improvements
-
----
-
-## Feature Requests
-
-### Allow run leader to cancel run at any stage
-**Status**: Planned
-**Affected files**: `app/services/run_service.py`, `app/routes/runs.py`, `frontend/src/components/RunPage.tsx`
-
-**Problem:** Currently, runs can only be cancelled before the `distributing` state (per state machine rules). Leaders have no way to cancel a run once it reaches certain stages, even if needed.
-
-**Solution:**
-1. Backend: Add `cancel_run` endpoint that allows the leader to cancel a run from any state
-2. Update state machine to allow transitions to `cancelled` from all states (not just before `distributing`)
-3. Add business logic to handle cancellation at different stages:
-   - Before `shopping`: Simple state change
-   - During `shopping`: May need to handle partial purchases
-   - During `distributing`: May need to handle returns/refunds
-4. Frontend: Add "Cancel Run" button visible only to leader
-5. Add confirmation dialog explaining consequences based on current state
-6. Consider adding a `cancellation_reason` field for tracking
-
-**State machine change in `app/run_state.py`:**
-```python
-# Add transitions from all states to cancelled
-state_machine.add_transition('cancel', '*', 'cancelled')
-```
-
-**API endpoint:**
-```python
-@router.post("/runs/{run_id}/cancel")
-async def cancel_run(
-    run_id: str,
-    reason: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    # Verify user is leader
-    # Cancel run
-    # Notify participants via WebSocket
-```
-
----
-
-## Product Discovery
-
-### Product families
-**Status**: Planned
-
-Allows using general terms (e.g., "rice") instead of specific variants (e.g., "sushi rice", "jasmine rice", "basmati rice").
-
-This creates a hierarchy/grouping system for products.
+- **Repository Pattern**: Keep MemoryRepository for development/testing, but ensure DatabaseRepository is primary for production
+- **WebSocket Support**: Already planned in architecture docs - implement after core features stable
+- **Mobile App**: Native Kotlin Android app planned after web platform stable
