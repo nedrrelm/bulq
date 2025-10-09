@@ -496,3 +496,21 @@
   text-align: center;
   padding: 20px;
 }
+
+/* Reassignment banner */
+.reassignment-banner {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+}
+
+.reassignment-content {
+  flex: 1;
+}
+
+.reassignment-actions {
+  display: flex;
+  gap: 0.5rem;
+}

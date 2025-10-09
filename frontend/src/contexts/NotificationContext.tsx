@@ -47,6 +47,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }
       return `Run at ${store_name} ${stateMessages[new_state] || `changed to ${new_state}`}`
     }
+
+    if (notification.type === 'leader_reassignment_request') {
+      const { from_user_name, store_name } = notification.data
+      return `${from_user_name} wants to transfer leadership of ${store_name} run to you`
+    }
+
+    if (notification.type === 'leader_reassignment_accepted') {
+      const { new_leader_name, store_name } = notification.data
+      return `${new_leader_name} accepted leadership of ${store_name} run`
+    }
+
+    if (notification.type === 'leader_reassignment_declined') {
+      const { declined_by_name, store_name } = notification.data
+      return `${declined_by_name} declined leadership of ${store_name} run`
+    }
+
     return 'New notification'
   }
 
@@ -79,6 +95,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setNotifications([])
       setUnreadCount(0)
     }
+  }, [user])
+
+  // Poll for new notifications every 10 seconds
+  useEffect(() => {
+    if (!user) return
+
+    const interval = setInterval(() => {
+      refreshUnreadCount()
+    }, 10000) // Poll every 10 seconds
+
+    return () => clearInterval(interval)
   }, [user])
 
   const fetchNotifications = async (limit: number = 20) => {

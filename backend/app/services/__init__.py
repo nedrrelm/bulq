@@ -5,6 +5,7 @@ from .distribution_service import DistributionService
 from .product_service import ProductService
 from .store_service import StoreService
 from .notification_service import NotificationService
+from .reassignment_service import ReassignmentService
 
 __all__ = [
     'RunService',
@@ -14,4 +15,5 @@ __all__ = [
     'ProductService',
     'StoreService',
     'NotificationService',
+    'ReassignmentService',
 ]

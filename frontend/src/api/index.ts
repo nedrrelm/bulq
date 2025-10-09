@@ -8,6 +8,7 @@ export { productsApi } from './products'
 export { distributionApi } from './distribution'
 export { searchApi } from './search'
 export { notificationsApi } from './notifications'
+export { reassignmentApi } from './reassignment'
 
 export type { LoginRequest, RegisterRequest } from './auth'
 export type { Group, GroupDetails, CreateGroupRequest } from './groups'

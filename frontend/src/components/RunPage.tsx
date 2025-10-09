@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 import './RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
-import { runsApi, ApiError } from '../api'
+import { runsApi, reassignmentApi, ApiError } from '../api'
 import type { RunDetail } from '../api'
-import type { AvailableProduct } from '../types/product'
+import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
 import BidPopup from './BidPopup'
 import AddProductPopup from './AddProductPopup'
+import ReassignLeaderPopup from './ReassignLeaderPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
@@ -15,6 +16,7 @@ import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
+import { useNotifications } from '../contexts/NotificationContext'
 
 // Using RunDetail type from API layer
 type Product = RunDetail['products'][0]
@@ -160,8 +162,11 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   const [showBidPopup, setShowBidPopup] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
+  const [showReassignPopup, setShowReassignPopup] = useState(false)
+  const [reassignmentRequest, setReassignmentRequest] = useState<LeaderReassignmentRequest | null>(null)
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
+  const { refreshUnreadCount } = useNotifications()
 
   const fetchRunDetails = async (silent = false) => {
     try {
@@ -181,9 +186,44 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     }
   }
 
+  const fetchReassignmentRequest = useCallback(async () => {
+    try {
+      const response = await reassignmentApi.getRunRequest(runId)
+      console.log('Fetched reassignment request:', response.request)
+      setReassignmentRequest(response.request)
+    } catch (err) {
+      // Silently fail - not critical
+      console.error('Failed to fetch reassignment request:', err)
+    }
+  }, [runId])
+
   useEffect(() => {
     fetchRunDetails()
-  }, [runId])
+    fetchReassignmentRequest()
+  }, [runId, fetchReassignmentRequest])
+
+  const handleAcceptReassignment = async () => {
+    if (!reassignmentRequest) return
+    try {
+      await reassignmentApi.acceptReassignment(reassignmentRequest.id)
+      showToast('Leadership accepted!', 'success')
+      setReassignmentRequest(null)
+      await fetchRunDetails(true)
+    } catch (err: any) {
+      showToast(err.message || 'Failed to accept reassignment', 'error')
+    }
+  }
+
+  const handleDeclineReassignment = async () => {
+    if (!reassignmentRequest) return
+    try {
+      await reassignmentApi.declineReassignment(reassignmentRequest.id)
+      showToast('Request declined', 'success')
+      setReassignmentRequest(null)
+    } catch (err: any) {
+      showToast(err.message || 'Failed to decline reassignment', 'error')
+    }
+  }
 
   // WebSocket for real-time updates
   const handleWebSocketMessage = useCallback((message: any) => {
@@ -303,8 +343,31 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             )
           }
         })
+      } else if (message.type === 'reassignment_requested') {
+        // Reassignment request created - fetch request for all participants
+        console.log('WS: reassignment_requested', message.data)
+        fetchReassignmentRequest()
+        if (message.data.to_user_id === userId) {
+          showToast('You have a new leadership transfer request', 'info')
+          refreshUnreadCount()
+        }
+      } else if (message.type === 'reassignment_accepted') {
+        // Reassignment accepted - clear request and refresh run
+        console.log('WS: reassignment_accepted', message.data)
+        setReassignmentRequest(null)
+        fetchRunDetails(true)
+        showToast('Leadership has been transferred', 'success')
+        refreshUnreadCount()
+      } else if (message.type === 'reassignment_declined') {
+        // Reassignment declined - clear request
+        console.log('WS: reassignment_declined', message.data)
+        setReassignmentRequest(null)
+        if (message.data.from_user_id === userId) {
+          showToast('Leadership transfer request was declined', 'info')
+          refreshUnreadCount()
+        }
       }
-  }, [run, userId])
+  }, [run, userId, showToast, fetchReassignmentRequest, fetchRunDetails, refreshUnreadCount])
 
   useWebSocket(
     runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
@@ -517,6 +580,23 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
         )}
       </div>
 
+      {/* Reassignment banner for target user */}
+      {reassignmentRequest && reassignmentRequest.to_user_id === userId && (
+        <div className="alert alert-warning reassignment-banner">
+          <div className="reassignment-content">
+            <strong>{reassignmentRequest.from_user_name}</strong> wants to transfer leadership to you.
+          </div>
+          <div className="reassignment-actions">
+            <button onClick={handleAcceptReassignment} className="btn btn-success btn-sm">
+              Accept
+            </button>
+            <button onClick={handleDeclineReassignment} className="btn btn-secondary btn-sm">
+              Decline
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="run-info">
         <div className="info-card">
           <h3>Run Information</h3>
@@ -533,9 +613,22 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             </div>
             <div className="info-item">
               <label>Leader:</label>
-              <span className={run.participants.find(p => p.is_leader)?.is_removed ? 'removed-user' : ''}>
-                {run.participants.find(p => p.is_leader)?.user_name || 'Unknown'}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className={run.participants.find(p => p.is_leader)?.is_removed ? 'removed-user' : ''}>
+                  {run.participants.find(p => p.is_leader)?.user_name || 'Unknown'}
+                </span>
+                {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && run.participants.length > 1 && (
+                  <button
+                    onClick={() => setShowReassignPopup(true)}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                    disabled={reassignmentRequest !== null}
+                    title={reassignmentRequest ? 'Reassignment request pending' : 'Reassign leadership'}
+                  >
+                    {reassignmentRequest ? 'Pending...' : 'Reassign'}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="info-item">
               <label>Status:</label>
@@ -782,6 +875,22 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
           runId={runId}
           onProductSelected={handleProductSelected}
           onCancel={handleCancelAddProduct}
+        />
+      )}
+
+      {showReassignPopup && run && (
+        <ReassignLeaderPopup
+          runId={runId}
+          participants={run.participants.map(p => ({
+            user_id: p.user_id,
+            user_name: p.user_name,
+            is_leader: p.is_leader,
+          }))}
+          onClose={() => setShowReassignPopup(false)}
+          onSuccess={() => {
+            showToast('Reassignment request sent!', 'success')
+            fetchReassignmentRequest()
+          }}
         />
       )}
 

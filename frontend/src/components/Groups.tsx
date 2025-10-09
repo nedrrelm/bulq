@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './Groups.css'
 import { WS_BASE_URL } from '../config'
-import { groupsApi, ApiError } from '../api'
+import { groupsApi, reassignmentApi, ApiError } from '../api'
 import type { Group, Store } from '../api'
-import type { ProductSearchResult } from '../types/product'
+import type { ProductSearchResult, PendingReassignments } from '../types'
 import NewGroupPopup from './NewGroupPopup'
 import NewStorePopup from './NewStorePopup'
 import NewProductPopup from './NewProductPopup'
@@ -25,6 +25,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
   const [showNewGroupPopup, setShowNewGroupPopup] = useState(false)
   const [showNewStorePopup, setShowNewStorePopup] = useState(false)
   const [showNewProductPopup, setShowNewProductPopup] = useState(false)
+  const [pendingReassignments, setPendingReassignments] = useState<PendingReassignments>({ sent: [], received: [] })
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -41,7 +42,17 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       }
     }
 
+    const fetchReassignments = async () => {
+      try {
+        const requests = await reassignmentApi.getMyRequests()
+        setPendingReassignments(requests)
+      } catch (err) {
+        console.error('Failed to fetch reassignment requests:', err)
+      }
+    }
+
     fetchGroups()
+    fetchReassignments()
   }, [])
 
   // Track current group IDs to avoid reconnecting when group data changes
@@ -213,6 +224,18 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       )}
 
       <div className="groups-container">
+        {/* Pending reassignment requests banner */}
+        {pendingReassignments.sent.length > 0 && (
+          <div className="alert alert-info reassignment-pending-banner">
+            <strong>Pending Leadership Transfer:</strong> You have {pendingReassignments.sent.length} pending leadership transfer request{pendingReassignments.sent.length > 1 ? 's' : ''}.
+            {pendingReassignments.sent.map(req => (
+              <div key={req.id} style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
+                → {req.store_name} (waiting for {req.to_user_name})
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="groups-header">
           <h3>My Groups</h3>
           <div className="header-buttons">

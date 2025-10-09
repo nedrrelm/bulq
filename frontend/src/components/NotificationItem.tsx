@@ -34,6 +34,21 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
       return message
     }
 
+    if (notification.type === 'leader_reassignment_request') {
+      const { from_user_name, store_name } = notification.data
+      return `${from_user_name} wants to transfer leadership of ${store_name} run to you`
+    }
+
+    if (notification.type === 'leader_reassignment_accepted') {
+      const { new_leader_name, store_name } = notification.data
+      return `${new_leader_name} accepted leadership of ${store_name} run`
+    }
+
+    if (notification.type === 'leader_reassignment_declined') {
+      const { declined_by_name, store_name } = notification.data
+      return `${declined_by_name} declined leadership of ${store_name} run`
+    }
+
     return 'New notification'
   }
 
@@ -43,9 +58,14 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
     }
 
     // Navigate to the run page
-    if (notification.type === 'run_state_changed') {
+    if (notification.type === 'run_state_changed' ||
+        notification.type === 'leader_reassignment_request' ||
+        notification.type === 'leader_reassignment_accepted' ||
+        notification.type === 'leader_reassignment_declined') {
       const { run_id } = notification.data
-      navigate(`/runs/${run_id}`)
+      if (run_id) {
+        navigate(`/runs/${run_id}`)
+      }
     }
   }
 

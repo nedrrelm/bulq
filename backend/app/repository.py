@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 import logging
 
-from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, EncounteredPrice, Notification
+from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, EncounteredPrice, Notification, LeaderReassignmentRequest
 from .config import get_repo_mode
 from .run_state import RunState, state_machine
 
@@ -316,6 +316,43 @@ class AbstractRepository(ABC):
         """Get a notification by ID."""
         raise NotImplementedError("Subclass must implement get_notification_by_id")
 
+    # ==================== Leader Reassignment Methods ====================
+
+    @abstractmethod
+    def create_reassignment_request(self, run_id: UUID, from_user_id: UUID, to_user_id: UUID):
+        """Create a leader reassignment request."""
+        raise NotImplementedError("Subclass must implement create_reassignment_request")
+
+    @abstractmethod
+    def get_reassignment_request_by_id(self, request_id: UUID):
+        """Get a reassignment request by ID."""
+        raise NotImplementedError("Subclass must implement get_reassignment_request_by_id")
+
+    @abstractmethod
+    def get_pending_reassignment_for_run(self, run_id: UUID):
+        """Get pending reassignment request for a run (if any)."""
+        raise NotImplementedError("Subclass must implement get_pending_reassignment_for_run")
+
+    @abstractmethod
+    def get_pending_reassignments_from_user(self, user_id: UUID) -> List:
+        """Get all pending reassignment requests created by a user."""
+        raise NotImplementedError("Subclass must implement get_pending_reassignments_from_user")
+
+    @abstractmethod
+    def get_pending_reassignments_to_user(self, user_id: UUID) -> List:
+        """Get all pending reassignment requests for a user to respond to."""
+        raise NotImplementedError("Subclass must implement get_pending_reassignments_to_user")
+
+    @abstractmethod
+    def update_reassignment_status(self, request_id: UUID, status: str) -> bool:
+        """Update the status of a reassignment request (accepted/declined)."""
+        raise NotImplementedError("Subclass must implement update_reassignment_status")
+
+    @abstractmethod
+    def cancel_all_pending_reassignments_for_run(self, run_id: UUID) -> int:
+        """Cancel all pending reassignment requests for a run. Returns count of cancelled requests."""
+        raise NotImplementedError("Subclass must implement cancel_all_pending_reassignments_for_run")
+
 
 class DatabaseRepository(AbstractRepository):
     """
@@ -497,6 +534,27 @@ class DatabaseRepository(AbstractRepository):
     def get_notification_by_id(self, notification_id: UUID):
         raise NotImplementedError("DatabaseRepository not yet implemented")
 
+    def create_reassignment_request(self, run_id: UUID, from_user_id: UUID, to_user_id: UUID):
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_reassignment_request_by_id(self, request_id: UUID):
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_pending_reassignment_for_run(self, run_id: UUID):
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_pending_reassignments_from_user(self, user_id: UUID) -> List:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def get_pending_reassignments_to_user(self, user_id: UUID) -> List:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def update_reassignment_status(self, request_id: UUID, status: str) -> bool:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
+    def cancel_all_pending_reassignments_for_run(self, run_id: UUID) -> int:
+        raise NotImplementedError("DatabaseRepository not yet implemented")
+
 
 class MemoryRepository(AbstractRepository):
     """In-memory implementation for testing and development - Singleton."""
@@ -526,6 +584,7 @@ class MemoryRepository(AbstractRepository):
         self._shopping_list_items: Dict[UUID, ShoppingListItem] = {}
         self._encountered_prices: Dict[UUID, EncounteredPrice] = {}
         self._notifications: Dict[UUID, Notification] = {}
+        self._reassignment_requests: Dict[UUID, LeaderReassignmentRequest] = {}
 
         # Create test data
         self._create_test_data()
@@ -1603,6 +1662,74 @@ class MemoryRepository(AbstractRepository):
     def get_notification_by_id(self, notification_id: UUID) -> Optional[Notification]:
         """Get a notification by ID."""
         return self._notifications.get(notification_id)
+
+    # ==================== Leader Reassignment Methods ====================
+
+    def create_reassignment_request(self, run_id: UUID, from_user_id: UUID, to_user_id: UUID) -> LeaderReassignmentRequest:
+        """Create a leader reassignment request."""
+        from datetime import datetime
+
+        request_id = uuid4()
+        request = LeaderReassignmentRequest(
+            id=request_id,
+            run_id=run_id,
+            from_user_id=from_user_id,
+            to_user_id=to_user_id,
+            status="pending",
+            created_at=datetime.utcnow(),
+            resolved_at=None
+        )
+        self._reassignment_requests[request_id] = request
+        return request
+
+    def get_reassignment_request_by_id(self, request_id: UUID) -> Optional[LeaderReassignmentRequest]:
+        """Get a reassignment request by ID."""
+        return self._reassignment_requests.get(request_id)
+
+    def get_pending_reassignment_for_run(self, run_id: UUID) -> Optional[LeaderReassignmentRequest]:
+        """Get pending reassignment request for a run (if any)."""
+        for request in self._reassignment_requests.values():
+            if request.run_id == run_id and request.status == "pending":
+                return request
+        return None
+
+    def get_pending_reassignments_from_user(self, user_id: UUID) -> List[LeaderReassignmentRequest]:
+        """Get all pending reassignment requests created by a user."""
+        return [
+            request for request in self._reassignment_requests.values()
+            if request.from_user_id == user_id and request.status == "pending"
+        ]
+
+    def get_pending_reassignments_to_user(self, user_id: UUID) -> List[LeaderReassignmentRequest]:
+        """Get all pending reassignment requests for a user to respond to."""
+        return [
+            request for request in self._reassignment_requests.values()
+            if request.to_user_id == user_id and request.status == "pending"
+        ]
+
+    def update_reassignment_status(self, request_id: UUID, status: str) -> bool:
+        """Update the status of a reassignment request (accepted/declined)."""
+        from datetime import datetime
+
+        request = self._reassignment_requests.get(request_id)
+        if not request:
+            return False
+
+        request.status = status
+        request.resolved_at = datetime.utcnow()
+        return True
+
+    def cancel_all_pending_reassignments_for_run(self, run_id: UUID) -> int:
+        """Cancel all pending reassignment requests for a run. Returns count of cancelled requests."""
+        from datetime import datetime
+
+        count = 0
+        for request in self._reassignment_requests.values():
+            if request.run_id == run_id and request.status == "pending":
+                request.status = "cancelled"
+                request.resolved_at = datetime.utcnow()
+                count += 1
+        return count
 
 
 def get_repository(db: Session = None) -> AbstractRepository:
