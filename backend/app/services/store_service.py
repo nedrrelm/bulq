@@ -10,9 +10,9 @@ from ..exceptions import ValidationError, NotFoundError
 class StoreService(BaseService):
     """Service for store operations."""
 
-    def get_all_stores(self) -> List[Store]:
-        """Get all available stores."""
-        return self.repo.get_all_stores()
+    def get_all_stores(self, limit: int = 100, offset: int = 0) -> List[Store]:
+        """Get all available stores (paginated)."""
+        return self.repo.get_all_stores(limit, offset)
 
     def create_store(self, name: str) -> Store:
         """Create a new store."""

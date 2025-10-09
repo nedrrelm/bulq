@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
@@ -51,13 +51,15 @@ class StorePageResponse(BaseModel):
 
 @router.get("", response_model=List[StoreResponse])
 async def get_stores(
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
-    """Get all available stores."""
+    """Get all available stores (paginated, max 100 per page)."""
     repo = get_repository(db)
     service = StoreService(repo)
-    stores = service.get_all_stores()
+    stores = service.get_all_stores(limit, offset)
 
     return [StoreResponse(id=str(store.id), name=store.name) for store in stores]
 

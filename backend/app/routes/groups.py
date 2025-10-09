@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
@@ -129,6 +129,24 @@ async def get_group_runs(
 
     try:
         run_responses = service.get_group_runs(group_id, current_user)
+        return [RunResponse(**run) for run in run_responses]
+    except BadRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/{group_id}/runs/history", response_model=List[RunResponse])
+async def get_group_completed_cancelled_runs(
+    group_id: str,
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Get completed and cancelled runs for a specific group (paginated)."""
+    repo = get_repository(db)
+    service = GroupService(repo)
+
+    try:
+        run_responses = service.get_group_completed_cancelled_runs(group_id, current_user, limit, offset)
         return [RunResponse(**run) for run in run_responses]
     except BadRequestError as e:
         raise HTTPException(status_code=400, detail=str(e))

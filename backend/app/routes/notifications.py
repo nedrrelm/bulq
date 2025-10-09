@@ -16,12 +16,12 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 @router.get("")
 async def get_notifications(
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
-    """Get notifications for current user (paginated)."""
+    """Get notifications for current user (paginated, max 100 per page)."""
     repo = get_repository(db)
     service = NotificationService(repo)
 

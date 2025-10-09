@@ -9,7 +9,7 @@ interface NotificationContextType {
   notifications: Notification[]
   unreadCount: number
   loading: boolean
-  fetchNotifications: (limit?: number) => Promise<void>
+  fetchNotifications: (limit?: number, offset?: number) => Promise<void>
   markAsRead: (notificationId: string) => Promise<void>
   markAllAsRead: () => Promise<void>
   refreshUnreadCount: () => Promise<void>
@@ -98,12 +98,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  const fetchNotifications = useCallback(async (limit: number = 20) => {
+  const fetchNotifications = useCallback(async (limit: number = 20, offset: number = 0) => {
     if (!user) return
 
     setLoading(true)
     try {
-      const data = await notificationsApi.getNotifications({ limit })
+      const data = await notificationsApi.getNotifications({ limit, offset })
       setNotifications(data)
     } catch (err) {
       console.error('Failed to fetch notifications:', err)

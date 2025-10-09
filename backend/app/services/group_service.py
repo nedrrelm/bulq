@@ -221,6 +221,70 @@ class GroupService(BaseService):
 
         return run_responses
 
+    def get_group_completed_cancelled_runs(self, group_id: str, user: User, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
+        """
+        Get completed and cancelled runs for a specific group with pagination.
+
+        Args:
+            group_id: The UUID string of the group
+            user: The requesting user
+            limit: Maximum number of runs to return (default 10)
+            offset: Number of runs to skip (default 0)
+
+        Returns:
+            List of run dictionaries with store names
+
+        Raises:
+            BadRequestError: If group ID format is invalid
+            NotFoundError: If group doesn't exist
+            ForbiddenError: If user is not a member of the group
+        """
+        # Verify group ID format
+        try:
+            group_uuid = uuid.UUID(group_id)
+        except ValueError:
+            raise BadRequestError("Invalid group ID format")
+
+        # Get the group
+        group = self.repo.get_group_by_id(group_uuid)
+        if not group:
+            raise NotFoundError("Group", group_uuid)
+
+        # Check if user is a member of the group
+        user_groups = self.repo.get_user_groups(user)
+        if not any(g.id == group_uuid for g in user_groups):
+            raise ForbiddenError("Not a member of this group")
+
+        # Get paginated completed/cancelled runs for the group
+        logger.debug(
+            f"Fetching completed/cancelled runs for group",
+            extra={"user_id": str(user.id), "group_id": str(group_uuid), "limit": limit, "offset": offset}
+        )
+        runs = self.repo.get_completed_cancelled_runs_by_group(group_uuid, limit, offset)
+
+        # Convert to response format with store names
+        all_stores = self.repo.get_all_stores()
+        store_lookup = {store.id: store.name for store in all_stores}
+
+        run_responses = []
+        for run in runs:
+            # Get leader from participations
+            participations = self.repo.get_run_participations(run.id)
+            leader = next((p for p in participations if p.is_leader), None)
+            leader_name = leader.user.name if leader and leader.user else "Unknown"
+
+            run_responses.append({
+                "id": str(run.id),
+                "group_id": str(run.group_id),
+                "store_id": str(run.store_id),
+                "store_name": store_lookup.get(run.store_id, "Unknown Store"),
+                "state": run.state,
+                "leader_name": leader_name,
+                "planned_on": run.planned_on.isoformat() if run.planned_on else None
+            })
+
+        return run_responses
+
     def regenerate_invite_token(self, group_id: str, user: User) -> Dict[str, str]:
         """
         Regenerate the invite token for a group (only creator can do this).
@@ -339,6 +403,22 @@ class GroupService(BaseService):
                 extra={"user_id": str(user.id), "group_id": str(group.id)}
             )
             raise BadRequestError("Already a member of this group")
+
+        # Check user group limit (100 groups max)
+        if len(user_groups) >= 100:
+            logger.warning(
+                f"User attempted to join group but already in 100 groups",
+                extra={"user_id": str(user.id), "group_id": str(group.id)}
+            )
+            raise BadRequestError("Cannot join more than 100 groups")
+
+        # Check group member limit (100 members max)
+        if len(group.members) >= 100:
+            logger.warning(
+                f"User attempted to join group but group is full",
+                extra={"user_id": str(user.id), "group_id": str(group.id)}
+            )
+            raise BadRequestError("Group is full (maximum 100 members)")
 
         # Add user to the group
         success = self.repo.add_group_member(group.id, user)
