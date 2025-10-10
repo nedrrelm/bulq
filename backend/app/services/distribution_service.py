@@ -204,7 +204,12 @@ class DistributionService(BaseService):
         self._notify_run_state_change(run, old_state, RunState.COMPLETED)
 
         logger.info(f"Distribution completed for run {run_id} by user {current_user.id}")
-        return {"message": "Distribution completed!", "state": RunState.COMPLETED}
+        return {
+            "message": "Distribution completed!",
+            "state": RunState.COMPLETED,
+            "run_id": str(run_id),
+            "group_id": str(run.group_id)
+        }
 
     def _get_product(self, product_id: UUID) -> Product:
         """Get product from repository (handles both memory and database modes)."""
