@@ -4,7 +4,12 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 from .models import Base
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://bulq:bulq_dev_pass@localhost:5432/bulq")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL environment variable must be set! "
+        "See .env.example for configuration."
+    )
 
 # Connection pool configuration
 POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "20"))
