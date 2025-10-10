@@ -850,6 +850,105 @@ class RunService(BaseService):
         """
         return self.cancel_run(run_id, user)
 
+    def retract_bid(self, run_id: str, product_id: str, user: User) -> Dict[str, Any]:
+        """
+        Retract a user's bid on a product in a run.
+
+        Args:
+            run_id: Run ID as string
+            product_id: Product ID as string
+            user: Current user retracting the bid
+
+        Returns:
+            Dict with success message and updated totals
+
+        Raises:
+            BadRequestError: If ID format is invalid or bid modification not allowed in current state
+            NotFoundError: If run, product, or bid not found
+            ForbiddenError: If user is not authorized to modify bids on this run
+        """
+        logger.info(
+            "Retracting bid",
+            extra={"user_id": str(user.id), "run_id": run_id, "product_id": product_id}
+        )
+
+        # Validate IDs
+        try:
+            run_uuid = uuid.UUID(run_id)
+            product_uuid = uuid.UUID(product_id)
+        except ValueError:
+            raise BadRequestError("Invalid ID format")
+
+        # Get run
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError("Run", run_id)
+
+        # Verify user has access to this run (member of the group)
+        user_groups = self.repo.get_user_groups(user)
+        if not any(g.id == run.group_id for g in user_groups):
+            raise ForbiddenError("Not authorized to modify bids on this run")
+
+        # Check if run allows bid modification
+        if run.state not in [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]:
+            raise BadRequestError("Bid modification not allowed in current run state")
+
+        # In adjusting state, check if retraction is allowed
+        if run.state == RunState.ADJUSTING:
+            shopping_items = self.repo.get_shopping_list_items(run_uuid)
+            shopping_item = next((item for item in shopping_items if item.product_id == product_uuid), None)
+
+            if shopping_item:
+                purchased_qty = shopping_item.purchased_quantity or 0
+                requested_qty = shopping_item.requested_quantity
+                shortage = requested_qty - purchased_qty
+
+                # Get current bid to check if full retraction is allowed
+                participation = self.repo.get_participation(user.id, run_uuid)
+                if participation:
+                    current_bid = self.repo.get_bid(participation.id, product_uuid)
+
+                    if current_bid and current_bid.quantity > shortage:
+                        raise BadRequestError(
+                            f"Cannot fully retract bid. You can reduce it by at most {shortage} items."
+                        )
+
+        # Get participation for this user in this run
+        participation = self.repo.get_participation(user.id, run_uuid)
+        if not participation:
+            raise NotFoundError("Participation", f"user_id: {user.id}, run_id: {run_uuid}")
+
+        # Get the bid
+        bid = self.repo.get_bid(participation.id, product_uuid)
+        if not bid:
+            raise NotFoundError("Bid", f"product_id: {product_id}")
+
+        # Delete the bid
+        self.repo.delete_bid(participation.id, product_uuid)
+
+        # Calculate new totals after retraction
+        all_bids = self.repo.get_bids_by_run(run_uuid)
+        product_bids = [b for b in all_bids if b.product_id == product_uuid]
+        new_total = sum(b.quantity for b in product_bids if not b.interested_only)
+
+        logger.info(
+            "Bid retracted successfully",
+            extra={
+                "user_id": str(user.id),
+                "run_id": str(run_uuid),
+                "product_id": str(product_uuid),
+                "new_total": new_total
+            }
+        )
+
+        return {
+            "message": "Bid retracted successfully",
+            "run_id": str(run_uuid),
+            "product_id": str(product_uuid),
+            "user_id": str(user.id),
+            "new_total": new_total
+        }
+
     def _notify_run_state_change(self, run: Run, old_state: str, new_state: str) -> None:
         """
         Create notifications for all participants when run state changes.
