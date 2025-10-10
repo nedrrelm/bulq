@@ -6,7 +6,7 @@ from ..models import User
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import GroupService
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, field_validator, Field
 import re
 from datetime import datetime
 import logging
@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 class CreateGroupRequest(BaseModel):
     name: str = Field(min_length=2, max_length=100)
 
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         v = v.strip()
 

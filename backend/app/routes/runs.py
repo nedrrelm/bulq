@@ -8,7 +8,7 @@ from ..repository import get_repository
 from ..services import RunService
 from ..websocket_manager import manager
 from ..run_state import RunState
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, field_validator, Field
 import logging
 
 router = APIRouter(prefix="/runs", tags=["runs"])
@@ -158,7 +158,8 @@ class PlaceBidRequest(BaseModel):
     quantity: float = Field(gt=0, le=9999)
     interested_only: bool = False
 
-    @validator('quantity')
+    @field_validator('quantity')
+    @classmethod
     def validate_quantity(cls, v):
         if v <= 0:
             raise ValueError('Quantity must be greater than 0')

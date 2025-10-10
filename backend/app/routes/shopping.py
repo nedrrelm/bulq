@@ -7,7 +7,7 @@ from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import ShoppingService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, field_validator, Field
 import logging
 
 router = APIRouter(prefix="/shopping", tags=["shopping"])
@@ -37,7 +37,8 @@ class UpdateAvailabilityPriceRequest(BaseModel):
     price: float = Field(gt=0, le=99999.99)
     notes: str = Field(default="", max_length=200)
 
-    @validator('price')
+    @field_validator('price')
+    @classmethod
     def validate_price(cls, v):
         if v <= 0:
             raise ValueError('Price must be greater than 0')
@@ -46,7 +47,8 @@ class UpdateAvailabilityPriceRequest(BaseModel):
             raise ValueError('Price can have at most 2 decimal places')
         return v
 
-    @validator('notes')
+    @field_validator('notes')
+    @classmethod
     def validate_notes(cls, v):
         return v.strip()[:200]
 
@@ -55,7 +57,8 @@ class MarkPurchasedRequest(BaseModel):
     price_per_unit: float = Field(gt=0, le=99999.99)
     total: float = Field(gt=0, le=999999.99)
 
-    @validator('quantity')
+    @field_validator('quantity')
+    @classmethod
     def validate_quantity(cls, v):
         if v <= 0:
             raise ValueError('Quantity must be greater than 0')
@@ -64,7 +67,8 @@ class MarkPurchasedRequest(BaseModel):
             raise ValueError('Quantity can have at most 2 decimal places')
         return v
 
-    @validator('price_per_unit')
+    @field_validator('price_per_unit')
+    @classmethod
     def validate_price_per_unit(cls, v):
         if v <= 0:
             raise ValueError('Price per unit must be greater than 0')
@@ -73,7 +77,8 @@ class MarkPurchasedRequest(BaseModel):
             raise ValueError('Price per unit can have at most 2 decimal places')
         return v
 
-    @validator('total')
+    @field_validator('total')
+    @classmethod
     def validate_total(cls, v):
         if v <= 0:
             raise ValueError('Total must be greater than 0')
