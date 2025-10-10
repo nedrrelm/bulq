@@ -3,6 +3,7 @@ import '../styles/components/NewRunPopup.css'
 import { storesApi, runsApi, ApiError } from '../api'
 import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import NewStorePopup from './NewStorePopup'
 
 interface NewRunPopupProps {
   groupId: string
@@ -15,6 +16,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   const [selectedStoreId, setSelectedStoreId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showNewStorePopup, setShowNewStorePopup] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
   const selectRef = useRef<HTMLSelectElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -73,6 +75,13 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     }
   }
 
+  const handleNewStoreSuccess = (newStore: Store) => {
+    setShowNewStorePopup(false)
+    // Add the new store to the list and select it
+    setStores([...stores, newStore])
+    setSelectedStoreId(newStore.id)
+  }
+
   return (
     <div className="modal-overlay" onClick={handleOverlayClick} tabIndex={-1} ref={overlayRef}>
       <div ref={modalRef} className="modal modal-sm new-run-popup" onClick={(e) => e.stopPropagation()}>
@@ -100,7 +109,29 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
                 </option>
               ))}
             </select>
+            {stores.length === 0 && (
+              <button
+                type="button"
+                onClick={() => setShowNewStorePopup(true)}
+                className="btn btn-primary btn-sm create-store-button"
+              >
+                + Create New Store
+              </button>
+            )}
           </div>
+
+          {stores.length > 0 && (
+            <div className="form-group">
+              <button
+                type="button"
+                onClick={() => setShowNewStorePopup(true)}
+                className="btn btn-secondary btn-sm"
+                disabled={loading}
+              >
+                + Create New Store
+              </button>
+            </div>
+          )}
 
           <div className="button-group">
             <button
@@ -121,6 +152,13 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
           </div>
         </form>
       </div>
+
+      {showNewStorePopup && (
+        <NewStorePopup
+          onClose={() => setShowNewStorePopup(false)}
+          onSuccess={handleNewStoreSuccess}
+        />
+      )}
     </div>
   )
 }
