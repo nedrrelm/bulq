@@ -8,6 +8,7 @@ from uuid import UUID
 from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError, BadRequestError
 from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipation, ShoppingListItem
 from ..run_state import RunState, state_machine
+from ..config import MAX_ACTIVE_RUNS_PER_GROUP, MAX_PRODUCTS_PER_RUN
 from .base_service import BaseService
 
 logger = logging.getLogger(__name__)
@@ -60,15 +61,15 @@ class RunService(BaseService):
         if not store:
             raise NotFoundError("Store", store_id)
 
-        # Check active runs limit for the group (100 max)
+        # Check active runs limit for the group
         group_runs = self.repo.get_runs_by_group(group_uuid)
         active_runs = [r for r in group_runs if r.state not in ('completed', 'cancelled')]
-        if len(active_runs) >= 100:
+        if len(active_runs) >= MAX_ACTIVE_RUNS_PER_GROUP:
             logger.warning(
                 f"Group has reached maximum active runs limit",
                 extra={"user_id": str(user.id), "group_id": str(group_uuid), "active_runs": len(active_runs)}
             )
-            raise BadRequestError("Group has reached maximum of 100 active runs")
+            raise BadRequestError(f"Group has reached maximum of {MAX_ACTIVE_RUNS_PER_GROUP} active runs")
 
         # Create the run with current user as leader
         run = self.repo.create_run(group_uuid, store_uuid, user.id)
@@ -303,12 +304,12 @@ class RunService(BaseService):
             # Count unique products in this run
             all_bids = self.repo.get_bids_by_run(run_uuid)
             unique_products = set(bid.product_id for bid in all_bids)
-            if len(unique_products) >= 100:
+            if len(unique_products) >= MAX_PRODUCTS_PER_RUN:
                 logger.warning(
                     f"Run has reached maximum product limit",
                     extra={"user_id": str(user.id), "run_id": str(run_uuid), "unique_products": len(unique_products)}
                 )
-                raise BadRequestError("Run has reached maximum of 100 products")
+                raise BadRequestError(f"Run has reached maximum of {MAX_PRODUCTS_PER_RUN} products")
 
         # Validate quantity
         if quantity < 0:

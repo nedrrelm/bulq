@@ -7,6 +7,7 @@ from uuid import UUID
 from .base_service import BaseService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..models import User
+from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
 from ..websocket_manager import manager
 
 logger = logging.getLogger(__name__)
@@ -403,21 +404,21 @@ class GroupService(BaseService):
             )
             raise BadRequestError("Already a member of this group")
 
-        # Check user group limit (100 groups max)
-        if len(user_groups) >= 100:
+        # Check user group limit
+        if len(user_groups) >= MAX_GROUPS_PER_USER:
             logger.warning(
-                f"User attempted to join group but already in 100 groups",
+                f"User attempted to join group but already at maximum groups",
                 extra={"user_id": str(user.id), "group_id": str(group.id)}
             )
-            raise BadRequestError("Cannot join more than 100 groups")
+            raise BadRequestError(f"Cannot join more than {MAX_GROUPS_PER_USER} groups")
 
-        # Check group member limit (100 members max)
-        if len(group.members) >= 100:
+        # Check group member limit
+        if len(group.members) >= MAX_MEMBERS_PER_GROUP:
             logger.warning(
                 f"User attempted to join group but group is full",
                 extra={"user_id": str(user.id), "group_id": str(group.id)}
             )
-            raise BadRequestError("Group is full (maximum 100 members)")
+            raise BadRequestError(f"Group is full (maximum {MAX_MEMBERS_PER_GROUP} members)")
 
         # Add user to the group
         success = self.repo.add_group_member(group.id, user)
