@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, DECIMAL, DateTime, ForeignKey, Table, JSON, Text
+from sqlalchemy import Column, String, Integer, Boolean, DECIMAL, DateTime, ForeignKey, Table, JSON, Text, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -94,6 +94,11 @@ class Run(Base):
     store = relationship("Store", back_populates="runs")
     participations = relationship("RunParticipation", back_populates="run")
 
+    __table_args__ = (
+        # Composite index for filtering runs by group and state
+        Index('ix_runs_group_state', 'group_id', 'state'),
+    )
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -128,6 +133,11 @@ class RunParticipation(Base):
     run = relationship("Run", back_populates="participations")
     product_bids = relationship("ProductBid", back_populates="participation")
 
+    __table_args__ = (
+        # Composite index for finding user's participation in a run (common query)
+        Index('ix_run_participations_user_run', 'user_id', 'run_id'),
+    )
+
 class ProductBid(Base):
     __tablename__ = "product_bids"
 
@@ -150,6 +160,11 @@ class ProductBid(Base):
     participation = relationship("RunParticipation", back_populates="product_bids")
     product = relationship("Product", back_populates="product_bids")
 
+    __table_args__ = (
+        # Composite index for finding a user's bid on a product (get_bid query)
+        Index('ix_product_bids_participation_product', 'participation_id', 'product_id'),
+    )
+
 class ProductAvailability(Base):
     __tablename__ = "product_availabilities"
 
@@ -166,6 +181,13 @@ class ProductAvailability(Base):
     product = relationship("Product", back_populates="availabilities")
     store = relationship("Store", back_populates="product_availabilities")
     user = relationship("User", back_populates="product_availabilities")
+
+    __table_args__ = (
+        # Composite index for finding product availability at a store
+        Index('ix_product_availabilities_product_store', 'product_id', 'store_id'),
+        # Index for filtering by store to get all products available there
+        Index('ix_product_availabilities_store_created', 'store_id', 'created_at'),
+    )
 
 class ShoppingListItem(Base):
     __tablename__ = "shopping_list_items"
@@ -188,6 +210,11 @@ class ShoppingListItem(Base):
     run = relationship("Run")
     product = relationship("Product")
 
+    __table_args__ = (
+        # Index for finding shopping list items by product (cross-run queries)
+        Index('ix_shopping_list_items_product', 'product_id'),
+    )
+
 class Notification(Base):
     __tablename__ = "notifications"
 
@@ -199,6 +226,11 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="notifications")
+
+    __table_args__ = (
+        # Composite index for filtering unread notifications by user (common query)
+        Index('ix_notifications_user_read_created', 'user_id', 'read', 'created_at'),
+    )
 
 
 class LeaderReassignmentRequest(Base):
@@ -215,3 +247,10 @@ class LeaderReassignmentRequest(Base):
     run = relationship("Run")
     from_user = relationship("User", foreign_keys=[from_user_id])
     to_user = relationship("User", foreign_keys=[to_user_id])
+
+    __table_args__ = (
+        # Composite index for finding pending requests for a user
+        Index('ix_reassignment_requests_to_user_status', 'to_user_id', 'status'),
+        # Composite index for finding pending requests for a run
+        Index('ix_reassignment_requests_run_status', 'run_id', 'status'),
+    )
