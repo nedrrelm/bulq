@@ -10,7 +10,7 @@ from ..websocket_manager import manager
 from ..run_state import RunState
 from ..exceptions import BadRequestError, NotFoundError, ForbiddenError
 from pydantic import BaseModel
-import uuid
+from uuid import UUID
 
 router = APIRouter(prefix="/distribution", tags=["distribution"])
 
@@ -43,7 +43,7 @@ async def get_distribution_data(
 
     # Validate run ID
     try:
-        run_uuid = uuid.UUID(run_id)
+        run_uuid = UUID(run_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid run ID format")
 
@@ -77,8 +77,8 @@ async def mark_picked_up(
 
     # Validate IDs
     try:
-        run_uuid = uuid.UUID(run_id)
-        bid_uuid = uuid.UUID(bid_id)
+        run_uuid = UUID(run_id)
+        bid_uuid = UUID(bid_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ID format")
 
@@ -99,7 +99,7 @@ async def complete_distribution(
 
     # Validate run ID
     try:
-        run_uuid = uuid.UUID(run_id)
+        run_uuid = UUID(run_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid run ID format")
 

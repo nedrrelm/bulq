@@ -1,7 +1,6 @@
 """Shopping service for handling shopping list operations."""
 
 import logging
-import uuid
 from typing import List, Dict, Any, Optional
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -99,7 +98,7 @@ class ShoppingService(BaseService):
         """
         # Validate run ID
         try:
-            run_uuid = uuid.UUID(run_id)
+            run_uuid = UUID(run_id)
         except ValueError:
             raise BadRequestError("Invalid run ID format")
 
@@ -207,8 +206,8 @@ class ShoppingService(BaseService):
         """
         # Validate IDs
         try:
-            run_uuid = uuid.UUID(run_id)
-            item_uuid = uuid.UUID(item_id)
+            run_uuid = UUID(run_id)
+            item_uuid = UUID(item_id)
         except ValueError:
             raise BadRequestError("Invalid ID format")
 
@@ -268,8 +267,8 @@ class ShoppingService(BaseService):
         """
         # Validate IDs
         try:
-            run_uuid = uuid.UUID(run_id)
-            item_uuid = uuid.UUID(item_id)
+            run_uuid = UUID(run_id)
+            item_uuid = UUID(item_id)
         except ValueError:
             raise BadRequestError("Invalid ID format")
 
@@ -345,7 +344,7 @@ class ShoppingService(BaseService):
 
         # Validate run ID
         try:
-            run_uuid = uuid.UUID(run_id)
+            run_uuid = UUID(run_id)
         except ValueError:
             raise BadRequestError("Invalid run ID format")
 
