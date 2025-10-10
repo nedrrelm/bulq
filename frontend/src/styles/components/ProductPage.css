@@ -109,63 +109,46 @@
   color: var(--color-text);
 }
 
-.graph-legend {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--color-text);
-}
-
-.legend-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid white;
-}
-
 .no-graph-data {
   color: var(--color-text-light);
   font-style: italic;
   margin: 0;
 }
 
-.price-chart {
-  display: block;
-  margin: 0 auto;
-  max-width: 100%;
-  height: auto;
+/* Custom Recharts tooltip */
+.custom-tooltip {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.grid-line {
-  stroke: var(--color-border);
-  stroke-width: 1;
-  stroke-dasharray: 4 4;
-  opacity: 0.5;
+.tooltip-store {
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px 0;
+  font-size: 0.9rem;
 }
 
-.y-axis-label,
-.x-axis-label {
-  font-size: 11px;
-  fill: var(--color-text-light);
-  font-family: system-ui, -apple-system, sans-serif;
+.tooltip-price {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0 0 4px 0;
 }
 
-.price-point {
-  fill: var(--color-primary);
-  stroke: white;
-  stroke-width: 2;
-  cursor: pointer;
+.tooltip-date {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  margin: 0 0 4px 0;
 }
 
-.price-point:hover {
-  fill: var(--color-primary-dark);
-  r: 8;
+.tooltip-notes {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  font-style: italic;
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border);
 }

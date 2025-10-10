@@ -1,9 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import '../styles/components/ProductPage.css'
 import { productsApi, ApiError } from '../api'
 import LoadingSpinner from './LoadingSpinner'
 import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
+import {
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts'
+import type { TooltipProps as RechartsTooltipProps } from 'recharts'
 
 interface PriceEntry {
   price: number
@@ -33,148 +44,104 @@ interface ProductPageProps {
   onBack: () => void
 }
 
-interface PriceWithStore extends PriceEntry {
-  store_id: string
-  store_name: string
-  date: Date
+// Color palette for stores
+const STORE_COLORS = ['#667eea', '#f56565', '#48bb78', '#ed8936', '#9f7aea', '#38b2ac', '#ed64a6']
+
+// Custom tooltip component
+function CustomTooltip({ active, payload }: RechartsTooltipProps<number, string>) {
+  if (!active || !payload || !payload.length) {
+    return null
+  }
+
+  const data = payload[0].payload
+  return (
+    <div className="custom-tooltip">
+      <p className="tooltip-store">{data.store_name}</p>
+      <p className="tooltip-price">${data.price.toFixed(2)}</p>
+      <p className="tooltip-date">{new Date(data.timestamp).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      })}</p>
+      {data.notes && <p className="tooltip-notes">{data.notes}</p>}
+    </div>
+  )
 }
 
 function PriceGraph({ storesData }: { storesData: StoreData[] }) {
-  // Combine all prices from all stores
-  const allPricesWithStore: PriceWithStore[] = []
-  storesData.forEach(store => {
-    store.price_history
-      .filter(p => p.timestamp)
-      .forEach(p => {
-        allPricesWithStore.push({
-          ...p,
-          store_id: store.store_id,
-          store_name: store.store_name,
-          date: new Date(p.timestamp!)
-        })
-      })
-  })
+  // Transform data for Recharts - memoized to prevent recalculation
+  const chartData = useMemo(() => {
+    const storeDataArray = storesData.map((store, idx) => ({
+      store_id: store.store_id,
+      store_name: store.store_name,
+      color: STORE_COLORS[idx % STORE_COLORS.length],
+      data: store.price_history
+        .filter(p => p.timestamp)
+        .map(p => ({
+          timestamp: new Date(p.timestamp!).getTime(),
+          price: p.price,
+          notes: p.notes,
+          store_name: store.store_name
+        }))
+    }))
 
-  // Sort by date
-  allPricesWithStore.sort((a, b) => a.date.getTime() - b.date.getTime())
+    // Check if we have any data
+    const hasData = storeDataArray.some(s => s.data.length > 0)
 
-  if (allPricesWithStore.length === 0) {
+    return { storeDataArray, hasData }
+  }, [storesData])
+
+  if (!chartData.hasData) {
     return <p className="no-graph-data">No historical price data available</p>
   }
 
-  // Generate colors for stores
-  const storeColors = new Map<string, string>()
-  const colors = ['#667eea', '#f56565', '#48bb78', '#ed8936', '#9f7aea', '#38b2ac', '#ed64a6']
-  storesData.forEach((store, idx) => {
-    storeColors.set(store.store_id, colors[idx % colors.length])
-  })
-
-  // Calculate graph dimensions and scales
-  const allPrices = allPricesWithStore.map(p => p.price)
-  const minPrice = Math.min(...allPrices)
-  const maxPrice = Math.max(...allPrices)
-  const priceRange = maxPrice - minPrice || 1
-  const padding = priceRange * 0.1
-
-  const graphHeight = 300
-  const graphWidth = 700
-  const marginLeft = 60
-  const marginRight = 30
-  const marginTop = 40
-  const marginBottom = 30
-  const plotWidth = graphWidth - marginLeft - marginRight
-  const plotHeight = graphHeight - marginTop - marginBottom
-
-  const yMin = minPrice - padding
-  const yMax = maxPrice + padding
-  const yRange = yMax - yMin
-
-  // Convert price to y-coordinate
-  const priceToY = (price: number) => {
-    return marginTop + plotHeight - ((price - yMin) / yRange) * plotHeight
-  }
-
-  // Convert date to x-coordinate
-  const minTime = allPricesWithStore[0].date.getTime()
-  const maxTime = allPricesWithStore[allPricesWithStore.length - 1].date.getTime()
-  const timeRange = maxTime - minTime || 1
-
-  const dateToX = (date: Date) => {
-    return marginLeft + ((date.getTime() - minTime) / timeRange) * plotWidth
+  // Format timestamp for X-axis
+  const formatXAxis = (timestamp: number) => {
+    const date = new Date(timestamp)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
   return (
     <div className="price-graph">
       <h4>Price History Across All Stores</h4>
 
-      {/* Legend */}
-      <div className="graph-legend">
-        {storesData.map(store => (
-          <div key={store.store_id} className="legend-item">
-            <span
-              className="legend-dot"
-              style={{ backgroundColor: storeColors.get(store.store_id) }}
+      <ResponsiveContainer width="100%" height={350}>
+        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+          <XAxis
+            type="number"
+            dataKey="timestamp"
+            name="Date"
+            tickFormatter={formatXAxis}
+            domain={['auto', 'auto']}
+            stroke="#666"
+            style={{ fontSize: '12px' }}
+          />
+          <YAxis
+            type="number"
+            dataKey="price"
+            name="Price"
+            tickFormatter={(value) => `$${value.toFixed(2)}`}
+            domain={['auto', 'auto']}
+            stroke="#666"
+            style={{ fontSize: '12px' }}
+          />
+          <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+          <Legend
+            wrapperStyle={{ paddingTop: '10px' }}
+            iconType="circle"
+          />
+          {chartData.storeDataArray.map((store) => (
+            <Scatter
+              key={store.store_id}
+              name={store.store_name}
+              data={store.data}
+              fill={store.color}
+              shape="circle"
             />
-            <span>{store.store_name}</span>
-          </div>
-        ))}
-      </div>
-
-      <svg width={graphWidth} height={graphHeight} className="price-chart">
-        {/* Grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
-          const y = marginTop + plotHeight * (1 - ratio)
-          const price = yMin + yRange * ratio
-          return (
-            <g key={ratio}>
-              <line
-                x1={marginLeft}
-                y1={y}
-                x2={graphWidth - marginRight}
-                y2={y}
-                className="grid-line"
-              />
-              <text x={5} y={y + 4} className="y-axis-label">
-                ${price.toFixed(2)}
-              </text>
-            </g>
-          )
-        })}
-
-        {/* Data points */}
-        {allPricesWithStore.map((p, i) => (
-          <g key={i}>
-            <circle
-              cx={dateToX(p.date)}
-              cy={priceToY(p.price)}
-              r={6}
-              fill={storeColors.get(p.store_id)}
-              className="price-point"
-              stroke="white"
-              strokeWidth="2"
-            />
-            <title>{`${p.store_name}: $${p.price.toFixed(2)} - ${p.date.toLocaleDateString()} ${p.notes ? `(${p.notes})` : ''}`}</title>
-          </g>
-        ))}
-
-        {/* X-axis labels */}
-        {allPricesWithStore.map((p, i) => {
-          if (i % Math.ceil(allPricesWithStore.length / 5) === 0 || i === allPricesWithStore.length - 1) {
-            return (
-              <text
-                key={i}
-                x={dateToX(p.date)}
-                y={graphHeight - 10}
-                className="x-axis-label"
-                textAnchor="middle"
-              >
-                {p.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </text>
-            )
-          }
-          return null
-        })}
-      </svg>
+          ))}
+        </ScatterChart>
+      </ResponsiveContainer>
     </div>
   )
 }
