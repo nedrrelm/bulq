@@ -25,7 +25,3 @@ MAX_ACTIVE_RUNS_PER_GROUP = int(os.getenv("MAX_ACTIVE_RUNS_PER_GROUP", "100"))
 MAX_PRODUCTS_PER_RUN = int(os.getenv("MAX_PRODUCTS_PER_RUN", "100"))
 MAX_GROUPS_PER_USER = int(os.getenv("MAX_GROUPS_PER_USER", "100"))
 MAX_MEMBERS_PER_GROUP = int(os.getenv("MAX_MEMBERS_PER_GROUP", "100"))
-
-def get_repo_mode() -> str:
-    """Get current repository mode."""
-    return REPO_MODE
