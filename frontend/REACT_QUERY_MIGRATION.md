@@ -66,7 +66,7 @@ Successfully migrated the Bulq frontend from manual fetch/useState to TanStack Q
 4. **useShopping.ts** (60 lines)
    - `useShoppingList(runId)` - Get shopping list
    - `useMarkPurchased(runId)` - Mark item purchased
-   - `useAddEncounteredPrice(runId)` - Add price data
+   - `useUpdateAvailabilityPrice(runId)` - Update product availability price
    - `useCompleteShopping(runId)` - Complete shopping
 
 5. **useDistribution.ts** (50 lines)

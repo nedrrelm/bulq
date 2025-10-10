@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.models import (
     User, Group, Store, Product, Run,
-    RunParticipation, ProductBid, ShoppingListItem, group_membership
+    RunParticipation, ProductBid, ShoppingListItem, ProductAvailability, group_membership
 )
 
 
@@ -430,38 +430,36 @@ class TestShoppingListItemModel:
         assert item.is_purchased is True
         assert item.purchase_order == 1
 
-    def test_shopping_list_item_encountered_prices(self, db_session):
-        """Test encountered prices JSON field"""
+    def test_product_availability(self, db_session):
+        """Test product availability records"""
         user = User(name="User", email="user@example.com", password_hash="hash")
         group = Group(name="Group", created_by=user.id, invite_token="token")
         store = Store(name="Store")
-        product = Product(store_id=store.id, name="Product", base_price=Decimal("10.00"))
-        run = Run(group_id=group.id, store_id=store.id, state="shopping")
-        db_session.add_all([user, group, store, product, run])
+        product = Product(name="Product", brand="Brand")
+        db_session.add_all([user, group, store, product])
         db_session.commit()
 
-        encountered_prices = [
-            {"price": 9.99, "notes": "Aisle 3"},
-            {"price": 10.49, "notes": "End cap display"}
-        ]
-
-        item = ShoppingListItem(
-            run_id=run.id,
+        # Create product availability at store
+        availability = ProductAvailability(
             product_id=product.id,
-            requested_quantity=10,
-            encountered_prices=encountered_prices
+            store_id=store.id,
+            price=Decimal("9.99"),
+            notes="Aisle 3",
+            created_by=user.id
         )
-        db_session.add(item)
+        db_session.add(availability)
         db_session.commit()
 
-        # Retrieve and verify JSON field
-        retrieved = db_session.query(ShoppingListItem).filter(
-            ShoppingListItem.id == item.id
+        # Retrieve and verify
+        retrieved = db_session.query(ProductAvailability).filter(
+            ProductAvailability.product_id == product.id,
+            ProductAvailability.store_id == store.id
         ).first()
 
-        assert len(retrieved.encountered_prices) == 2
-        assert retrieved.encountered_prices[0]["price"] == 9.99
-        assert retrieved.encountered_prices[1]["notes"] == "End cap display"
+        assert retrieved is not None
+        assert retrieved.price == Decimal("9.99")
+        assert retrieved.notes == "Aisle 3"
+        assert retrieved.created_by == user.id
 
 
 # db_session fixture is already defined in conftest.py, no need to redefine it here
