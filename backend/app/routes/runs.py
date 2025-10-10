@@ -10,7 +10,6 @@ from ..websocket_manager import manager
 from ..run_state import RunState
 from pydantic import BaseModel, validator, Field
 import logging
-import uuid
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 logger = logging.getLogger(__name__)
@@ -228,89 +227,21 @@ async def retract_bid(
 ):
     """Retract a bid on a product in a run."""
     repo = get_repository(db)
+    service = RunService(repo)
 
-    # Validate IDs
-    try:
-        run_uuid = uuid.UUID(run_id)
-        product_uuid = uuid.UUID(product_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
+    result = service.retract_bid(run_id, product_id, current_user)
 
-    # Verify run exists and user has access
-    runs = [run for run in repo._runs.values() if run.id == run_uuid] if hasattr(repo, '_runs') else []
-    if not runs:
-        raise HTTPException(status_code=404, detail="Run not found")
+    # Broadcast to run room
+    await manager.broadcast(f"run:{result['run_id']}", {
+        "type": "bid_retracted",
+        "data": {
+            "product_id": result['product_id'],
+            "user_id": result['user_id'],
+            "new_total": result['new_total']
+        }
+    })
 
-    run = runs[0]
-    user_groups = repo.get_user_groups(current_user)
-    if not any(g.id == run.group_id for g in user_groups):
-        raise HTTPException(status_code=403, detail="Not authorized to modify bids on this run")
-
-    # Check if run allows bid modification
-    if run.state not in ['planning', 'active', 'adjusting']:
-        raise HTTPException(status_code=400, detail="Bid modification not allowed in current run state")
-
-    # In adjusting state, check if retraction is allowed
-    if run.state == 'adjusting':
-        # Get shopping list to check if this retraction is within limits
-        shopping_items = repo.get_shopping_list_items(run_uuid)
-        shopping_item = next((item for item in shopping_items if item.product_id == product_uuid), None)
-
-        if shopping_item:
-            purchased_qty = shopping_item.purchased_quantity or 0
-            requested_qty = shopping_item.requested_quantity
-            shortage = requested_qty - purchased_qty
-
-            # Get current bid to check if full retraction is allowed
-            participation = repo.get_participation(current_user.id, run_uuid)
-            if participation and hasattr(repo, '_bids'):
-                current_bid = None
-                for bid in repo._bids.values():
-                    if (bid.participation_id == participation.id and
-                        bid.product_id == product_uuid):
-                        current_bid = bid
-                        break
-
-                if current_bid and current_bid.quantity > shortage:
-                    raise HTTPException(status_code=400, detail=f"Cannot fully retract bid. You can reduce it by at most {shortage} items.")
-
-    if hasattr(repo, '_bids'):  # Memory mode
-        # Get participation for this user in this run
-        participation = repo.get_participation(current_user.id, run_uuid)
-        if not participation:
-            raise HTTPException(status_code=404, detail=f"You are not participating in this run (user_id: {current_user.id}, run_id: {run_uuid})")
-
-        # Find and remove the user's bid
-        bid_to_remove = None
-        for bid_id, bid in repo._bids.items():
-            if (bid.participation_id == participation.id and
-                bid.product_id == product_uuid):
-                bid_to_remove = bid_id
-                break
-
-        if bid_to_remove:
-            del repo._bids[bid_to_remove]
-
-            # Calculate new totals after retraction
-            all_bids = repo.get_bids_by_run(run_uuid)
-            product_bids = [bid for bid in all_bids if bid.product_id == product_uuid]
-            new_total = sum(bid.quantity for bid in product_bids if not bid.interested_only)
-
-            # Broadcast to run room
-            await manager.broadcast(f"run:{run_uuid}", {
-                "type": "bid_retracted",
-                "data": {
-                    "product_id": str(product_uuid),
-                    "user_id": str(current_user.id),
-                    "new_total": new_total
-                }
-            })
-
-            return {"message": "Bid retracted successfully"}
-        else:
-            raise HTTPException(status_code=404, detail=f"No bid found for this product")
-
-    return {"message": "Bid retracted successfully"}
+    return {"message": result['message']}
 
 class AvailableProductResponse(BaseModel):
     id: str

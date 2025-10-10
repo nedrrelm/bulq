@@ -116,21 +116,23 @@ secure=os.getenv("SECURE_COOKIES", "False").lower() == "true"
 
 **Problem:** Routes were manually converting custom exceptions to HTTPException, defeating the purpose of global exception handlers.
 
-**Fix Applied:** Removed all unnecessary try-except blocks from routes. Custom exceptions now propagate directly to global handlers in `error_handlers.py`.
+**Fix Applied:**
+1. Removed all unnecessary try-except blocks from routes. Custom exceptions now propagate directly to global handlers in `error_handlers.py`.
+2. Refactored legacy `retract_bid` endpoint - moved business logic from route handler to `RunService.retract_bid()` method.
 
 **Results:**
-- **Removed ~70 lines** of duplicate exception handling code
-- **Simplified 28 route handlers** across 6 files:
-  - runs.py: 10 handlers cleaned
+- **Removed ~160 lines** of duplicate code (70 from exception handling + 90 from retract_bid refactor)
+- **Simplified 29 route handlers** across 6 files:
+  - runs.py: 11 handlers cleaned (including retract_bid refactor)
   - groups.py: 6 handlers cleaned
   - shopping.py: 4 handlers cleaned
   - distribution.py: 3 handlers cleaned
   - notifications.py: 4 handlers cleaned
   - stores.py: 1 handler cleaned
 - Error responses now consistently use `ErrorResponse` model from global handlers
-- Maintained HTTPException for:
-  - UUID validation errors (ValueError)
-  - Legacy business logic in `retract_bid` (to be refactored separately)
+- **Eliminated all repository implementation leakage** from routes (no more `hasattr(repo, '_runs')` checks)
+- Proper separation of concerns: routes handle HTTP, services handle business logic
+- Maintained HTTPException only for UUID validation errors (ValueError)
 
 ---
 
