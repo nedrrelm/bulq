@@ -32,7 +32,7 @@ class ConnectionManager:
             return
 
         # Add timestamp to all messages
-        message['timestamp'] = datetime.utcnow().isoformat() + 'Z'
+        message['timestamp'] = datetime.now().isoformat() + 'Z'
         message_json = json.dumps(message)
 
         # Send to all connections, remove dead ones
@@ -49,7 +49,7 @@ class ConnectionManager:
 
     async def send_personal(self, websocket: WebSocket, message: dict):
         """Send a message to a specific client."""
-        message['timestamp'] = datetime.utcnow().isoformat() + 'Z'
+        message['timestamp'] = datetime.now().isoformat() + 'Z'
         await websocket.send_text(json.dumps(message))
 
 

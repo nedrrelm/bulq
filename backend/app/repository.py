@@ -803,7 +803,7 @@ class DatabaseRepository(AbstractRepository):
             # Set the timestamp for the new state
             timestamp_field = f"{new_state}_at"
             if hasattr(run, timestamp_field):
-                setattr(run, timestamp_field, datetime.utcnow())
+                setattr(run, timestamp_field, datetime.now())
 
             self.db.commit()
             self.db.refresh(run)
@@ -1028,7 +1028,7 @@ class DatabaseRepository(AbstractRepository):
             return False
 
         request.status = status
-        request.resolved_at = datetime.utcnow()
+        request.resolved_at = datetime.now()
         self.db.commit()
         return True
 
@@ -1041,7 +1041,7 @@ class DatabaseRepository(AbstractRepository):
             LeaderReassignmentRequest.status == "pending"
         ).update({
             LeaderReassignmentRequest.status: "cancelled",
-            LeaderReassignmentRequest.resolved_at: datetime.utcnow()
+            LeaderReassignmentRequest.resolved_at: datetime.now()
         })
         self.db.commit()
         return count
@@ -1819,8 +1819,8 @@ class MemoryRepository(AbstractRepository):
             name=name,
             brand=brand,
             unit=unit,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=datetime.now(),
+            updated_at=datetime.now()
         )
         self._products[product.id] = product
         return product
@@ -1837,7 +1837,7 @@ class MemoryRepository(AbstractRepository):
             # Update existing bid
             existing_bid.quantity = quantity
             existing_bid.interested_only = interested_only
-            existing_bid.updated_at = datetime.utcnow()
+            existing_bid.updated_at = datetime.now()
             return existing_bid
         else:
             # Create new bid
@@ -1847,8 +1847,8 @@ class MemoryRepository(AbstractRepository):
                 product_id=product_id,
                 quantity=quantity,
                 interested_only=interested_only,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
+                created_at=datetime.now(),
+                updated_at=datetime.now()
             )
             # Set up relationships
             bid.participation = self._participations.get(participation_id)
@@ -1894,8 +1894,8 @@ class MemoryRepository(AbstractRepository):
             name=name,
             brand=brand,
             unit=unit,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=datetime.now(),
+            updated_at=datetime.now()
         )
         self._products[product.id] = product
         return product
@@ -1903,7 +1903,7 @@ class MemoryRepository(AbstractRepository):
     def _create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", days_ago: float = 0) -> ProductAvailability:
         """Helper to create product availability at a store."""
         from datetime import datetime, timedelta
-        created_time = datetime.utcnow() - timedelta(days=days_ago)
+        created_time = datetime.now() - timedelta(days=days_ago)
         availability = ProductAvailability(
             id=uuid4(),
             product_id=product_id,
@@ -1921,7 +1921,7 @@ class MemoryRepository(AbstractRepository):
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state=state)
 
         # Set timestamps for state progression (simulate realistic timeline)
-        now = datetime.utcnow()
+        now = datetime.now()
         run.planning_at = now - timedelta(days=days_ago)  # Started X days ago
 
         if state in ["active", "confirmed", "shopping", "distributing", "completed"]:
@@ -1956,8 +1956,8 @@ class MemoryRepository(AbstractRepository):
             product_id=product_id,
             quantity=quantity,
             interested_only=interested_only,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=datetime.now(),
+            updated_at=datetime.now()
         )
         # Set up relationships
         bid.participation = self._participations.get(participation_id)
@@ -1969,7 +1969,7 @@ class MemoryRepository(AbstractRepository):
         from datetime import datetime
         run = self._runs.get(run_id)
         # Use the run's shopping timestamp if available, otherwise use current time
-        timestamp = run.shopping_at if run and run.shopping_at else datetime.utcnow()
+        timestamp = run.shopping_at if run and run.shopping_at else datetime.now()
 
         item = ShoppingListItem(
             id=uuid4(),
@@ -1989,7 +1989,7 @@ class MemoryRepository(AbstractRepository):
     def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
         from datetime import datetime
         run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state="planning")
-        run.planning_at = datetime.utcnow()
+        run.planning_at = datetime.now()
         self._runs[run.id] = run
         # Create participation for the leader
         self._create_participation(leader_id, run.id, is_leader=True)
@@ -2060,7 +2060,7 @@ class MemoryRepository(AbstractRepository):
             # Set the timestamp for the new state
             timestamp_field = f"{new_state}_at"
             if hasattr(run, timestamp_field):
-                setattr(run, timestamp_field, datetime.utcnow())
+                setattr(run, timestamp_field, datetime.now())
 
             logger.info(
                 f"Run state transitioned",
@@ -2157,8 +2157,8 @@ class MemoryRepository(AbstractRepository):
             store_id=store_id,
             price=Decimal(str(price)) if price is not None else None,
             notes=notes,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
             created_by=user_id
         )
         self._product_availabilities[availability.id] = availability
@@ -2244,7 +2244,7 @@ class MemoryRepository(AbstractRepository):
             from_user_id=from_user_id,
             to_user_id=to_user_id,
             status="pending",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(),
             resolved_at=None
         )
         self._reassignment_requests[request_id] = request
@@ -2284,7 +2284,7 @@ class MemoryRepository(AbstractRepository):
             return False
 
         request.status = status
-        request.resolved_at = datetime.utcnow()
+        request.resolved_at = datetime.now()
         return True
 
     def cancel_all_pending_reassignments_for_run(self, run_id: UUID) -> int:
@@ -2295,7 +2295,7 @@ class MemoryRepository(AbstractRepository):
         for request in self._reassignment_requests.values():
             if request.run_id == run_id and request.status == "pending":
                 request.status = "cancelled"
-                request.resolved_at = datetime.utcnow()
+                request.resolved_at = datetime.now()
                 count += 1
         return count
 
