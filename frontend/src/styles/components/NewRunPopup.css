@@ -16,6 +16,11 @@
   font-size: 14px;
 }
 
+.create-store-button {
+  margin-top: 12px;
+  width: 100%;
+}
+
 /* Using .button-group from utilities.css */
 
 .cancel-button,
