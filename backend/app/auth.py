@@ -1,8 +1,11 @@
 import bcrypt
 import secrets
+import logging
 from typing import Optional, Dict
 from datetime import datetime, timedelta
 from app.config import SESSION_EXPIRY_HOURS, SECRET_KEY
+
+logger = logging.getLogger(__name__)
 
 # In-memory session storage (use Redis in production)
 sessions: Dict[str, dict] = {}
@@ -52,8 +55,13 @@ def delete_session(session_token: str) -> bool:
         return True
     return False
 
-def cleanup_expired_sessions():
-    """Remove expired sessions from memory."""
+def cleanup_expired_sessions() -> int:
+    """
+    Remove expired sessions from memory.
+
+    Returns:
+        Number of sessions cleaned up
+    """
     now = datetime.now()
     expired_tokens = [
         token for token, session in sessions.items()
@@ -62,3 +70,8 @@ def cleanup_expired_sessions():
 
     for token in expired_tokens:
         del sessions[token]
+
+    if expired_tokens:
+        logger.info(f"Cleaned up {len(expired_tokens)} expired sessions. Active sessions: {len(sessions)}")
+
+    return len(expired_tokens)
