@@ -13,17 +13,17 @@ import logging
 router = APIRouter(prefix="/shopping", tags=["shopping"])
 logger = logging.getLogger(__name__)
 
-class AvailabilityResponse(BaseModel):
+class PriceObservation(BaseModel):
     price: float
     notes: str
-    updated_at: str | None
+    created_at: str | None
 
 class ShoppingListItemResponse(BaseModel):
     id: str
     product_id: str
     product_name: str
     requested_quantity: int
-    availability: AvailabilityResponse | None
+    recent_prices: List[PriceObservation]
     purchased_quantity: int | None
     purchased_price_per_unit: str | None
     purchased_total: str | None

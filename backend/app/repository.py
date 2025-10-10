@@ -883,28 +883,15 @@ class DatabaseRepository(AbstractRepository):
         return query.all()
 
     def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Optional[ProductAvailability]:
-        """Get a specific product availability by product and store."""
+        """Get the most recent product availability by product and store."""
         return self.db.query(ProductAvailability).filter(
             ProductAvailability.product_id == product_id,
             ProductAvailability.store_id == store_id
-        ).first()
+        ).order_by(ProductAvailability.created_at.desc()).first()
 
     def create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", user_id: UUID = None) -> ProductAvailability:
-        """Create or update a product availability at a store."""
-        # Check if availability already exists
-        existing = self.get_availability_by_product_and_store(product_id, store_id)
-
-        if existing:
-            # Update the existing availability
-            if price is not None:
-                existing.price = Decimal(str(price))
-            if notes:
-                existing.notes = notes
-            self.db.commit()
-            self.db.refresh(existing)
-            return existing
-
-        # Create new availability
+        """Create a new product availability record (price observation)."""
+        # Always create a new record to track price history
         availability = ProductAvailability(
             product_id=product_id,
             store_id=store_id,
@@ -1136,20 +1123,37 @@ class MemoryRepository(AbstractRepository):
         cheese_sticks = self._create_product("String Cheese 48-pack")
 
         # Create product availabilities (link products to stores with prices)
-        self._create_product_availability(olive_oil.id, costco.id, 24.99, "aisle 12")
-        self._create_product_availability(quinoa.id, costco.id, 18.99, "organic section")
-        self._create_product_availability(paper_towels.id, costco.id, 19.99, "household")
-        self._create_product_availability(rotisserie_chicken.id, costco.id, 4.99, "deli section")
-        self._create_product_availability(almond_butter.id, costco.id, 9.99)
-        self._create_product_availability(frozen_berries.id, costco.id, 12.99)
-        self._create_product_availability(toilet_paper.id, costco.id, 22.99)
-        self._create_product_availability(coffee_beans.id, costco.id, 14.99)
+        # Vary the dates to show different scenarios
 
-        self._create_product_availability(detergent.id, sams.id, 16.98)
-        self._create_product_availability(laundry_pods.id, sams.id, 18.98)
-        self._create_product_availability(ground_beef.id, sams.id, 16.48)
-        self._create_product_availability(bananas.id, sams.id, 4.98)
-        self._create_product_availability(cheese_sticks.id, sams.id, 8.98)
+        # Olive Oil - multiple prices from 2 days ago (for confirmed run at Costco)
+        self._create_product_availability(olive_oil.id, costco.id, 24.99, "aisle 12", days_ago=2)
+        self._create_product_availability(olive_oil.id, costco.id, 23.99, "end cap display", days_ago=2)
+
+        # Quinoa - one price from yesterday (for confirmed run at Costco)
+        self._create_product_availability(quinoa.id, costco.id, 18.99, "organic section", days_ago=1)
+
+        # Paper Towels - prices from 5 days ago (for confirmed run at Costco)
+        self._create_product_availability(paper_towels.id, costco.id, 19.99, "household", days_ago=5)
+        self._create_product_availability(paper_towels.id, costco.id, 21.49, "regular price", days_ago=5)
+
+        # Other Costco products
+        self._create_product_availability(rotisserie_chicken.id, costco.id, 4.99, "deli section", days_ago=1)
+        self._create_product_availability(almond_butter.id, costco.id, 9.99, "", days_ago=3)
+        self._create_product_availability(almond_butter.id, costco.id, 10.49, "clearance", days_ago=3)
+
+        # Older observations (week ago)
+        self._create_product_availability(frozen_berries.id, costco.id, 12.99, "", days_ago=7)
+        self._create_product_availability(toilet_paper.id, costco.id, 22.99, "", days_ago=7)
+        self._create_product_availability(coffee_beans.id, costco.id, 14.99, "", days_ago=7)
+
+        # Sam's Club - varied dates
+        self._create_product_availability(detergent.id, sams.id, 16.98, "", days_ago=0)
+        self._create_product_availability(detergent.id, sams.id, 15.98, "on sale", days_ago=0)
+        self._create_product_availability(laundry_pods.id, sams.id, 18.98, "", days_ago=2)
+        self._create_product_availability(ground_beef.id, sams.id, 16.48, "", days_ago=2)
+        self._create_product_availability(ground_beef.id, sams.id, 17.98, "higher price today", days_ago=2)
+        self._create_product_availability(bananas.id, sams.id, 4.98, "", days_ago=5)
+        self._create_product_availability(cheese_sticks.id, sams.id, 8.98, "", days_ago=5)
 
         # Create test runs - one for each state with test user as leader
         run_planning = self._create_run(friends_group.id, costco.id, "planning", test_user.id, days_ago=7)
@@ -1896,17 +1900,18 @@ class MemoryRepository(AbstractRepository):
         self._products[product.id] = product
         return product
 
-    def _create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "") -> ProductAvailability:
+    def _create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", days_ago: float = 0) -> ProductAvailability:
         """Helper to create product availability at a store."""
-        from datetime import datetime
+        from datetime import datetime, timedelta
+        created_time = datetime.utcnow() - timedelta(days=days_ago)
         availability = ProductAvailability(
             id=uuid4(),
             product_id=product_id,
             store_id=store_id,
             price=Decimal(str(price)) if price is not None else None,
             notes=notes,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=created_time,
+            updated_at=created_time
         )
         self._product_availabilities[availability.id] = availability
         return availability
@@ -2129,27 +2134,23 @@ class MemoryRepository(AbstractRepository):
         return results
 
     def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Optional[ProductAvailability]:
-        """Get a specific product availability by product and store."""
+        """Get the most recent product availability by product and store."""
+        matches = []
         for avail in self._product_availabilities.values():
             if avail.product_id == product_id and avail.store_id == store_id:
-                return avail
-        return None
+                matches.append(avail)
+
+        if not matches:
+            return None
+
+        # Return the most recent one
+        return sorted(matches, key=lambda x: x.created_at if x.created_at else "", reverse=True)[0]
 
     def create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", user_id: UUID = None) -> ProductAvailability:
-        """Create or update a product availability at a store."""
-        # Check if availability already exists
-        existing = self.get_availability_by_product_and_store(product_id, store_id)
-
-        if existing:
-            # Update the existing availability
-            if price is not None:
-                existing.price = Decimal(str(price))
-            if notes:
-                existing.notes = notes
-            return existing
-
-        # Create new availability
+        """Create a new product availability record (price observation)."""
         from datetime import datetime
+
+        # Always create a new record to track price history
         availability = ProductAvailability(
             id=uuid4(),
             product_id=product_id,

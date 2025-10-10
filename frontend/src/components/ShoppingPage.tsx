@@ -15,6 +15,34 @@ import { useShoppingList, shoppingKeys, useMarkPurchased, useCompleteShopping } 
 
 // Using ShoppingListItem type from API layer
 
+// Helper function to format price observation date
+function formatPriceDate(dateStr: string | null): string {
+  if (!dateStr) return 'unknown date'
+
+  const date = new Date(dateStr)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  // Reset time portions for comparison
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+
+  if (dateOnly.getTime() === todayOnly.getTime()) {
+    return 'today'
+  } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+    return 'yesterday'
+  } else {
+    // Format as "on Mar 15" or "on Mar 15, 2024" if different year
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+    if (date.getFullYear() !== today.getFullYear()) {
+      options.year = 'numeric'
+    }
+    return 'on ' + date.toLocaleDateString('en-US', options)
+  }
+}
+
 interface ShoppingPageProps {
   runId: string
   onBack: () => void
@@ -255,13 +283,17 @@ function ShoppingItem({
         </div>
       </div>
 
-      {item.availability && (
+      {item.recent_prices.length > 0 && (
         <div className="availability-info">
-          <small>Current price:</small>
-          <div className="price-tag">
-            ${item.availability.price.toFixed(2)}
-            {item.availability.notes && <span className="price-notes"> - {item.availability.notes}</span>}
-          </div>
+          <small>
+            Prices seen {formatPriceDate(item.recent_prices[0].created_at)}:
+          </small>
+          {item.recent_prices.map((priceObs, idx) => (
+            <div key={idx} className="price-tag">
+              ${priceObs.price.toFixed(2)}
+              {priceObs.notes && <span className="price-notes"> - {priceObs.notes}</span>}
+            </div>
+          ))}
         </div>
       )}
 

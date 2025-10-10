@@ -1,15 +1,17 @@
 import { api } from './client'
 
+export interface PriceObservation {
+  price: number
+  notes: string
+  created_at: string | null
+}
+
 export interface ShoppingListItem {
   id: string
   product_id: string
   product_name: string
   requested_quantity: number
-  availability: {
-    price: number
-    notes: string
-    updated_at: string | null
-  } | null
+  recent_prices: PriceObservation[]
   purchased_quantity: number | null
   purchased_price_per_unit: string | null
   purchased_total: string | null
