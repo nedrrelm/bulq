@@ -1,37 +1,11 @@
 import { api } from './client'
-
-export interface ProductAvailability {
-  store_id: string
-  store_name: string
-  price: number | null
-}
-
-export interface ProductSearchResult {
-  id: string
-  name: string
-  brand: string | null
-  stores: ProductAvailability[]
-}
-
-export interface StoreWithPriceHistory {
-  store_id: string
-  store_name: string
-  current_price: number | null
-  price_history: Array<{
-    price: number
-    notes: string
-    timestamp: string | null
-  }>
-  notes: string
-}
-
-export interface ProductDetail {
-  id: string
-  name: string
-  brand: string | null
-  unit: string | null
-  stores: StoreWithPriceHistory[]
-}
+import {
+  productSearchResultSchema,
+  productDetailSchema,
+  type ProductSearchResult,
+  type ProductDetail
+} from '../schemas/product'
+import { z } from 'zod'
 
 export interface CreateProductRequest {
   name: string
@@ -43,10 +17,10 @@ export interface CreateProductRequest {
 
 export const productsApi = {
   search: (query: string) =>
-    api.get<ProductSearchResult[]>(`/products/search?q=${encodeURIComponent(query)}`),
+    api.get<ProductSearchResult[]>(`/products/search?q=${encodeURIComponent(query)}`, z.array(productSearchResultSchema)),
 
   getProduct: (productId: string) =>
-    api.get<ProductDetail>(`/products/${productId}`),
+    api.get<ProductDetail>(`/products/${productId}`, productDetailSchema),
 
   createProduct: (data: CreateProductRequest) =>
     api.post('/products/create', data)

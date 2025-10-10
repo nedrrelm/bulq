@@ -1,19 +1,2 @@
-export type ProductAvailability = {
-  store_id: string
-  store_name: string
-  price: number | null
-}
-
-export type ProductSearchResult = {
-  id: string
-  name: string
-  brand: string | null
-  stores: ProductAvailability[]
-}
-
-export type AvailableProduct = {
-  id: string
-  name: string
-  brand: string | null
-  stores: ProductAvailability[]
-}
+// Re-export product types from Zod schemas for backward compatibility
+export type { ProductSearchResult, AvailableProduct } from '../schemas/product'

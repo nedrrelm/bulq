@@ -80,25 +80,6 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 - Cache product lists per store
 - Use Redis with TTL and invalidation on updates
 
-**Frontend:**
-
-- Optimize SVG graph rendering (use charting library or memoization)
-
----
-
-## 🎨 Code Quality Improvements
-
----
-
-### Frontend Type Safety
-**Status**: Low Priority
-**Affected files**: All components
-
-**Items:**
-- Add runtime validation with Zod
-- Validate API responses match expected shape
-- Validate UUIDs before API calls
-
 ---
 
 ## 📝 Notes

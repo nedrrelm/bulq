@@ -1,6 +1,2 @@
-export type User = {
-  id: string
-  name: string
-  email: string
-  is_admin?: boolean
-}
+// Re-export User type from Zod schema for backward compatibility
+export type { User } from '../schemas/user'
