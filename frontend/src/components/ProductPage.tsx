@@ -33,32 +33,54 @@ interface ProductPageProps {
   onBack: () => void
 }
 
-function PriceGraph({ prices }: { prices: PriceEntry[] }) {
-  // Filter prices with timestamps and sort by date
-  const pricesWithTime = prices
-    .filter(p => p.timestamp)
-    .map(p => ({
-      ...p,
-      date: new Date(p.timestamp!)
-    }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
+interface PriceWithStore extends PriceEntry {
+  store_id: string
+  store_name: string
+  date: Date
+}
 
-  if (pricesWithTime.length === 0) {
+function PriceGraph({ storesData }: { storesData: StoreData[] }) {
+  // Combine all prices from all stores
+  const allPricesWithStore: PriceWithStore[] = []
+  storesData.forEach(store => {
+    store.price_history
+      .filter(p => p.timestamp)
+      .forEach(p => {
+        allPricesWithStore.push({
+          ...p,
+          store_id: store.store_id,
+          store_name: store.store_name,
+          date: new Date(p.timestamp!)
+        })
+      })
+  })
+
+  // Sort by date
+  allPricesWithStore.sort((a, b) => a.date.getTime() - b.date.getTime())
+
+  if (allPricesWithStore.length === 0) {
     return <p className="no-graph-data">No historical price data available</p>
   }
 
+  // Generate colors for stores
+  const storeColors = new Map<string, string>()
+  const colors = ['#667eea', '#f56565', '#48bb78', '#ed8936', '#9f7aea', '#38b2ac', '#ed64a6']
+  storesData.forEach((store, idx) => {
+    storeColors.set(store.store_id, colors[idx % colors.length])
+  })
+
   // Calculate graph dimensions and scales
-  const allPrices = pricesWithTime.map(p => p.price)
+  const allPrices = allPricesWithStore.map(p => p.price)
   const minPrice = Math.min(...allPrices)
   const maxPrice = Math.max(...allPrices)
   const priceRange = maxPrice - minPrice || 1
   const padding = priceRange * 0.1
 
-  const graphHeight = 200
-  const graphWidth = 600
+  const graphHeight = 300
+  const graphWidth = 700
   const marginLeft = 60
   const marginRight = 30
-  const marginTop = 10
+  const marginTop = 40
   const marginBottom = 30
   const plotWidth = graphWidth - marginLeft - marginRight
   const plotHeight = graphHeight - marginTop - marginBottom
@@ -73,8 +95,8 @@ function PriceGraph({ prices }: { prices: PriceEntry[] }) {
   }
 
   // Convert date to x-coordinate
-  const minTime = pricesWithTime[0].date.getTime()
-  const maxTime = pricesWithTime[pricesWithTime.length - 1].date.getTime()
+  const minTime = allPricesWithStore[0].date.getTime()
+  const maxTime = allPricesWithStore[allPricesWithStore.length - 1].date.getTime()
   const timeRange = maxTime - minTime || 1
 
   const dateToX = (date: Date) => {
@@ -83,7 +105,21 @@ function PriceGraph({ prices }: { prices: PriceEntry[] }) {
 
   return (
     <div className="price-graph">
-      <h4>Price Over Time</h4>
+      <h4>Price History Across All Stores</h4>
+
+      {/* Legend */}
+      <div className="graph-legend">
+        {storesData.map(store => (
+          <div key={store.store_id} className="legend-item">
+            <span
+              className="legend-dot"
+              style={{ backgroundColor: storeColors.get(store.store_id) }}
+            />
+            <span>{store.store_name}</span>
+          </div>
+        ))}
+      </div>
+
       <svg width={graphWidth} height={graphHeight} className="price-chart">
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
@@ -105,37 +141,25 @@ function PriceGraph({ prices }: { prices: PriceEntry[] }) {
           )
         })}
 
-        {/* Data points with horizontal lines */}
-        {pricesWithTime.map((p, i) => (
-          <line
-            key={`hline-${i}`}
-            x1={marginLeft}
-            y1={priceToY(p.price)}
-            x2={dateToX(p.date)}
-            y2={priceToY(p.price)}
-            stroke="#e0e0e0"
-            strokeWidth="1"
-            strokeDasharray="2,2"
-            opacity="0.5"
-          />
-        ))}
-
         {/* Data points */}
-        {pricesWithTime.map((p, i) => (
+        {allPricesWithStore.map((p, i) => (
           <g key={i}>
             <circle
               cx={dateToX(p.date)}
               cy={priceToY(p.price)}
               r={6}
+              fill={storeColors.get(p.store_id)}
               className="price-point"
+              stroke="white"
+              strokeWidth="2"
             />
-            <title>{`$${p.price.toFixed(2)} - ${p.date.toLocaleDateString()} ${p.notes ? `(${p.notes})` : ''}`}</title>
+            <title>{`${p.store_name}: $${p.price.toFixed(2)} - ${p.date.toLocaleDateString()} ${p.notes ? `(${p.notes})` : ''}`}</title>
           </g>
         ))}
 
         {/* X-axis labels */}
-        {pricesWithTime.map((p, i) => {
-          if (i % Math.ceil(pricesWithTime.length / 4) === 0 || i === pricesWithTime.length - 1) {
+        {allPricesWithStore.map((p, i) => {
+          if (i % Math.ceil(allPricesWithStore.length / 5) === 0 || i === allPricesWithStore.length - 1) {
             return (
               <text
                 key={i}
@@ -211,32 +235,36 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
       )}
 
       {product.stores.length > 0 && (
-        <div className="stores-comparison">
-          {product.stores.map((store) => {
-            const allPrices = store.price_history || []
+        <>
+          {/* Single combined price graph */}
+          <PriceGraph storesData={product.stores} />
 
-            // Calculate min/max/avg prices
-            const prices = allPrices.map(p => p.price)
-            const minPrice = prices.length > 0 ? Math.min(...prices) : null
-            const maxPrice = prices.length > 0 ? Math.max(...prices) : null
-            const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : null
+          {/* Store cards with current prices and stats */}
+          <div className="stores-comparison">
+            {product.stores.map((store) => {
+              const allPrices = store.price_history || []
 
-            return (
-              <div key={store.store_id} className="store-card card">
-                <div className="store-header">
-                  <h3>{store.store_name}</h3>
-                  {store.current_price && (
-                    <div className="current-price">
-                      <span className="price-label">Current Price:</span>
-                      <span className="price-value">${store.current_price.toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
+              // Calculate min/max/avg prices for this store
+              const prices = allPrices.map(p => p.price)
+              const minPrice = prices.length > 0 ? Math.min(...prices) : null
+              const maxPrice = prices.length > 0 ? Math.max(...prices) : null
+              const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : null
 
-                {allPrices.length === 0 ? (
-                  <p className="no-price-data">No price history available</p>
-                ) : (
-                  <>
+              return (
+                <div key={store.store_id} className="store-card card">
+                  <div className="store-header">
+                    <h3>{store.store_name}</h3>
+                    {store.current_price && (
+                      <div className="current-price">
+                        <span className="price-label">Current Price:</span>
+                        <span className="price-value">${store.current_price.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {allPrices.length === 0 ? (
+                    <p className="no-price-data">No price history available</p>
+                  ) : (
                     <div className="price-summary">
                       {minPrice !== null && (
                         <div className="price-stat">
@@ -257,14 +285,12 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
                         </div>
                       )}
                     </div>
-
-                    <PriceGraph prices={allPrices} />
-                  </>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </>
       )}
     </div>
   )
