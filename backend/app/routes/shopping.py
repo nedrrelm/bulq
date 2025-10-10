@@ -13,18 +13,17 @@ import logging
 router = APIRouter(prefix="/shopping", tags=["shopping"])
 logger = logging.getLogger(__name__)
 
-class EncounteredPriceResponse(BaseModel):
+class AvailabilityResponse(BaseModel):
     price: float
     notes: str
-    minimum_quantity: int | None
-    encountered_at: str
+    updated_at: str | None
 
 class ShoppingListItemResponse(BaseModel):
     id: str
     product_id: str
     product_name: str
     requested_quantity: int
-    encountered_prices: List[EncounteredPriceResponse]
+    availability: AvailabilityResponse | None
     purchased_quantity: int | None
     purchased_price_per_unit: str | None
     purchased_total: str | None
@@ -34,7 +33,7 @@ class ShoppingListItemResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class AddEncounteredPriceRequest(BaseModel):
+class UpdateAvailabilityPriceRequest(BaseModel):
     price: float = Field(gt=0, le=99999.99)
     notes: str = Field(default="", max_length=200)
 
@@ -103,20 +102,20 @@ async def get_shopping_list(
     except ForbiddenError as e:
         raise HTTPException(status_code=403, detail=str(e))
 
-@router.post("/{run_id}/items/{item_id}/encountered-price")
-async def add_encountered_price(
+@router.post("/{run_id}/items/{item_id}/price")
+async def update_availability_price(
     run_id: str,
     item_id: str,
-    request: AddEncounteredPriceRequest,
+    request: UpdateAvailabilityPriceRequest,
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
-    """Add an encountered price for a shopping list item."""
+    """Update product availability price for a shopping list item."""
     repo = get_repository(db)
     service = ShoppingService(repo)
 
     try:
-        result = await service.add_encountered_price(
+        result = await service.add_availability_price(
             run_id,
             item_id,
             request.price,

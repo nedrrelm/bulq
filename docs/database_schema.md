@@ -62,11 +62,9 @@ erDiagram
 
     Product {
         uuid id PK
-        uuid store_id FK
         string name
         string brand "nullable"
         string unit "nullable"
-        decimal base_price "nullable"
         boolean verified
         timestamp created_at
         timestamp updated_at
@@ -89,15 +87,16 @@ erDiagram
         timestamp updated_at
     }
 
-    EncounteredPrice {
+    ProductAvailability {
         uuid id PK
         uuid product_id FK
         uuid store_id FK
-        decimal price
+        decimal price "nullable"
         integer minimum_quantity "nullable"
         text notes "nullable"
-        timestamp encountered_at
-        uuid encountered_by FK "nullable"
+        timestamp created_at
+        timestamp updated_at
+        uuid created_by FK "nullable"
     }
 
     ShoppingListItem {
@@ -125,7 +124,6 @@ erDiagram
     Group ||--o{ GroupMembership : "has members"
     Group ||--o{ Run : "organizes"
     Store ||--o{ Run : "targeted by"
-    Store ||--o{ Product : "sells"
     User ||--o{ RunParticipation : "participates in"
     Run ||--o{ RunParticipation : "has participants"
     RunParticipation ||--o{ ProductBid : "places"
@@ -135,9 +133,9 @@ erDiagram
     User ||--o{ Product : "verifies"
     User ||--o{ Store : "creates"
     User ||--o{ Store : "verifies"
-    User ||--o{ EncounteredPrice : "reports"
-    Product ||--o{ EncounteredPrice : "has prices"
-    Store ||--o{ EncounteredPrice : "has prices"
+    User ||--o{ ProductAvailability : "reports"
+    Product ||--o{ ProductAvailability : "available at"
+    Store ||--o{ ProductAvailability : "has available"
     Run ||--o{ ShoppingListItem : "has items"
     Product ||--o{ ShoppingListItem : "included in"
 ```
@@ -190,22 +188,23 @@ Can transition to `cancelled` from any state before `distributing`.
 - **Users ↔ Groups**: Many-to-many via GroupMembership
 - **Groups → Runs**: One group can have multiple runs
 - **Runs → Store**: Each run targets a specific store
-- **Store → Products**: Products belong to specific stores
+- **Products ↔ Stores**: Many-to-many via ProductAvailability (products are store-agnostic)
 - **Users ↔ Runs**: Many-to-many via RunParticipation (tracks leader status and ready state)
 - **ProductBids**: Junction of RunParticipation + Product with quantity/interest data
   - Each bid belongs to a participation (which links user + run)
   - Simplifies querying all bids for a user in a run
   - Includes distribution fields: `distributed_quantity`, `distributed_price_per_unit`, `is_picked_up`
-- **EncounteredPrices**: Price observations at stores
-  - Links Product + Store with price and timestamp
-  - Can be reported during shopping runs or standalone
+- **ProductAvailability**: Links products to stores with pricing information
+  - Confirms a product is available at a specific store
+  - Optional price field (user nudged to add, but not required)
+  - Can be created/updated during shopping runs or standalone
   - Supports minimum quantity requirements for bulk pricing
   - User attribution for community price reporting
+  - Timestamps track when availability was added and last updated
 - **ShoppingListItems**: Shopping list generation for runs
   - Links Run + Product with requested quantities (sum of all bids)
   - Records actual purchased quantities and prices
   - `purchase_order` tracks the sequence items were purchased
-  - No longer stores encountered prices (moved to separate entity)
 
 ## Entity Details
 
@@ -234,15 +233,19 @@ Can transition to `cancelled` from any state before `distributing`.
 - **verified_at**: When the store was verified
 
 ### Product
+Products are now store-agnostic and represent generic items that can be available at multiple stores.
+
+- **name**: Product name (required)
 - **brand**: Brand name (nullable)
-- **unit**: Unit of measurement (e.g., "kg", "lb", "each", "L")
-- **base_price**: Estimated price (now nullable, not mandatory)
+- **unit**: Unit of measurement (e.g., "kg", "lb", "each", "L") (nullable)
 - **verified**: Whether an admin has verified this product exists (prevents duplicates)
-- **created_by**: User who added this product
-- **verified_by**: Admin user who verified this product
+- **created_by**: User who added this product (nullable)
+- **verified_by**: Admin user who verified this product (nullable)
 - **created_at**: When the product was added
 - **updated_at**: Last time the product was modified
-- **verified_at**: When the product was verified
+- **verified_at**: When the product was verified (nullable)
+
+Products link to stores via the `ProductAvailability` entity, allowing the same product to be available at multiple stores with different prices.
 
 ### Run
 - **planned_on**: The day the leader plans to go shopping (nullable)
@@ -271,17 +274,22 @@ Distribution fields for tracking allocation and pickup:
 - **is_picked_up**: Whether the user has collected their allocated items
 - **picked_up_at**: When the user picked up their items
 
-### EncounteredPrice
-A separate entity for tracking price observations at stores:
-- **product_id**: Which product this price is for
-- **store_id**: Which store this price was found at
-- **price**: The price observed
-- **minimum_quantity**: Minimum quantity required for this price (e.g., "must buy 2")
-- **notes**: Additional context (e.g., "aisle 3", "on sale", "clearance")
-- **encountered_at**: When this price was observed (defaults to now)
-- **encountered_by**: User who reported this price (nullable for system-generated entries)
+### ProductAvailability
+Links products to stores and tracks pricing information:
+- **product_id**: Which product is available (FK to Product)
+- **store_id**: Which store has this product (FK to Store)
+- **price**: The current/last known price (nullable - user is nudged to add but not required)
+- **minimum_quantity**: Minimum quantity required for this price (e.g., "must buy 2") (nullable)
+- **notes**: Additional context (e.g., "aisle 3", "on sale", "organic section") (nullable)
+- **created_at**: When this availability was first recorded
+- **updated_at**: Last time the availability or price was updated
+- **created_by**: User who added/confirmed this availability (nullable)
 
-This entity is decoupled from runs, allowing price reporting outside of active shopping trips. When viewing prices during a run, the system shows prices from the same day at the same store.
+This entity serves two purposes:
+1. **Availability Confirmation**: Confirms that a product can be found at a specific store
+2. **Price Tracking**: Optionally tracks the price of the product at that store
+
+Products are store-agnostic, so a single Product can have multiple ProductAvailability records linking it to different stores. When creating a product, users are prompted to add a store and price, creating both a Product and ProductAvailability in one action.
 
 ### ShoppingListItem
 Manages the shopping process for each product in a run:

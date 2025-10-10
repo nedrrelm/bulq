@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
-import { reassignmentApi, ApiError } from '../api'
+import { runsApi, reassignmentApi, ApiError } from '../api'
 import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
 import BidPopup from './BidPopup'
@@ -57,7 +57,7 @@ const ProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid,
     <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : ''}`}>
       <div className="product-header">
         <h4>{product.name}</h4>
-        <span className="product-price">${product.base_price}</span>
+        {product.current_price && <span className="product-price">${product.current_price}</span>}
       </div>
 
       {runState === 'adjusting' && product.purchased_quantity !== null && (
@@ -313,7 +313,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     const fullProduct: Product = {
       id: product.id,
       name: product.name,
-      base_price: product.base_price,
+      current_price: product.current_price,
       total_quantity: 0,
       interested_count: 0,
       user_bids: [],

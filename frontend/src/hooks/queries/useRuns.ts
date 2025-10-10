@@ -23,7 +23,7 @@ export const runKeys = {
 export function useRun(runId: string | undefined) {
   return useQuery({
     queryKey: runKeys.detail(runId!),
-    queryFn: () => runsApi.getRun(runId!),
+    queryFn: () => runsApi.getRunDetails(runId!),
     enabled: !!runId,
   })
 }
@@ -36,8 +36,8 @@ export function useRunParticipations(runId: string | undefined) {
     queryKey: runKeys.participations(runId!),
     queryFn: async () => {
       // The run details already include participations, so we can derive from there
-      const run = await runsApi.getRun(runId!)
-      return run.participations || []
+      const run = await runsApi.getRunDetails(runId!)
+      return run.participants || []
     },
     enabled: !!runId,
   })
@@ -51,8 +51,8 @@ export function useRunBids(runId: string | undefined) {
     queryKey: runKeys.bids(runId!),
     queryFn: async () => {
       // The run details already include bids, so we can derive from there
-      const run = await runsApi.getRun(runId!)
-      return run.bids || []
+      const run = await runsApi.getRunDetails(runId!)
+      return run.products || []
     },
     enabled: !!runId,
   })
@@ -78,8 +78,8 @@ export function useCreateRun(groupId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { storeId: string, plannedOn?: string }) =>
-      runsApi.createRun(groupId, data.storeId, data.plannedOn),
+    mutationFn: (data: { store_id: string }) =>
+      runsApi.createRun({ group_id: groupId, store_id: data.store_id }),
     onSuccess: () => {
       // Invalidate group's runs list
       queryClient.invalidateQueries({ queryKey: groupKeys.runs(groupId) })

@@ -5,10 +5,11 @@ export interface ShoppingListItem {
   product_id: string
   product_name: string
   requested_quantity: number
-  encountered_prices: Array<{
+  availability: {
     price: number
     notes: string
-  }>
+    updated_at: string | null
+  } | null
   purchased_quantity: number | null
   purchased_price_per_unit: string | null
   purchased_total: string | null
@@ -16,7 +17,7 @@ export interface ShoppingListItem {
   purchase_order: number | null
 }
 
-export interface EncounteredPriceRequest {
+export interface UpdateAvailabilityPriceRequest {
   price: number
   notes: string
 }
@@ -31,8 +32,8 @@ export const shoppingApi = {
   getShoppingList: (runId: string) =>
     api.get<ShoppingListItem[]>(`/shopping/${runId}/items`),
 
-  addEncounteredPrice: (runId: string, itemId: string, data: EncounteredPriceRequest) =>
-    api.post(`/shopping/${runId}/items/${itemId}/encountered-price`, data),
+  updateAvailabilityPrice: (runId: string, itemId: string, data: UpdateAvailabilityPriceRequest) =>
+    api.post(`/shopping/${runId}/items/${itemId}/price`, data),
 
   markPurchased: (runId: string, itemId: string, data: PurchaseRequest) =>
     api.post(`/shopping/${runId}/items/${itemId}/purchase`, data),

@@ -35,7 +35,7 @@ class User(Base):
     verified_products = relationship("Product", foreign_keys="[Product.verified_by]", back_populates="verifier")
     created_stores = relationship("Store", foreign_keys="[Store.created_by]", back_populates="creator")
     verified_stores = relationship("Store", foreign_keys="[Store.verified_by]", back_populates="verifier")
-    encountered_prices = relationship("EncounteredPrice", back_populates="user")
+    product_availabilities = relationship("ProductAvailability", back_populates="user")
     notifications = relationship("Notification", back_populates="user", order_by="desc(Notification.created_at)")
 
 class Group(Base):
@@ -67,10 +67,9 @@ class Store(Base):
     verified_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
 
     runs = relationship("Run", back_populates="store")
-    products = relationship("Product", back_populates="store")
     creator = relationship("User", foreign_keys=[created_by], back_populates="created_stores")
     verifier = relationship("User", foreign_keys=[verified_by], back_populates="verified_stores")
-    encountered_prices = relationship("EncounteredPrice", back_populates="store")
+    product_availabilities = relationship("ProductAvailability", back_populates="store")
 
 class Run(Base):
     __tablename__ = "runs"
@@ -99,11 +98,9 @@ class Product(Base):
     __tablename__ = "products"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, index=True)
     brand = Column(String, nullable=True)
     unit = Column(String, nullable=True)  # e.g., "kg", "lb", "each", "L"
-    base_price = Column(DECIMAL(10, 2), nullable=True)  # Now optional (just an estimate)
     verified = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -111,11 +108,10 @@ class Product(Base):
     verified_at = Column(DateTime(timezone=True), nullable=True)
     verified_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
 
-    store = relationship("Store", back_populates="products")
     product_bids = relationship("ProductBid", back_populates="product")
     creator = relationship("User", foreign_keys=[created_by], back_populates="created_products")
     verifier = relationship("User", foreign_keys=[verified_by], back_populates="verified_products")
-    encountered_prices = relationship("EncounteredPrice", back_populates="product")
+    availabilities = relationship("ProductAvailability", back_populates="product")
 
 class RunParticipation(Base):
     __tablename__ = "run_participations"
@@ -154,21 +150,22 @@ class ProductBid(Base):
     participation = relationship("RunParticipation", back_populates="product_bids")
     product = relationship("Product", back_populates="product_bids")
 
-class EncounteredPrice(Base):
-    __tablename__ = "encountered_prices"
+class ProductAvailability(Base):
+    __tablename__ = "product_availabilities"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
     store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
-    price = Column(DECIMAL(10, 2), nullable=False)
+    price = Column(DECIMAL(10, 2), nullable=True)  # Optional price - user nudged to add
     minimum_quantity = Column(Integer, nullable=True)  # e.g., "must buy 2 to get this price"
     notes = Column(Text, nullable=True)  # e.g., "aisle 3", "on sale", "clearance"
-    encountered_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    encountered_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
 
-    product = relationship("Product", back_populates="encountered_prices")
-    store = relationship("Store", back_populates="encountered_prices")
-    user = relationship("User", back_populates="encountered_prices")
+    product = relationship("Product", back_populates="availabilities")
+    store = relationship("Store", back_populates="product_availabilities")
+    user = relationship("User", back_populates="product_availabilities")
 
 class ShoppingListItem(Base):
     __tablename__ = "shopping_list_items"

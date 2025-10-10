@@ -10,7 +10,7 @@ export interface RunDetail {
   products: Array<{
     id: string
     name: string
-    base_price: string
+    current_price: string | null
     total_quantity: number
     interested_count: number
     user_bids: Array<{

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 import logging
 
-from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, EncounteredPrice, Notification, LeaderReassignmentRequest
+from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, ProductAvailability, Notification, LeaderReassignmentRequest
 from .config import get_repo_mode
 from .run_state import RunState, state_machine
 
@@ -114,9 +114,9 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement get_store_by_id")
 
     @abstractmethod
-    def get_products_by_store_from_encountered_prices(self, store_id: UUID) -> List[Product]:
-        """Get all unique products that have encountered prices at a store."""
-        raise NotImplementedError("Subclass must implement get_products_by_store_from_encountered_prices")
+    def get_products_by_store_from_availabilities(self, store_id: UUID) -> List[Product]:
+        """Get all unique products that are available at a store."""
+        raise NotImplementedError("Subclass must implement get_products_by_store_from_availabilities")
 
     @abstractmethod
     def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
@@ -153,8 +153,8 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement get_product_by_id")
 
     @abstractmethod
-    def create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
-        """Create a new product."""
+    def create_product(self, name: str, brand: Optional[str] = None, unit: Optional[str] = None) -> Product:
+        """Create a new product (store-agnostic)."""
         raise NotImplementedError("Subclass must implement create_product")
 
     @abstractmethod
@@ -274,25 +274,38 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
-        """Add an encountered price to a shopping list item."""
-        raise NotImplementedError("Subclass must implement add_encountered_price")
+        """
+        DEPRECATED: Use create_product_availability() instead.
+        This method is kept for backwards compatibility but should not be used.
+        """
+        raise NotImplementedError("Use create_product_availability() instead")
 
     @abstractmethod
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
         """Mark a shopping list item as purchased."""
         raise NotImplementedError("Subclass must implement mark_item_purchased")
 
-    # ==================== EncounteredPrice Methods ====================
+    # ==================== ProductAvailability Methods ====================
 
     @abstractmethod
-    def get_encountered_prices(self, product_id: UUID, store_id: UUID, start_date: Any = None, end_date: Any = None) -> List:
-        """Get encountered prices for a product at a store, optionally filtered by date range."""
-        raise NotImplementedError("Subclass must implement get_encountered_prices")
+    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> List:
+        """Get product availabilities, optionally filtered by store."""
+        raise NotImplementedError("Subclass must implement get_product_availabilities")
 
     @abstractmethod
-    def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
-        """Create a new encountered price."""
-        raise NotImplementedError("Subclass must implement create_encountered_price")
+    def create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", user_id: UUID = None) -> Any:
+        """Create or update a product availability at a store."""
+        raise NotImplementedError("Subclass must implement create_product_availability")
+
+    @abstractmethod
+    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Optional[Any]:
+        """Get a specific product availability by product and store."""
+        raise NotImplementedError("Subclass must implement get_availability_by_product_and_store")
+
+    @abstractmethod
+    def update_product_availability_price(self, availability_id: UUID, price: float, notes: str = "") -> Any:
+        """Update the price for an existing product availability."""
+        raise NotImplementedError("Subclass must implement update_product_availability_price")
 
     # ==================== Notification Methods ====================
 
@@ -382,7 +395,7 @@ class DatabaseRepository(AbstractRepository):
     - Eager loading with joinedload() to avoid N+1 queries
     - State machine validation for run transitions
     - Bcrypt password verification
-    - Deduplication for encountered prices (one per product/store/day)
+    - ProductAvailability tracking (one per product/store with optional price)
     - Proper transaction handling with commit/rollback
     - Comprehensive logging for debugging
 
@@ -559,11 +572,11 @@ class DatabaseRepository(AbstractRepository):
         """Get store by ID."""
         return self.db.query(Store).filter(Store.id == store_id).first()
 
-    def get_products_by_store_from_encountered_prices(self, store_id: UUID) -> List[Product]:
-        """Get all unique products that have encountered prices at a store."""
+    def get_products_by_store_from_availabilities(self, store_id: UUID) -> List[Product]:
+        """Get all unique products that are available at a store."""
         from sqlalchemy import distinct
-        product_ids = self.db.query(distinct(EncounteredPrice.product_id)).filter(
-            EncounteredPrice.store_id == store_id
+        product_ids = self.db.query(distinct(ProductAvailability.product_id)).filter(
+            ProductAvailability.store_id == store_id
         ).all()
         product_ids = [pid[0] for pid in product_ids]
         return self.db.query(Product).filter(Product.id.in_(product_ids)).all()
@@ -627,8 +640,8 @@ class DatabaseRepository(AbstractRepository):
     # ==================== Product Methods ====================
 
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
-        """Get all products for a store."""
-        return self.db.query(Product).filter(Product.store_id == store_id).all()
+        """Get all products for a store (via product availabilities)."""
+        return self.get_products_by_store_from_availabilities(store_id)
 
     def search_products(self, query: str) -> List[Product]:
         """Search for products by name."""
@@ -638,9 +651,13 @@ class DatabaseRepository(AbstractRepository):
         """Get product by ID."""
         return self.db.query(Product).filter(Product.id == product_id).first()
 
-    def create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
-        """Create a new product."""
-        product = Product(store_id=store_id, name=name, base_price=Decimal(str(base_price)))
+    def create_product(self, name: str, brand: Optional[str] = None, unit: Optional[str] = None) -> Product:
+        """Create a new product (store-agnostic)."""
+        product = Product(
+            name=name,
+            brand=brand,
+            unit=unit
+        )
         self.db.add(product)
         self.db.commit()
         self.db.refresh(product)
@@ -846,8 +863,8 @@ class DatabaseRepository(AbstractRepository):
 
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
         """
-        DEPRECATED: This method used to add encountered prices to shopping list items.
-        Now use create_encountered_price() to create proper EncounteredPrice entities instead.
+        DEPRECATED: This method is no longer used.
+        Use create_product_availability() to create ProductAvailability records instead.
         This method is kept for backwards compatibility but does nothing.
         """
         item = self.db.query(ShoppingListItem).filter(
@@ -871,65 +888,68 @@ class DatabaseRepository(AbstractRepository):
             return item
         return None
 
-    # ==================== EncounteredPrice Methods ====================
+    # ==================== ProductAvailability Methods ====================
 
-    def get_encountered_prices(self, product_id: UUID, store_id: UUID, start_date: Any = None, end_date: Any = None) -> List:
-        """Get encountered prices for a product at a store, optionally filtered by date range."""
-        query = self.db.query(EncounteredPrice).filter(
-            EncounteredPrice.product_id == product_id,
-            EncounteredPrice.store_id == store_id
+    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> List:
+        """Get product availabilities, optionally filtered by store."""
+        query = self.db.query(ProductAvailability).filter(
+            ProductAvailability.product_id == product_id
         )
 
-        if start_date and end_date:
-            query = query.filter(
-                EncounteredPrice.encountered_at >= start_date,
-                EncounteredPrice.encountered_at < end_date
-            )
+        if store_id:
+            query = query.filter(ProductAvailability.store_id == store_id)
 
         return query.all()
 
-    def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
-        """Create a new encountered price. Deduplicates by same product, store, and day."""
-        from datetime import datetime, date
-
-        today = date.today()
-
-        # Check if we already have a price for this product at this store today
-        existing = self.db.query(EncounteredPrice).filter(
-            EncounteredPrice.product_id == product_id,
-            EncounteredPrice.store_id == store_id,
-            func.date(EncounteredPrice.encountered_at) == today
+    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Optional[ProductAvailability]:
+        """Get a specific product availability by product and store."""
+        return self.db.query(ProductAvailability).filter(
+            ProductAvailability.product_id == product_id,
+            ProductAvailability.store_id == store_id
         ).first()
 
+    def create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", user_id: UUID = None) -> ProductAvailability:
+        """Create or update a product availability at a store."""
+        # Check if availability already exists
+        existing = self.get_availability_by_product_and_store(product_id, store_id)
+
         if existing:
-            # Update the existing entry instead of creating a new one
-            logger.debug(
-                f"Encountered price already exists for today, updating",
-                extra={"product_id": str(product_id), "store_id": str(store_id), "date": str(today)}
-            )
-            existing.price = price
+            # Update the existing availability
+            if price is not None:
+                existing.price = Decimal(str(price))
             if notes:
                 existing.notes = notes
-            existing.encountered_at = datetime.now()
-            if user_id:
-                existing.encountered_by = user_id
             self.db.commit()
             self.db.refresh(existing)
             return existing
 
-        # No existing entry for today, create new one
-        ep = EncounteredPrice(
+        # Create new availability
+        availability = ProductAvailability(
             product_id=product_id,
             store_id=store_id,
-            price=price,
+            price=Decimal(str(price)) if price is not None else None,
             notes=notes,
-            encountered_at=datetime.now(),
-            encountered_by=user_id
+            created_by=user_id
         )
-        self.db.add(ep)
+        self.db.add(availability)
         self.db.commit()
-        self.db.refresh(ep)
-        return ep
+        self.db.refresh(availability)
+        return availability
+
+    def update_product_availability_price(self, availability_id: UUID, price: float, notes: str = "") -> ProductAvailability:
+        """Update the price for an existing product availability."""
+        availability = self.db.query(ProductAvailability).filter(
+            ProductAvailability.id == availability_id
+        ).first()
+
+        if availability:
+            availability.price = Decimal(str(price))
+            if notes:
+                availability.notes = notes
+            self.db.commit()
+            self.db.refresh(availability)
+
+        return availability
 
     # ==================== Notification Methods ====================
 
@@ -1085,7 +1105,7 @@ class MemoryRepository(AbstractRepository):
         self._participations: Dict[UUID, RunParticipation] = {}
         self._bids: Dict[UUID, ProductBid] = {}
         self._shopping_list_items: Dict[UUID, ShoppingListItem] = {}
-        self._encountered_prices: Dict[UUID, EncounteredPrice] = {}
+        self._product_availabilities: Dict[UUID, ProductAvailability] = {}
         self._notifications: Dict[UUID, Notification] = {}
         self._reassignment_requests: Dict[UUID, LeaderReassignmentRequest] = {}
 
@@ -1119,24 +1139,36 @@ class MemoryRepository(AbstractRepository):
         costco = self._create_store("Test Costco")
         sams = self._create_store("Test Sam's Club")
 
-        # Create test products
-        olive_oil = self._create_product(costco.id, "Test Olive Oil", 24.99)
-        quinoa = self._create_product(costco.id, "Test Quinoa", 18.99)
-        detergent = self._create_product(sams.id, "Test Detergent", 16.98)
+        # Create test products (store-agnostic)
+        olive_oil = self._create_product("Test Olive Oil", brand="Kirkland")
+        quinoa = self._create_product("Test Quinoa", brand="Organic")
+        detergent = self._create_product("Test Detergent", brand="Tide")
+        paper_towels = self._create_product("Kirkland Paper Towels 12-pack", brand="Kirkland")
+        rotisserie_chicken = self._create_product("Rotisserie Chicken")
+        almond_butter = self._create_product("Kirkland Almond Butter", brand="Kirkland")
+        frozen_berries = self._create_product("Organic Frozen Berry Mix", brand="Organic")
+        toilet_paper = self._create_product("Charmin Ultra Soft 24-pack", brand="Charmin")
+        coffee_beans = self._create_product("Kirkland Colombian Coffee", brand="Kirkland")
+        laundry_pods = self._create_product("Tide Pods 81-count", brand="Tide")
+        ground_beef = self._create_product("93/7 Ground Beef 3lbs")
+        bananas = self._create_product("Organic Bananas 3lbs", brand="Organic")
+        cheese_sticks = self._create_product("String Cheese 48-pack")
 
-        # Add more products for Costco (some without bids)
-        paper_towels = self._create_product(costco.id, "Kirkland Paper Towels 12-pack", 19.99)
-        rotisserie_chicken = self._create_product(costco.id, "Rotisserie Chicken", 4.99)
-        almond_butter = self._create_product(costco.id, "Kirkland Almond Butter", 9.99)
-        frozen_berries = self._create_product(costco.id, "Organic Frozen Berry Mix", 12.99)
-        toilet_paper = self._create_product(costco.id, "Charmin Ultra Soft 24-pack", 22.99)
-        coffee_beans = self._create_product(costco.id, "Kirkland Colombian Coffee", 14.99)
+        # Create product availabilities (link products to stores with prices)
+        self._create_product_availability(olive_oil.id, costco.id, 24.99, "aisle 12")
+        self._create_product_availability(quinoa.id, costco.id, 18.99, "organic section")
+        self._create_product_availability(paper_towels.id, costco.id, 19.99, "household")
+        self._create_product_availability(rotisserie_chicken.id, costco.id, 4.99, "deli section")
+        self._create_product_availability(almond_butter.id, costco.id, 9.99)
+        self._create_product_availability(frozen_berries.id, costco.id, 12.99)
+        self._create_product_availability(toilet_paper.id, costco.id, 22.99)
+        self._create_product_availability(coffee_beans.id, costco.id, 14.99)
 
-        # Add more products for Sam's Club
-        laundry_pods = self._create_product(sams.id, "Tide Pods 81-count", 18.98)
-        ground_beef = self._create_product(sams.id, "93/7 Ground Beef 3lbs", 16.48)
-        bananas = self._create_product(sams.id, "Organic Bananas 3lbs", 4.98)
-        cheese_sticks = self._create_product(sams.id, "String Cheese 48-pack", 8.98)
+        self._create_product_availability(detergent.id, sams.id, 16.98)
+        self._create_product_availability(laundry_pods.id, sams.id, 18.98)
+        self._create_product_availability(ground_beef.id, sams.id, 16.48)
+        self._create_product_availability(bananas.id, sams.id, 4.98)
+        self._create_product_availability(cheese_sticks.id, sams.id, 8.98)
 
         # Create test runs - one for each state with test user as leader
         run_planning = self._create_run(friends_group.id, costco.id, "planning", test_user.id, days_ago=7)
@@ -1570,26 +1602,7 @@ class MemoryRepository(AbstractRepository):
         shopping_item14.is_purchased = True
         shopping_item14.purchase_order = 3
 
-        # Create EncounteredPrice entities for products at stores
-        # These show up on the store page
-        from datetime import datetime, timedelta
-
-        # Costco prices
-        self.create_encountered_price(olive_oil.id, costco.id, Decimal("24.99"), "aisle 12", alice.id)
-        self.create_encountered_price(quinoa.id, costco.id, Decimal("18.99"), "organic section", test_user.id)
-        self.create_encountered_price(paper_towels.id, costco.id, Decimal("19.99"), "household", bob.id)
-        self.create_encountered_price(rotisserie_chicken.id, costco.id, Decimal("4.99"), "deli section", alice.id)
-        self.create_encountered_price(almond_butter.id, costco.id, Decimal("9.99"), "aisle 8", test_user.id)
-        self.create_encountered_price(frozen_berries.id, costco.id, Decimal("12.99"), "frozen section", carol.id)
-        self.create_encountered_price(toilet_paper.id, costco.id, Decimal("22.99"), "aisle 2", bob.id)
-        self.create_encountered_price(coffee_beans.id, costco.id, Decimal("14.99"), "aisle 10", alice.id)
-
-        # Sam's Club prices
-        self.create_encountered_price(detergent.id, sams.id, Decimal("16.98"), "aisle 7", test_user.id)
-        self.create_encountered_price(laundry_pods.id, sams.id, Decimal("18.98"), "front display", bob.id)
-        self.create_encountered_price(ground_beef.id, sams.id, Decimal("16.48"), "meat department", alice.id)
-        self.create_encountered_price(bananas.id, sams.id, Decimal("4.98"), "produce", carol.id)
-        self.create_encountered_price(cheese_sticks.id, sams.id, Decimal("8.98"), "dairy section", test_user.id)
+        # Product availabilities already created above with _create_product_availability
 
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         return self._users.get(user_id)
@@ -1760,7 +1773,13 @@ class MemoryRepository(AbstractRepository):
         return runs[offset:offset + limit]
 
     def get_products_by_store(self, store_id: UUID) -> List[Product]:
-        return [product for product in self._products.values() if product.store_id == store_id]
+        """Get all products for a store (via product availabilities)."""
+        return self.get_products_by_store_from_availabilities(store_id)
+
+    def get_products_by_store_from_availabilities(self, store_id: UUID) -> List[Product]:
+        """Get all unique products that are available at a store."""
+        product_ids = {avail.product_id for avail in self._product_availabilities.values() if avail.store_id == store_id}
+        return [product for product in self._products.values() if product.id in product_ids]
 
     def search_products(self, query: str) -> List[Product]:
         query_lower = query.lower()
@@ -1807,14 +1826,14 @@ class MemoryRepository(AbstractRepository):
         self._stores[store.id] = store
         return store
 
-    def create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
-        """Create a new product."""
+    def create_product(self, name: str, brand: Optional[str] = None, unit: Optional[str] = None) -> Product:
+        """Create a new product (store-agnostic)."""
         from datetime import datetime
         product = Product(
             id=uuid4(),
-            store_id=store_id,
             name=name,
-            base_price=Decimal(str(base_price)),
+            brand=brand,
+            unit=unit,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -1882,18 +1901,34 @@ class MemoryRepository(AbstractRepository):
         self._stores[store.id] = store
         return store
 
-    def _create_product(self, store_id: UUID, name: str, base_price: float) -> Product:
+    def _create_product(self, name: str, brand: Optional[str] = None, unit: Optional[str] = None) -> Product:
+        """Helper to create product without store association."""
         from datetime import datetime
         product = Product(
             id=uuid4(),
-            store_id=store_id,
             name=name,
-            base_price=Decimal(str(base_price)),
+            brand=brand,
+            unit=unit,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
         self._products[product.id] = product
         return product
+
+    def _create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "") -> ProductAvailability:
+        """Helper to create product availability at a store."""
+        from datetime import datetime
+        availability = ProductAvailability(
+            id=uuid4(),
+            product_id=product_id,
+            store_id=store_id,
+            price=Decimal(str(price)) if price is not None else None,
+            notes=notes,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        self._product_availabilities[availability.id] = availability
+        return availability
 
     def _create_run(self, group_id: UUID, store_id: UUID, state: str, leader_id: UUID, days_ago: int = 7) -> Run:
         from datetime import datetime, timedelta
@@ -2089,8 +2124,8 @@ class MemoryRepository(AbstractRepository):
 
     def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
         """
-        DEPRECATED: This method used to add encountered prices to shopping list items.
-        Now use create_encountered_price() to create proper EncounteredPrice entities instead.
+        DEPRECATED: This method is no longer used.
+        Use create_product_availability() to create ProductAvailability records instead.
         This method is kept for backwards compatibility but does nothing.
         """
         item = self._shopping_list_items.get(item_id)
@@ -2110,55 +2145,62 @@ class MemoryRepository(AbstractRepository):
             return item
         return None
 
-    # ==================== EncounteredPrice Methods ====================
+    # ==================== ProductAvailability Methods ====================
 
-    def get_encountered_prices(self, product_id: UUID, store_id: UUID, start_date: Any = None, end_date: Any = None) -> List:
-        """Get encountered prices for a product at a store, optionally filtered by date range."""
+    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> List:
+        """Get product availabilities, optionally filtered by store."""
         results = []
-        for ep in self._encountered_prices.values():
-            if ep.product_id == product_id and ep.store_id == store_id:
-                if start_date and end_date:
-                    if start_date <= ep.encountered_at < end_date:
-                        results.append(ep)
-                else:
-                    results.append(ep)
+        for avail in self._product_availabilities.values():
+            if avail.product_id == product_id:
+                if store_id is None or avail.store_id == store_id:
+                    results.append(avail)
         return results
 
-    def create_encountered_price(self, product_id: UUID, store_id: UUID, price: Any, notes: str = "", user_id: UUID = None) -> Any:
-        """Create a new encountered price. Deduplicates by same product, store, and day."""
-        from datetime import datetime, date
+    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Optional[ProductAvailability]:
+        """Get a specific product availability by product and store."""
+        for avail in self._product_availabilities.values():
+            if avail.product_id == product_id and avail.store_id == store_id:
+                return avail
+        return None
 
-        today = date.today()
+    def create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", user_id: UUID = None) -> ProductAvailability:
+        """Create or update a product availability at a store."""
+        # Check if availability already exists
+        existing = self.get_availability_by_product_and_store(product_id, store_id)
 
-        # Check if we already have a price for this product at this store today
-        for ep in self._encountered_prices.values():
-            if (ep.product_id == product_id and
-                ep.store_id == store_id and
-                ep.encountered_at.date() == today):
-                # Update the existing entry instead of creating a new one
-                logger.debug(
-                    f"Encountered price already exists for today, updating",
-                    extra={"product_id": str(product_id), "store_id": str(store_id), "date": str(today)}
-                )
-                ep.price = price
-                ep.notes = notes if notes else ep.notes
-                ep.encountered_at = datetime.now()
-                if user_id:
-                    ep.encountered_by = user_id
-                return ep
+        if existing:
+            # Update the existing availability
+            if price is not None:
+                existing.price = Decimal(str(price))
+            if notes:
+                existing.notes = notes
+            return existing
 
-        # No existing entry for today, create new one
-        ep = EncounteredPrice(
+        # Create new availability
+        from datetime import datetime
+        availability = ProductAvailability(
             id=uuid4(),
             product_id=product_id,
             store_id=store_id,
-            price=price,
+            price=Decimal(str(price)) if price is not None else None,
             notes=notes,
-            encountered_at=datetime.now(),
-            encountered_by=user_id
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            created_by=user_id
         )
-        self._encountered_prices[ep.id] = ep
-        return ep
+        self._product_availabilities[availability.id] = availability
+        return availability
+
+    def update_product_availability_price(self, availability_id: UUID, price: float, notes: str = "") -> ProductAvailability:
+        """Update the price for an existing product availability."""
+        availability = self._product_availabilities.get(availability_id)
+
+        if availability:
+            availability.price = Decimal(str(price))
+            if notes:
+                availability.notes = notes
+
+        return availability
 
     # ==================== Notification Methods ====================
 

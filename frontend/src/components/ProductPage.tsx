@@ -8,21 +8,23 @@ import ErrorAlert from './ErrorAlert'
 interface PriceEntry {
   price: number
   notes: string
-  run_id: string
-  timestamp?: string
+  run_id?: string
+  timestamp: string | null
 }
 
 interface StoreData {
   store_id: string
   store_name: string
-  base_price: number | null
-  encountered_prices: PriceEntry[]
-  product_id: string
+  current_price: number | null
+  price_history: PriceEntry[]
+  notes: string
 }
 
 interface ProductDetails {
   id: string
   name: string
+  brand: string | null
+  unit: string | null
   stores: StoreData[]
 }
 
@@ -192,7 +194,15 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
         <span>{product.name}</span>
       </div>
 
-      <h2>{product.name}</h2>
+      <div className="product-header">
+        <h2>{product.name}</h2>
+        {(product.brand || product.unit) && (
+          <div className="product-meta">
+            {product.brand && <span className="meta-item">Brand: {product.brand}</span>}
+            {product.unit && <span className="meta-item">Unit: {product.unit}</span>}
+          </div>
+        )}
+      </div>
 
       {product.stores.length === 0 && (
         <div className="empty-state">
@@ -203,10 +213,7 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
       {product.stores.length > 0 && (
         <div className="stores-comparison">
           {product.stores.map((store) => {
-            const allPrices = [...store.encountered_prices]
-            if (store.base_price) {
-              allPrices.push({ price: store.base_price, notes: 'Base price', run_id: '' })
-            }
+            const allPrices = store.price_history || []
 
             // Calculate min/max/avg prices
             const prices = allPrices.map(p => p.price)
@@ -216,10 +223,18 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
 
             return (
               <div key={store.store_id} className="store-card card">
-                <h3>{store.store_name}</h3>
+                <div className="store-header">
+                  <h3>{store.store_name}</h3>
+                  {store.current_price && (
+                    <div className="current-price">
+                      <span className="price-label">Current Price:</span>
+                      <span className="price-value">${store.current_price.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
 
                 {allPrices.length === 0 ? (
-                  <p className="no-price-data">No price data available</p>
+                  <p className="no-price-data">No price history available</p>
                 ) : (
                   <>
                     <div className="price-summary">

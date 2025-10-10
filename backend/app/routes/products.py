@@ -12,9 +12,11 @@ from ..services import ProductService
 router = APIRouter(prefix="/products", tags=["products"])
 
 class CreateProductRequest(BaseModel):
-    store_id: str
     name: str
-    base_price: float
+    brand: Optional[str] = None
+    unit: Optional[str] = None
+    store_id: Optional[str] = None  # Optional: add availability if provided
+    price: Optional[float] = None    # Optional: price for availability
 
 @router.get("/search")
 async def search_products(
@@ -37,23 +39,38 @@ async def create_product(
     db: Session = Depends(get_db)
 ):
     """
-    Create a new product for a store.
+    Create a new product. Optionally link to a store with price.
     """
     repo = get_repository(db)
     service = ProductService(repo)
 
     try:
-        product = service.create_product(
-            store_id=UUID(request.store_id),
+        store_uuid = UUID(request.store_id) if request.store_id else None
+
+        product, availability = service.create_product(
             name=request.name,
-            base_price=request.base_price
+            brand=request.brand,
+            unit=request.unit,
+            store_id=store_uuid,
+            price=request.price,
+            user_id=current_user.id
         )
-        return {
+
+        response = {
             "id": str(product.id),
             "name": product.name,
-            "store_id": str(product.store_id),
-            "base_price": float(product.base_price)
+            "brand": product.brand,
+            "unit": product.unit
         }
+
+        if availability:
+            response["availability"] = {
+                "store_id": str(availability.store_id),
+                "price": float(availability.price) if availability.price else None,
+                "notes": availability.notes
+            }
+
+        return response
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -65,7 +82,7 @@ async def get_product_details(
 ):
     """
     Get detailed product information including price history from shopping list items.
-    Shows the product across different stores and historical prices encountered during shopping.
+    Shows the product across different stores and historical prices recorded during shopping.
     """
     repo = get_repository(db)
     service = ProductService(repo)
