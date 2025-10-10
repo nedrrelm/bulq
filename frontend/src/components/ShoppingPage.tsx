@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/ShoppingPage.css'
 import { WS_BASE_URL } from '../config'
-import { shoppingApi, ApiError } from '../api'
+import { ApiError } from '../api'
 import type { ShoppingListItem } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -10,6 +11,7 @@ import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { validateDecimal, parseDecimal, sanitizeString } from '../utils/validation'
+import { useShoppingList, shoppingKeys, useMarkPurchased, useCompleteShopping } from '../hooks/queries'
 
 // Using ShoppingListItem type from API layer
 
@@ -19,40 +21,26 @@ interface ShoppingPageProps {
 }
 
 export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
-  const [items, setItems] = useState<ShoppingListItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const { data: items = [], isLoading: loading, error: queryError } = useShoppingList(runId)
+  const queryClient = useQueryClient()
+  const markPurchasedMutation = useMarkPurchased(runId)
+  const completeShoppingMutation = useCompleteShopping(runId)
+
+  const error = queryError instanceof Error ? queryError.message : ''
+
   const [showPurchasePopup, setShowPurchasePopup] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ShoppingListItem | null>(null)
   const [showPricePopup, setShowPricePopup] = useState(false)
-  const { toast, showToast, hideToast } = useToast()
+  const { toast, showToast, hideToast} = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
-
-  const fetchShoppingList = async (silent = false) => {
-    try {
-      if (!silent) setLoading(true)
-      setError('')
-
-      const data = await shoppingApi.getShoppingList(runId)
-      setItems(data)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to load shopping list')
-    } finally {
-      if (!silent) setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchShoppingList()
-  }, [runId])
 
   // WebSocket for real-time updates
   const handleWebSocketMessage = useCallback((message: any) => {
     if (message.type === 'shopping_item_updated') {
-      // Refetch the shopping list to get updates (silently to avoid scroll jump)
-      fetchShoppingList(true)
+      // Invalidate shopping list to refetch with updates
+      queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
     }
-  }, [fetchShoppingList])
+  }, [queryClient, runId])
 
   useWebSocket(
     runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,

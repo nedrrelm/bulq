@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { authApi } from '../api'
+import { createContext, useContext, ReactNode, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useCurrentUser, useLogout as useLogoutMutation, authKeys } from '../hooks/queries'
 import type { User } from '../types/user'
 
 interface AuthContextType {
-  user: User | null
+  user: User | null | undefined
   login: (userData: User) => void
   logout: () => Promise<void>
   loading: boolean
@@ -12,49 +13,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
 
-  // Check if user is already logged in
+  // Use React Query to manage current user state
+  const { data: user, isLoading: loading, isError } = useCurrentUser()
+  const logoutMutation = useLogoutMutation()
+
+  // Handle logout flag from sessionStorage
   useEffect(() => {
-    const checkAuth = async () => {
-      // Skip auth check if we just logged out (to avoid 401 error)
-      const justLoggedOut = sessionStorage.getItem('just_logged_out')
-      if (justLoggedOut) {
-        sessionStorage.removeItem('just_logged_out')
-        setLoading(false)
-        return
-      }
-
-      // Always try to fetch current user - the browser will automatically
-      // send the httpOnly cookie with the request
-      try {
-        const userData = await authApi.getCurrentUser()
-        setUser(userData)
-      } catch (err) {
-        // User not logged in (or session expired), which is fine
-        // The user will see the login page
-      } finally {
-        setLoading(false)
-      }
+    const justLoggedOut = sessionStorage.getItem('just_logged_out')
+    if (justLoggedOut) {
+      sessionStorage.removeItem('just_logged_out')
+      // Clear React Query cache if just logged out
+      queryClient.clear()
     }
-
-    // Add small delay to avoid duplicate requests from React strict mode
-    const authCheckTimeout = setTimeout(() => {
-      checkAuth()
-    }, 100)
-
-    return () => clearTimeout(authCheckTimeout)
-  }, [])
+  }, [queryClient])
 
   const login = (userData: User) => {
-    setUser(userData)
+    // Set current user data in React Query cache
+    queryClient.setQueryData(authKeys.currentUser(), userData)
   }
 
   const logout = async () => {
     try {
-      await authApi.logout()
-      setUser(null)
+      await logoutMutation.mutateAsync()
       // Set flag to skip auth check after redirect (prevents 401 error)
       sessionStorage.setItem('just_logged_out', 'true')
       window.location.href = '/'
@@ -64,7 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{
+      user: isError ? null : user,
+      login,
+      logout,
+      loading
+    }}>
       {children}
     </AuthContext.Provider>
   )

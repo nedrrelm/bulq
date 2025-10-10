@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/Groups.css'
 import { WS_BASE_URL } from '../config'
-import { groupsApi, reassignmentApi, ApiError } from '../api'
+import { reassignmentApi, ApiError } from '../api'
 import type { Group, Store } from '../api'
 import type { ProductSearchResult, PendingReassignments } from '../types'
 import NewGroupPopup from './NewGroupPopup'
@@ -10,6 +11,7 @@ import NewProductPopup from './NewProductPopup'
 import ErrorBoundary from './ErrorBoundary'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateLabel } from '../utils/runStates'
+import { useGroups, groupKeys } from '../hooks/queries'
 
 // Using Group type from API layer
 
@@ -19,29 +21,19 @@ interface GroupsProps {
 }
 
 export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
-  const [groups, setGroups] = useState<Group[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  // Use React Query for groups data
+  const { data: groups = [], isLoading: loading, error: queryError } = useGroups()
+  const queryClient = useQueryClient()
+
   const [showNewGroupPopup, setShowNewGroupPopup] = useState(false)
   const [showNewStorePopup, setShowNewStorePopup] = useState(false)
   const [showNewProductPopup, setShowNewProductPopup] = useState(false)
   const [pendingReassignments, setPendingReassignments] = useState<PendingReassignments>({ sent: [], received: [] })
 
+  // Convert React Query error to string
+  const error = queryError instanceof Error ? queryError.message : ''
+
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        setLoading(true)
-        setError('')
-
-        const groupsData = await groupsApi.getMyGroups()
-        setGroups(groupsData)
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Failed to load groups')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     const fetchReassignments = async () => {
       try {
         const requests = await reassignmentApi.getMyRequests()
@@ -51,7 +43,6 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       }
     }
 
-    fetchGroups()
     fetchReassignments()
   }, [])
 
@@ -104,47 +95,18 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
           const message = JSON.parse(event.data)
 
           if (message.type === 'run_created') {
-            // Add new run to the group's active runs
-            setGroups(prev => prev.map(g => {
-              if (g.id === group.id) {
-                const newRun: RunSummary = {
-                  id: message.data.run_id,
-                  store_name: message.data.store_name,
-                  state: message.data.state
-                }
-                return {
-                  ...g,
-                  active_runs: [...g.active_runs, newRun],
-                  active_runs_count: g.active_runs_count + 1
-                }
-              }
-              return g
-            }))
+            // Invalidate groups query to refetch with new run
+            queryClient.invalidateQueries({ queryKey: groupKeys.list() })
+            // Also invalidate the specific group's runs
+            queryClient.invalidateQueries({ queryKey: groupKeys.runs(group.id) })
           } else if (message.type === 'run_state_changed') {
-            // Update run state in active runs
-            setGroups(prev => prev.map(g => {
-              if (g.id === group.id) {
-                // If completed, move to completed count
-                if (message.data.new_state === 'completed') {
-                  return {
-                    ...g,
-                    active_runs: g.active_runs.filter(r => r.id !== message.data.run_id),
-                    active_runs_count: g.active_runs_count - 1,
-                    completed_runs_count: g.completed_runs_count + 1
-                  }
-                }
-                // Otherwise just update the state
-                return {
-                  ...g,
-                  active_runs: g.active_runs.map(r =>
-                    r.id === message.data.run_id
-                      ? { ...r, state: message.data.new_state }
-                      : r
-                  )
-                }
-              }
-              return g
-            }))
+            // Invalidate groups query to update run states
+            queryClient.invalidateQueries({ queryKey: groupKeys.list() })
+            // Also invalidate the specific group's runs and the run itself
+            queryClient.invalidateQueries({ queryKey: groupKeys.runs(group.id) })
+            if (message.data.run_id) {
+              queryClient.invalidateQueries({ queryKey: ['runs', 'detail', message.data.run_id] })
+            }
           }
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err)
@@ -184,8 +146,8 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
 
   const handleNewGroupSuccess = (newGroup: Group) => {
     setShowNewGroupPopup(false)
-    // Add the new group to the list optimistically
-    setGroups(prev => [...prev, newGroup])
+    // Invalidate groups query to refetch with new group
+    queryClient.invalidateQueries({ queryKey: groupKeys.list() })
   }
 
   const handleNewStoreSuccess = (newStore: Store) => {
