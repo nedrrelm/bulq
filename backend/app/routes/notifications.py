@@ -25,11 +25,8 @@ async def get_notifications(
     repo = get_repository(db)
     service = NotificationService(repo)
 
-    try:
-        notifications = service.get_user_notifications(current_user, limit, offset)
-        return notifications
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    notifications = service.get_user_notifications(current_user, limit, offset)
+    return notifications
 
 
 @router.get("/unread")
@@ -41,11 +38,8 @@ async def get_unread_notifications(
     repo = get_repository(db)
     service = NotificationService(repo)
 
-    try:
-        notifications = service.get_unread_notifications(current_user)
-        return notifications
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    notifications = service.get_unread_notifications(current_user)
+    return notifications
 
 
 @router.get("/count")
@@ -57,11 +51,8 @@ async def get_unread_count(
     repo = get_repository(db)
     service = NotificationService(repo)
 
-    try:
-        count = service.get_unread_count(current_user)
-        return {"count": count}
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    count = service.get_unread_count(current_user)
+    return {"count": count}
 
 
 @router.post("/{notification_id}/mark-read")
@@ -74,16 +65,7 @@ async def mark_notification_read(
     repo = get_repository(db)
     service = NotificationService(repo)
 
-    try:
-        return service.mark_as_read(notification_id, current_user)
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.mark_as_read(notification_id, current_user)
 
 
 @router.post("/mark-all-read")
@@ -95,7 +77,4 @@ async def mark_all_notifications_read(
     repo = get_repository(db)
     service = NotificationService(repo)
 
-    try:
-        return service.mark_all_as_read(current_user)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.mark_all_as_read(current_user)

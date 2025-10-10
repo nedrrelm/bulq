@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
@@ -6,7 +6,6 @@ from ..models import User
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import GroupService
-from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from pydantic import BaseModel, validator, Field
 import re
 from datetime import datetime
@@ -112,10 +111,7 @@ async def get_group(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    try:
-        return service.get_group_details(group_id, current_user)
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return service.get_group_details(group_id, current_user)
 
 @router.get("/{group_id}/runs", response_model=List[RunResponse])
 async def get_group_runs(
@@ -127,11 +123,8 @@ async def get_group_runs(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    try:
-        run_responses = service.get_group_runs(group_id, current_user)
-        return [RunResponse(**run) for run in run_responses]
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    run_responses = service.get_group_runs(group_id, current_user)
+    return [RunResponse(**run) for run in run_responses]
 
 @router.get("/{group_id}/runs/history", response_model=List[RunResponse])
 async def get_group_completed_cancelled_runs(
@@ -145,11 +138,8 @@ async def get_group_completed_cancelled_runs(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    try:
-        run_responses = service.get_group_completed_cancelled_runs(group_id, current_user, limit, offset)
-        return [RunResponse(**run) for run in run_responses]
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    run_responses = service.get_group_completed_cancelled_runs(group_id, current_user, limit, offset)
+    return [RunResponse(**run) for run in run_responses]
 
 @router.post("/{group_id}/regenerate-invite")
 async def regenerate_invite_token(
@@ -161,10 +151,7 @@ async def regenerate_invite_token(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    try:
-        return service.regenerate_invite_token(group_id, current_user)
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return service.regenerate_invite_token(group_id, current_user)
 
 @router.get("/preview/{invite_token}")
 async def preview_group_by_invite(
@@ -199,10 +186,7 @@ async def get_group_members(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    try:
-        return service.get_group_members(group_id, current_user)
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return service.get_group_members(group_id, current_user)
 
 @router.delete("/{group_id}/members/{member_id}")
 async def remove_group_member(
@@ -215,10 +199,7 @@ async def remove_group_member(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    try:
-        return service.remove_member(group_id, member_id, current_user)
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return service.remove_member(group_id, member_id, current_user)
 
 @router.post("/{group_id}/toggle-joining")
 async def toggle_group_joining(
@@ -230,7 +211,4 @@ async def toggle_group_joining(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    try:
-        return service.toggle_joining_allowed(group_id, current_user)
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return service.toggle_joining_allowed(group_id, current_user)

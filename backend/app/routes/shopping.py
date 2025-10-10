@@ -92,15 +92,8 @@ async def get_shopping_list(
     repo = get_repository(db)
     service = ShoppingService(repo)
 
-    try:
-        items = await service.get_shopping_list(run_id, current_user)
-        return [ShoppingListItemResponse(**item) for item in items]
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    items = await service.get_shopping_list(run_id, current_user)
+    return [ShoppingListItemResponse(**item) for item in items]
 
 @router.post("/{run_id}/items/{item_id}/price")
 async def update_availability_price(
@@ -114,21 +107,14 @@ async def update_availability_price(
     repo = get_repository(db)
     service = ShoppingService(repo)
 
-    try:
-        result = await service.add_availability_price(
-            run_id,
-            item_id,
-            request.price,
-            request.notes,
-            current_user
-        )
-        return result
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    result = await service.add_availability_price(
+        run_id,
+        item_id,
+        request.price,
+        request.notes,
+        current_user
+    )
+    return result
 
 @router.post("/{run_id}/items/{item_id}/purchase")
 async def mark_purchased(
@@ -142,22 +128,15 @@ async def mark_purchased(
     repo = get_repository(db)
     service = ShoppingService(repo)
 
-    try:
-        result = await service.mark_purchased(
-            run_id,
-            item_id,
-            request.quantity,
-            request.price_per_unit,
-            request.total,
-            current_user
-        )
-        return result
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    result = await service.mark_purchased(
+        run_id,
+        item_id,
+        request.quantity,
+        request.price_per_unit,
+        request.total,
+        current_user
+    )
+    return result
 
 @router.post("/{run_id}/complete")
 async def complete_shopping(
@@ -173,12 +152,5 @@ async def complete_shopping(
     repo = get_repository(db)
     service = ShoppingService(repo)
 
-    try:
-        result = await service.complete_shopping(run_id, current_user, db)
-        return result
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    result = await service.complete_shopping(run_id, current_user, db)
+    return result
