@@ -1,15 +1,6 @@
 import { api } from './client'
-
-export interface DistributionItem {
-  product_id: string
-  product_name: string
-  participants: Array<{
-    user_id: string
-    user_name: string
-    quantity: number
-    is_picked_up: boolean
-  }>
-}
+import { distributionItemSchema, type DistributionItem } from '../schemas/distribution'
+import { z } from 'zod'
 
 export interface TogglePickupRequest {
   user_id: string
@@ -18,7 +9,7 @@ export interface TogglePickupRequest {
 
 export const distributionApi = {
   getDistribution: (runId: string) =>
-    api.get<DistributionItem[]>(`/distribution/${runId}`),
+    api.get<DistributionItem[]>(`/distribution/${runId}`, z.array(distributionItemSchema)),
 
   togglePickup: (runId: string, data: TogglePickupRequest) =>
     api.post(`/distribution/${runId}/toggle-pickup`, data)

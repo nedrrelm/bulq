@@ -360,10 +360,8 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       try {
         await runsApi.cancelRun(runId)
         showToast('Run cancelled successfully', 'success')
-        // Navigate back to group page after a short delay
-        setTimeout(() => {
-          onBack(run?.group_id)
-        }, 1500)
+        // Refresh the run data to show updated state
+        queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
       } catch (err) {
         console.error('Error cancelling run:', err)
         showToast(err instanceof ApiError ? err.message : 'Failed to cancel run. Please try again.', 'error')

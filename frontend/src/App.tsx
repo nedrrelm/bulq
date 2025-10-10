@@ -298,10 +298,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                     >
                       <div className="product-info">
                         <strong>{product.name}</strong>
-                        <span className="product-store">{product.store_name}</span>
+                        {product.brand && <span className="product-brand">{product.brand}</span>}
+                        {product.stores.length > 0 && (
+                          <span className="product-store">
+                            {product.stores.map(s => s.store_name).join(', ')}
+                          </span>
+                        )}
                       </div>
-                      {product.base_price && (
-                        <span className="product-price">${product.base_price.toFixed(2)}</span>
+                      {product.stores.length > 0 && product.stores[0].price && (
+                        <span className="product-price">${product.stores[0].price.toFixed(2)}</span>
                       )}
                     </div>
                   ))}

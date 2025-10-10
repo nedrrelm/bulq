@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config'
+import { z } from 'zod'
 
 export class ApiError extends Error {
   constructor(
@@ -11,11 +12,27 @@ export class ApiError extends Error {
   }
 }
 
+export class ValidationError extends Error {
+  constructor(
+    message: string,
+    public zodError: z.ZodError,
+    public endpoint: string
+  ) {
+    super(message)
+    this.name = 'ValidationError'
+  }
+
+  toString(): string {
+    return this.message
+  }
+}
+
 interface RequestOptions {
   method?: string
   headers?: Record<string, string>
   body?: any
   credentials?: RequestCredentials
+  schema?: z.ZodSchema
 }
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -23,7 +40,8 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     method = 'GET',
     headers = {},
     body,
-    credentials = 'include'
+    credentials = 'include',
+    schema
   } = options
 
   const config: RequestInit = {
@@ -76,13 +94,49 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     }
 
     if (isJson) {
-      return await response.json()
+      const data = await response.json()
+
+      // Validate response data if schema is provided
+      if (schema) {
+        try {
+          return schema.parse(data) as T
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            // Zod stores validation issues in error.issues (not error.errors)
+            const issues = error.issues || []
+
+            // Debug: log validation errors with details
+            console.error('=== ZOD VALIDATION ERROR ===')
+            console.error('Endpoint:', endpoint)
+            console.error('Validation issues:', issues)
+            console.error('Response data:', data)
+            console.error('===========================')
+
+            const errorDetails = issues.length > 0
+              ? issues.map(e =>
+                  `  - ${e.path.join('.') || 'root'}: ${e.message}`
+                ).join('\n')
+              : `Unknown validation error - check console for details`
+
+            throw new ValidationError(
+              `Invalid response from ${endpoint}:\n${errorDetails}`,
+              error,
+              endpoint
+            )
+          }
+          // Not a ZodError, log and re-throw
+          console.error('Non-Zod validation error:', error)
+          throw error
+        }
+      }
+
+      return data
     }
 
     // Return empty object for non-JSON successful responses
     return {} as T
   } catch (error) {
-    if (error instanceof ApiError) {
+    if (error instanceof ApiError || error instanceof ValidationError) {
       throw error
     }
 
@@ -95,18 +149,18 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 }
 
 export const api = {
-  get: <T = any>(endpoint: string) =>
-    request<T>(endpoint, { method: 'GET' }),
+  get: <T = any>(endpoint: string, schema?: z.ZodSchema) =>
+    request<T>(endpoint, { method: 'GET', schema }),
 
-  post: <T = any>(endpoint: string, data?: any) =>
-    request<T>(endpoint, { method: 'POST', body: data }),
+  post: <T = any>(endpoint: string, data?: any, schema?: z.ZodSchema) =>
+    request<T>(endpoint, { method: 'POST', body: data, schema }),
 
-  put: <T = any>(endpoint: string, data?: any) =>
-    request<T>(endpoint, { method: 'PUT', body: data }),
+  put: <T = any>(endpoint: string, data?: any, schema?: z.ZodSchema) =>
+    request<T>(endpoint, { method: 'PUT', body: data, schema }),
 
-  patch: <T = any>(endpoint: string, data?: any) =>
-    request<T>(endpoint, { method: 'PATCH', body: data }),
+  patch: <T = any>(endpoint: string, data?: any, schema?: z.ZodSchema) =>
+    request<T>(endpoint, { method: 'PATCH', body: data, schema }),
 
-  delete: <T = any>(endpoint: string) =>
-    request<T>(endpoint, { method: 'DELETE' })
+  delete: <T = any>(endpoint: string, schema?: z.ZodSchema) =>
+    request<T>(endpoint, { method: 'DELETE', schema })
 }

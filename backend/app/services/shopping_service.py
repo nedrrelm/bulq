@@ -4,6 +4,8 @@ import logging
 import uuid
 from typing import List, Dict, Any, Optional
 from decimal import Decimal
+from datetime import datetime, timedelta
+from uuid import UUID
 
 from .base_service import BaseService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
@@ -16,6 +18,63 @@ logger = logging.getLogger(__name__)
 
 class ShoppingService(BaseService):
     """Service for managing shopping list operations."""
+
+    async def _update_product_availability_if_needed(
+        self,
+        product_id: UUID,
+        store_id: UUID,
+        price: float,
+        user_id: UUID
+    ) -> None:
+        """
+        Update ProductAvailability if the price differs from prices seen today.
+
+        Args:
+            product_id: Product UUID
+            store_id: Store UUID
+            price: The purchased price
+            user_id: User who made the purchase
+        """
+        try:
+            # Get existing availabilities for this product at this store
+            availabilities = self.repo.get_product_availabilities(product_id, store_id)
+
+            # Check if we have any prices from today
+            today = datetime.now().date()
+            today_prices = [
+                float(avail.price) for avail in availabilities
+                if avail.price is not None and avail.created_at.date() == today
+            ]
+
+            # If no prices today, or price differs from all today's prices, create new availability
+            if not today_prices or price not in today_prices:
+                self.repo.create_product_availability(
+                    product_id=product_id,
+                    store_id=store_id,
+                    price=price,
+                    notes="Purchased during shopping",
+                    user_id=user_id
+                )
+                logger.info(
+                    f"Created product availability for different price",
+                    extra={
+                        "product_id": str(product_id),
+                        "store_id": str(store_id),
+                        "price": price,
+                        "user_id": str(user_id)
+                    }
+                )
+        except Exception as e:
+            # Don't fail the purchase if availability update fails
+            logger.error(
+                f"Failed to update product availability",
+                extra={
+                    "product_id": str(product_id),
+                    "store_id": str(store_id),
+                    "price": price,
+                    "error": str(e)
+                }
+            )
 
     async def get_shopping_list(
         self,
@@ -239,6 +298,14 @@ class ShoppingService(BaseService):
         )
         if not item:
             raise NotFoundError("Shopping list item", item_id)
+
+        # Update ProductAvailability if the price differs from today's prices
+        await self._update_product_availability_if_needed(
+            item.product_id,
+            run.store_id,
+            price_per_unit,
+            user.id
+        )
 
         return {"message": "Item marked as purchased", "purchase_order": next_order}
 

@@ -1,23 +1,6 @@
 import { api } from './client'
-
-export interface PriceObservation {
-  price: number
-  notes: string
-  created_at: string | null
-}
-
-export interface ShoppingListItem {
-  id: string
-  product_id: string
-  product_name: string
-  requested_quantity: number
-  recent_prices: PriceObservation[]
-  purchased_quantity: number | null
-  purchased_price_per_unit: string | null
-  purchased_total: string | null
-  is_purchased: boolean
-  purchase_order: number | null
-}
+import { shoppingListItemSchema, type ShoppingListItem } from '../schemas/shopping'
+import { z } from 'zod'
 
 export interface UpdateAvailabilityPriceRequest {
   price: number
@@ -32,7 +15,7 @@ export interface PurchaseRequest {
 
 export const shoppingApi = {
   getShoppingList: (runId: string) =>
-    api.get<ShoppingListItem[]>(`/shopping/${runId}/items`),
+    api.get<ShoppingListItem[]>(`/shopping/${runId}/items`, z.array(shoppingListItemSchema)),
 
   updateAvailabilityPrice: (runId: string, itemId: string, data: UpdateAvailabilityPriceRequest) =>
     api.post(`/shopping/${runId}/items/${itemId}/price`, data),

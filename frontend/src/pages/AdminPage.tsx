@@ -87,28 +87,43 @@ export default function AdminPage() {
 
   const toggleUserVerification = async (userId: string) => {
     try {
+      // Optimistically update the UI
+      setUsers(users.map(user =>
+        user.id === userId ? { ...user, verified: !user.verified } : user
+      ))
       await adminApi.toggleUserVerification(userId)
-      fetchUsers()
     } catch (err) {
       console.error('Failed to toggle user verification:', err)
+      // Revert on error
+      fetchUsers()
     }
   }
 
   const toggleProductVerification = async (productId: string) => {
     try {
+      // Optimistically update the UI
+      setProducts(products.map(product =>
+        product.id === productId ? { ...product, verified: !product.verified } : product
+      ))
       await adminApi.toggleProductVerification(productId)
-      fetchProducts()
     } catch (err) {
       console.error('Failed to toggle product verification:', err)
+      // Revert on error
+      fetchProducts()
     }
   }
 
   const toggleStoreVerification = async (storeId: string) => {
     try {
+      // Optimistically update the UI
+      setStores(stores.map(store =>
+        store.id === storeId ? { ...store, verified: !store.verified } : store
+      ))
       await adminApi.toggleStoreVerification(storeId)
-      fetchStores()
     } catch (err) {
       console.error('Failed to toggle store verification:', err)
+      // Revert on error
+      fetchStores()
     }
   }
 

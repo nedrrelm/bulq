@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { User } from '../types/user'
+import { userSchema, type User } from '../schemas/user'
 
 export interface LoginRequest {
   email: string
@@ -14,14 +14,14 @@ export interface RegisterRequest {
 
 export const authApi = {
   login: (data: LoginRequest) =>
-    api.post<User>('/auth/login', data),
+    api.post<User>('/auth/login', data, userSchema),
 
   register: (data: RegisterRequest) =>
-    api.post<User>('/auth/register', data),
+    api.post<User>('/auth/register', data, userSchema),
 
   logout: () =>
     api.post<void>('/auth/logout'),
 
   getCurrentUser: () =>
-    api.get<User>('/auth/me')
+    api.get<User>('/auth/me', userSchema)
 }

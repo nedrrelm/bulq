@@ -1,9 +1,6 @@
 import { api } from './client'
-
-export interface Store {
-  id: string
-  name: string
-}
+import { storeSchema, type Store } from '../schemas/store'
+import { z } from 'zod'
 
 export interface CreateStoreRequest {
   name: string
@@ -11,8 +8,8 @@ export interface CreateStoreRequest {
 
 export const storesApi = {
   getStores: () =>
-    api.get<Store[]>('/stores'),
+    api.get<Store[]>('/stores', z.array(storeSchema)),
 
   createStore: (request: CreateStoreRequest) =>
-    api.post<Store>('/stores/create', request)
+    api.post<Store>('/stores/create', request, storeSchema)
 }
