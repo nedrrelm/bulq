@@ -3,6 +3,8 @@ import { storesApi, productsApi, ApiError } from '../api'
 import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, validateDecimal, sanitizeString } from '../utils/validation'
+import { useConfirm } from '../hooks/useConfirm'
+import ConfirmDialog from './ConfirmDialog'
 
 interface NewProductPopupProps {
   onClose: () => void
@@ -23,6 +25,7 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
   const [submitting, setSubmitting] = useState(false)
   const [loadingStores, setLoadingStores] = useState(true)
   const modalRef = useRef<HTMLDivElement>(null)
+  const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
   useModalFocusTrap(modalRef, true, onClose)
 
@@ -94,29 +97,7 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
     setError('')
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    setError('')
-
-    if (!validateProductName(productName)) {
-      return
-    }
-
-    if (!validatePrice(price)) {
-      return
-    }
-
-    // Warn if no store selected
-    if (!storeId && !window.confirm('You haven\'t selected a store. You can add store availability later. Continue?')) {
-      return
-    }
-
-    // Nudge to add price if store is selected but no price
-    if (storeId && !price.trim() && !window.confirm('Consider adding a price for this product at the selected store. Continue without price?')) {
-      return
-    }
-
+  const submitProduct = async () => {
     try {
       setSubmitting(true)
 
@@ -133,6 +114,46 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
       setError(err instanceof ApiError ? err.message : 'Failed to create product')
       setSubmitting(false)
     }
+  }
+
+  const checkStoreAndPrice = () => {
+    // Nudge to add price if store is selected but no price
+    if (storeId && !price.trim()) {
+      showConfirm(
+        'Consider adding a price for this product at the selected store. Continue without price?',
+        submitProduct
+      )
+      return
+    }
+
+    // If all validations pass, submit directly
+    submitProduct()
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    setError('')
+
+    if (!validateProductName(productName)) {
+      return
+    }
+
+    if (!validatePrice(price)) {
+      return
+    }
+
+    // Warn if no store selected
+    if (!storeId) {
+      showConfirm(
+        'You haven\'t selected a store. You can add store availability later. Continue?',
+        checkStoreAndPrice
+      )
+      return
+    }
+
+    // Check for price if store is selected
+    checkStoreAndPrice()
   }
 
   const charCount = productName.length
@@ -262,6 +283,15 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
           </div>
         </form>
       </div>
+
+      {confirmState && (
+        <ConfirmDialog
+          message={confirmState.message}
+          onConfirm={handleConfirm}
+          onCancel={hideConfirm}
+          danger={confirmState.danger}
+        />
+      )}
     </div>
   )
 }

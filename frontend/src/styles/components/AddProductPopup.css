@@ -58,16 +58,19 @@
 .products-dropdown {
   flex: 1;
   min-height: 200px;
-  max-height: 300px;
+  max-height: 400px;
   overflow: hidden;
   border: 1px solid var(--color-gray-200);
   border-radius: 8px;
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .products-list {
-  max-height: 100%;
+  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .product-option {
