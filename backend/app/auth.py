@@ -21,12 +21,12 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_session(user_id: str) -> str:
     """Create a new session and return session token."""
     session_token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(hours=SESSION_EXPIRY_HOURS)
+    expires_at = datetime.now() + timedelta(hours=SESSION_EXPIRY_HOURS)
 
     sessions[session_token] = {
         "user_id": user_id,
         "expires_at": expires_at,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.now()
     }
 
     return session_token
@@ -39,7 +39,7 @@ def get_session(session_token: str) -> Optional[dict]:
     session = sessions[session_token]
 
     # Check if session is expired
-    if datetime.utcnow() > session["expires_at"]:
+    if datetime.now() > session["expires_at"]:
         del sessions[session_token]
         return None
 
@@ -54,7 +54,7 @@ def delete_session(session_token: str) -> bool:
 
 def cleanup_expired_sessions():
     """Remove expired sessions from memory."""
-    now = datetime.utcnow()
+    now = datetime.now()
     expired_tokens = [
         token for token, session in sessions.items()
         if now > session["expires_at"]
