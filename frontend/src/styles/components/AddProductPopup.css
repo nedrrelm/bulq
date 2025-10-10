@@ -81,6 +81,10 @@
   border-bottom: none;
 }
 
+.product-option.other-store {
+  opacity: 0.7;
+}
+
 .product-option:hover,
 .product-option.selected {
   background-color: var(--color-primary-light);
@@ -89,6 +93,14 @@
 
 .product-option.selected {
   background-color: var(--color-primary-light);
+}
+
+.store-badge {
+  display: inline-block;
+  color: var(--color-success);
+  font-weight: bold;
+  margin-right: 6px;
+  font-size: 14px;
 }
 
 .product-info {
@@ -115,8 +127,13 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
+.create-product-button {
+  margin-top: 16px;
+  min-width: 180px;
+}
 
 .keyboard-hint {
   color: var(--color-text-light);

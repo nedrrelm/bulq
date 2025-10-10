@@ -3,6 +3,7 @@ import '../styles/components/AddProductPopup.css'
 import { runsApi, ApiError } from '../api'
 import type { AvailableProduct } from '../types/product'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import NewProductPopup from './NewProductPopup'
 
 interface AddProductPopupProps {
   runId: string
@@ -17,6 +18,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [showNewProductPopup, setShowNewProductPopup] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -63,6 +65,21 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
 
   const handleProductSelect = (product: AvailableProduct) => {
     onProductSelected(product)
+  }
+
+  const handleNewProductSuccess = async () => {
+    setShowNewProductPopup(false)
+    // Refresh the available products list
+    try {
+      setLoading(true)
+      const productsData = await runsApi.getAvailableProducts(runId)
+      setProducts(productsData as any)
+      setFilteredProducts(productsData as any)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to reload products')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -119,9 +136,25 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
             {filteredProducts.length === 0 ? (
               <div className="no-products-state">
                 {searchTerm ? (
-                  <p>No products found matching "{searchTerm}"</p>
+                  <>
+                    <p>No products found matching "{searchTerm}"</p>
+                    <button
+                      onClick={() => setShowNewProductPopup(true)}
+                      className="btn btn-primary create-product-button"
+                    >
+                      + Create New Product
+                    </button>
+                  </>
                 ) : (
-                  <p>All products from this store already have bids!</p>
+                  <>
+                    <p>All products from this store already have bids!</p>
+                    <button
+                      onClick={() => setShowNewProductPopup(true)}
+                      className="btn btn-primary create-product-button"
+                    >
+                      + Create New Product
+                    </button>
+                  </>
                 )}
               </div>
             ) : (
@@ -129,12 +162,15 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
                 {filteredProducts.map((product, index) => (
                   <div
                     key={product.id}
-                    className={`product-option ${index === selectedIndex ? 'selected' : ''}`}
+                    className={`product-option ${index === selectedIndex ? 'selected' : ''} ${product.has_store_availability ? 'at-store' : 'other-store'}`}
                     onClick={() => handleProductSelect(product)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
                     <div className="product-info">
-                      <span className="product-name">{product.name}</span>
+                      <span className="product-name">
+                        {product.has_store_availability && <span className="store-badge">✓</span>}
+                        {product.name}
+                      </span>
                       {product.current_price && <span className="product-price">${product.current_price}</span>}
                     </div>
                   </div>
@@ -148,13 +184,30 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
           <button onClick={onCancel} className="cancel-button">
             Cancel
           </button>
-          {filteredProducts.length > 0 && (
-            <p className="keyboard-hint">
-              Use ↑↓ arrow keys and Enter to select
-            </p>
+          {!loading && !error && filteredProducts.length === 0 ? null : (
+            <>
+              <button
+                onClick={() => setShowNewProductPopup(true)}
+                className="btn btn-secondary"
+              >
+                + Create New Product
+              </button>
+              {filteredProducts.length > 0 && (
+                <p className="keyboard-hint">
+                  Use ↑↓ arrow keys and Enter to select
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      {showNewProductPopup && (
+        <NewProductPopup
+          onClose={() => setShowNewProductPopup(false)}
+          onSuccess={handleNewProductSuccess}
+        />
+      )}
     </div>
   )
 }

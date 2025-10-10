@@ -25,7 +25,8 @@ export const availableProductSchema = z.object({
   id: uuidSchema,
   name: z.string(),
   brand: nullable(z.string()),
-  current_price: nullable(z.string())
+  current_price: nullable(z.string()),
+  has_store_availability: z.boolean().optional().default(false)
 })
 
 // Product search result (includes stores array)

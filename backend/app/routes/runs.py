@@ -345,6 +345,7 @@ class AvailableProductResponse(BaseModel):
     name: str
     brand: str | None = None
     current_price: str | None
+    has_store_availability: bool = False
 
     class Config:
         from_attributes = True
@@ -498,7 +499,8 @@ async def get_available_products(
                 id=p['id'],
                 name=p['name'],
                 brand=p.get('brand'),
-                current_price=p.get('current_price')
+                current_price=p.get('current_price'),
+                has_store_availability=p.get('has_store_availability', False)
             )
             for p in result
         ]
