@@ -195,6 +195,21 @@ class AbstractRepository(ABC):
         """Get a specific bid."""
         raise NotImplementedError("Subclass must implement get_bid")
 
+    @abstractmethod
+    def get_bid_by_id(self, bid_id: UUID) -> Optional[ProductBid]:
+        """Get a bid by its ID."""
+        raise NotImplementedError("Subclass must implement get_bid_by_id")
+
+    @abstractmethod
+    def update_bid_distributed_quantities(self, bid_id: UUID, quantity: int, price_per_unit: Decimal) -> None:
+        """Update the distributed quantity and price for a bid."""
+        raise NotImplementedError("Subclass must implement update_bid_distributed_quantities")
+
+    @abstractmethod
+    def commit_changes(self) -> None:
+        """Commit any pending changes (no-op for memory repository, commits transaction for database repository)."""
+        raise NotImplementedError("Subclass must implement commit_changes")
+
     # ==================== Auth Methods ====================
 
     @abstractmethod
@@ -276,6 +291,11 @@ class AbstractRepository(ABC):
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
         """Mark a shopping list item as purchased."""
         raise NotImplementedError("Subclass must implement mark_item_purchased")
+
+    @abstractmethod
+    def update_shopping_list_item_requested_quantity(self, item_id: UUID, requested_quantity: int) -> None:
+        """Update the requested quantity for a shopping list item."""
+        raise NotImplementedError("Subclass must implement update_shopping_list_item_requested_quantity")
 
     # ==================== ProductAvailability Methods ====================
 
@@ -721,6 +741,21 @@ class DatabaseRepository(AbstractRepository):
             ProductBid.product_id == product_id
         ).first()
 
+    def get_bid_by_id(self, bid_id: UUID) -> Optional[ProductBid]:
+        """Get a bid by its ID."""
+        return self.db.query(ProductBid).filter(ProductBid.id == bid_id).first()
+
+    def update_bid_distributed_quantities(self, bid_id: UUID, quantity: int, price_per_unit: Decimal) -> None:
+        """Update the distributed quantity and price for a bid."""
+        bid = self.db.query(ProductBid).filter(ProductBid.id == bid_id).first()
+        if bid:
+            bid.distributed_quantity = quantity
+            bid.distributed_price_per_unit = price_per_unit
+
+    def commit_changes(self) -> None:
+        """Commit any pending changes to the database."""
+        self.db.commit()
+
     # ==================== Auth Methods ====================
 
     def verify_password(self, password: str, stored_hash: str) -> bool:
@@ -868,6 +903,12 @@ class DatabaseRepository(AbstractRepository):
             self.db.refresh(item)
             return item
         return None
+
+    def update_shopping_list_item_requested_quantity(self, item_id: UUID, requested_quantity: int) -> None:
+        """Update the requested quantity for a shopping list item."""
+        item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
+        if item:
+            item.requested_quantity = requested_quantity
 
     # ==================== ProductAvailability Methods ====================
 
@@ -1880,6 +1921,21 @@ class MemoryRepository(AbstractRepository):
                 return bid
         return None
 
+    def get_bid_by_id(self, bid_id: UUID) -> Optional[ProductBid]:
+        """Get a bid by its ID."""
+        return self._bids.get(bid_id)
+
+    def update_bid_distributed_quantities(self, bid_id: UUID, quantity: int, price_per_unit: Decimal) -> None:
+        """Update the distributed quantity and price for a bid."""
+        bid = self._bids.get(bid_id)
+        if bid:
+            bid.distributed_quantity = quantity
+            bid.distributed_price_per_unit = price_per_unit
+
+    def commit_changes(self) -> None:
+        """Commit any pending changes (no-op for in-memory repository)."""
+        pass
+
     # Helper methods for test data creation
     def _create_store(self, name: str) -> Store:
         store = Store(id=uuid4(), name=name)
@@ -2121,6 +2177,12 @@ class MemoryRepository(AbstractRepository):
             item.purchase_order = purchase_order
             return item
         return None
+
+    def update_shopping_list_item_requested_quantity(self, item_id: UUID, requested_quantity: int) -> None:
+        """Update the requested quantity for a shopping list item."""
+        item = self._shopping_list_items.get(item_id)
+        if item:
+            item.requested_quantity = requested_quantity
 
     # ==================== ProductAvailability Methods ====================
 

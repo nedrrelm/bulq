@@ -110,11 +110,9 @@ class RunService(BaseService):
             raise BadRequestError("Invalid run ID format")
 
         # Find the run
-        runs = [run for run in self.repo._runs.values() if run.id == run_uuid] if hasattr(self.repo, '_runs') else []
-        if not runs:
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
             raise NotFoundError("Run", run_id)
-
-        run = runs[0]
 
         # Verify user has access to this run (member of the group)
         user_groups = self.repo.get_user_groups(user)
@@ -157,70 +155,66 @@ class RunService(BaseService):
                 })
 
         # Get products and bids for this run
-        if hasattr(self.repo, '_runs'):  # Memory mode
-            # Get all products for the store
-            store_products = self.repo.get_products_by_store(run.store_id)
-            # Get bids with participations and users eagerly loaded to avoid N+1 queries
-            run_bids = self.repo.get_bids_by_run_with_participations(run.id)
+        # Get all products for the store
+        store_products = self.repo.get_products_by_store(run.store_id)
+        # Get bids with participations and users eagerly loaded to avoid N+1 queries
+        run_bids = self.repo.get_bids_by_run_with_participations(run.id)
 
-            # Get shopping list items if in adjusting state
-            shopping_list_map = {}
-            if run.state == 'adjusting':
-                shopping_items = self.repo.get_shopping_list_items(run.id)
-                for item in shopping_items:
-                    shopping_list_map[item.product_id] = item
+        # Get shopping list items if in adjusting state
+        shopping_list_map = {}
+        if run.state == 'adjusting':
+            shopping_items = self.repo.get_shopping_list_items(run.id)
+            for item in shopping_items:
+                shopping_list_map[item.product_id] = item
 
-            # Calculate product statistics
-            products_data = []
-            for product in store_products:
-                product_bids = [bid for bid in run_bids if bid.product_id == product.id]
+        # Calculate product statistics
+        products_data = []
+        for product in store_products:
+            product_bids = [bid for bid in run_bids if bid.product_id == product.id]
 
-                if len(product_bids) > 0:  # Only include products with bids
-                    total_quantity = sum(bid.quantity for bid in product_bids)
-                    interested_count = len([bid for bid in product_bids if bid.interested_only or bid.quantity > 0])
+            if len(product_bids) > 0:  # Only include products with bids
+                total_quantity = sum(bid.quantity for bid in product_bids)
+                interested_count = len([bid for bid in product_bids if bid.interested_only or bid.quantity > 0])
 
-                    # Get user details for each bid
-                    user_bids_data = []
-                    current_user_bid = None
+                # Get user details for each bid
+                user_bids_data = []
+                current_user_bid = None
 
-                    for bid in product_bids:
-                        # Participation and user are eagerly loaded on the bid object
-                        if bid.participation and bid.participation.user:
-                            bid_response = {
-                                "user_id": str(bid.participation.user_id),
-                                "user_name": bid.participation.user.name,
-                                "quantity": bid.quantity,
-                                "interested_only": bid.interested_only
-                            }
-                            user_bids_data.append(bid_response)
+                for bid in product_bids:
+                    # Participation and user are eagerly loaded on the bid object
+                    if bid.participation and bid.participation.user:
+                        bid_response = {
+                            "user_id": str(bid.participation.user_id),
+                            "user_name": bid.participation.user.name,
+                            "quantity": bid.quantity,
+                            "interested_only": bid.interested_only
+                        }
+                        user_bids_data.append(bid_response)
 
-                            # Check if this is the current user's bid
-                            if bid.participation.user_id == user.id:
-                                current_user_bid = bid_response
+                        # Check if this is the current user's bid
+                        if bid.participation.user_id == user.id:
+                            current_user_bid = bid_response
 
-                    # Get purchased quantity if in adjusting state
-                    purchased_qty = None
-                    if run.state == 'adjusting' and product.id in shopping_list_map:
-                        purchased_qty = shopping_list_map[product.id].purchased_quantity
+                # Get purchased quantity if in adjusting state
+                purchased_qty = None
+                if run.state == 'adjusting' and product.id in shopping_list_map:
+                    purchased_qty = shopping_list_map[product.id].purchased_quantity
 
-                    # Get product availability/price for this store
-                    availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
-                    current_price = str(availability.price) if availability and availability.price else None
+                # Get product availability/price for this store
+                availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
+                current_price = str(availability.price) if availability and availability.price else None
 
-                    products_data.append({
-                        "id": str(product.id),
-                        "name": product.name,
-                        "brand": product.brand,
-                        "current_price": current_price,
-                        "total_quantity": total_quantity,
-                        "interested_count": interested_count,
-                        "user_bids": user_bids_data,
-                        "current_user_bid": current_user_bid,
-                        "purchased_quantity": purchased_qty
-                    })
-        else:
-            # Database mode - would need proper joins
-            products_data = []
+                products_data.append({
+                    "id": str(product.id),
+                    "name": product.name,
+                    "brand": product.brand,
+                    "current_price": current_price,
+                    "total_quantity": total_quantity,
+                    "interested_count": interested_count,
+                    "user_bids": user_bids_data,
+                    "current_user_bid": current_user_bid,
+                    "purchased_quantity": purchased_qty
+                })
 
         return {
             "id": str(run.id),
@@ -281,11 +275,10 @@ class RunService(BaseService):
             raise BadRequestError("Invalid ID format")
 
         # Verify run exists and user has access
-        runs = [run for run in self.repo._runs.values() if run.id == run_uuid] if hasattr(self.repo, '_runs') else []
-        if not runs:
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
             raise NotFoundError("Run", run_id)
 
-        run = runs[0]
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError("Not authorized to bid on this run")
@@ -303,12 +296,8 @@ class RunService(BaseService):
         # Check if this is a new product and enforce product limit (100 max)
         participation = self.repo.get_participation(user.id, run_uuid)
         existing_bid = None
-        if participation and hasattr(self.repo, '_bids'):
-            for bid in self.repo._bids.values():
-                if (bid.participation_id == participation.id and
-                    bid.product_id == product_uuid):
-                    existing_bid = bid
-                    break
+        if participation:
+            existing_bid = self.repo.get_bid(participation.id, product_uuid)
 
         if not existing_bid:  # New product being added to run
             # Count unique products in this run
@@ -339,17 +328,13 @@ class RunService(BaseService):
             requested_qty = shopping_item.requested_quantity
             shortage = requested_qty - purchased_qty
 
-            # Get current bid (only in memory mode for now)
+            # Get current bid
             participation = self.repo.get_participation(user.id, run_uuid)
             existing_bid = None
-            if participation and hasattr(self.repo, '_bids'):
-                for bid in self.repo._bids.values():
-                    if (bid.participation_id == participation.id and
-                        bid.product_id == product_uuid):
-                        existing_bid = bid
-                        break
+            if participation:
+                existing_bid = self.repo.get_bid(participation.id, product_uuid)
 
-                if existing_bid:
+            if existing_bid:
                     # Can only reduce, and at most to accommodate the shortage
                     min_allowed = max(0, existing_bid.quantity - shortage)
                     if quantity > existing_bid.quantity:
@@ -357,79 +342,56 @@ class RunService(BaseService):
                     if quantity < min_allowed:
                         raise BadRequestError(f"Cannot reduce bid below {min_allowed} (current: {existing_bid.quantity}, shortage: {shortage}, would remove more than needed)")
 
-        if hasattr(self.repo, '_bids'):  # Memory mode
-            # Get or create participation for this user in this run
-            participation = self.repo.get_participation(user.id, run_uuid)
-            is_new_participant = False
-            if not participation:
-                # Don't allow new participants in adjusting state
-                if run.state == 'adjusting':
-                    raise BadRequestError("Cannot join run in adjusting state")
-                # Create participation (not as leader)
-                participation = self.repo.create_participation(user.id, run_uuid, is_leader=False)
-                is_new_participant = True
+        # Get or create participation for this user in this run
+        participation = self.repo.get_participation(user.id, run_uuid)
+        is_new_participant = False
+        if not participation:
+            # Don't allow new participants in adjusting state
+            if run.state == 'adjusting':
+                raise BadRequestError("Cannot join run in adjusting state")
+            # Create participation (not as leader)
+            participation = self.repo.create_participation(user.id, run_uuid, is_leader=False)
+            is_new_participant = True
 
-            # Check if user already has a bid for this product
-            existing_bid = None
-            for bid in self.repo._bids.values():
-                if (bid.participation_id == participation.id and
-                    bid.product_id == product_uuid):
-                    existing_bid = bid
-                    break
+        # Check if user already has a bid for this product
+        existing_bid = self.repo.get_bid(participation.id, product_uuid)
 
-            if existing_bid:
-                # Update existing bid
-                existing_bid.quantity = quantity
-                existing_bid.interested_only = interested_only
-            else:
-                # Don't allow new bids on products in adjusting state
-                if run.state == 'adjusting':
-                    raise BadRequestError("Cannot bid on new products in adjusting state")
-                # Create new bid
-                from uuid import uuid4
-                new_bid = ProductBid(
-                    id=uuid4(),
-                    participation_id=participation.id,
-                    product_id=product_uuid,
-                    quantity=quantity,
-                    interested_only=interested_only
-                )
-                # Set up relationships
-                new_bid.participation = participation
-                new_bid.product = product
-                self.repo._bids[new_bid.id] = new_bid
+        if not existing_bid and run.state == 'adjusting':
+            # Don't allow new bids on products in adjusting state
+            raise BadRequestError("Cannot bid on new products in adjusting state")
 
-            # Automatic state transition: planning → active
-            # When a non-leader places their first bid, transition from planning to active
-            state_changed = False
-            if is_new_participant and not participation.is_leader and run.state == RunState.PLANNING:
-                old_state = run.state
-                self.repo.update_run_state(run_uuid, RunState.ACTIVE)
-                state_changed = True
+        # Create or update bid using repository method
+        self.repo.create_or_update_bid(participation.id, product_uuid, quantity, interested_only)
 
-                # Create notifications for all participants
-                self._notify_run_state_change(run, old_state, RunState.ACTIVE)
+        # Automatic state transition: planning → active
+        # When a non-leader places their first bid, transition from planning to active
+        state_changed = False
+        if is_new_participant and not participation.is_leader and run.state == RunState.PLANNING:
+            old_state = run.state
+            self.repo.update_run_state(run_uuid, RunState.ACTIVE)
+            state_changed = True
 
-            # Calculate new totals for broadcasting
-            all_bids = self.repo.get_bids_by_run(run_uuid)
-            product_bids = [bid for bid in all_bids if bid.product_id == product_uuid]
-            new_total = sum(bid.quantity for bid in product_bids if not bid.interested_only)
+            # Create notifications for all participants
+            self._notify_run_state_change(run, old_state, RunState.ACTIVE)
 
-            return {
-                "message": "Bid placed successfully",
-                "product_id": str(product_uuid),
-                "user_id": str(user.id),
-                "user_name": user.name,
-                "quantity": quantity,
-                "interested_only": interested_only,
-                "new_total": new_total,
-                "state_changed": state_changed,
-                "new_state": RunState.ACTIVE if state_changed else run.state,
-                "run_id": str(run_uuid),
-                "group_id": str(run.group_id)
-            }
+        # Calculate new totals for broadcasting
+        all_bids = self.repo.get_bids_by_run(run_uuid)
+        product_bids = [bid for bid in all_bids if bid.product_id == product_uuid]
+        new_total = sum(bid.quantity for bid in product_bids if not bid.interested_only)
 
-        return {"message": "Bid placed successfully"}
+        return {
+            "message": "Bid placed successfully",
+            "product_id": str(product_uuid),
+            "user_id": str(user.id),
+            "user_name": user.name,
+            "quantity": quantity,
+            "interested_only": interested_only,
+            "new_total": new_total,
+            "state_changed": state_changed,
+            "new_state": RunState.ACTIVE if state_changed else run.state,
+            "run_id": str(run_uuid),
+            "group_id": str(run.group_id)
+        }
 
     def toggle_ready(self, run_id: str, user: User) -> Dict[str, Any]:
         """
@@ -608,47 +570,42 @@ class RunService(BaseService):
             raise BadRequestError("Invalid run ID format")
 
         # Verify run exists and user has access
-        runs = [run for run in self.repo._runs.values() if run.id == run_uuid] if hasattr(self.repo, '_runs') else []
-        if not runs:
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
             raise NotFoundError("Run", run_id)
 
-        run = runs[0]
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError("Not authorized to view this run")
 
-        if hasattr(self.repo, '_runs'):  # Memory mode
-            # Get all products
-            all_products = self.repo.get_all_products()
-            run_bids = self.repo.get_bids_by_run(run.id)
+        # Get all products
+        all_products = self.repo.get_all_products()
+        run_bids = self.repo.get_bids_by_run(run.id)
 
-            # Get products that have bids
-            products_with_bids = set(bid.product_id for bid in run_bids)
+        # Get products that have bids
+        products_with_bids = set(bid.product_id for bid in run_bids)
 
-            # Return products that don't have bids, sorted by availability at run's store
-            available_products = []
-            for product in all_products:
-                if product.id not in products_with_bids:
-                    # Get product availability/price for this store
-                    availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
-                    current_price = str(availability.price) if availability and availability.price else None
-                    has_store_availability = availability is not None
+        # Return products that don't have bids, sorted by availability at run's store
+        available_products = []
+        for product in all_products:
+            if product.id not in products_with_bids:
+                # Get product availability/price for this store
+                availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
+                current_price = str(availability.price) if availability and availability.price else None
+                has_store_availability = availability is not None
 
-                    available_products.append({
-                        "id": str(product.id),
-                        "name": product.name,
-                        "brand": product.brand,
-                        "current_price": current_price,
-                        "has_store_availability": has_store_availability
-                    })
+                available_products.append({
+                    "id": str(product.id),
+                    "name": product.name,
+                    "brand": product.brand,
+                    "current_price": current_price,
+                    "has_store_availability": has_store_availability
+                })
 
-            # Sort: products with store availability first, then alphabetically by name
-            available_products.sort(key=lambda p: (not p["has_store_availability"], p["name"].lower()))
+        # Sort: products with store availability first, then alphabetically by name
+        available_products.sort(key=lambda p: (not p["has_store_availability"], p["name"].lower()))
 
-            return available_products
-        else:
-            # Database mode - would need proper joins
-            return []
+        return available_products
 
     def transition_to_shopping(self, run_id: str, user: User) -> Dict[str, Any]:
         """
@@ -742,14 +699,15 @@ class RunService(BaseService):
 
             # Update shopping list item's requested_quantity to match adjusted bids
             total_requested = sum(bid.quantity for bid in product_bids)
-            if hasattr(self.repo, '_shopping_list_items'):  # Memory mode
-                shopping_item.requested_quantity = total_requested
+            self.repo.update_shopping_list_item_requested_quantity(shopping_item.id, total_requested)
 
             # Distribute the purchased items to bidders
             for bid in product_bids:
-                if hasattr(self.repo, '_bids'):  # Memory mode
-                    bid.distributed_quantity = bid.quantity
-                    bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
+                self.repo.update_bid_distributed_quantities(
+                    bid.id,
+                    bid.quantity,
+                    shopping_item.purchased_price_per_unit
+                )
 
         # Transition to distributing state
         old_state = run.state

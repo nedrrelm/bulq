@@ -416,18 +416,13 @@ class ShoppingService(BaseService):
 
             # Distribute the purchased items to bidders (all quantities match)
             for bid in product_bids:
-                if hasattr(self.repo, '_bids'):  # Memory mode
-                    bid.distributed_quantity = bid.quantity
-                    bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
-                else:  # Database mode
-                    from ..models import ProductBid
-                    db_bid = db.query(ProductBid).filter(ProductBid.id == bid.id).first()
-                    if db_bid:
-                        db_bid.distributed_quantity = bid.quantity
-                        db_bid.distributed_price_per_unit = shopping_item.purchased_price_per_unit
+                self.repo.update_bid_distributed_quantities(
+                    bid.id,
+                    bid.quantity,
+                    shopping_item.purchased_price_per_unit
+                )
 
-        if not hasattr(self.repo, '_bids'):  # Database mode
-            db.commit()
+        self.repo.commit_changes()
 
         # Transition to distributing state
         old_state = run.state

@@ -212,32 +212,16 @@ class DistributionService(BaseService):
         }
 
     def _get_product(self, product_id: UUID) -> Product:
-        """Get product from repository (handles both memory and database modes)."""
-        if hasattr(self.repo, '_products'):
-            return self.repo._products.get(product_id)
-        else:
-            return self.repo.get_product_by_id(product_id)
+        """Get product from repository."""
+        return self.repo.get_product_by_id(product_id)
 
     def _get_bid(self, bid_id: UUID) -> ProductBid:
-        """Get bid from repository (handles both memory and database modes)."""
-        if hasattr(self.repo, '_bids'):
-            return self.repo._bids.get(bid_id)
-        else:
-            # In database mode, we need to query directly
-            # The repository doesn't have a get_bid_by_id method
-            # We'll rely on the route layer to handle this for now
-            # But for completeness, we could add a method to repository
-            from ..database import get_db
-            db = next(get_db())
-            return db.query(ProductBid).filter(ProductBid.id == bid_id).first()
+        """Get bid from repository."""
+        return self.repo.get_bid_by_id(bid_id)
 
     def _commit_changes(self) -> None:
-        """Commit changes (only needed in database mode)."""
-        if not hasattr(self.repo, '_bids'):
-            # Database mode - need to commit
-            from ..database import get_db
-            db = next(get_db())
-            db.commit()
+        """Commit changes."""
+        self.repo.commit_changes()
 
     def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
         """
