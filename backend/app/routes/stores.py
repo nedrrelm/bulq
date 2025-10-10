@@ -78,10 +78,7 @@ async def get_store_page(
     repo = get_repository(db)
     service = StoreService(repo)
 
-    try:
-        data = service.get_store_page_data(store_uuid, current_user.id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    data = service.get_store_page_data(store_uuid, current_user.id)
 
     # Convert to response format
     store_response = StoreResponse(id=str(data["store"].id), name=data["store"].name)

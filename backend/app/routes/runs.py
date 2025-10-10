@@ -7,7 +7,6 @@ from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import RunService
 from ..websocket_manager import manager
-from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError, BadRequestError, AppException
 from ..run_state import RunState
 from pydantic import BaseModel, validator, Field
 import logging
@@ -39,35 +38,26 @@ async def create_run(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.create_run(request.group_id, request.store_id, current_user)
+    result = service.create_run(request.group_id, request.store_id, current_user)
 
-        # Broadcast to group room
-        await manager.broadcast(f"group:{result['group_id']}", {
-            "type": "run_created",
-            "data": {
-                "run_id": result['id'],
-                "store_id": result['store_id'],
-                "store_name": result['store_name'],
-                "state": result['state'],
-                "leader_name": result['leader_name']
-            }
-        })
+    # Broadcast to group room
+    await manager.broadcast(f"group:{result['group_id']}", {
+        "type": "run_created",
+        "data": {
+            "run_id": result['id'],
+            "store_id": result['store_id'],
+            "store_name": result['store_name'],
+            "state": result['state'],
+            "leader_name": result['leader_name']
+        }
+    })
 
-        return CreateRunResponse(
-            id=result['id'],
-            group_id=result['group_id'],
-            store_id=result['store_id'],
-            state=result['state']
-        )
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return CreateRunResponse(
+        id=result['id'],
+        group_id=result['group_id'],
+        store_id=result['store_id'],
+        state=result['state']
+    )
 
 class UserBidResponse(BaseModel):
     user_id: str
@@ -127,51 +117,42 @@ async def get_run_details(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.get_run_details(run_id, current_user)
+    result = service.get_run_details(run_id, current_user)
 
-        # Convert dict data to Pydantic models
-        products = [
-            ProductResponse(
-                id=p['id'],
-                name=p['name'],
-                brand=p.get('brand'),
-                current_price=p.get('current_price'),
-                total_quantity=p['total_quantity'],
-                interested_count=p['interested_count'],
-                user_bids=[UserBidResponse(**ub) for ub in p['user_bids']],
-                current_user_bid=UserBidResponse(**p['current_user_bid']) if p['current_user_bid'] else None,
-                purchased_quantity=p.get('purchased_quantity')
-            )
-            for p in result['products']
-        ]
-
-        participants = [
-            ParticipantResponse(**p)
-            for p in result['participants']
-        ]
-
-        return RunDetailResponse(
-            id=result['id'],
-            group_id=result['group_id'],
-            group_name=result['group_name'],
-            store_id=result['store_id'],
-            store_name=result['store_name'],
-            state=result['state'],
-            products=products,
-            participants=participants,
-            current_user_is_ready=result['current_user_is_ready'],
-            current_user_is_leader=result['current_user_is_leader'],
-            leader_name=result['leader_name']
+    # Convert dict data to Pydantic models
+    products = [
+        ProductResponse(
+            id=p['id'],
+            name=p['name'],
+            brand=p.get('brand'),
+            current_price=p.get('current_price'),
+            total_quantity=p['total_quantity'],
+            interested_count=p['interested_count'],
+            user_bids=[UserBidResponse(**ub) for ub in p['user_bids']],
+            current_user_bid=UserBidResponse(**p['current_user_bid']) if p['current_user_bid'] else None,
+            purchased_quantity=p.get('purchased_quantity')
         )
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+        for p in result['products']
+    ]
+
+    participants = [
+        ParticipantResponse(**p)
+        for p in result['participants']
+    ]
+
+    return RunDetailResponse(
+        id=result['id'],
+        group_id=result['group_id'],
+        group_name=result['group_name'],
+        store_id=result['store_id'],
+        store_name=result['store_name'],
+        state=result['state'],
+        products=products,
+        participants=participants,
+        current_user_is_ready=result['current_user_is_ready'],
+        current_user_is_leader=result['current_user_is_leader'],
+        leader_name=result['leader_name']
+    )
 
 class PlaceBidRequest(BaseModel):
     product_id: str
@@ -198,54 +179,45 @@ async def place_bid(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.place_bid(
-            run_id,
-            bid_request.product_id,
-            bid_request.quantity,
-            bid_request.interested_only,
-            current_user
-        )
+    result = service.place_bid(
+        run_id,
+        bid_request.product_id,
+        bid_request.quantity,
+        bid_request.interested_only,
+        current_user
+    )
 
-        # Broadcast to run room
+    # Broadcast to run room
+    await manager.broadcast(f"run:{result['run_id']}", {
+        "type": "bid_updated",
+        "data": {
+            "product_id": result['product_id'],
+            "user_id": result['user_id'],
+            "user_name": result['user_name'],
+            "quantity": result['quantity'],
+            "interested_only": result['interested_only'],
+            "new_total": result['new_total']
+        }
+    })
+
+    # If state changed, broadcast to both run and group
+    if result.get('state_changed'):
         await manager.broadcast(f"run:{result['run_id']}", {
-            "type": "bid_updated",
+            "type": "state_changed",
             "data": {
-                "product_id": result['product_id'],
-                "user_id": result['user_id'],
-                "user_name": result['user_name'],
-                "quantity": result['quantity'],
-                "interested_only": result['interested_only'],
-                "new_total": result['new_total']
+                "run_id": result['run_id'],
+                "new_state": result['new_state']
+            }
+        })
+        await manager.broadcast(f"group:{result['group_id']}", {
+            "type": "run_state_changed",
+            "data": {
+                "run_id": result['run_id'],
+                "new_state": result['new_state']
             }
         })
 
-        # If state changed, broadcast to both run and group
-        if result.get('state_changed'):
-            await manager.broadcast(f"run:{result['run_id']}", {
-                "type": "state_changed",
-                "data": {
-                    "run_id": result['run_id'],
-                    "new_state": result['new_state']
-                }
-            })
-            await manager.broadcast(f"group:{result['group_id']}", {
-                "type": "run_state_changed",
-                "data": {
-                    "run_id": result['run_id'],
-                    "new_state": result['new_state']
-                }
-            })
-
-        return {"message": result['message']}
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return {"message": result['message']}
 
 @router.delete("/{run_id}/bids/{product_id}")
 async def retract_bid(
@@ -360,48 +332,39 @@ async def toggle_ready(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.toggle_ready(run_id, current_user)
+    result = service.toggle_ready(run_id, current_user)
 
-        # Broadcast ready toggle to run room
+    # Broadcast ready toggle to run room
+    await manager.broadcast(f"run:{result['run_id']}", {
+        "type": "ready_toggled",
+        "data": {
+            "user_id": result['user_id'],
+            "is_ready": result['is_ready']
+        }
+    })
+
+    # If state changed, broadcast state change to both run and group
+    if result.get('state_changed'):
         await manager.broadcast(f"run:{result['run_id']}", {
-            "type": "ready_toggled",
+            "type": "state_changed",
             "data": {
-                "user_id": result['user_id'],
-                "is_ready": result['is_ready']
+                "run_id": result['run_id'],
+                "new_state": result['new_state']
+            }
+        })
+        await manager.broadcast(f"group:{result['group_id']}", {
+            "type": "run_state_changed",
+            "data": {
+                "run_id": result['run_id'],
+                "new_state": result['new_state']
             }
         })
 
-        # If state changed, broadcast state change to both run and group
-        if result.get('state_changed'):
-            await manager.broadcast(f"run:{result['run_id']}", {
-                "type": "state_changed",
-                "data": {
-                    "run_id": result['run_id'],
-                    "new_state": result['new_state']
-                }
-            })
-            await manager.broadcast(f"group:{result['group_id']}", {
-                "type": "run_state_changed",
-                "data": {
-                    "run_id": result['run_id'],
-                    "new_state": result['new_state']
-                }
-            })
-
-        return {
-            "message": result['message'],
-            "is_ready": result['is_ready'],
-            "state_changed": result.get('state_changed', False)
-        }
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return {
+        "message": result['message'],
+        "is_ready": result['is_ready'],
+        "state_changed": result.get('state_changed', False)
+    }
 
 @router.post("/{run_id}/start-shopping")
 async def start_shopping(
@@ -413,34 +376,25 @@ async def start_shopping(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.start_run(run_id, current_user)
+    result = service.start_run(run_id, current_user)
 
-        # Broadcast state change to both run and group
-        await manager.broadcast(f"run:{result['run_id']}", {
-            "type": "state_changed",
-            "data": {
-                "run_id": result['run_id'],
-                "new_state": result['state']
-            }
-        })
-        await manager.broadcast(f"group:{result['group_id']}", {
-            "type": "run_state_changed",
-            "data": {
-                "run_id": result['run_id'],
-                "new_state": result['state']
-            }
-        })
+    # Broadcast state change to both run and group
+    await manager.broadcast(f"run:{result['run_id']}", {
+        "type": "state_changed",
+        "data": {
+            "run_id": result['run_id'],
+            "new_state": result['state']
+        }
+    })
+    await manager.broadcast(f"group:{result['group_id']}", {
+        "type": "run_state_changed",
+        "data": {
+            "run_id": result['run_id'],
+            "new_state": result['state']
+        }
+    })
 
-        return {"message": result['message'], "state": result['state']}
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return {"message": result['message'], "state": result['state']}
 
 @router.post("/{run_id}/finish-adjusting")
 async def finish_adjusting(
@@ -452,34 +406,25 @@ async def finish_adjusting(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.finish_adjusting(run_id, current_user)
+    result = service.finish_adjusting(run_id, current_user)
 
-        # Broadcast state change to both run and group
-        await manager.broadcast(f"run:{result['run_id']}", {
-            "type": "state_changed",
-            "data": {
-                "run_id": result['run_id'],
-                "new_state": result['state']
-            }
-        })
-        await manager.broadcast(f"group:{result['group_id']}", {
-            "type": "run_state_changed",
-            "data": {
-                "run_id": result['run_id'],
-                "new_state": result['state']
-            }
-        })
+    # Broadcast state change to both run and group
+    await manager.broadcast(f"run:{result['run_id']}", {
+        "type": "state_changed",
+        "data": {
+            "run_id": result['run_id'],
+            "new_state": result['state']
+        }
+    })
+    await manager.broadcast(f"group:{result['group_id']}", {
+        "type": "run_state_changed",
+        "data": {
+            "run_id": result['run_id'],
+            "new_state": result['state']
+        }
+    })
 
-        return {"message": result['message'], "state": result['state']}
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return {"message": result['message'], "state": result['state']}
 
 @router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
 async def get_available_products(
@@ -491,27 +436,18 @@ async def get_available_products(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.get_available_products(run_id, current_user)
+    result = service.get_available_products(run_id, current_user)
 
-        return [
-            AvailableProductResponse(
-                id=p['id'],
-                name=p['name'],
-                brand=p.get('brand'),
-                current_price=p.get('current_price'),
-                has_store_availability=p.get('has_store_availability', False)
-            )
-            for p in result
-        ]
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return [
+        AvailableProductResponse(
+            id=p['id'],
+            name=p['name'],
+            brand=p.get('brand'),
+            current_price=p.get('current_price'),
+            has_store_availability=p.get('has_store_availability', False)
+        )
+        for p in result
+    ]
 
 @router.post("/{run_id}/transition-shopping")
 async def transition_to_shopping(
@@ -523,34 +459,25 @@ async def transition_to_shopping(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.transition_to_shopping(run_id, current_user)
+    result = service.transition_to_shopping(run_id, current_user)
 
-        # Broadcast state change to both run and group
-        await manager.broadcast(f"run:{result['run_id']}", {
-            "type": "state_changed",
-            "data": {
-                "run_id": result['run_id'],
-                "new_state": result['state']
-            }
-        })
-        await manager.broadcast(f"group:{result['group_id']}", {
-            "type": "run_state_changed",
-            "data": {
-                "run_id": result['run_id'],
-                "new_state": result['state']
-            }
-        })
+    # Broadcast state change to both run and group
+    await manager.broadcast(f"run:{result['run_id']}", {
+        "type": "state_changed",
+        "data": {
+            "run_id": result['run_id'],
+            "new_state": result['state']
+        }
+    })
+    await manager.broadcast(f"group:{result['group_id']}", {
+        "type": "run_state_changed",
+        "data": {
+            "run_id": result['run_id'],
+            "new_state": result['state']
+        }
+    })
 
-        return {"message": result['message'], "state": result['state']}
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return {"message": result['message'], "state": result['state']}
 
 @router.post("/{run_id}/cancel")
 async def cancel_run(
@@ -562,27 +489,18 @@ async def cancel_run(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.cancel_run(run_id, current_user)
+    result = service.cancel_run(run_id, current_user)
 
-        # Broadcast to group room
-        await manager.broadcast(f"group:{result['group_id']}", {
-            "type": "run_cancelled",
-            "data": {
-                "run_id": result['run_id'],
-                "state": result['state']
-            }
-        })
+    # Broadcast to group room
+    await manager.broadcast(f"group:{result['group_id']}", {
+        "type": "run_cancelled",
+        "data": {
+            "run_id": result['run_id'],
+            "state": result['state']
+        }
+    })
 
-        return result
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return result
 
 @router.delete("/{run_id}")
 async def delete_run(
@@ -594,24 +512,15 @@ async def delete_run(
     repo = get_repository(db)
     service = RunService(repo)
 
-    try:
-        result = service.delete_run(run_id, current_user)
+    result = service.delete_run(run_id, current_user)
 
-        # Broadcast to group room (try to get from service result)
-        group_id = result.get('group_id', 'unknown')
-        await manager.broadcast(f"group:{group_id}", {
-            "type": "run_cancelled",
-            "data": {
-                "run_id": result['run_id']
-            }
-        })
+    # Broadcast to group room (try to get from service result)
+    group_id = result.get('group_id', 'unknown')
+    await manager.broadcast(f"group:{group_id}", {
+        "type": "run_cancelled",
+        "data": {
+            "run_id": result['run_id']
+        }
+    })
 
-        return {"message": result['message']}
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return {"message": result['message']}

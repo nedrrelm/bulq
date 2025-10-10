@@ -48,14 +48,7 @@ async def get_distribution_data(
         raise HTTPException(status_code=400, detail="Invalid run ID format")
 
     # Get distribution summary from service
-    try:
-        users_data = service.get_distribution_summary(run_uuid, current_user)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+    users_data = service.get_distribution_summary(run_uuid, current_user)
 
     # Convert to Pydantic models
     result = [
@@ -90,12 +83,7 @@ async def mark_picked_up(
         raise HTTPException(status_code=400, detail="Invalid ID format")
 
     # Mark as picked up via service
-    try:
-        result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
+    result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
 
     return result
 
@@ -116,14 +104,7 @@ async def complete_distribution(
         raise HTTPException(status_code=400, detail="Invalid run ID format")
 
     # Complete distribution via service
-    try:
-        result = service.complete_distribution(run_uuid, current_user)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=403, detail=e.message)
-    except BadRequestError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+    result = service.complete_distribution(run_uuid, current_user)
 
     # Get run for broadcasting (service already validated it exists)
     run = repo.get_run_by_id(run_uuid)
