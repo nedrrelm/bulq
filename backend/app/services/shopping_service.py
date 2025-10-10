@@ -61,33 +61,53 @@ class ShoppingService(BaseService):
         # Get shopping list items
         items = self.repo.get_shopping_list_items(run_uuid)
 
+        from datetime import datetime, timedelta
+
         # Convert to response format
         response_items = []
         for item in items:
             # Get product directly by ID
             product = self.repo.get_product_by_id(item.product_id)
 
-            # Get product availability for this product at this store
-            availability = self.repo.get_availability_by_product_and_store(
+            # Get all product availabilities for this product at this store
+            all_availabilities = self.repo.get_product_availabilities(
                 product_id=item.product_id,
                 store_id=run.store_id
             )
 
-            # Format availability info
-            availability_info = None
-            if availability and availability.price:
-                availability_info = {
-                    "price": float(availability.price),
-                    "notes": availability.notes or "",
-                    "updated_at": availability.updated_at.isoformat() if hasattr(availability, 'updated_at') and availability.updated_at else None
-                }
+            # Find the most recent price observation
+            most_recent = None
+            for avail in all_availabilities:
+                if avail.price and avail.created_at:
+                    if most_recent is None or avail.created_at > most_recent.created_at:
+                        most_recent = avail
+
+            # Get all prices from the same day as the most recent observation
+            recent_day_prices = []
+            if most_recent:
+                # Get the day boundaries for the most recent price
+                recent_date = most_recent.created_at.replace(hour=0, minute=0, second=0, microsecond=0)
+                recent_date_end = recent_date + timedelta(days=1)
+
+                # Filter to only prices from that day
+                for avail in all_availabilities:
+                    if avail.price and avail.created_at:
+                        if recent_date <= avail.created_at < recent_date_end:
+                            recent_day_prices.append({
+                                "price": float(avail.price),
+                                "notes": avail.notes or "",
+                                "created_at": avail.created_at.isoformat() if avail.created_at else None
+                            })
+
+                # Sort by created_at descending (newest first)
+                recent_day_prices.sort(key=lambda x: x["created_at"] if x["created_at"] else "", reverse=True)
 
             response_items.append({
                 "id": str(item.id),
                 "product_id": str(item.product_id),
                 "product_name": product.name if product else "Unknown Product",
                 "requested_quantity": item.requested_quantity,
-                "availability": availability_info,
+                "recent_prices": recent_day_prices,
                 "purchased_quantity": item.purchased_quantity,
                 "purchased_price_per_unit": str(item.purchased_price_per_unit) if item.purchased_price_per_unit else None,
                 "purchased_total": str(item.purchased_total) if item.purchased_total else None,
