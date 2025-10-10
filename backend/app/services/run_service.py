@@ -587,14 +587,15 @@ class RunService(BaseService):
 
     def get_available_products(self, run_id: str, user: User) -> List[Dict[str, Any]]:
         """
-        Get products available for bidding (products from the store that don't have bids yet).
+        Get products available for bidding (all products without bids yet).
+        Products with availability at the run's store are sorted first.
 
         Args:
             run_id: Run ID as string
             user: Current user
 
         Returns:
-            List of available product dicts
+            List of available product dicts, sorted with store products first
 
         Raises:
             BadRequestError: If run ID format is invalid
@@ -618,27 +619,32 @@ class RunService(BaseService):
             raise ForbiddenError("Not authorized to view this run")
 
         if hasattr(self.repo, '_runs'):  # Memory mode
-            # Get all products for the store
-            store_products = self.repo.get_products_by_store(run.store_id)
+            # Get all products
+            all_products = self.repo.get_all_products()
             run_bids = self.repo.get_bids_by_run(run.id)
 
             # Get products that have bids
             products_with_bids = set(bid.product_id for bid in run_bids)
 
-            # Return products that don't have bids
+            # Return products that don't have bids, sorted by availability at run's store
             available_products = []
-            for product in store_products:
+            for product in all_products:
                 if product.id not in products_with_bids:
                     # Get product availability/price for this store
                     availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
                     current_price = str(availability.price) if availability and availability.price else None
+                    has_store_availability = availability is not None
 
                     available_products.append({
                         "id": str(product.id),
                         "name": product.name,
                         "brand": product.brand,
-                        "current_price": current_price
+                        "current_price": current_price,
+                        "has_store_availability": has_store_availability
                     })
+
+            # Sort: products with store availability first, then alphabetically by name
+            available_products.sort(key=lambda p: (not p["has_store_availability"], p["name"].lower()))
 
             return available_products
         else:
