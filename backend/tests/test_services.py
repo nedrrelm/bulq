@@ -351,8 +351,8 @@ class TestShoppingService:
         assert shopping_list[0]["product_id"] == str(product.id)
         assert shopping_list[0]["requested_quantity"] == 5
 
-    async def test_log_encountered_price(self, repo, user, group, store, product):
-        """Test logging encountered price"""
+    async def test_update_availability_price(self, repo, user, group, store, product):
+        """Test updating product availability price"""
         run = repo.create_run(group.id, store.id, user.id)
         repo.create_participation(user.id, run.id, is_leader=True)
         # Transition to shopping state
@@ -362,7 +362,8 @@ class TestShoppingService:
         item = repo.create_shopping_list_item(run.id, product.id, requested_quantity=5)
 
         service = ShoppingService(repo)
-        result = await service.add_encountered_price(
+        result = await service.add_availability_price(
+            run_id=str(run.id),
             item_id=str(item.id),
             price=18.99,
             notes="On sale",

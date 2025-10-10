@@ -273,14 +273,6 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement get_shopping_list_item")
 
     @abstractmethod
-    def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
-        """
-        DEPRECATED: Use create_product_availability() instead.
-        This method is kept for backwards compatibility but should not be used.
-        """
-        raise NotImplementedError("Use create_product_availability() instead")
-
-    @abstractmethod
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
         """Mark a shopping list item as purchased."""
         raise NotImplementedError("Subclass must implement mark_item_purchased")
@@ -860,17 +852,6 @@ class DatabaseRepository(AbstractRepository):
         return self.db.query(ShoppingListItem).filter(
             ShoppingListItem.id == item_id
         ).first()
-
-    def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
-        """
-        DEPRECATED: This method is no longer used.
-        Use create_product_availability() to create ProductAvailability records instead.
-        This method is kept for backwards compatibility but does nothing.
-        """
-        item = self.db.query(ShoppingListItem).filter(
-            ShoppingListItem.id == item_id
-        ).first()
-        return item
 
     def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
         """Mark a shopping list item as purchased."""
@@ -1727,12 +1708,12 @@ class MemoryRepository(AbstractRepository):
     def get_store_by_id(self, store_id: UUID) -> Optional[Store]:
         return self._stores.get(store_id)
 
-    def get_products_by_store_from_encountered_prices(self, store_id: UUID) -> List[Product]:
-        """Get all unique products that have encountered prices at a store."""
+    def get_products_by_store_from_availabilities(self, store_id: UUID) -> List[Product]:
+        """Get all unique products that have availability records at a store."""
         product_ids = set()
-        for ep in self._encountered_prices.values():
-            if ep.store_id == store_id:
-                product_ids.add(ep.product_id)
+        for avail in self._product_availabilities.values():
+            if avail.store_id == store_id:
+                product_ids.add(avail.product_id)
         return [self._products[pid] for pid in product_ids if pid in self._products]
 
     def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
@@ -2121,15 +2102,6 @@ class MemoryRepository(AbstractRepository):
                 item.product = self._products.get(product_id)
                 items.append(item)
         return items
-
-    def add_encountered_price(self, item_id: UUID, price: float, notes: str = "") -> Optional[ShoppingListItem]:
-        """
-        DEPRECATED: This method is no longer used.
-        Use create_product_availability() to create ProductAvailability records instead.
-        This method is kept for backwards compatibility but does nothing.
-        """
-        item = self._shopping_list_items.get(item_id)
-        return item
 
     def get_shopping_list_item(self, item_id: UUID) -> Optional[ShoppingListItem]:
         return self._shopping_list_items.get(item_id)
