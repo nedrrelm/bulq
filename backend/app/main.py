@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
+import asyncio
 from .database import create_tables
 from .routes.auth import router as auth_router
 from .routes.groups import router as groups_router
@@ -79,6 +80,16 @@ async def startup_event():
             create_seed_data()
         except ImportError:
             print("Warning: Could not import seed data. Skipping seed data creation.")
+
+    # Start background task for session cleanup
+    from .auth import cleanup_expired_sessions
+    async def session_cleanup_loop():
+        """Periodically clean up expired sessions to prevent memory leak."""
+        while True:
+            await asyncio.sleep(3600)  # Run every hour
+            cleanup_expired_sessions()
+
+    asyncio.create_task(session_cleanup_loop())
 
 @app.get("/")
 async def hello_world():
