@@ -106,23 +106,20 @@ async def complete_distribution(
     # Complete distribution via service
     result = service.complete_distribution(run_uuid, current_user)
 
-    # Get run for broadcasting (service already validated it exists)
-    run = repo.get_run_by_id(run_uuid)
-
-    # Broadcast state change to both run and group
-    await manager.broadcast(f"run:{run_uuid}", {
+    # Broadcast state change to both run and group (using data from service)
+    await manager.broadcast(f"run:{result['run_id']}", {
         "type": "state_changed",
         "data": {
-            "run_id": str(run_uuid),
+            "run_id": result['run_id'],
             "new_state": RunState.COMPLETED
         }
     })
-    await manager.broadcast(f"group:{run.group_id}", {
+    await manager.broadcast(f"group:{result['group_id']}", {
         "type": "run_state_changed",
         "data": {
-            "run_id": str(run_uuid),
+            "run_id": result['run_id'],
             "new_state": RunState.COMPLETED
         }
     })
 
-    return result
+    return {"message": result['message'], "state": result['state']}
