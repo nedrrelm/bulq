@@ -8,7 +8,7 @@ from decimal import Decimal
 import logging
 
 from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, ProductAvailability, Notification, LeaderReassignmentRequest
-from .config import get_repo_mode
+from .config import REPO_MODE
 from .run_state import RunState, state_machine
 
 logger = logging.getLogger(__name__)
@@ -2364,7 +2364,7 @@ class MemoryRepository(AbstractRepository):
 
 def get_repository(db: Session = None) -> AbstractRepository:
     """Get the appropriate repository implementation based on config."""
-    if get_repo_mode() == "memory":
+    if REPO_MODE == "memory":
         # MemoryRepository is a singleton - just call constructor
         return MemoryRepository()
     else:
