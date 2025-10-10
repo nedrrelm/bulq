@@ -1,7 +1,6 @@
 """Run service for managing run business logic."""
 
 import logging
-import uuid
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 from uuid import UUID
@@ -41,8 +40,8 @@ class RunService(BaseService):
 
         # Validate IDs
         try:
-            group_uuid = uuid.UUID(group_id)
-            store_uuid = uuid.UUID(store_id)
+            group_uuid = UUID(group_id)
+            store_uuid = UUID(store_id)
         except ValueError:
             raise BadRequestError("Invalid ID format")
 
@@ -106,7 +105,7 @@ class RunService(BaseService):
         """
         # Validate run ID format
         try:
-            run_uuid = uuid.UUID(run_id)
+            run_uuid = UUID(run_id)
         except ValueError:
             raise BadRequestError("Invalid run ID format")
 
@@ -276,8 +275,8 @@ class RunService(BaseService):
 
         # Validate IDs
         try:
-            run_uuid = uuid.UUID(run_id)
-            product_uuid = uuid.UUID(product_id)
+            run_uuid = UUID(run_id)
+            product_uuid = UUID(product_id)
         except ValueError:
             raise BadRequestError("Invalid ID format")
 
@@ -452,7 +451,7 @@ class RunService(BaseService):
         """
         # Validate run ID
         try:
-            run_uuid = uuid.UUID(run_id)
+            run_uuid = UUID(run_id)
         except ValueError:
             raise BadRequestError("Invalid run ID format")
 
@@ -532,7 +531,7 @@ class RunService(BaseService):
         """
         # Validate run ID
         try:
-            run_uuid = uuid.UUID(run_id)
+            run_uuid = UUID(run_id)
         except ValueError:
             raise BadRequestError("Invalid run ID format")
 
@@ -604,7 +603,7 @@ class RunService(BaseService):
         """
         # Validate run ID
         try:
-            run_uuid = uuid.UUID(run_id)
+            run_uuid = UUID(run_id)
         except ValueError:
             raise BadRequestError("Invalid run ID format")
 
@@ -691,7 +690,7 @@ class RunService(BaseService):
         """
         # Validate run ID
         try:
-            run_uuid = uuid.UUID(run_id)
+            run_uuid = UUID(run_id)
         except ValueError:
             raise BadRequestError("Invalid run ID format")
 
@@ -784,7 +783,7 @@ class RunService(BaseService):
         """
         # Validate run ID
         try:
-            run_uuid = uuid.UUID(run_id)
+            run_uuid = UUID(run_id)
         except ValueError:
             raise BadRequestError("Invalid run ID format")
 
@@ -874,8 +873,8 @@ class RunService(BaseService):
 
         # Validate IDs
         try:
-            run_uuid = uuid.UUID(run_id)
-            product_uuid = uuid.UUID(product_id)
+            run_uuid = UUID(run_id)
+            product_uuid = UUID(product_id)
         except ValueError:
             raise BadRequestError("Invalid ID format")
 

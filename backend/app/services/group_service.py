@@ -1,7 +1,6 @@
 """Service layer for group-related business logic."""
 
 import logging
-import uuid
 from typing import List, Dict, Any
 from uuid import UUID
 
@@ -133,7 +132,7 @@ class GroupService(BaseService):
         """
         # Verify group ID format
         try:
-            group_uuid = uuid.UUID(group_id)
+            group_uuid = UUID(group_id)
         except ValueError:
             raise BadRequestError("Invalid group ID format")
 
@@ -175,7 +174,7 @@ class GroupService(BaseService):
         """
         # Verify group ID format
         try:
-            group_uuid = uuid.UUID(group_id)
+            group_uuid = UUID(group_id)
         except ValueError:
             raise BadRequestError("Invalid group ID format")
 
@@ -241,7 +240,7 @@ class GroupService(BaseService):
         """
         # Verify group ID format
         try:
-            group_uuid = uuid.UUID(group_id)
+            group_uuid = UUID(group_id)
         except ValueError:
             raise BadRequestError("Invalid group ID format")
 
@@ -303,7 +302,7 @@ class GroupService(BaseService):
         """
         # Verify group ID format
         try:
-            group_uuid = uuid.UUID(group_id)
+            group_uuid = UUID(group_id)
         except ValueError:
             raise BadRequestError("Invalid group ID format")
 
@@ -471,7 +470,7 @@ class GroupService(BaseService):
         """
         # Verify group ID format
         try:
-            group_uuid = uuid.UUID(group_id)
+            group_uuid = UUID(group_id)
         except ValueError:
             raise BadRequestError("Invalid group ID format")
 
@@ -519,8 +518,8 @@ class GroupService(BaseService):
         """
         # Verify ID formats
         try:
-            group_uuid = uuid.UUID(group_id)
-            member_uuid = uuid.UUID(member_id)
+            group_uuid = UUID(group_id)
+            member_uuid = UUID(member_id)
         except ValueError:
             raise BadRequestError("Invalid ID format")
 
@@ -631,7 +630,7 @@ class GroupService(BaseService):
         """
         # Verify group ID format
         try:
-            group_uuid = uuid.UUID(group_id)
+            group_uuid = UUID(group_id)
         except ValueError:
             raise BadRequestError("Invalid group ID format")
 
