@@ -113,7 +113,7 @@ class ShoppingService(BaseService):
             raise ForbiddenError("Not authorized to view this run")
 
         # Only allow viewing shopping list in shopping or later states
-        if run.state not in ['shopping', 'distributing', 'completed']:
+        if run.state not in [RunState.SHOPPING, RunState.DISTRIBUTING, RunState.COMPLETED]:
             raise BadRequestError("Shopping list only available in shopping state")
 
         # Get shopping list items
@@ -359,7 +359,7 @@ class ShoppingService(BaseService):
             raise ForbiddenError("Only the run leader can complete shopping")
 
         # Only allow completing from shopping state
-        if run.state != 'shopping':
+        if run.state != RunState.SHOPPING:
             raise BadRequestError("Can only complete shopping from shopping state")
 
         # Check if any items have insufficient quantities

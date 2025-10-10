@@ -63,7 +63,7 @@ class RunService(BaseService):
 
         # Check active runs limit for the group
         group_runs = self.repo.get_runs_by_group(group_uuid)
-        active_runs = [r for r in group_runs if r.state not in ('completed', 'cancelled')]
+        active_runs = [r for r in group_runs if r.state not in (RunState.COMPLETED, RunState.CANCELLED)]
         if len(active_runs) >= MAX_ACTIVE_RUNS_PER_GROUP:
             logger.warning(
                 f"Group has reached maximum active runs limit",
@@ -163,7 +163,7 @@ class RunService(BaseService):
 
         # Get shopping list items if in adjusting state
         shopping_list_map = {}
-        if run.state == 'adjusting':
+        if run.state == RunState.ADJUSTING:
             shopping_items = self.repo.get_shopping_list_items(run.id)
             for item in shopping_items:
                 shopping_list_map[item.product_id] = item
@@ -198,7 +198,7 @@ class RunService(BaseService):
 
                 # Get purchased quantity if in adjusting state
                 purchased_qty = None
-                if run.state == 'adjusting' and product.id in shopping_list_map:
+                if run.state == RunState.ADJUSTING and product.id in shopping_list_map:
                     purchased_qty = shopping_list_map[product.id].purchased_quantity
 
                 # Get product availability/price for this store
@@ -285,7 +285,7 @@ class RunService(BaseService):
             raise ForbiddenError("Not authorized to bid on this run")
 
         # Check if run allows bidding
-        if run.state not in ['planning', 'active', 'adjusting']:
+        if run.state not in [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]:
             raise BadRequestError("Bidding not allowed in current run state")
 
         # Verify product exists
@@ -316,7 +316,7 @@ class RunService(BaseService):
             raise BadRequestError("Quantity cannot be negative")
 
         # In adjusting state, only allow downward adjustments
-        if run.state == 'adjusting':
+        if run.state == RunState.ADJUSTING:
             # Get shopping list to check purchased quantity
             shopping_items = self.repo.get_shopping_list_items(run_uuid)
             shopping_item = next((item for item in shopping_items if item.product_id == product_uuid), None)
@@ -348,7 +348,7 @@ class RunService(BaseService):
         is_new_participant = False
         if not participation:
             # Don't allow new participants in adjusting state
-            if run.state == 'adjusting':
+            if run.state == RunState.ADJUSTING:
                 raise BadRequestError("Cannot join run in adjusting state")
             # Create participation (not as leader)
             participation = self.repo.create_participation(user.id, run_uuid, is_leader=False)
@@ -357,7 +357,7 @@ class RunService(BaseService):
         # Check if user already has a bid for this product
         existing_bid = self.repo.get_bid(participation.id, product_uuid)
 
-        if not existing_bid and run.state == 'adjusting':
+        if not existing_bid and run.state == RunState.ADJUSTING:
             # Don't allow new bids on products in adjusting state
             raise BadRequestError("Cannot bid on new products in adjusting state")
 
@@ -429,7 +429,7 @@ class RunService(BaseService):
             raise ForbiddenError("Not authorized to modify this run")
 
         # Only allow toggling ready in active state
-        if run.state != 'active':
+        if run.state != RunState.ACTIVE:
             raise BadRequestError("Can only mark ready in active state")
 
         # Get user's participation
@@ -509,7 +509,7 @@ class RunService(BaseService):
             raise ForbiddenError("Not authorized to modify this run")
 
         # Only allow starting shopping from confirmed state
-        if run.state != 'confirmed':
+        if run.state != RunState.CONFIRMED:
             raise BadRequestError("Can only start shopping from confirmed state")
 
         # Check if user is the run leader
@@ -663,7 +663,7 @@ class RunService(BaseService):
             raise ForbiddenError("Not authorized to modify this run")
 
         # Only allow finishing adjusting from adjusting state
-        if run.state != 'adjusting':
+        if run.state != RunState.ADJUSTING:
             raise BadRequestError("Can only finish adjusting from adjusting state")
 
         # Check if user is the run leader

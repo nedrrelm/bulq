@@ -47,7 +47,7 @@ class DistributionService(BaseService):
             raise ForbiddenError("Not authorized to view this run")
 
         # Only allow viewing distribution in distributing or completed states
-        if run.state not in ['distributing', 'completed']:
+        if run.state not in [RunState.DISTRIBUTING, RunState.COMPLETED]:
             raise BadRequestError("Distribution only available in distributing state")
 
         # Get all bids with participations and users eagerly loaded to avoid N+1 queries
@@ -183,7 +183,7 @@ class DistributionService(BaseService):
             raise ForbiddenError("Only the run leader can complete distribution")
 
         # Only allow completing from distributing state
-        if run.state != 'distributing':
+        if run.state != RunState.DISTRIBUTING:
             raise BadRequestError("Can only complete distribution from distributing state")
 
         # Verify all items are picked up
