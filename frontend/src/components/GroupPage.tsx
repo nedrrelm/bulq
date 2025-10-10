@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/GroupPage.css'
 import { WS_BASE_URL } from '../config'
-import { groupsApi, ApiError } from '../api'
+import { ApiError } from '../api'
 import type { GroupDetails } from '../api'
 import NewRunPopup from './NewRunPopup'
 import ErrorBoundary from './ErrorBoundary'
@@ -14,6 +15,7 @@ import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useModal } from '../hooks/useModal'
 import RunCard from './RunCard'
+import { useGroup, useGroupRuns, groupKeys } from '../hooks/queries'
 
 // Using GroupDetails type from API layer
 type Run = GroupDetails['runs'][0]
@@ -26,65 +28,31 @@ interface GroupPageProps {
 }
 
 export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect }: GroupPageProps) {
-  const [runs, setRuns] = useState<Run[]>([])
-  const [group, setGroup] = useState<GroupDetails | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  // Use React Query for data fetching
+  const { data: group, isLoading: groupLoading, error: groupError } = useGroup(groupId)
+  const { data: runs = [], isLoading: runsLoading, error: runsError } = useGroupRuns(groupId)
+  const queryClient = useQueryClient()
+
+  const loading = groupLoading || runsLoading
+  const error = groupError instanceof Error ? groupError.message : runsError instanceof Error ? runsError.message : ''
+
   const newRunModal = useModal()
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
   const { user } = useAuth()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        setError('')
-
-        // Fetch group details
-        const groupData = await groupsApi.getGroup(groupId)
-        setGroup(groupData)
-
-        // Fetch runs
-        const runsData = await groupsApi.getGroupRuns(groupId)
-        setRuns(runsData)
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Failed to load data')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [groupId])
-
   // WebSocket for real-time updates
   const handleWebSocketMessage = useCallback((message: any) => {
     if (message.type === 'run_created') {
-      // Check if run already exists (to avoid duplicates from handleNewRunSuccess)
-      setRuns(prev => {
-        if (prev.some(run => run.id === message.data.run_id)) {
-          return prev
-        }
-        const newRun: Run = {
-          id: message.data.run_id,
-          group_id: groupId,
-          store_id: message.data.store_id,
-          store_name: message.data.store_name,
-          state: message.data.state,
-          leader_name: message.data.leader_name,
-          leader_is_removed: false,
-          planned_on: null
-        }
-        return [newRun, ...prev]
-      })
+      // Invalidate runs query to refetch with new run
+      queryClient.invalidateQueries({ queryKey: groupKeys.runs(groupId) })
     } else if (message.type === 'run_state_changed' || message.type === 'run_cancelled') {
-      // Update run state
-      setRuns(prev => prev.map(run =>
-        run.id === message.data.run_id
-          ? { ...run, state: message.data.new_state || message.data.state }
-          : run
-      ))
+      // Invalidate runs query to update run state
+      queryClient.invalidateQueries({ queryKey: groupKeys.runs(groupId) })
+      // Also invalidate the specific run
+      if (message.data.run_id) {
+        queryClient.invalidateQueries({ queryKey: ['runs', 'detail', message.data.run_id] })
+      }
     } else if (message.type === 'member_removed') {
       // If current user was removed, redirect to main page
       if (user && message.data.removed_user_id === user.id) {
@@ -96,17 +64,10 @@ export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect
       }
 
       // Refresh the runs list to get updated leader_is_removed status
-      const fetchRuns = async () => {
-        try {
-          const runsData = await groupsApi.getGroupRuns(groupId)
-          setRuns(runsData)
-        } catch (err) {
-          console.error('Failed to refresh runs:', err)
-        }
-      }
-      fetchRuns()
+      queryClient.invalidateQueries({ queryKey: groupKeys.runs(groupId) })
+      queryClient.invalidateQueries({ queryKey: groupKeys.detail(groupId) })
     }
-  }, [groupId, user, showToast])
+  }, [groupId, user, showToast, queryClient])
 
   useWebSocket(
     groupId ? `${WS_BASE_URL}/ws/groups/${groupId}` : null,

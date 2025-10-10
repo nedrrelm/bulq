@@ -1,9 +1,10 @@
 import { useState, useEffect, memo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
-import { runsApi, reassignmentApi, ApiError } from '../api'
+import { reassignmentApi, ApiError } from '../api'
 import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
 import BidPopup from './BidPopup'
@@ -17,6 +18,7 @@ import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useNotifications } from '../contexts/NotificationContext'
+import { useRun, runKeys, useToggleReady, useStartShopping, useFinishAdjusting } from '../hooks/queries'
 
 // Using RunDetail type from API layer
 type Product = RunDetail['products'][0]
@@ -156,9 +158,15 @@ const ProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid,
 })
 
 export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDistributionSelect }: RunPageProps) {
-  const [run, setRun] = useState<RunDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  // Use React Query for run data
+  const { data: run, isLoading: loading, error: queryError } = useRun(runId)
+  const queryClient = useQueryClient()
+  const toggleReadyMutation = useToggleReady(runId)
+  const startShoppingMutation = useStartShopping(runId)
+  const finishAdjustingMutation = useFinishAdjusting(runId)
+
+  const error = queryError instanceof Error ? queryError.message : ''
+
   const [showBidPopup, setShowBidPopup] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
@@ -167,24 +175,6 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
   const { refreshUnreadCount } = useNotifications()
-
-  const fetchRunDetails = async (silent = false) => {
-    try {
-      if (!silent) {
-        setLoading(true)
-      }
-      setError('')
-
-      const runData = await runsApi.getRunDetails(runId)
-      setRun(runData)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to load run details')
-    } finally {
-      if (!silent) {
-        setLoading(false)
-      }
-    }
-  }
 
   const fetchReassignmentRequest = useCallback(async () => {
     try {
@@ -198,7 +188,6 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   }, [runId])
 
   useEffect(() => {
-    fetchRunDetails()
     fetchReassignmentRequest()
   }, [runId, fetchReassignmentRequest])
 
@@ -208,7 +197,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       await reassignmentApi.acceptReassignment(reassignmentRequest.id)
       showToast('Leadership accepted!', 'success')
       setReassignmentRequest(null)
-      await fetchRunDetails(true)
+      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
     } catch (err: any) {
       showToast(err.message || 'Failed to accept reassignment', 'error')
     }
@@ -229,145 +218,37 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   const handleWebSocketMessage = useCallback((message: any) => {
     if (!run) return
 
-    if (message.type === 'bid_updated') {
-          // Update product with new bid or updated bid
-          setRun(prev => {
-            if (!prev) return prev
-
-            // Check if product exists in the run
-            const productExists = prev.products.some(p => p.id === message.data.product_id)
-
-            // If product doesn't exist (newly added), refetch run details
-            if (!productExists) {
-              fetchRunDetails(true)
-              return prev
-            }
-
-            return {
-              ...prev,
-              products: prev.products.map(p => {
-                if (p.id === message.data.product_id) {
-                  // Check if bid from this user already exists
-                  const existingBidIndex = p.user_bids.findIndex(b => b.user_id === message.data.user_id)
-                  let newUserBids = [...p.user_bids]
-
-                  const newBid: UserBid = {
-                    user_id: message.data.user_id,
-                    user_name: message.data.user_name,
-                    quantity: message.data.quantity,
-                    interested_only: message.data.interested_only
-                  }
-
-                  if (existingBidIndex >= 0) {
-                    // Update existing bid
-                    newUserBids[existingBidIndex] = newBid
-                  } else {
-                    // Add new bid
-                    newUserBids.push(newBid)
-                  }
-
-                  // Update current_user_bid if this is the current user's bid
-                  const isCurrentUser = message.data.user_id === userId
-                  const newCurrentUserBid = isCurrentUser ? newBid : p.current_user_bid
-
-                  return {
-                    ...p,
-                    user_bids: newUserBids,
-                    current_user_bid: newCurrentUserBid,
-                    total_quantity: message.data.new_total,
-                    interested_count: newUserBids.filter(b => b.interested_only || b.quantity > 0).length
-                  }
-                }
-                return p
-              })
-            }
-          })
-        } else if (message.type === 'bid_retracted') {
-          // Remove bid from product
-          setRun(prev => {
-            if (!prev) return prev
-            return {
-              ...prev,
-              products: prev.products.map(p => {
-                if (p.id === message.data.product_id) {
-                  const newUserBids = p.user_bids.filter(b => b.user_id !== message.data.user_id)
-                  const isCurrentUser = message.data.user_id === userId
-                  return {
-                    ...p,
-                    user_bids: newUserBids,
-                    current_user_bid: isCurrentUser ? null : p.current_user_bid,
-                    total_quantity: message.data.new_total,
-                    interested_count: newUserBids.filter(b => b.interested_only || b.quantity > 0).length
-                  }
-                }
-                return p
-              })
-            }
-          })
-        } else if (message.type === 'ready_toggled') {
-          // Update participant ready status and current user ready if it's them
-          setRun(prev => {
-            if (!prev) return prev
-
-            const isCurrentUser = message.data.user_id === userId
-
-            return {
-              ...prev,
-              participants: prev.participants.map(p =>
-                p.user_id === message.data.user_id
-                  ? { ...p, is_ready: message.data.is_ready }
-                  : p
-              ),
-              current_user_is_ready: isCurrentUser ? message.data.is_ready : prev.current_user_is_ready
-            }
-          })
-      } else if (message.type === 'state_changed') {
-        // Update run state
-        setRun(prev => {
-          if (!prev) return prev
-          return {
-            ...prev,
-            state: message.data.new_state
-          }
-        })
-      } else if (message.type === 'participant_removed') {
-        // Mark participant as removed (crossed out)
-        setRun(prev => {
-          if (!prev) return prev
-          return {
-            ...prev,
-            participants: prev.participants.map(p =>
-              p.user_id === message.data.removed_user_id
-                ? { ...p, is_removed: true }
-                : p
-            )
-          }
-        })
-      } else if (message.type === 'reassignment_requested') {
-        // Reassignment request created - fetch request for all participants
-        console.log('WS: reassignment_requested', message.data)
-        fetchReassignmentRequest()
-        if (message.data.to_user_id === userId) {
-          showToast('You have a new leadership transfer request', 'info')
-          refreshUnreadCount()
-        }
-      } else if (message.type === 'reassignment_accepted') {
-        // Reassignment accepted - clear request and refresh run
-        console.log('WS: reassignment_accepted', message.data)
-        setReassignmentRequest(null)
-        fetchRunDetails(true)
-        showToast('Leadership has been transferred', 'success')
+    // For all WebSocket messages, invalidate the run query to refetch
+    // This is simpler than manual state updates and ensures data consistency
+    if (message.type === 'bid_updated' || message.type === 'bid_retracted' ||
+        message.type === 'ready_toggled' || message.type === 'state_changed' ||
+        message.type === 'participant_removed') {
+      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+    } else if (message.type === 'reassignment_requested') {
+      // Reassignment request created - fetch request for all participants
+      console.log('WS: reassignment_requested', message.data)
+      fetchReassignmentRequest()
+      if (message.data.to_user_id === userId) {
+        showToast('You have a new leadership transfer request', 'info')
         refreshUnreadCount()
-      } else if (message.type === 'reassignment_declined') {
-        // Reassignment declined - clear request
-        console.log('WS: reassignment_declined', message.data)
-        setReassignmentRequest(null)
-        if (message.data.from_user_id === userId) {
-          showToast('Leadership transfer request was declined', 'info')
-          refreshUnreadCount()
-        }
       }
-  }, [run, userId, showToast, fetchReassignmentRequest, fetchRunDetails, refreshUnreadCount])
+    } else if (message.type === 'reassignment_accepted') {
+      // Reassignment accepted - clear request and refresh run
+      console.log('WS: reassignment_accepted', message.data)
+      setReassignmentRequest(null)
+      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+      showToast('Leadership has been transferred', 'success')
+      refreshUnreadCount()
+    } else if (message.type === 'reassignment_declined') {
+      // Reassignment declined - clear request
+      console.log('WS: reassignment_declined', message.data)
+      setReassignmentRequest(null)
+      if (message.data.from_user_id === userId) {
+        showToast('Leadership transfer request was declined', 'info')
+        refreshUnreadCount()
+      }
+    }
+  }, [run, userId, showToast, fetchReassignmentRequest, queryClient, runId, refreshUnreadCount])
 
   useWebSocket(
     runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
@@ -449,9 +330,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
 
   const handleToggleReady = async () => {
     try {
-      await runsApi.toggleReady(runId)
-      // Refetch run data silently to avoid page jump
-      await fetchRunDetails(true)
+      await toggleReadyMutation.mutateAsync()
     } catch (err) {
       console.error('Error toggling ready:', err)
       showToast('Failed to update ready status. Please try again.', 'error')
@@ -460,9 +339,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
 
   const handleStartShopping = async () => {
     try {
-      await runsApi.startShopping(runId)
-      // Refetch run data to ensure UI is updated
-      await fetchRunDetails()
+      await startShoppingMutation.mutateAsync()
     } catch (err) {
       console.error('Error starting shopping:', err)
       showToast('Failed to start shopping. Please try again.', 'error')
@@ -471,9 +348,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
 
   const handleFinishAdjusting = async () => {
     try {
-      await runsApi.finishAdjusting(runId)
-      // Refetch run data to ensure UI is updated
-      await fetchRunDetails()
+      await finishAdjustingMutation.mutateAsync()
     } catch (err) {
       console.error('Error finishing adjusting:', err)
       showToast(err instanceof ApiError ? err.message : 'Failed to finish adjusting. Please try again.', 'error')
