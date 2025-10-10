@@ -8,20 +8,6 @@ These items must be completed before production deployment.
 
 ---
 
-### Database Repository Implementation
-**Status**: Critical (before production)
-**Affected files**: `app/repository.py`
-
-**Problem:** Currently using `MemoryRepository` with test data. `DatabaseRepository` exists but is not implemented.
-
-**Solution:**
-1. Implement all methods in `DatabaseRepository` using SQLAlchemy queries
-2. Add transaction management (try/commit/rollback blocks)
-3. Test all repository methods work correctly
-4. Set `REPO_MODE=database` in production environment
-
----
-
 ### Database Migrations with Alembic
 **Status**: Critical (before production)
 **Affected files**: New `alembic/` directory, `app/main.py`
@@ -81,26 +67,6 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 5. **Database Backups** - Automated daily backups with pg_dump, S3 storage, retention policy
 
----
-
-## ✨ Feature Requests 
-
-## Admin console
-
-Allow verifying users, stores and products
-
-## Allow leader reassigning
-
-Has to be confirmed by the other user.
-
-Button on run page to reassign, which opens a dropdown of group users.
-
-Once selected in the place of the button we have a waiting for answer div.
-
-If a user accepts, the leader gets a popup on next login that it was successful (what would this require to function?)
-
-For the other user, on the run page he gets a big section at the top which says the leader want to reassign, do you accept.
-
 ## 🔧 Future Enhancements
 
 ---
@@ -115,23 +81,8 @@ For the other user, on the run page he gets a big section at the top which says 
 - Use Redis with TTL and invalidation on updates
 
 **Frontend:**
-- Request deduplication (React Query/SWR)
+
 - Optimize SVG graph rendering (use charting library or memoization)
-
----
-
-### Pagination
-**Status**: Future
-**Affected files**: `app/routes/*.py`
-
-**Problem:** Endpoints like `get_my_groups`, `get_shopping_list`, `get_group_runs` will break with large datasets.
-
-**Solution:** Add pagination parameters:
-```python
-@router.get("/items")
-async def get_items(skip: int = 0, limit: int = 100):
-    return repo.get_items(skip=skip, limit=limit)
-```
 
 ---
 
@@ -148,15 +99,8 @@ async def get_items(skip: int = 0, limit: int = 100):
 - Validate API responses match expected shape
 - Validate UUIDs before API calls
 
-
-
-## Separate css and tsx on frontend
-
-
-
 ---
 
 ## 📝 Notes
 
-- **Repository Pattern**: Keep MemoryRepository for development/testing, but ensure DatabaseRepository is primary for production
 - **Mobile App**: Native Kotlin Android app planned after web platform stable

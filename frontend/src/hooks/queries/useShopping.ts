@@ -54,15 +54,18 @@ export function useMarkPurchased(runId: string) {
 }
 
 /**
- * Add encountered price for a product
+ * Update product availability price at store
  */
-export function useAddEncounteredPrice(runId: string) {
+export function useUpdateAvailabilityPrice(runId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: { itemId: string, price: number, notes?: string }) =>
-      shoppingApi.addEncounteredPrice(runId, data.itemId, data.price, data.notes),
-    // No cache invalidation needed - this doesn't affect UI currently
+      shoppingApi.updateAvailabilityPrice(runId, data.itemId, { price: data.price, notes: data.notes || '' }),
+    onSuccess: () => {
+      // Invalidate shopping list to show updated price
+      queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
+    },
   })
 }
 

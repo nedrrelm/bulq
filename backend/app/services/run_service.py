@@ -204,10 +204,15 @@ class RunService(BaseService):
                     if run.state == 'adjusting' and product.id in shopping_list_map:
                         purchased_qty = shopping_list_map[product.id].purchased_quantity
 
+                    # Get product availability/price for this store
+                    availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
+                    current_price = str(availability.price) if availability and availability.price else None
+
                     products_data.append({
                         "id": str(product.id),
                         "name": product.name,
-                        "base_price": str(product.base_price),
+                        "brand": product.brand,
+                        "current_price": current_price,
                         "total_quantity": total_quantity,
                         "interested_count": interested_count,
                         "user_bids": user_bids_data,
@@ -624,10 +629,15 @@ class RunService(BaseService):
             available_products = []
             for product in store_products:
                 if product.id not in products_with_bids:
+                    # Get product availability/price for this store
+                    availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
+                    current_price = str(availability.price) if availability and availability.price else None
+
                     available_products.append({
                         "id": str(product.id),
                         "name": product.name,
-                        "base_price": str(product.base_price)
+                        "brand": product.brand,
+                        "current_price": current_price
                     })
 
             return available_products

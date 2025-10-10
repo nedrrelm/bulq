@@ -111,14 +111,14 @@
   color: var(--color-warning) !important;
 }
 
-.encountered-prices {
+.availability-info {
   margin: 12px 0;
   padding: 12px;
   background: var(--color-gray-50);
   border-radius: 8px;
 }
 
-.encountered-prices small {
+.availability-info small {
   display: block;
   color: var(--color-gray-600);
   margin-bottom: 8px;

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/ShoppingPage.css'
 import { WS_BASE_URL } from '../config'
-import { ApiError } from '../api'
+import { shoppingApi, ApiError } from '../api'
 import type { ShoppingListItem } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -63,9 +63,9 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
     if (!selectedItem) return
 
     try {
-      await shoppingApi.addEncounteredPrice(runId, selectedItem.id, { price, notes })
-      // Refetch shopping list to ensure UI is updated (silently to avoid scroll jump)
-      await fetchShoppingList(true)
+      await shoppingApi.updateAvailabilityPrice(runId, selectedItem.id, { price, notes })
+      // Invalidate shopping list to refetch with updates
+      queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
       setShowPricePopup(false)
       setSelectedItem(null)
     } catch (err) {
@@ -83,8 +83,8 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
         price_per_unit: pricePerUnit,
         total
       })
-      // Refetch shopping list to ensure UI is updated (silently to avoid scroll jump)
-      await fetchShoppingList(true)
+      // Invalidate shopping list to refetch with updates
+      queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
       setShowPurchasePopup(false)
       setSelectedItem(null)
     } catch (err) {
@@ -255,15 +255,13 @@ function ShoppingItem({
         </div>
       </div>
 
-      {item.encountered_prices.length > 0 && (
-        <div className="encountered-prices">
-          <small>Prices seen:</small>
-          {item.encountered_prices.map((price, idx) => (
-            <div key={idx} className="price-tag">
-              ${price.price.toFixed(2)}
-              {price.notes && <span className="price-notes"> - {price.notes}</span>}
-            </div>
-          ))}
+      {item.availability && (
+        <div className="availability-info">
+          <small>Current price:</small>
+          <div className="price-tag">
+            ${item.availability.price.toFixed(2)}
+            {item.availability.notes && <span className="price-notes"> - {item.availability.notes}</span>}
+          </div>
         </div>
       )}
 
@@ -347,7 +345,7 @@ function PricePopup({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
-        <h3>Add Encountered Price</h3>
+        <h3>Update Price</h3>
         <p><strong>{item.product_name}</strong></p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">

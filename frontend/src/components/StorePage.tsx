@@ -11,7 +11,7 @@ interface Product {
   name: string
   brand: string | null
   unit: string | null
-  base_price: string | null
+  current_price: string | null
 }
 
 interface ActiveRun {
@@ -118,7 +118,7 @@ function StorePage({ storeId, onBack }: StorePageProps) {
           <div className="empty-state">
             <p>No products with recorded prices yet</p>
             <p className="empty-state-hint">
-              Products will appear here once prices are encountered during shopping runs
+              Products will appear here once availability is added during shopping runs
             </p>
           </div>
         ) : (
@@ -136,8 +136,8 @@ function StorePage({ storeId, onBack }: StorePageProps) {
                   )}
                   <div className="product-details">
                     {product.unit && <span className="product-unit">{product.unit}</span>}
-                    {product.base_price && (
-                      <span className="product-price">≈ ${product.base_price}</span>
+                    {product.current_price && (
+                      <span className="product-price">≈ ${product.current_price}</span>
                     )}
                   </div>
                 </div>

@@ -61,45 +61,33 @@ class ShoppingService(BaseService):
         # Get shopping list items
         items = self.repo.get_shopping_list_items(run_uuid)
 
-        # Get encountered prices from the same day at the same store
-        from datetime import datetime, timedelta
-
-        # Get run's shopping_at timestamp to determine the day
-        shopping_date = run.shopping_at if run.shopping_at else datetime.now()
-        day_start = datetime(shopping_date.year, shopping_date.month, shopping_date.day)
-        day_end = day_start + timedelta(days=1)
-
         # Convert to response format
         response_items = []
         for item in items:
-            product = self.repo.get_products_by_store(item.product.store_id) if hasattr(item, 'product') and item.product else []
-            product = next((p for p in product if p.id == item.product_id), None) if product else None
+            # Get product directly by ID
+            product = self.repo.get_product_by_id(item.product_id)
 
-            # Get encountered prices for this product at this store on the same day
-            encountered_prices = self.repo.get_encountered_prices(
+            # Get product availability for this product at this store
+            availability = self.repo.get_availability_by_product_and_store(
                 product_id=item.product_id,
-                store_id=run.store_id,
-                start_date=day_start,
-                end_date=day_end
+                store_id=run.store_id
             )
 
-            # Convert to response format
-            encountered_prices_list = [
-                {
-                    "price": float(ep.price),
-                    "notes": ep.notes or "",
-                    "minimum_quantity": ep.minimum_quantity,
-                    "encountered_at": ep.encountered_at.isoformat()
+            # Format availability info
+            availability_info = None
+            if availability and availability.price:
+                availability_info = {
+                    "price": float(availability.price),
+                    "notes": availability.notes or "",
+                    "updated_at": availability.updated_at.isoformat() if hasattr(availability, 'updated_at') and availability.updated_at else None
                 }
-                for ep in encountered_prices
-            ]
 
             response_items.append({
                 "id": str(item.id),
                 "product_id": str(item.product_id),
                 "product_name": product.name if product else "Unknown Product",
                 "requested_quantity": item.requested_quantity,
-                "encountered_prices": encountered_prices_list,
+                "availability": availability_info,
                 "purchased_quantity": item.purchased_quantity,
                 "purchased_price_per_unit": str(item.purchased_price_per_unit) if item.purchased_price_per_unit else None,
                 "purchased_total": str(item.purchased_total) if item.purchased_total else None,
@@ -112,7 +100,7 @@ class ShoppingService(BaseService):
 
         return response_items
 
-    async def add_encountered_price(
+    async def add_availability_price(
         self,
         run_id: str,
         item_id: str,
@@ -121,12 +109,12 @@ class ShoppingService(BaseService):
         user: User
     ) -> Dict[str, str]:
         """
-        Add an encountered price for a shopping list item.
+        Update product availability price for a shopping list item.
 
         Args:
             run_id: The run ID as string
             item_id: The shopping list item ID as string
-            price: The encountered price
+            price: The price to set
             notes: Optional notes about the price
             user: The authenticated user
 
@@ -160,16 +148,16 @@ class ShoppingService(BaseService):
         if not item:
             raise NotFoundError("Shopping list item", item_id)
 
-        # Create encountered price entity
-        encountered_price = self.repo.create_encountered_price(
+        # Create or update product availability
+        availability = self.repo.create_product_availability(
             product_id=item.product_id,
             store_id=run.store_id,
-            price=Decimal(str(price)),
+            price=price,
             notes=notes,
             user_id=user.id
         )
 
-        return {"message": "Price added successfully"}
+        return {"message": "Price updated successfully"}
 
     async def mark_purchased(
         self,

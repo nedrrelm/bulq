@@ -81,7 +81,8 @@ class UserBidResponse(BaseModel):
 class ProductResponse(BaseModel):
     id: str
     name: str
-    base_price: str
+    brand: str | None = None
+    current_price: str | None
     total_quantity: int
     interested_count: int
     user_bids: list[UserBidResponse]
@@ -134,7 +135,8 @@ async def get_run_details(
             ProductResponse(
                 id=p['id'],
                 name=p['name'],
-                base_price=p['base_price'],
+                brand=p.get('brand'),
+                current_price=p.get('current_price'),
                 total_quantity=p['total_quantity'],
                 interested_count=p['interested_count'],
                 user_bids=[UserBidResponse(**ub) for ub in p['user_bids']],
@@ -341,7 +343,8 @@ async def retract_bid(
 class AvailableProductResponse(BaseModel):
     id: str
     name: str
-    base_price: str
+    brand: str | None = None
+    current_price: str | None
 
     class Config:
         from_attributes = True
@@ -494,7 +497,8 @@ async def get_available_products(
             AvailableProductResponse(
                 id=p['id'],
                 name=p['name'],
-                base_price=p['base_price']
+                brand=p.get('brand'),
+                current_price=p.get('current_price')
             )
             for p in result
         ]

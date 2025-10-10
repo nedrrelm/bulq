@@ -5,7 +5,7 @@ export interface SearchProduct {
   name: string
   store_id: string
   store_name: string
-  base_price: number | null
+  current_price: number | null
 }
 
 export interface SearchStore {

@@ -30,7 +30,7 @@ class StoreService(BaseService):
     def get_store_page_data(self, store_id: UUID, user_id: UUID) -> Dict[str, Any]:
         """Get all data needed for the store page."""
         store = self.get_store_by_id(store_id)
-        products = self.repo.get_products_by_store_from_encountered_prices(store_id)
+        products = self.repo.get_products_by_store_from_availabilities(store_id)
         active_runs = self.repo.get_active_runs_by_store_for_user(store_id, user_id)
 
         return {

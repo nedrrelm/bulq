@@ -26,7 +26,7 @@ Python FastAPI application with PostgreSQL database integration and comprehensiv
 Main application logic and infrastructure:
 
 - **main.py** - FastAPI application entry point; configures CORS middleware, registers all route blueprints (auth, groups, runs, stores, shopping, distribution, products, notifications, search, websocket), sets up database initialization, error handlers, middleware, and logging configuration based on environment
-- **models.py** - SQLAlchemy ORM model definitions for all entities: User (authentication), Group (buying groups), GroupMembership (M2M relationship), Store, Product, Run (shopping runs with state machine), RunParticipation (user participation with leader flag), ProductBid (quantity/price tracking), ShoppingListItem (purchase tracking), EncounteredPrice (price history), Notification (user notifications)
+- **models.py** - SQLAlchemy ORM model definitions for all entities: User (authentication), Group (buying groups), GroupMembership (M2M relationship), Store, Product (store-agnostic), Run (shopping runs with state machine), RunParticipation (user participation with leader flag), ProductBid (quantity/price tracking), ShoppingListItem (purchase tracking), ProductAvailability (product-store-price junction table), Notification (user notifications)
 - **database.py** - Database connection management using SQLAlchemy; provides `get_db()` dependency for FastAPI endpoints to inject database sessions with automatic cleanup
 - **config.py** - Application configuration management; defines `REPO_MODE` environment variable (default: "memory") to switch between in-memory test data and PostgreSQL database, controls seed data loading behavior
 - **auth.py** - Authentication and security utilities including password hashing with bcrypt, password verification, and `require_auth()` dependency that validates session cookies and retrieves the current authenticated user
@@ -48,7 +48,7 @@ RESTful API endpoints organized by domain and responsibility:
 - **groups.py** - Group management: `GET /groups/my-groups`, `POST /groups/create`, `GET /groups/{id}`, `POST /groups/{id}/join`, `POST /groups/{id}/regenerate-invite`, `GET /groups/{id}/runs`, `GET /groups/{id}/members`, `POST /groups/{id}/remove-member`, `POST /groups/{id}/leave`; handles group membership, invite tokens, and administration
 - **runs.py** - Shopping run management (primary business logic): `POST /runs/create`, `GET /runs/{id}`, `POST /runs/{id}/bids`, `PUT /runs/{id}/bids/{product_id}`, `DELETE /runs/{id}/bids/{product_id}`, `POST /runs/{id}/toggle-ready`, `POST /runs/{id}/confirm`, `POST /runs/{id}/start-shopping`, `POST /runs/{id}/finish-adjusting`, `POST /runs/{id}/cancel`, `GET /runs/{id}/available-products`, `POST /runs/{id}/add-product`; implements state transitions, bid management, and adjusting state logic
 - **stores.py** - Store management: `GET /stores`, `GET /stores/{id}`, `POST /stores/create`, `PUT /stores/{id}`, `DELETE /stores/{id}`; includes store CRUD operations
-- **shopping.py** - Shopping execution: `GET /shopping/{run_id}/items`, `POST /shopping/{run_id}/items/{item_id}/encountered-price`, `POST /shopping/{run_id}/items/{item_id}/purchase`, `PUT /shopping/{run_id}/items/{item_id}`, `POST /shopping/{run_id}/complete`; handles shopping list, price logging, and purchase tracking
+- **shopping.py** - Shopping execution: `GET /shopping/{run_id}/items`, `POST /shopping/{run_id}/items/{item_id}/price`, `POST /shopping/{run_id}/items/{item_id}/purchase`, `POST /shopping/{run_id}/complete`; handles shopping list, product availability price updates, and purchase tracking
 - **distribution.py** - Distribution tracking: `GET /distribution/{run_id}`, `POST /distribution/{run_id}/toggle-pickup`, `POST /distribution/{run_id}/complete`; manages item distribution and pickup tracking
 - **products.py** - Product catalog: `GET /products/search`, `GET /products/{id}`, `POST /products/create`; handles product search and management
 - **notifications.py** - Notification system: `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all`, `DELETE /notifications/{id}`, `GET /notifications/unread-count`; manages user notifications with pagination
@@ -63,7 +63,7 @@ Business logic layer separating route handlers from data access:
 - **base_service.py** - Base service class providing common functionality for all services
 - **group_service.py** - Group business logic: group creation, membership management, invite token generation, run summaries, member removal; includes authorization checks and notification triggers
 - **run_service.py** - Run business logic: run creation, state transitions, bid management, participant tracking, ready status, shopping list generation; enforces state machine rules and adjusting state constraints; triggers notifications for state changes
-- **shopping_service.py** - Shopping business logic: shopping list management, encountered price logging, purchase tracking, completion logic (determines transition to distributing or adjusting based on quantities); validates leader permissions
+- **shopping_service.py** - Shopping business logic: shopping list management, product availability price updates, purchase tracking, completion logic (determines transition to distributing or adjusting based on quantities); validates leader permissions
 - **distribution_service.py** - Distribution business logic: distribution tracking, pickup status management, completion logic; ensures all items are picked up before completing
 - **product_service.py** - Product business logic: product search, creation, price history retrieval; handles product catalog operations
 - **store_service.py** - Store business logic: store CRUD operations, search functionality
@@ -128,7 +128,7 @@ Type-safe API client functions organized by domain:
 - **auth.ts** - Authentication API: login, register, logout, getCurrentUser
 - **groups.ts** - Group API: getMyGroups, getGroup, createGroup, joinGroup, regenerateInvite, getGroupRuns, getGroupMembers, removeGroupMember, leaveGroup
 - **runs.ts** - Run API: createRun, getRun, placeBid, updateBid, retractBid, toggleReady, confirmRun, startShopping, finishAdjusting, cancelRun, getAvailableProducts, addProductToRun
-- **shopping.ts** - Shopping API: getShoppingItems, recordEncounteredPrice, markItemPurchased, updateShoppingItem, completeShopping
+- **shopping.ts** - Shopping API: getShoppingList, updateAvailabilityPrice, markPurchased, completeShopping
 - **distribution.ts** - Distribution API: getDistributionData, togglePickup, completeDistribution
 - **products.ts** - Product API: searchProducts, getProduct, createProduct
 - **stores.ts** - Store API: getStores, getStore, createStore, updateStore, deleteStore
@@ -159,7 +159,7 @@ Reusable React hooks for common functionality:
 
 TypeScript type definitions for data models:
 
-- **index.ts** - Core types: User, Group, GroupMembership, Run, RunParticipation, ProductBid, Store, Product, ShoppingListItem, EncounteredPrice, RunState enum
+- **index.ts** - Core types: User, Group, GroupMembership, Run, RunParticipation, ProductBid, Store, Product, ShoppingListItem, ProductAvailability, RunState enum
 - **notification.ts** - Notification types: Notification, NotificationType enum, notification payload types
 - **product.ts** - Product-related types: ProductWithPriceHistory, PricePoint
 - **store.ts** - Store-related types: StoreWithProducts, StoreDetails
@@ -189,7 +189,7 @@ React components for pages, modals, and reusable UI elements:
 - **GroupPage.tsx** / **GroupPage.css** - Individual group detail page showing all runs (current and past) sorted by state priority and recency, member count, completed run count, group invite management (copy link, regenerate token), new run creation, navigation to group management; implements state-based sorting (active states first, then by date)
 - **ManageGroupPage.tsx** / **ManageGroupPage.css** - Group administration page: view all members with roles, remove members (admin only), leave group, delete group (creator only); includes confirmation dialogs for destructive actions
 - **RunPage.tsx** / **RunPage.css** - Comprehensive run detail page showing products with bids, participants with ready status, state-specific action buttons for leader, real-time updates via WebSocket; implements adjusting state UI with visual indicators (orange highlighting for products needing adjustment, green for satisfied), bid constraints enforcement (disable edit/retract for satisfied products in adjusting mode), product sorting (adjustment-needed products first), leader actions (confirm, start shopping, finish adjusting, cancel), participant actions (place/edit/retract bids, toggle ready status); displays notifications for events
-- **ShoppingPage.tsx** / **ShoppingPage.css** - Leader shopping execution interface displaying shopping list sorted by purchase status (unpurchased first, then by purchase order), allows logging encountered prices with notes and minimum quantity, marking items purchased with quantity/price/total, completing shopping which triggers transition to distributing or adjusting based on quantity matching
+- **ShoppingPage.tsx** / **ShoppingPage.css** - Leader shopping execution interface displaying shopping list sorted by purchase status (unpurchased first, then by purchase order), shows current product availability price at store if available, allows updating product availability price with notes, marking items purchased with quantity/price/total, completing shopping which triggers transition to distributing or adjusting based on quantity matching
 - **DistributionPage.tsx** / **DistributionPage.css** - Distribution tracking page showing grid of products vs participants with pickup checkboxes; allows toggling pickup status for each participant's items; displays distribution progress; leader can complete distribution when all items picked up
 - **ProductPage.tsx** / **ProductPage.css** - Product detail page showing product information, current store price, price history scatter plot (using Chart.js) from all completed runs with timestamps, allowing users to track price trends over time; displays store information and navigation
 - **StorePage.tsx** / **StorePage.css** - Store detail page showing store information, address, products available at store, runs targeting this store; provides navigation to related entities
@@ -247,7 +247,7 @@ Runs progress through a well-defined state machine with validation at each trans
 1. **planning** - Initial state; leader expresses interest in products
 2. **active** - At least one non-leader participant has placed a bid; users specify quantities
 3. **confirmed** - All participants mark ready; shopping list generated
-4. **shopping** - Leader executes shopping; logs encountered prices and purchased quantities
+4. **shopping** - Leader executes shopping; updates product availability prices at store and logs purchased quantities
 5. **adjusting** - (Optional) Insufficient quantities purchased; participants reduce bids downward-only until totals match purchased quantities
 6. **distributing** - Distribution in progress; tracking pickup status per participant
 7. **completed** - All items distributed; run archived with price history
@@ -339,5 +339,5 @@ The codebase is structured to easily accommodate planned features:
 - **Caching**: Service layer abstraction allows adding Redis caching without route changes
 - **Pagination**: Repository methods prepared for limit/offset parameters
 - **Mobile App**: Backend API is platform-agnostic REST; same endpoints can serve native mobile apps
-- **Advanced Analytics**: Price history infrastructure (EncounteredPrice, completed runs) enables trend analysis, savings calculations
+- **Advanced Analytics**: Price history infrastructure (ProductAvailability, completed runs) enables trend analysis, savings calculations
 - **Bulk Operations**: Repository pattern allows efficient bulk updates; useful for large-scale distribution tracking

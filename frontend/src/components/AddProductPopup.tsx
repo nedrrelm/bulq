@@ -135,7 +135,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
                   >
                     <div className="product-info">
                       <span className="product-name">{product.name}</span>
-                      <span className="product-price">${product.base_price}</span>
+                      {product.current_price && <span className="product-price">${product.current_price}</span>}
                     </div>
                   </div>
                 ))}

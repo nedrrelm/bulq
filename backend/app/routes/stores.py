@@ -27,7 +27,7 @@ class ProductResponse(BaseModel):
     name: str
     brand: str | None
     unit: str | None
-    base_price: str | None
+    current_price: str | None
 
     class Config:
         from_attributes = True
@@ -86,16 +86,19 @@ async def get_store_page(
     # Convert to response format
     store_response = StoreResponse(id=str(data["store"].id), name=data["store"].name)
 
-    products_response = [
-        ProductResponse(
+    products_response = []
+    for p in data["products"]:
+        # Get price from product availability
+        availability = repo.get_availability_by_product_and_store(p.id, UUID(store_id))
+        current_price = str(availability.price) if availability and availability.price else None
+
+        products_response.append(ProductResponse(
             id=str(p.id),
             name=p.name,
             brand=p.brand,
             unit=p.unit,
-            base_price=str(p.base_price) if p.base_price else None
-        )
-        for p in data["products"]
-    ]
+            current_price=current_price
+        ))
 
     runs_response = []
     for r in data["active_runs"]:

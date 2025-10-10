@@ -14,8 +14,10 @@ const MIN_NAME_LENGTH = 2
 
 export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupProps) {
   const [productName, setProductName] = useState('')
+  const [brand, setBrand] = useState('')
+  const [unit, setUnit] = useState('')
   const [storeId, setStoreId] = useState('')
-  const [basePrice, setBasePrice] = useState('')
+  const [price, setPrice] = useState('')
   const [stores, setStores] = useState<Store[]>([])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -63,12 +65,12 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
   }
 
   const validatePrice = (value: string): boolean => {
+    // Price is optional
     if (!value.trim()) {
-      setError('Base price is required')
-      return false
+      return true
     }
 
-    const priceValidation = validateDecimal(value, 0.01, 999999.99, 2, 'Base price')
+    const priceValidation = validateDecimal(value, 0.01, 999999.99, 2, 'Price')
     if (!priceValidation.isValid) {
       setError(priceValidation.error || 'Invalid price')
       return false
@@ -88,7 +90,7 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
     if (value && !/^\d*\.?\d{0,2}$/.test(value)) {
       return
     }
-    setBasePrice(value)
+    setPrice(value)
     setError('')
   }
 
@@ -97,16 +99,21 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
 
     setError('')
 
-    if (!storeId) {
-      setError('Please select a store')
-      return
-    }
-
     if (!validateProductName(productName)) {
       return
     }
 
-    if (!validatePrice(basePrice)) {
+    if (!validatePrice(price)) {
+      return
+    }
+
+    // Warn if no store selected
+    if (!storeId && !window.confirm('You haven\'t selected a store. You can add store availability later. Continue?')) {
+      return
+    }
+
+    // Nudge to add price if store is selected but no price
+    if (storeId && !price.trim() && !window.confirm('Consider adding a price for this product at the selected store. Continue without price?')) {
       return
     }
 
@@ -114,9 +121,11 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
       setSubmitting(true)
 
       await productsApi.createProduct({
-        store_id: storeId,
         name: productName.trim(),
-        base_price: parseFloat(basePrice)
+        brand: brand.trim() || null,
+        unit: unit.trim() || null,
+        store_id: storeId || null,
+        price: price.trim() ? parseFloat(price) : null
       })
 
       onSuccess()
@@ -131,7 +140,7 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Add New Product</h2>
         </div>
@@ -144,7 +153,60 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
           )}
 
           <div className="form-group">
-            <label htmlFor="store-select" className="form-label">Store</label>
+            <label htmlFor="product-name" className="form-label">Product Name</label>
+            <input
+              id="product-name"
+              type="text"
+              className={`form-input ${error ? 'input-error' : ''}`}
+              value={productName}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="e.g., Organic Olive Oil"
+              disabled={submitting}
+              required
+            />
+            <div className="input-footer">
+              <span className={`char-counter ${isOverLimit ? 'over-limit' : ''}`}>
+                {charCount}/{MAX_NAME_LENGTH}
+              </span>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="brand" className="form-label">Brand <span className="optional-label">(optional)</span></label>
+              <input
+                id="brand"
+                type="text"
+                className="form-input"
+                value={brand}
+                onChange={(e) => {
+                  setBrand(e.target.value)
+                  setError('')
+                }}
+                placeholder="e.g., Kirkland"
+                disabled={submitting}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="unit" className="form-label">Unit <span className="optional-label">(optional)</span></label>
+              <input
+                id="unit"
+                type="text"
+                className="form-input"
+                value={unit}
+                onChange={(e) => {
+                  setUnit(e.target.value)
+                  setError('')
+                }}
+                placeholder="kg, lb, each"
+                disabled={submitting}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="store-select" className="form-label">Store <span className="optional-label">(recommended)</span></label>
             <select
               id="store-select"
               className="form-input"
@@ -154,7 +216,6 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
                 setError('')
               }}
               disabled={submitting || loadingStores}
-              required
             >
               <option value="">Select a store...</option>
               {stores.map((store) => (
@@ -169,43 +230,17 @@ export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupP
           </div>
 
           <div className="form-group">
-            <label htmlFor="product-name" className="form-label">Product Name</label>
+            <label htmlFor="price" className="form-label">Price ($) <span className="optional-label">({storeId ? 'recommended' : 'optional'})</span></label>
             <input
-              id="product-name"
-              type="text"
-              className={`form-input ${error ? 'input-error' : ''}`}
-              value={productName}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="e.g., Organic Olive Oil (2L)"
-              disabled={submitting}
-              required
-            />
-            <div className="input-footer">
-              <span className={`char-counter ${isOverLimit ? 'over-limit' : ''}`}>
-                {charCount}/{MAX_NAME_LENGTH}
-              </span>
-            </div>
-            <small className="input-hint">
-              Use letters, numbers, spaces, and - _ & ' ( ) , .
-            </small>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="base-price" className="form-label">Base Price ($)</label>
-            <input
-              id="base-price"
+              id="price"
               type="text"
               inputMode="decimal"
               className="form-input"
-              value={basePrice}
+              value={price}
               onChange={(e) => handlePriceChange(e.target.value)}
               placeholder="0.00"
               disabled={submitting}
-              required
             />
-            <small className="input-hint">
-              Enter the regular price for this product
-            </small>
           </div>
 
           <div className="modal-actions">
