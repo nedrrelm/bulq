@@ -8,6 +8,7 @@ from .base_service import BaseService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..models import User
 from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
+from ..run_state import RunState
 from ..websocket_manager import manager
 
 logger = logging.getLogger(__name__)
@@ -50,8 +51,8 @@ class GroupService(BaseService):
         for group in groups:
             # Get runs for this group
             runs = self.repo.get_runs_by_group(group.id)
-            active_runs = [run for run in runs if run.state not in ('completed', 'cancelled')]
-            completed_runs = [run for run in runs if run.state == 'completed']
+            active_runs = [run for run in runs if run.state not in (RunState.COMPLETED, RunState.CANCELLED)]
+            completed_runs = [run for run in runs if run.state == RunState.COMPLETED]
 
             # Sort active runs by state (reverse state order)
             sorted_active_runs = sorted(active_runs, key=lambda r: state_order.get(r.state, 0), reverse=True)
@@ -567,8 +568,8 @@ class GroupService(BaseService):
 
             # If the removed user is the leader and run is not completed, cancel it
             leader = next((p for p in participations if p.is_leader), None)
-            if leader and leader.user_id == member_uuid and run.state != 'completed':
-                run.state = 'cancelled'
+            if leader and leader.user_id == member_uuid and run.state != RunState.COMPLETED:
+                run.state = RunState.CANCELLED
                 cancelled_runs.append(str(run.id))
 
         logger.info(
