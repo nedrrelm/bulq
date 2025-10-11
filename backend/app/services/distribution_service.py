@@ -42,37 +42,38 @@ class DistributionService(BaseService):
             ForbiddenError: If user doesn't have access to the run
             BadRequestError: If distribution not available in current state
         """
-        # Get the run
+        self._validate_distribution_access(run_id, current_user)
+        all_bids = self.repo.get_bids_by_run_with_participations(run_id)
+        users_data = self._aggregate_bids_by_user(all_bids)
+        distributions = [self._build_user_distribution(user_data) for user_data in users_data.values()]
+        return self._sort_distributions(distributions)
+
+    def _validate_distribution_access(self, run_id: UUID, current_user: User) -> None:
+        """Validate user has access to view distribution."""
         run = self.repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError("Run", run_id)
 
-        # Verify user has access to this run
         user_groups = self.repo.get_user_groups(current_user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError("Not authorized to view this run")
 
-        # Only allow viewing distribution in distributing or completed states
         if run.state not in [RunState.DISTRIBUTING, RunState.COMPLETED]:
             raise BadRequestError("Distribution only available in distributing state")
 
-        # Get all bids with participations and users eagerly loaded to avoid N+1 queries
-        all_bids = self.repo.get_bids_by_run_with_participations(run_id)
-
-        # Group bids by user
+    def _aggregate_bids_by_user(self, all_bids: List[ProductBid]) -> Dict[str, Dict[str, Any]]:
+        """Group bids by user and aggregate totals."""
         users_data = {}
 
         for bid in all_bids:
             if bid.interested_only or not bid.distributed_quantity:
                 continue
 
-            # Participation and user are eagerly loaded on the bid object
             if not bid.participation or not bid.participation.user:
                 continue
 
             user_id = str(bid.participation.user_id)
 
-            # Initialize user data if not exists
             if user_id not in users_data:
                 users_data[user_id] = {
                     'user_id': user_id,
@@ -81,14 +82,12 @@ class DistributionService(BaseService):
                     'total_cost': 0.0
                 }
 
-            # Get product info
             product = self._get_product(bid.product_id)
             if not product:
                 continue
 
-            # Calculate subtotal
             price_per_unit = float(bid.distributed_price_per_unit) if bid.distributed_price_per_unit else 0.0
-            subtotal = price_per_unit * bid.distributed_quantity
+            subtotal = self._calculate_subtotal(price_per_unit, bid.distributed_quantity)
 
             users_data[user_id]['products'].append(DistributionProduct(
                 bid_id=str(bid.id),
@@ -103,23 +102,27 @@ class DistributionService(BaseService):
 
             users_data[user_id]['total_cost'] += subtotal
 
-        # Convert to list and format
-        result = []
-        for user_data in users_data.values():
-            all_picked_up = all(p.is_picked_up for p in user_data['products'])
+        return users_data
 
-            result.append(DistributionUser(
-                user_id=user_data['user_id'],
-                user_name=user_data['user_name'],
-                products=user_data['products'],
-                total_cost=f"{user_data['total_cost']:.2f}",
-                all_picked_up=all_picked_up
-            ))
+    def _calculate_subtotal(self, price_per_unit: float, quantity: int) -> float:
+        """Calculate subtotal for a product."""
+        return price_per_unit * quantity
 
-        # Sort: users who haven't picked up everything first, then alphabetically
-        result.sort(key=lambda x: (x.all_picked_up, x.user_name))
+    def _build_user_distribution(self, user_data: Dict[str, Any]) -> DistributionUser:
+        """Build DistributionUser from aggregated user data."""
+        all_picked_up = all(p.is_picked_up for p in user_data['products'])
+        return DistributionUser(
+            user_id=user_data['user_id'],
+            user_name=user_data['user_name'],
+            products=user_data['products'],
+            total_cost=f"{user_data['total_cost']:.2f}",
+            all_picked_up=all_picked_up
+        )
 
-        return result
+    def _sort_distributions(self, distributions: List[DistributionUser]) -> List[DistributionUser]:
+        """Sort distributions by pickup status and name."""
+        distributions.sort(key=lambda x: (x.all_picked_up, x.user_name))
+        return distributions
 
     def mark_picked_up(
         self, run_id: UUID, bid_id: UUID, current_user: User
