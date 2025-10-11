@@ -1,6 +1,5 @@
 """Distribution service for handling distribution-related business logic."""
 
-import logging
 from typing import List, Dict, Any
 from uuid import UUID
 from ..models import User, Product, ProductBid
@@ -10,6 +9,7 @@ from ..exceptions import (
     NotFoundError,
     ForbiddenError,
 )
+from ..request_context import get_logger
 from .base_service import BaseService
 from ..schemas import (
     DistributionUser,
@@ -18,7 +18,7 @@ from ..schemas import (
     StateChangeResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class DistributionService(BaseService):

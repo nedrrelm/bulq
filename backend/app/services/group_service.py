@@ -1,6 +1,5 @@
 """Service layer for group-related business logic."""
 
-import logging
 from typing import List, Dict, Any
 from uuid import UUID
 
@@ -10,6 +9,7 @@ from ..models import User
 from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
 from ..run_state import RunState
 from ..websocket_manager import manager
+from ..request_context import get_logger
 from ..schemas import (
     GroupResponse,
     CreateGroupResponse,
@@ -23,7 +23,7 @@ from ..schemas import (
     ToggleJoiningResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GroupService(BaseService):

@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-import logging
 
 from ..database import get_db
 from ..models import User
@@ -10,9 +9,10 @@ from ..auth import hash_password, create_session, get_session, delete_session
 from ..repository import get_repository
 from ..exceptions import UnauthorizedError, BadRequestError
 from ..config import SESSION_EXPIRY_HOURS, SECURE_COOKIES
+from ..request_context import get_logger
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 

@@ -6,6 +6,7 @@ from ..models import User
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import GroupService
+from ..request_context import get_logger
 from ..schemas import (
     CreateGroupRequest,
     CreateGroupResponse,
@@ -18,10 +19,9 @@ from ..schemas import (
     MessageResponse,
     ToggleJoiningResponse,
 )
-import logging
 
 router = APIRouter(prefix="/groups", tags=["groups"])
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @router.get("/my-groups", response_model=List[GroupResponse])
 async def get_my_groups(

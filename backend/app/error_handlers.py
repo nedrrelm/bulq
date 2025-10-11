@@ -1,6 +1,5 @@
 """Global exception handlers for FastAPI application."""
 
-import logging
 import traceback
 from typing import Union
 from fastapi import Request, status
@@ -11,8 +10,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.exceptions import AppException
 from app.error_models import ErrorResponse, ValidationErrorResponse, ErrorDetail
+from app.request_context import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:

@@ -2,15 +2,15 @@
 
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-import logging
 import asyncio
 
 from ..repository import AbstractRepository
 from ..models import User, Run, LeaderReassignmentRequest
 from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError
+from ..request_context import get_logger
 from ..websocket_manager import manager as ws_manager
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ReassignmentService:

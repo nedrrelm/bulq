@@ -5,13 +5,13 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from decimal import Decimal
-import logging
 
 from .models import User, Group, Store, Run, Product, ProductBid, RunParticipation, ShoppingListItem, ProductAvailability, Notification, LeaderReassignmentRequest
 from .config import REPO_MODE
 from .run_state import RunState, state_machine
+from .request_context import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class AbstractRepository(ABC):

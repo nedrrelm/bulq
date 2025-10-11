@@ -1,11 +1,11 @@
 import bcrypt
 import secrets
-import logging
 from typing import Optional, Dict
 from datetime import datetime, timedelta
 from app.config import SESSION_EXPIRY_HOURS, SECRET_KEY
+from app.request_context import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # In-memory session storage (use Redis in production)
 sessions: Dict[str, dict] = {}
