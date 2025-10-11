@@ -957,7 +957,14 @@ class RunService(BaseService):
                     }
                 }))
             except Exception as e:
-                logger.warning(f"Failed to broadcast notification via WebSocket: {e}")
+                logger.warning(
+                    "Failed to broadcast notification via WebSocket",
+                    extra={
+                        "error": str(e),
+                        "user_id": str(participant.user_id),
+                        "notification_id": str(notification.id)
+                    }
+                )
 
         logger.debug(
             f"Created notifications for run state change",
