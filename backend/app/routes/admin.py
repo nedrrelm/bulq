@@ -3,7 +3,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
-from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import User
@@ -11,36 +10,14 @@ from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import AdminService
 from ..exceptions import ForbiddenError
+from ..schemas import (
+    AdminUserResponse,
+    AdminProductResponse,
+    AdminStoreResponse,
+    VerificationToggleResponse,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-
-class AdminUserResponse(BaseModel):
-    id: str
-    name: str
-    email: str
-    verified: bool
-    is_admin: bool
-    created_at: str | None
-
-class AdminProductResponse(BaseModel):
-    id: str
-    name: str
-    brand: str | None
-    unit: str | None
-    verified: bool
-    created_at: str | None
-
-class AdminStoreResponse(BaseModel):
-    id: str
-    name: str
-    address: str | None
-    verified: bool
-    created_at: str | None
-
-class VerificationToggleResponse(BaseModel):
-    id: str
-    verified: bool
-    message: str
 
 
 def require_admin(current_user: User = Depends(require_auth)) -> User:

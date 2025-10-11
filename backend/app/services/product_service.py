@@ -85,7 +85,7 @@ class ProductService(BaseService):
                     all_prices.append(PricePoint(
                         price=float(avail.price),
                         notes=avail.notes or "",
-                        timestamp=avail.created_at.isoformat() if hasattr(avail, 'created_at') and avail.created_at else None,
+                        timestamp=avail.created_at.isoformat() if avail.created_at else None,
                         run_id=None
                     ))
 
@@ -105,12 +105,14 @@ class ProductService(BaseService):
             # Get most recent availability for current price
             most_recent = max(store_availabilities, key=lambda a: a.created_at if a.created_at else "", default=None)
             current_price = float(most_recent.price) if most_recent and most_recent.price else None
+            notes = most_recent.notes if most_recent and most_recent.notes else ""
 
             stores_data.append(StoreDetail(
                 store_id=str(store_id),
                 store_name=store.name,
                 current_price=current_price,
-                price_history=all_prices
+                price_history=all_prices,
+                notes=notes
             ))
 
         return ProductDetailResponse(

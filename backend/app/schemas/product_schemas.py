@@ -57,6 +57,7 @@ class StoreDetail(BaseModel):
     store_name: str
     current_price: float | None
     price_history: list[PricePoint]
+    notes: str
 
 
 class ProductDetailResponse(BaseModel):

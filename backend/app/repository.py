@@ -467,7 +467,7 @@ class DatabaseRepository(AbstractRepository):
     def create_group(self, name: str, created_by: UUID) -> Group:
         """Create a new group."""
         from uuid import uuid4
-        group = Group(name=name, created_by=created_by, invite_token=str(uuid4()))
+        group = Group(name=name, created_by=created_by, invite_token=str(uuid4()), is_joining_allowed=True)
         self.db.add(group)
         self.db.commit()
         self.db.refresh(group)
@@ -772,7 +772,7 @@ class DatabaseRepository(AbstractRepository):
         self.db.flush()  # Get the run ID without committing
 
         # Create participation for the leader
-        participation = RunParticipation(user_id=leader_id, run_id=run.id, is_leader=True)
+        participation = RunParticipation(user_id=leader_id, run_id=run.id, is_leader=True, is_removed=False)
         self.db.add(participation)
         self.db.commit()
         self.db.refresh(run)
@@ -801,7 +801,7 @@ class DatabaseRepository(AbstractRepository):
 
     def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
         """Create a participation record for a user in a run."""
-        participation = RunParticipation(user_id=user_id, run_id=run_id, is_leader=is_leader)
+        participation = RunParticipation(user_id=user_id, run_id=run_id, is_leader=is_leader, is_removed=False)
         self.db.add(participation)
         self.db.commit()
         self.db.refresh(participation)
@@ -837,8 +837,7 @@ class DatabaseRepository(AbstractRepository):
 
             # Set the timestamp for the new state
             timestamp_field = f"{new_state}_at"
-            if hasattr(run, timestamp_field):
-                setattr(run, timestamp_field, datetime.now())
+            setattr(run, timestamp_field, datetime.now())
 
             self.db.commit()
             self.db.refresh(run)
@@ -1685,7 +1684,7 @@ class MemoryRepository(AbstractRepository):
         return None
 
     def create_group(self, name: str, created_by: UUID) -> Group:
-        group = Group(id=uuid4(), name=name, created_by=created_by, invite_token=str(uuid4()))
+        group = Group(id=uuid4(), name=name, created_by=created_by, invite_token=str(uuid4()), is_joining_allowed=True)
         self._groups[group.id] = group
         self._group_memberships[group.id] = []
         return group
@@ -1997,7 +1996,7 @@ class MemoryRepository(AbstractRepository):
         return run
 
     def _create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False, is_ready: bool = False) -> RunParticipation:
-        participation = RunParticipation(id=uuid4(), user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=is_ready)
+        participation = RunParticipation(id=uuid4(), user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=is_ready, is_removed=False)
         # Set up relationships
         participation.user = self._users.get(user_id)
         participation.run = self._runs.get(run_id)
@@ -2082,7 +2081,7 @@ class MemoryRepository(AbstractRepository):
         return participations
 
     def create_participation(self, user_id: UUID, run_id: UUID, is_leader: bool = False) -> RunParticipation:
-        participation = RunParticipation(id=uuid4(), user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=False)
+        participation = RunParticipation(id=uuid4(), user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=False, is_removed=False)
         # Set up relationships
         participation.user = self._users.get(user_id)
         participation.run = self._runs.get(run_id)
@@ -2115,8 +2114,7 @@ class MemoryRepository(AbstractRepository):
 
             # Set the timestamp for the new state
             timestamp_field = f"{new_state}_at"
-            if hasattr(run, timestamp_field):
-                setattr(run, timestamp_field, datetime.now())
+            setattr(run, timestamp_field, datetime.now())
 
             logger.info(
                 f"Run state transitioned",

@@ -140,7 +140,7 @@ class NotificationService(BaseService):
             "type": notification.type,
             "data": notification.data,
             "read": notification.read,
-            "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
+            "created_at": notification.created_at.isoformat() + 'Z'
         }
 
     def _group_notifications(self, notifications: list) -> list[dict[str, Any]]:

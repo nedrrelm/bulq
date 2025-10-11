@@ -204,6 +204,7 @@ class ReassignmentService:
             "from_user_id": str(request.from_user_id),
             "to_user_id": str(request.to_user_id),
             "status": "accepted",
+            "created_at": request.created_at.isoformat(),
             "resolved_at": request.resolved_at.isoformat() if request.resolved_at else None
         }
 
@@ -340,6 +341,7 @@ class ReassignmentService:
             "from_user_id": str(request.from_user_id),
             "to_user_id": str(request.to_user_id),
             "status": "declined",
+            "created_at": request.created_at.isoformat(),
             "resolved_at": request.resolved_at.isoformat() if request.resolved_at else None
         }
 
@@ -465,6 +467,7 @@ class ReassignmentService:
             "from_user_id": str(request.from_user_id),
             "to_user_id": str(request.to_user_id),
             "status": "cancelled",
+            "created_at": request.created_at.isoformat(),
             "resolved_at": request.resolved_at.isoformat() if request.resolved_at else None
         }
 

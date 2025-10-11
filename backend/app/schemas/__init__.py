@@ -1,6 +1,41 @@
 """Pydantic schemas for request/response models."""
 
 from .common import MessageResponse
+from .auth_schemas import (
+    UserRegister,
+    UserLogin,
+    UserResponse,
+)
+from .notification_schemas import (
+    NotificationResponse,
+    UnreadCountResponse,
+    MarkAllReadResponse,
+)
+from .search_schemas import (
+    StoreSearchResult,
+    GroupSearchResult,
+    SearchResponse,
+)
+from .admin_schemas import (
+    AdminUserResponse,
+    AdminProductResponse,
+    AdminStoreResponse,
+    VerificationToggleResponse,
+)
+from .store_schemas import (
+    StoreResponse,
+    CreateStoreRequest,
+    StoreProductResponse,
+    StoreRunResponse,
+    StorePageResponse,
+)
+from .reassignment_schemas import (
+    ReassignmentRequestModel,
+    ReassignmentResponse,
+    ReassignmentDetailResponse,
+    MyRequestsResponse,
+    RunRequestResponse,
+)
 from .run_schemas import (
     CreateRunRequest,
     CreateRunResponse,
@@ -55,6 +90,35 @@ from .distribution_schemas import (
 __all__ = [
     # Common
     "MessageResponse",
+    # Auth schemas
+    "UserRegister",
+    "UserLogin",
+    "UserResponse",
+    # Notification schemas
+    "NotificationResponse",
+    "UnreadCountResponse",
+    "MarkAllReadResponse",
+    # Search schemas
+    "StoreSearchResult",
+    "GroupSearchResult",
+    "SearchResponse",
+    # Admin schemas
+    "AdminUserResponse",
+    "AdminProductResponse",
+    "AdminStoreResponse",
+    "VerificationToggleResponse",
+    # Store schemas
+    "StoreResponse",
+    "CreateStoreRequest",
+    "StoreProductResponse",
+    "StoreRunResponse",
+    "StorePageResponse",
+    # Reassignment schemas
+    "ReassignmentRequestModel",
+    "ReassignmentResponse",
+    "ReassignmentDetailResponse",
+    "MyRequestsResponse",
+    "RunRequestResponse",
     # Run schemas
     "CreateRunRequest",
     "CreateRunResponse",

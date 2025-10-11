@@ -53,9 +53,9 @@ def create_seed_data():
 
         # Create Groups
         groups_data = [
-            {"name": "College Friends", "created_by": users[0].id},
-            {"name": "Neighborhood Watch", "created_by": users[1].id},
-            {"name": "Office Lunch Club", "created_by": users[2].id},
+            {"name": "College Friends", "created_by": users[0].id, "is_joining_allowed": True},
+            {"name": "Neighborhood Watch", "created_by": users[1].id, "is_joining_allowed": True},
+            {"name": "Office Lunch Club", "created_by": users[2].id, "is_joining_allowed": True},
         ]
 
         groups = []
