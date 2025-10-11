@@ -109,23 +109,6 @@ await manager.broadcast(f"run:{result.run_id}", {
 
 ---
 
-### 8. Remove Repository Leakage from Routes
-**Status**: Medium Priority (architecture)
-**Affected files**: All route files
-
-**Problem:** Routes import both `get_repository` and service classes, creating unnecessary coupling.
-```python
-# Routes shouldn't need repository:
-repo = get_repository(db)
-service = RunService(repo)
-```
-
-**Impact:** Violates layering, makes refactoring harder.
-
-**Fix:** Services should accept `db: Session` and get repository internally, or use dependency injection.
-
----
-
 ### 9. Extract Validation Helpers
 **Status**: Medium Priority (DRY)
 **Affected files**: Multiple service files

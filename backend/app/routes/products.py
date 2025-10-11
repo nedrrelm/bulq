@@ -4,7 +4,6 @@ from uuid import UUID
 from ..database import get_db
 from ..routes.auth import require_auth
 from ..models import User
-from ..repository import get_repository
 from ..services import ProductService
 from ..schemas import (
     CreateProductRequest,
@@ -26,8 +25,7 @@ async def search_products(
     Search for products by name across all stores.
     Returns products matching the search query.
     """
-    repo = get_repository(db)
-    service = ProductService(repo)
+    service = ProductService(db)
     return service.search_products(q)
 
 @router.post("/create", response_model=CreateProductResponse)
@@ -39,8 +37,7 @@ async def create_product(
     """
     Create a new product. Optionally link to a store with price.
     """
-    repo = get_repository(db)
-    service = ProductService(repo)
+    service = ProductService(db)
 
     try:
         store_uuid = UUID(request.store_id) if request.store_id else None
@@ -82,8 +79,7 @@ async def get_product_details(
     Get detailed product information including price history from shopping list items.
     Shows the product across different stores and historical prices recorded during shopping.
     """
-    repo = get_repository(db)
-    service = ProductService(repo)
+    service = ProductService(db)
 
     result = service.get_product_details(UUID(product_id))
     if not result:

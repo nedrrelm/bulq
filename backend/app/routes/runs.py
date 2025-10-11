@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipation
 from ..routes.auth import require_auth
-from ..repository import get_repository
 from ..services import RunService
 from ..websocket_manager import manager
 from ..run_state import RunState
@@ -30,8 +29,7 @@ async def create_run(
     db: Session = Depends(get_db)
 ):
     """Create a new run for a group."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.create_run(request.group_id, request.store_id, current_user)
 
@@ -56,8 +54,7 @@ async def get_run_details(
     db: Session = Depends(get_db)
 ):
     """Get detailed information about a specific run."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     return service.get_run_details(run_id, current_user)
 
@@ -69,8 +66,7 @@ async def place_bid(
     db: Session = Depends(get_db)
 ):
     """Place or update a bid on a product in a run."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.place_bid(
         run_id,
@@ -120,8 +116,7 @@ async def retract_bid(
     db: Session = Depends(get_db)
 ):
     """Retract a bid on a product in a run."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.retract_bid(run_id, product_id, current_user)
 
@@ -144,8 +139,7 @@ async def toggle_ready(
     db: Session = Depends(get_db)
 ):
     """Toggle the current user's ready status for a run."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.toggle_ready(run_id, current_user)
 
@@ -184,8 +178,7 @@ async def start_shopping(
     db: Session = Depends(get_db)
 ):
     """Start shopping - transition from confirmed to shopping state (leader only)."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.start_run(run_id, current_user)
 
@@ -214,8 +207,7 @@ async def finish_adjusting(
     db: Session = Depends(get_db)
 ):
     """Finish adjusting bids - transition from adjusting to distributing state (leader only)."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.finish_adjusting(run_id, current_user)
 
@@ -244,8 +236,7 @@ async def get_available_products(
     db: Session = Depends(get_db)
 ):
     """Get products available for bidding (products from the store that don't have bids yet)."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     return service.get_available_products(run_id, current_user)
 
@@ -256,8 +247,7 @@ async def transition_to_shopping(
     db: Session = Depends(get_db)
 ):
     """Transition to shopping state (alias for start-shopping)."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.transition_to_shopping(run_id, current_user)
 
@@ -286,8 +276,7 @@ async def cancel_run(
     db: Session = Depends(get_db)
 ):
     """Cancel a run. Leader only. Can be done from any state except completed/cancelled."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.cancel_run(run_id, current_user)
 
@@ -309,8 +298,7 @@ async def delete_run(
     db: Session = Depends(get_db)
 ):
     """Delete a run (cancels it). Alias for cancel_run for backward compatibility."""
-    repo = get_repository(db)
-    service = RunService(repo)
+    service = RunService(db)
 
     result = service.delete_run(run_id, current_user)
 

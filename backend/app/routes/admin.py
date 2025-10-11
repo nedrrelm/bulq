@@ -7,7 +7,6 @@ from uuid import UUID
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..repository import get_repository
 from ..services import AdminService
 from ..exceptions import ForbiddenError
 from ..schemas import (
@@ -37,8 +36,7 @@ async def get_users(
     db: Session = Depends(get_db)
 ):
     """Get all users with optional search and filtering (paginated, max 100 per page)."""
-    repo = get_repository(db)
-    service = AdminService(repo)
+    service = AdminService(db)
     results = service.get_users(search, verified, limit, offset)
     return [AdminUserResponse(**r) for r in results]
 
@@ -50,8 +48,7 @@ async def toggle_user_verification(
     db: Session = Depends(get_db)
 ):
     """Toggle user verification status."""
-    repo = get_repository(db)
-    service = AdminService(repo)
+    service = AdminService(db)
     result = service.toggle_user_verification(UUID(user_id), admin_user)
     return VerificationToggleResponse(**result)
 
@@ -66,8 +63,7 @@ async def get_products(
     db: Session = Depends(get_db)
 ):
     """Get all products with optional search and filtering (paginated, max 100 per page)."""
-    repo = get_repository(db)
-    service = AdminService(repo)
+    service = AdminService(db)
     results = service.get_products(search, verified, limit, offset)
     return [AdminProductResponse(**r) for r in results]
 
@@ -79,8 +75,7 @@ async def toggle_product_verification(
     db: Session = Depends(get_db)
 ):
     """Toggle product verification status."""
-    repo = get_repository(db)
-    service = AdminService(repo)
+    service = AdminService(db)
     result = service.toggle_product_verification(UUID(product_id), admin_user)
     return VerificationToggleResponse(**result)
 
@@ -95,8 +90,7 @@ async def get_stores(
     db: Session = Depends(get_db)
 ):
     """Get all stores with optional search and filtering (paginated, max 100 per page)."""
-    repo = get_repository(db)
-    service = AdminService(repo)
+    service = AdminService(db)
     results = service.get_stores(search, verified, limit, offset)
     return [AdminStoreResponse(**r) for r in results]
 
@@ -108,7 +102,6 @@ async def toggle_store_verification(
     db: Session = Depends(get_db)
 ):
     """Toggle store verification status."""
-    repo = get_repository(db)
-    service = AdminService(repo)
+    service = AdminService(db)
     result = service.toggle_store_verification(UUID(store_id), admin_user)
     return VerificationToggleResponse(**result)

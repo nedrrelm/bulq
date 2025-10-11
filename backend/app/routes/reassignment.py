@@ -7,7 +7,6 @@ from uuid import UUID
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..repository import get_repository
 from ..services import ReassignmentService
 from ..exceptions import AppException
 from ..schemas import (
@@ -28,8 +27,7 @@ async def request_reassignment(
     db: Session = Depends(get_db)
 ):
     """Request to reassign leadership of a run."""
-    repo = get_repository(db)
-    service = ReassignmentService(repo)
+    service = ReassignmentService(db)
 
     run_id = UUID(data.run_id)
     to_user_id = UUID(data.to_user_id)
@@ -45,8 +43,7 @@ async def accept_reassignment(
     db: Session = Depends(get_db)
 ):
     """Accept a leader reassignment request."""
-    repo = get_repository(db)
-    service = ReassignmentService(repo)
+    service = ReassignmentService(db)
 
     result = await service.accept_reassignment(UUID(request_id), current_user)
     return ReassignmentResponse(**result)
@@ -59,8 +56,7 @@ async def decline_reassignment(
     db: Session = Depends(get_db)
 ):
     """Decline a leader reassignment request."""
-    repo = get_repository(db)
-    service = ReassignmentService(repo)
+    service = ReassignmentService(db)
 
     result = await service.decline_reassignment(UUID(request_id), current_user)
     return ReassignmentResponse(**result)
@@ -73,8 +69,7 @@ async def cancel_reassignment(
     db: Session = Depends(get_db)
 ):
     """Cancel a pending reassignment request."""
-    repo = get_repository(db)
-    service = ReassignmentService(repo)
+    service = ReassignmentService(db)
 
     result = service.cancel_reassignment(UUID(request_id), current_user)
     return ReassignmentResponse(**result)
@@ -86,8 +81,7 @@ async def get_my_requests(
     db: Session = Depends(get_db)
 ):
     """Get all pending reassignment requests for the current user."""
-    repo = get_repository(db)
-    service = ReassignmentService(repo)
+    service = ReassignmentService(db)
 
     result = service.get_pending_requests_for_user(current_user.id)
     return MyRequestsResponse(
@@ -103,8 +97,7 @@ async def get_run_request(
     db: Session = Depends(get_db)
 ):
     """Get pending reassignment request for a specific run."""
-    repo = get_repository(db)
-    service = ReassignmentService(repo)
+    service = ReassignmentService(db)
 
     request = service.get_pending_request_for_run(UUID(run_id))
     return RunRequestResponse(

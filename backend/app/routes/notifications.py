@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..repository import get_repository
 from ..services import NotificationService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError, AppException
 from ..schemas import (
@@ -27,8 +26,7 @@ async def get_notifications(
     db: Session = Depends(get_db)
 ):
     """Get notifications for current user (paginated, max 100 per page)."""
-    repo = get_repository(db)
-    service = NotificationService(repo)
+    service = NotificationService(db)
 
     notifications = service.get_user_notifications(current_user, limit, offset)
     return [NotificationResponse(**n) for n in notifications]
@@ -40,8 +38,7 @@ async def get_unread_notifications(
     db: Session = Depends(get_db)
 ):
     """Get all unread notifications for current user."""
-    repo = get_repository(db)
-    service = NotificationService(repo)
+    service = NotificationService(db)
 
     notifications = service.get_unread_notifications(current_user)
     return [NotificationResponse(**n) for n in notifications]
@@ -53,8 +50,7 @@ async def get_unread_count(
     db: Session = Depends(get_db)
 ):
     """Get count of unread notifications for current user."""
-    repo = get_repository(db)
-    service = NotificationService(repo)
+    service = NotificationService(db)
 
     count = service.get_unread_count(current_user)
     return UnreadCountResponse(count=count)
@@ -67,8 +63,7 @@ async def mark_notification_read(
     db: Session = Depends(get_db)
 ):
     """Mark a notification as read."""
-    repo = get_repository(db)
-    service = NotificationService(repo)
+    service = NotificationService(db)
 
     result = service.mark_as_read(notification_id, current_user)
     return MessageResponse(**result)
@@ -80,8 +75,7 @@ async def mark_all_notifications_read(
     db: Session = Depends(get_db)
 ):
     """Mark all notifications as read for current user."""
-    repo = get_repository(db)
-    service = NotificationService(repo)
+    service = NotificationService(db)
 
     result = service.mark_all_as_read(current_user)
     return MarkAllReadResponse(**result)
