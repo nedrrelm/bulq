@@ -28,10 +28,17 @@ class ShoppingListItemResponse(BaseModel):
     purchased_price_per_unit: str | None
     purchased_total: str | None
     is_purchased: bool
-    purchase_order: int | None
 
-    class Config:
-        from_attributes = True
+class MessageResponse(BaseModel):
+    message: str
+
+class MarkPurchasedResponse(BaseModel):
+    message: str
+    purchase_order: int
+
+class CompleteShoppingResponse(BaseModel):
+    message: str
+    state: str
 
 class UpdateAvailabilityPriceRequest(BaseModel):
     price: float = Field(gt=0, le=99999.99)
@@ -100,7 +107,7 @@ async def get_shopping_list(
     items = await service.get_shopping_list(run_id, current_user)
     return [ShoppingListItemResponse(**item) for item in items]
 
-@router.post("/{run_id}/items/{item_id}/price")
+@router.post("/{run_id}/items/{item_id}/price", response_model=MessageResponse)
 async def update_availability_price(
     run_id: str,
     item_id: str,
@@ -119,9 +126,9 @@ async def update_availability_price(
         request.notes,
         current_user
     )
-    return result
+    return MessageResponse(**result)
 
-@router.post("/{run_id}/items/{item_id}/purchase")
+@router.post("/{run_id}/items/{item_id}/purchase", response_model=MarkPurchasedResponse)
 async def mark_purchased(
     run_id: str,
     item_id: str,
@@ -141,9 +148,9 @@ async def mark_purchased(
         request.total,
         current_user
     )
-    return result
+    return MarkPurchasedResponse(**result)
 
-@router.post("/{run_id}/complete")
+@router.post("/{run_id}/complete", response_model=CompleteShoppingResponse)
 async def complete_shopping(
     run_id: str,
     current_user: User = Depends(require_auth),
@@ -151,11 +158,11 @@ async def complete_shopping(
 ):
     """Complete shopping - transition from shopping to distributing state (leader only)."""
     logger.info(
-        f"Completing shopping for run",
+        "Completing shopping for run",
         extra={"user_id": str(current_user.id), "run_id": run_id}
     )
     repo = get_repository(db)
     service = ShoppingService(repo)
 
     result = await service.complete_shopping(run_id, current_user, db)
-    return result
+    return CompleteShoppingResponse(**result)

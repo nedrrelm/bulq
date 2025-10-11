@@ -28,8 +28,13 @@ class DistributionUser(BaseModel):
     user_id: str
     user_name: str
     products: List[DistributionProduct]
-    total_cost: str
-    all_picked_up: bool
+
+class StateChangeResponse(BaseModel):
+    message: str
+    state: str
+
+class MessageResponse(BaseModel):
+    message: str
 
 @router.get("/{run_id}", response_model=List[DistributionUser])
 async def get_distribution_data(
@@ -64,7 +69,7 @@ async def get_distribution_data(
 
     return result
 
-@router.post("/{run_id}/pickup/{bid_id}")
+@router.post("/{run_id}/pickup/{bid_id}", response_model=MessageResponse)
 async def mark_picked_up(
     run_id: str,
     bid_id: str,
@@ -85,9 +90,9 @@ async def mark_picked_up(
     # Mark as picked up via service
     result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
 
-    return result
+    return MessageResponse(**result)
 
-@router.post("/{run_id}/complete")
+@router.post("/{run_id}/complete", response_model=StateChangeResponse)
 async def complete_distribution(
     run_id: str,
     current_user: User = Depends(require_auth),
@@ -122,4 +127,4 @@ async def complete_distribution(
         }
     })
 
-    return {"message": result['message'], "state": result['state']}
+    return StateChangeResponse(message=result['message'], state=result['state'])

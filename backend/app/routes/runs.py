@@ -27,6 +27,24 @@ class CreateRunResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class MessageResponse(BaseModel):
+    message: str
+
+class StateChangeResponse(BaseModel):
+    message: str
+    state: str
+
+class ReadyToggleResponse(BaseModel):
+    message: str
+    is_ready: bool
+    state_changed: bool = False
+
+class CancelRunResponse(BaseModel):
+    message: str
+    run_id: str
+    group_id: str
+    state: str
+
 @router.post("/create", response_model=CreateRunResponse)
 async def create_run(
     request: CreateRunRequest,
@@ -168,7 +186,7 @@ class PlaceBidRequest(BaseModel):
             raise ValueError('Quantity can have at most 2 decimal places')
         return v
 
-@router.post("/{run_id}/bids")
+@router.post("/{run_id}/bids", response_model=MessageResponse)
 async def place_bid(
     run_id: str,
     bid_request: PlaceBidRequest,
@@ -217,9 +235,9 @@ async def place_bid(
             }
         })
 
-    return {"message": result['message']}
+    return MessageResponse(message=result['message'])
 
-@router.delete("/{run_id}/bids/{product_id}")
+@router.delete("/{run_id}/bids/{product_id}", response_model=MessageResponse)
 async def retract_bid(
     run_id: str,
     product_id: str,
@@ -242,7 +260,7 @@ async def retract_bid(
         }
     })
 
-    return {"message": result['message']}
+    return MessageResponse(message=result['message'])
 
 class AvailableProductResponse(BaseModel):
     id: str
@@ -254,7 +272,7 @@ class AvailableProductResponse(BaseModel):
     class Config:
         from_attributes = True
 
-@router.post("/{run_id}/ready")
+@router.post("/{run_id}/ready", response_model=ReadyToggleResponse)
 async def toggle_ready(
     run_id: str,
     current_user: User = Depends(require_auth),
@@ -292,13 +310,13 @@ async def toggle_ready(
             }
         })
 
-    return {
-        "message": result['message'],
-        "is_ready": result['is_ready'],
-        "state_changed": result.get('state_changed', False)
-    }
+    return ReadyToggleResponse(
+        message=result['message'],
+        is_ready=result['is_ready'],
+        state_changed=result.get('state_changed', False)
+    )
 
-@router.post("/{run_id}/start-shopping")
+@router.post("/{run_id}/start-shopping", response_model=StateChangeResponse)
 async def start_shopping(
     run_id: str,
     current_user: User = Depends(require_auth),
@@ -326,9 +344,9 @@ async def start_shopping(
         }
     })
 
-    return {"message": result['message'], "state": result['state']}
+    return StateChangeResponse(message=result['message'], state=result['state'])
 
-@router.post("/{run_id}/finish-adjusting")
+@router.post("/{run_id}/finish-adjusting", response_model=StateChangeResponse)
 async def finish_adjusting(
     run_id: str,
     current_user: User = Depends(require_auth),
@@ -356,7 +374,7 @@ async def finish_adjusting(
         }
     })
 
-    return {"message": result['message'], "state": result['state']}
+    return StateChangeResponse(message=result['message'], state=result['state'])
 
 @router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
 async def get_available_products(
@@ -381,7 +399,7 @@ async def get_available_products(
         for p in result
     ]
 
-@router.post("/{run_id}/transition-shopping")
+@router.post("/{run_id}/transition-shopping", response_model=StateChangeResponse)
 async def transition_to_shopping(
     run_id: str,
     current_user: User = Depends(require_auth),
@@ -409,9 +427,9 @@ async def transition_to_shopping(
         }
     })
 
-    return {"message": result['message'], "state": result['state']}
+    return StateChangeResponse(message=result['message'], state=result['state'])
 
-@router.post("/{run_id}/cancel")
+@router.post("/{run_id}/cancel", response_model=CancelRunResponse)
 async def cancel_run(
     run_id: str,
     current_user: User = Depends(require_auth),
@@ -432,9 +450,9 @@ async def cancel_run(
         }
     })
 
-    return result
+    return CancelRunResponse(**result)
 
-@router.delete("/{run_id}")
+@router.delete("/{run_id}", response_model=MessageResponse)
 async def delete_run(
     run_id: str,
     current_user: User = Depends(require_auth),
@@ -455,4 +473,4 @@ async def delete_run(
         }
     })
 
-    return {"message": result['message']}
+    return MessageResponse(message=result['message'])

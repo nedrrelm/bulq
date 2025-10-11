@@ -64,6 +64,45 @@ class RunResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class CreateGroupResponse(BaseModel):
+    id: str
+    name: str
+    member_count: int
+    active_runs_count: int
+    completed_runs_count: int
+    active_runs: List[RunSummary]
+
+class GroupDetailResponse(BaseModel):
+    id: str
+    name: str
+    invite_token: str
+    is_joining_allowed: bool
+    members: List[dict]  # Contains user info dicts
+    is_current_user_admin: bool
+
+class InviteTokenResponse(BaseModel):
+    invite_token: str
+
+class RegenerateTokenResponse(BaseModel):
+    invite_token: str
+
+class PreviewGroupResponse(BaseModel):
+    id: str
+    name: str
+    member_count: int
+    creator_name: str
+
+class JoinGroupResponse(BaseModel):
+    message: str
+    group_id: str
+    group_name: str
+
+class MessageResponse(BaseModel):
+    message: str
+
+class ToggleJoiningResponse(BaseModel):
+    is_joining_allowed: bool
+
 @router.get("/my-groups", response_model=List[GroupResponse])
 async def get_my_groups(
     current_user: User = Depends(require_auth),
@@ -90,7 +129,7 @@ async def get_my_groups(
         for group in group_responses
     ]
 
-@router.post("/create")
+@router.post("/create", response_model=CreateGroupResponse)
 async def create_group(
     request: CreateGroupRequest,
     current_user: User = Depends(require_auth),
@@ -100,9 +139,10 @@ async def create_group(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    return service.create_group(request.name, current_user)
+    result = service.create_group(request.name, current_user)
+    return CreateGroupResponse(**result)
 
-@router.get("/{group_id}")
+@router.get("/{group_id}", response_model=GroupDetailResponse)
 async def get_group(
     group_id: str,
     current_user: User = Depends(require_auth),
@@ -112,7 +152,8 @@ async def get_group(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    return service.get_group_details(group_id, current_user)
+    result = service.get_group_details(group_id, current_user)
+    return GroupDetailResponse(**result)
 
 @router.get("/{group_id}/runs", response_model=List[RunResponse])
 async def get_group_runs(
@@ -142,7 +183,7 @@ async def get_group_completed_cancelled_runs(
     run_responses = service.get_group_completed_cancelled_runs(group_id, current_user, limit, offset)
     return [RunResponse(**run) for run in run_responses]
 
-@router.post("/{group_id}/regenerate-invite")
+@router.post("/{group_id}/regenerate-invite", response_model=RegenerateTokenResponse)
 async def regenerate_invite_token(
     group_id: str,
     current_user: User = Depends(require_auth),
@@ -152,9 +193,10 @@ async def regenerate_invite_token(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    return service.regenerate_invite_token(group_id, current_user)
+    result = service.regenerate_invite_token(group_id, current_user)
+    return RegenerateTokenResponse(**result)
 
-@router.get("/preview/{invite_token}")
+@router.get("/preview/{invite_token}", response_model=PreviewGroupResponse)
 async def preview_group_by_invite(
     invite_token: str,
     db: Session = Depends(get_db)
@@ -163,9 +205,10 @@ async def preview_group_by_invite(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    return service.preview_group(invite_token)
+    result = service.preview_group(invite_token)
+    return PreviewGroupResponse(**result)
 
-@router.post("/join/{invite_token}")
+@router.post("/join/{invite_token}", response_model=JoinGroupResponse)
 async def join_group_by_invite(
     invite_token: str,
     current_user: User = Depends(require_auth),
@@ -175,9 +218,10 @@ async def join_group_by_invite(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    return service.join_group(invite_token, current_user)
+    result = service.join_group(invite_token, current_user)
+    return JoinGroupResponse(**result)
 
-@router.get("/{group_id}/members")
+@router.get("/{group_id}/members", response_model=List[dict])
 async def get_group_members(
     group_id: str,
     current_user: User = Depends(require_auth),
@@ -189,7 +233,7 @@ async def get_group_members(
 
     return service.get_group_members(group_id, current_user)
 
-@router.delete("/{group_id}/members/{member_id}")
+@router.delete("/{group_id}/members/{member_id}", response_model=MessageResponse)
 async def remove_group_member(
     group_id: str,
     member_id: str,
@@ -200,9 +244,10 @@ async def remove_group_member(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    return service.remove_member(group_id, member_id, current_user)
+    result = service.remove_member(group_id, member_id, current_user)
+    return MessageResponse(**result)
 
-@router.post("/{group_id}/toggle-joining")
+@router.post("/{group_id}/toggle-joining", response_model=ToggleJoiningResponse)
 async def toggle_group_joining(
     group_id: str,
     current_user: User = Depends(require_auth),
@@ -212,4 +257,5 @@ async def toggle_group_joining(
     repo = get_repository(db)
     service = GroupService(repo)
 
-    return service.toggle_joining_allowed(group_id, current_user)
+    result = service.toggle_joining_allowed(group_id, current_user)
+    return ToggleJoiningResponse(**result)
