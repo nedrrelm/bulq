@@ -2,8 +2,9 @@
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from uuid import UUID
+from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import User
@@ -14,6 +15,34 @@ from ..exceptions import ForbiddenError
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+class AdminUserResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    verified: bool
+    is_admin: bool
+    created_at: Optional[str]
+
+class AdminProductResponse(BaseModel):
+    id: str
+    name: str
+    brand: Optional[str]
+    unit: Optional[str]
+    verified: bool
+    created_at: Optional[str]
+
+class AdminStoreResponse(BaseModel):
+    id: str
+    name: str
+    address: Optional[str]
+    verified: bool
+    created_at: Optional[str]
+
+class VerificationToggleResponse(BaseModel):
+    id: str
+    verified: bool
+    message: str
+
 
 def require_admin(current_user: User = Depends(require_auth)) -> User:
     """Verify that the current user is an admin."""
@@ -22,7 +51,7 @@ def require_admin(current_user: User = Depends(require_auth)) -> User:
     return current_user
 
 
-@router.get("/users")
+@router.get("/users", response_model=List[AdminUserResponse])
 async def get_users(
     search: Optional[str] = Query(None),
     verified: Optional[bool] = Query(None),
@@ -30,26 +59,28 @@ async def get_users(
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
-) -> List[Dict[str, Any]]:
+):
     """Get all users with optional search and filtering (paginated, max 100 per page)."""
     repo = get_repository(db)
     service = AdminService(repo)
-    return service.get_users(search, verified, limit, offset)
+    results = service.get_users(search, verified, limit, offset)
+    return [AdminUserResponse(**r) for r in results]
 
 
-@router.post("/users/{user_id}/verify")
+@router.post("/users/{user_id}/verify", response_model=VerificationToggleResponse)
 async def toggle_user_verification(
     user_id: str,
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+):
     """Toggle user verification status."""
     repo = get_repository(db)
     service = AdminService(repo)
-    return service.toggle_user_verification(UUID(user_id), admin_user)
+    result = service.toggle_user_verification(UUID(user_id), admin_user)
+    return VerificationToggleResponse(**result)
 
 
-@router.get("/products")
+@router.get("/products", response_model=List[AdminProductResponse])
 async def get_products(
     search: Optional[str] = Query(None),
     verified: Optional[bool] = Query(None),
@@ -57,26 +88,28 @@ async def get_products(
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
-) -> List[Dict[str, Any]]:
+):
     """Get all products with optional search and filtering (paginated, max 100 per page)."""
     repo = get_repository(db)
     service = AdminService(repo)
-    return service.get_products(search, verified, limit, offset)
+    results = service.get_products(search, verified, limit, offset)
+    return [AdminProductResponse(**r) for r in results]
 
 
-@router.post("/products/{product_id}/verify")
+@router.post("/products/{product_id}/verify", response_model=VerificationToggleResponse)
 async def toggle_product_verification(
     product_id: str,
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+):
     """Toggle product verification status."""
     repo = get_repository(db)
     service = AdminService(repo)
-    return service.toggle_product_verification(UUID(product_id), admin_user)
+    result = service.toggle_product_verification(UUID(product_id), admin_user)
+    return VerificationToggleResponse(**result)
 
 
-@router.get("/stores")
+@router.get("/stores", response_model=List[AdminStoreResponse])
 async def get_stores(
     search: Optional[str] = Query(None),
     verified: Optional[bool] = Query(None),
@@ -84,20 +117,22 @@ async def get_stores(
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
-) -> List[Dict[str, Any]]:
+):
     """Get all stores with optional search and filtering (paginated, max 100 per page)."""
     repo = get_repository(db)
     service = AdminService(repo)
-    return service.get_stores(search, verified, limit, offset)
+    results = service.get_stores(search, verified, limit, offset)
+    return [AdminStoreResponse(**r) for r in results]
 
 
-@router.post("/stores/{store_id}/verify")
+@router.post("/stores/{store_id}/verify", response_model=VerificationToggleResponse)
 async def toggle_store_verification(
     store_id: str,
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+):
     """Toggle store verification status."""
     repo = get_repository(db)
     service = AdminService(repo)
-    return service.toggle_store_verification(UUID(store_id), admin_user)
+    result = service.toggle_store_verification(UUID(store_id), admin_user)
+    return VerificationToggleResponse(**result)

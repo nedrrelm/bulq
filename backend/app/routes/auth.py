@@ -32,6 +32,9 @@ class UserResponse(BaseModel):
     email: str
     is_admin: bool = False
 
+class MessageResponse(BaseModel):
+    message: str
+
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
     """Get current user from session cookie."""
     session_token = request.cookies.get("session_token")
@@ -155,7 +158,7 @@ async def login(user_data: UserLogin, response: Response, db: Session = Depends(
         is_admin=user.is_admin
     )
 
-@router.post("/logout")
+@router.post("/logout", response_model=MessageResponse)
 async def logout(request: Request, response: Response):
     """Logout user."""
     session_token = request.cookies.get("session_token")
@@ -167,7 +170,7 @@ async def logout(request: Request, response: Response):
         )
 
     response.delete_cookie(key="session_token")
-    return {"message": "Logged out successfully"}
+    return MessageResponse(message="Logged out successfully")
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(require_auth)):
