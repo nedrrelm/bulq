@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from .base_service import BaseService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
+from ..validation import validate_uuid
 from ..models import User
 from ..request_context import get_logger
 
@@ -86,10 +87,7 @@ class NotificationService(BaseService):
             NotFoundError: If notification doesn't exist
             ForbiddenError: If user doesn't own the notification
         """
-        try:
-            notification_uuid = UUID(notification_id)
-        except ValueError:
-            raise BadRequestError("Invalid notification ID format")
+        notification_uuid = validate_uuid(notification_id, "Notification")
 
         # Get notification and check ownership
         notification = self.repo.get_notification_by_id(notification_uuid)

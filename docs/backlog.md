@@ -109,27 +109,6 @@ await manager.broadcast(f"run:{result.run_id}", {
 
 ---
 
-### 9. Extract Validation Helpers
-**Status**: Medium Priority (DRY)
-**Affected files**: Multiple service files
-
-**Problem:** UUID validation, state validation repeated across services.
-```python
-# Repeated everywhere:
-try:
-    run_uuid = UUID(run_id)
-except ValueError:
-    raise BadRequestError("Invalid ID format")
-```
-
-**Impact:** Code duplication, inconsistent error messages.
-
-**Fix:** Create validation utilities:
-- `validate_uuid(id_str: str, resource_name: str) -> UUID`
-- `validate_state_transition(run: Run, target_state: RunState)`
-
----
-
 ### 10. Replace Magic Numbers with Constants
 **Status**: Medium Priority (readability)
 **Affected files**: `app/routes/auth.py:74, 115`

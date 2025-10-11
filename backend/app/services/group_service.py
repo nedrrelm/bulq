@@ -6,6 +6,7 @@ from uuid import UUID
 from .base_service import BaseService
 from ..background_tasks import create_background_task
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
+from ..validation import validate_uuid
 from ..models import User, Group
 from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
 from ..run_state import RunState
@@ -147,10 +148,7 @@ class GroupService(BaseService):
             ForbiddenError: If user is not a member of the group
         """
         # Verify group ID format
-        try:
-            group_uuid = UUID(group_id)
-        except ValueError:
-            raise BadRequestError("Invalid group ID format")
+        group_uuid = validate_uuid(group_id, "Group")
 
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
@@ -196,10 +194,7 @@ class GroupService(BaseService):
             ForbiddenError: If user is not a member of the group
         """
         # Verify group ID format
-        try:
-            group_uuid = UUID(group_id)
-        except ValueError:
-            raise BadRequestError("Invalid group ID format")
+        group_uuid = validate_uuid(group_id, "Group")
 
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
@@ -262,10 +257,7 @@ class GroupService(BaseService):
             ForbiddenError: If user is not a member of the group
         """
         # Verify group ID format
-        try:
-            group_uuid = UUID(group_id)
-        except ValueError:
-            raise BadRequestError("Invalid group ID format")
+        group_uuid = validate_uuid(group_id, "Group")
 
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
@@ -325,10 +317,7 @@ class GroupService(BaseService):
             ForbiddenError: If user is not the group creator
         """
         # Verify group ID format
-        try:
-            group_uuid = UUID(group_id)
-        except ValueError:
-            raise BadRequestError("Invalid group ID format")
+        group_uuid = validate_uuid(group_id, "Group")
 
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
@@ -511,10 +500,7 @@ class GroupService(BaseService):
             ForbiddenError: If user is not a member of the group
         """
         # Verify group ID format
-        try:
-            group_uuid = UUID(group_id)
-        except ValueError:
-            raise BadRequestError("Invalid group ID format")
+        group_uuid = validate_uuid(group_id, "Group")
 
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
@@ -573,11 +559,8 @@ class GroupService(BaseService):
         self, group_id: str, member_id: str, user: User
     ) -> tuple[UUID, UUID]:
         """Validate member removal request and return UUIDs."""
-        try:
-            group_uuid = UUID(group_id)
-            member_uuid = UUID(member_id)
-        except ValueError:
-            raise BadRequestError("Invalid ID format")
+        group_uuid = validate_uuid(group_id, "Group")
+        member_uuid = validate_uuid(member_id, "Member")
 
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
@@ -689,10 +672,7 @@ class GroupService(BaseService):
             ForbiddenError: If user is not a group admin
         """
         # Verify group ID format
-        try:
-            group_uuid = UUID(group_id)
-        except ValueError:
-            raise BadRequestError("Invalid group ID format")
+        group_uuid = validate_uuid(group_id, "Group")
 
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)

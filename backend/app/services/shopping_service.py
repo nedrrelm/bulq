@@ -8,6 +8,7 @@ from uuid import UUID
 from .base_service import BaseService
 from ..background_tasks import create_background_task
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
+from ..validation import validate_run_state_for_action
 from ..models import User
 from ..run_state import RunState, state_machine
 from ..websocket_manager import manager
@@ -121,8 +122,11 @@ class ShoppingService(BaseService):
             raise ForbiddenError("Not authorized to view this run")
 
         # Only allow viewing shopping list in shopping or later states
-        if run.state not in [RunState.SHOPPING, RunState.DISTRIBUTING, RunState.COMPLETED]:
-            raise BadRequestError("Shopping list only available in shopping state")
+        validate_run_state_for_action(
+            run,
+            [RunState.SHOPPING, RunState.DISTRIBUTING, RunState.COMPLETED],
+            "shopping list"
+        )
 
         # Get shopping list items
         items = self.repo.get_shopping_list_items(run_uuid)
