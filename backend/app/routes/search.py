@@ -26,9 +26,9 @@ class GroupSearchResult(BaseModel):
     member_count: int
 
 class SearchResponse(BaseModel):
-    products: List[ProductSearchResult]
-    stores: List[StoreSearchResult]
-    groups: List[GroupSearchResult]
+    products: list[ProductSearchResult]
+    stores: list[StoreSearchResult]
+    groups: list[GroupSearchResult]
 
 @router.get("", response_model=SearchResponse)
 async def search_all(

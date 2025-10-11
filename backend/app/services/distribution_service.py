@@ -1,6 +1,6 @@
 """Distribution service for handling distribution-related business logic."""
 
-from typing import List, Dict, Any
+from typing import Any
 from uuid import UUID
 from ..models import User, Product, ProductBid
 from ..run_state import RunState
@@ -26,7 +26,7 @@ class DistributionService(BaseService):
 
     def get_distribution_summary(
         self, run_id: UUID, current_user: User
-    ) -> List[DistributionUser]:
+    ) -> list[DistributionUser]:
         """
         Get distribution data aggregated by user.
 
@@ -61,7 +61,7 @@ class DistributionService(BaseService):
         if run.state not in [RunState.DISTRIBUTING, RunState.COMPLETED]:
             raise BadRequestError("Distribution only available in distributing state")
 
-    def _aggregate_bids_by_user(self, all_bids: List[ProductBid]) -> Dict[str, Dict[str, Any]]:
+    def _aggregate_bids_by_user(self, all_bids: list[ProductBid]) -> dict[str, dict[str, Any]]:
         """Group bids by user and aggregate totals."""
         users_data = {}
 
@@ -108,7 +108,7 @@ class DistributionService(BaseService):
         """Calculate subtotal for a product."""
         return price_per_unit * quantity
 
-    def _build_user_distribution(self, user_data: Dict[str, Any]) -> DistributionUser:
+    def _build_user_distribution(self, user_data: dict[str, Any]) -> DistributionUser:
         """Build DistributionUser from aggregated user data."""
         all_picked_up = all(p.is_picked_up for p in user_data['products'])
         return DistributionUser(
@@ -119,7 +119,7 @@ class DistributionService(BaseService):
             all_picked_up=all_picked_up
         )
 
-    def _sort_distributions(self, distributions: List[DistributionUser]) -> List[DistributionUser]:
+    def _sort_distributions(self, distributions: list[DistributionUser]) -> list[DistributionUser]:
         """Sort distributions by pickup status and name."""
         distributions.sort(key=lambda x: (x.all_picked_up, x.user_name))
         return distributions

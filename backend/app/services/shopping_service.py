@@ -1,6 +1,6 @@
 """Shopping service for handling shopping list operations."""
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Optional
 from decimal import Decimal
 from datetime import datetime, timedelta
 from uuid import UUID
@@ -86,7 +86,7 @@ class ShoppingService(BaseService):
         self,
         run_id: str,
         user: User
-    ) -> List[ShoppingListItemResponse]:
+    ) -> list[ShoppingListItemResponse]:
         """
         Get shopping list for a run with auth check.
 

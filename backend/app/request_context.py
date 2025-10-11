@@ -2,11 +2,10 @@
 
 import logging
 from contextvars import ContextVar
-from typing import Optional
 from uuid import uuid4
 
 # Context variable for request ID (thread-safe)
-request_id_var: ContextVar[Optional[str]] = ContextVar('request_id', default=None)
+request_id_var: ContextVar[str | None] = ContextVar('request_id', default=None)
 
 
 def set_request_id(request_id: str) -> None:
@@ -19,7 +18,7 @@ def set_request_id(request_id: str) -> None:
     request_id_var.set(request_id)
 
 
-def get_request_id() -> Optional[str]:
+def get_request_id() -> str | None:
     """
     Get the request ID from the current context.
 
@@ -63,7 +62,7 @@ class RequestContextLogger:
     def __init__(self, logger: logging.Logger):
         self._logger = logger
 
-    def _add_request_id(self, extra: Optional[dict] = None) -> dict:
+    def _add_request_id(self, extra: dict | None = None) -> dict:
         """Add request_id to extra dict if available in context."""
         if extra is None:
             extra = {}
@@ -74,27 +73,27 @@ class RequestContextLogger:
 
         return extra
 
-    def debug(self, msg: str, *args, extra: Optional[dict] = None, **kwargs) -> None:
+    def debug(self, msg: str, *args, extra: dict | None = None, **kwargs) -> None:
         """Log debug message with request_id."""
         self._logger.debug(msg, *args, extra=self._add_request_id(extra), **kwargs)
 
-    def info(self, msg: str, *args, extra: Optional[dict] = None, **kwargs) -> None:
+    def info(self, msg: str, *args, extra: dict | None = None, **kwargs) -> None:
         """Log info message with request_id."""
         self._logger.info(msg, *args, extra=self._add_request_id(extra), **kwargs)
 
-    def warning(self, msg: str, *args, extra: Optional[dict] = None, **kwargs) -> None:
+    def warning(self, msg: str, *args, extra: dict | None = None, **kwargs) -> None:
         """Log warning message with request_id."""
         self._logger.warning(msg, *args, extra=self._add_request_id(extra), **kwargs)
 
-    def error(self, msg: str, *args, extra: Optional[dict] = None, **kwargs) -> None:
+    def error(self, msg: str, *args, extra: dict | None = None, **kwargs) -> None:
         """Log error message with request_id."""
         self._logger.error(msg, *args, extra=self._add_request_id(extra), **kwargs)
 
-    def critical(self, msg: str, *args, extra: Optional[dict] = None, **kwargs) -> None:
+    def critical(self, msg: str, *args, extra: dict | None = None, **kwargs) -> None:
         """Log critical message with request_id."""
         self._logger.critical(msg, *args, extra=self._add_request_id(extra), **kwargs)
 
-    def exception(self, msg: str, *args, extra: Optional[dict] = None, **kwargs) -> None:
+    def exception(self, msg: str, *args, extra: dict | None = None, **kwargs) -> None:
         """Log exception with request_id."""
         self._logger.exception(msg, *args, extra=self._add_request_id(extra), **kwargs)
 

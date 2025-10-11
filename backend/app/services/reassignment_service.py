@@ -1,6 +1,6 @@
 """Leader reassignment service for managing run leader transfers."""
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
 import asyncio
 
@@ -19,7 +19,7 @@ class ReassignmentService:
     def __init__(self, repo: AbstractRepository):
         self.repo = repo
 
-    async def request_reassignment(self, run_id: UUID, from_user: User, to_user_id: UUID) -> Dict[str, Any]:
+    async def request_reassignment(self, run_id: UUID, from_user: User, to_user_id: UUID) -> dict[str, Any]:
         """
         Create a leader reassignment request.
 
@@ -165,7 +165,7 @@ class ReassignmentService:
                 extra={"error": str(e), "run_id": str(run_id), "from_user_id": str(from_user.id), "to_user_id": str(to_user_id)}
             )
 
-    async def accept_reassignment(self, request_id: UUID, accepting_user: User) -> Dict[str, Any]:
+    async def accept_reassignment(self, request_id: UUID, accepting_user: User) -> dict[str, Any]:
         """
         Accept a leader reassignment request.
 
@@ -302,7 +302,7 @@ class ReassignmentService:
                 extra={"error": str(e), "run_id": str(request.run_id), "request_id": str(request_id)}
             )
 
-    async def decline_reassignment(self, request_id: UUID, declining_user: User) -> Dict[str, Any]:
+    async def decline_reassignment(self, request_id: UUID, declining_user: User) -> dict[str, Any]:
         """
         Decline a leader reassignment request.
 
@@ -418,7 +418,7 @@ class ReassignmentService:
                 extra={"error": str(e), "run_id": str(request.run_id), "request_id": str(request_id)}
             )
 
-    def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> Dict[str, Any]:
+    def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> dict[str, Any]:
         """
         Cancel a pending reassignment request.
 
@@ -468,7 +468,7 @@ class ReassignmentService:
             "resolved_at": request.resolved_at.isoformat() if request.resolved_at else None
         }
 
-    def get_pending_requests_for_user(self, user_id: UUID) -> Dict[str, List[Dict[str, Any]]]:
+    def get_pending_requests_for_user(self, user_id: UUID) -> dict[str, list[dict[str, Any]]]:
         """
         Get all pending reassignment requests involving a user.
 
@@ -486,7 +486,7 @@ class ReassignmentService:
             "received": [self._format_request(r) for r in received_requests]
         }
 
-    def get_pending_request_for_run(self, run_id: UUID) -> Optional[Dict[str, Any]]:
+    def get_pending_request_for_run(self, run_id: UUID) -> dict[str, Any | None]:
         """
         Get pending reassignment request for a run (if any).
 
@@ -499,7 +499,7 @@ class ReassignmentService:
         request = self.repo.get_pending_reassignment_for_run(run_id)
         return self._format_request(request) if request else None
 
-    def _format_request(self, request: LeaderReassignmentRequest) -> Dict[str, Any]:
+    def _format_request(self, request: LeaderReassignmentRequest) -> dict[str, Any]:
         """Format a reassignment request for API response."""
         # Get user names
         from_user = self.repo.get_user_by_id(request.from_user_id)

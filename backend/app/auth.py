@@ -1,6 +1,6 @@
 import bcrypt
 import secrets
-from typing import Optional, Dict
+from typing import Dict
 from datetime import datetime, timedelta
 from app.config import SESSION_EXPIRY_HOURS, SECRET_KEY
 from app.request_context import get_logger
@@ -8,7 +8,7 @@ from app.request_context import get_logger
 logger = get_logger(__name__)
 
 # In-memory session storage (use Redis in production)
-sessions: Dict[str, dict] = {}
+sessions: dict[str, dict] = {}
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
@@ -34,7 +34,7 @@ def create_session(user_id: str) -> str:
 
     return session_token
 
-def get_session(session_token: str) -> Optional[dict]:
+def get_session(session_token: str) -> dict | None:
     """Get session data if valid, None if expired or invalid."""
     if session_token not in sessions:
         return None

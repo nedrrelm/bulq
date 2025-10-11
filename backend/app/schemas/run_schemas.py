@@ -31,7 +31,7 @@ class PlaceBidRequest(BaseModel):
 
     @field_validator('quantity')
     @classmethod
-    def validate_quantity(cls, v):
+    def validate_quantity(cls, v: float) -> float:
         if v <= 0:
             raise ValueError('Quantity must be greater than 0')
         # Check max 2 decimal places
@@ -87,8 +87,8 @@ class RunDetailResponse(BaseModel):
     store_id: str
     store_name: str
     state: str
-    products: List[ProductResponse]
-    participants: List[ParticipantResponse]
+    products: list[ProductResponse]
+    participants: list[ParticipantResponse]
     current_user_is_ready: bool
     current_user_is_leader: bool
     leader_name: str

@@ -23,7 +23,7 @@ from ..schemas import (
 router = APIRouter(prefix="/groups", tags=["groups"])
 logger = get_logger(__name__)
 
-@router.get("/my-groups", response_model=List[GroupResponse])
+@router.get("/my-groups", response_model=list[GroupResponse])
 async def get_my_groups(
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db)
@@ -58,7 +58,7 @@ async def get_group(
 
     return service.get_group_details(group_id, current_user)
 
-@router.get("/{group_id}/runs", response_model=List[RunResponse])
+@router.get("/{group_id}/runs", response_model=list[RunResponse])
 async def get_group_runs(
     group_id: str,
     current_user: User = Depends(require_auth),
@@ -70,7 +70,7 @@ async def get_group_runs(
 
     return service.get_group_runs(group_id, current_user)
 
-@router.get("/{group_id}/runs/history", response_model=List[RunResponse])
+@router.get("/{group_id}/runs/history", response_model=list[RunResponse])
 async def get_group_completed_cancelled_runs(
     group_id: str,
     limit: int = Query(10, ge=1, le=100),

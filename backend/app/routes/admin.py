@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -21,22 +21,22 @@ class AdminUserResponse(BaseModel):
     email: str
     verified: bool
     is_admin: bool
-    created_at: Optional[str]
+    created_at: str | None
 
 class AdminProductResponse(BaseModel):
     id: str
     name: str
-    brand: Optional[str]
-    unit: Optional[str]
+    brand: str | None
+    unit: str | None
     verified: bool
-    created_at: Optional[str]
+    created_at: str | None
 
 class AdminStoreResponse(BaseModel):
     id: str
     name: str
-    address: Optional[str]
+    address: str | None
     verified: bool
-    created_at: Optional[str]
+    created_at: str | None
 
 class VerificationToggleResponse(BaseModel):
     id: str
@@ -51,10 +51,10 @@ def require_admin(current_user: User = Depends(require_auth)) -> User:
     return current_user
 
 
-@router.get("/users", response_model=List[AdminUserResponse])
+@router.get("/users", response_model=list[AdminUserResponse])
 async def get_users(
-    search: Optional[str] = Query(None),
-    verified: Optional[bool] = Query(None),
+    search: str | None = Query(None),
+    verified: bool | None = Query(None),
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
@@ -80,10 +80,10 @@ async def toggle_user_verification(
     return VerificationToggleResponse(**result)
 
 
-@router.get("/products", response_model=List[AdminProductResponse])
+@router.get("/products", response_model=list[AdminProductResponse])
 async def get_products(
-    search: Optional[str] = Query(None),
-    verified: Optional[bool] = Query(None),
+    search: str | None = Query(None),
+    verified: bool | None = Query(None),
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
@@ -109,10 +109,10 @@ async def toggle_product_verification(
     return VerificationToggleResponse(**result)
 
 
-@router.get("/stores", response_model=List[AdminStoreResponse])
+@router.get("/stores", response_model=list[AdminStoreResponse])
 async def get_stores(
-    search: Optional[str] = Query(None),
-    verified: Optional[bool] = Query(None),
+    search: str | None = Query(None),
+    verified: bool | None = Query(None),
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),

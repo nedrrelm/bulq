@@ -20,6 +20,6 @@ class DistributionUser(BaseModel):
     """User's distribution information."""
     user_id: str
     user_name: str
-    products: List[DistributionProduct]
+    products: list[DistributionProduct]
     total_cost: str = "0.00"
     all_picked_up: bool = False

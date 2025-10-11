@@ -143,11 +143,11 @@ class LogContext:
         self.context = kwargs
         self.old_factory = None
 
-    def __enter__(self):
+    def __enter__(self) -> 'LogContext':
         old_factory = logging.getLogRecordFactory()
         self.old_factory = old_factory
 
-        def record_factory(*args, **kwargs):
+        def record_factory(*args: Any, **kwargs: Any) -> logging.LogRecord:
             record = old_factory(*args, **kwargs)
             for key, value in self.context.items():
                 setattr(record, key, value)

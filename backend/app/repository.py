@@ -1,7 +1,7 @@
 """Repository pattern with abstract base class and concrete implementations."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
+from typing import Any
 from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from decimal import Decimal
@@ -20,12 +20,12 @@ class AbstractRepository(ABC):
     # ==================== User Methods ====================
 
     @abstractmethod
-    def get_user_by_id(self, user_id: UUID) -> Optional[User]:
+    def get_user_by_id(self, user_id: UUID) -> User | None:
         """Get user by ID."""
         raise NotImplementedError("Subclass must implement get_user_by_id")
 
     @abstractmethod
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    def get_user_by_email(self, email: str) -> User | None:
         """Get user by email."""
         raise NotImplementedError("Subclass must implement get_user_by_email")
 
@@ -35,29 +35,29 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement create_user")
 
     @abstractmethod
-    def get_user_groups(self, user: User) -> List[Group]:
+    def get_user_groups(self, user: User) -> list[Group]:
         """Get all groups that a user is a member of."""
         raise NotImplementedError("Subclass must implement get_user_groups")
 
     @abstractmethod
-    def get_all_users(self) -> List[User]:
+    def get_all_users(self) -> list[User]:
         """Get all users."""
         raise NotImplementedError("Subclass must implement get_all_users")
 
     # ==================== Group Methods ====================
 
     @abstractmethod
-    def get_group_by_id(self, group_id: UUID) -> Optional[Group]:
+    def get_group_by_id(self, group_id: UUID) -> Group | None:
         """Get group by ID."""
         raise NotImplementedError("Subclass must implement get_group_by_id")
 
     @abstractmethod
-    def get_group_by_invite_token(self, invite_token: str) -> Optional[Group]:
+    def get_group_by_invite_token(self, invite_token: str) -> Group | None:
         """Get group by invite token."""
         raise NotImplementedError("Subclass must implement get_group_by_invite_token")
 
     @abstractmethod
-    def regenerate_group_invite_token(self, group_id: UUID) -> Optional[str]:
+    def regenerate_group_invite_token(self, group_id: UUID) -> str | None:
         """Regenerate invite token for a group."""
         raise NotImplementedError("Subclass must implement regenerate_group_invite_token")
 
@@ -82,24 +82,24 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement is_user_group_admin")
 
     @abstractmethod
-    def get_group_members_with_admin_status(self, group_id: UUID) -> List[Dict]:
+    def get_group_members_with_admin_status(self, group_id: UUID) -> list[Dict]:
         """Get all members of a group with their admin status."""
         raise NotImplementedError("Subclass must implement get_group_members_with_admin_status")
 
     @abstractmethod
-    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Optional[Group]:
+    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Group | None:
         """Update whether a group allows joining via invite link."""
         raise NotImplementedError("Subclass must implement update_group_joining_allowed")
 
     # ==================== Store Methods ====================
 
     @abstractmethod
-    def search_stores(self, query: str) -> List[Store]:
+    def search_stores(self, query: str) -> list[Store]:
         """Search stores by name."""
         raise NotImplementedError("Subclass must implement search_stores")
 
     @abstractmethod
-    def get_all_stores(self, limit: int = None, offset: int = 0) -> List[Store]:
+    def get_all_stores(self, limit: int = None, offset: int = 0) -> list[Store]:
         """Get all stores (optionally paginated)."""
         raise NotImplementedError("Subclass must implement get_all_stores")
 
@@ -109,68 +109,68 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement create_store")
 
     @abstractmethod
-    def get_store_by_id(self, store_id: UUID) -> Optional[Store]:
+    def get_store_by_id(self, store_id: UUID) -> Store | None:
         """Get store by ID."""
         raise NotImplementedError("Subclass must implement get_store_by_id")
 
     @abstractmethod
-    def get_products_by_store_from_availabilities(self, store_id: UUID) -> List[Product]:
+    def get_products_by_store_from_availabilities(self, store_id: UUID) -> list[Product]:
         """Get all unique products that are available at a store."""
         raise NotImplementedError("Subclass must implement get_products_by_store_from_availabilities")
 
     @abstractmethod
-    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
+    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> list[Run]:
         """Get all active runs for a store across all user's groups."""
         raise NotImplementedError("Subclass must implement get_active_runs_by_store_for_user")
 
     # ==================== Run Methods ====================
 
     @abstractmethod
-    def get_runs_by_group(self, group_id: UUID) -> List[Run]:
+    def get_runs_by_group(self, group_id: UUID) -> list[Run]:
         """Get all runs for a group."""
         raise NotImplementedError("Subclass must implement get_runs_by_group")
 
     @abstractmethod
-    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> List[Run]:
+    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> list[Run]:
         """Get completed and cancelled runs for a group (paginated)."""
         raise NotImplementedError("Subclass must implement get_completed_cancelled_runs_by_group")
 
     # ==================== Product Methods ====================
 
     @abstractmethod
-    def get_products_by_store(self, store_id: UUID) -> List[Product]:
+    def get_products_by_store(self, store_id: UUID) -> list[Product]:
         """Get all products for a store."""
         raise NotImplementedError("Subclass must implement get_products_by_store")
 
     @abstractmethod
-    def search_products(self, query: str) -> List[Product]:
+    def search_products(self, query: str) -> list[Product]:
         """Search for products by name."""
         raise NotImplementedError("Subclass must implement search_products")
 
     @abstractmethod
-    def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
+    def get_product_by_id(self, product_id: UUID) -> Product | None:
         """Get product by ID."""
         raise NotImplementedError("Subclass must implement get_product_by_id")
 
     @abstractmethod
-    def create_product(self, name: str, brand: Optional[str] = None, unit: Optional[str] = None) -> Product:
+    def create_product(self, name: str, brand: str | None = None, unit: str | None = None) -> Product:
         """Create a new product (store-agnostic)."""
         raise NotImplementedError("Subclass must implement create_product")
 
     @abstractmethod
-    def get_all_products(self) -> List[Product]:
+    def get_all_products(self) -> list[Product]:
         """Get all products."""
         raise NotImplementedError("Subclass must implement get_all_products")
 
     # ==================== Product Bid Methods ====================
 
     @abstractmethod
-    def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
+    def get_bids_by_run(self, run_id: UUID) -> list[ProductBid]:
         """Get all bids for a run."""
         raise NotImplementedError("Subclass must implement get_bids_by_run")
 
     @abstractmethod
-    def get_bids_by_run_with_participations(self, run_id: UUID) -> List[ProductBid]:
+    def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
         """
         Get all bids for a run with participation and user data eagerly loaded.
 
@@ -191,12 +191,12 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement delete_bid")
 
     @abstractmethod
-    def get_bid(self, participation_id: UUID, product_id: UUID) -> Optional[ProductBid]:
+    def get_bid(self, participation_id: UUID, product_id: UUID) -> ProductBid | None:
         """Get a specific bid."""
         raise NotImplementedError("Subclass must implement get_bid")
 
     @abstractmethod
-    def get_bid_by_id(self, bid_id: UUID) -> Optional[ProductBid]:
+    def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
         """Get a bid by its ID."""
         raise NotImplementedError("Subclass must implement get_bid_by_id")
 
@@ -225,17 +225,17 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement create_run")
 
     @abstractmethod
-    def get_participation(self, user_id: UUID, run_id: UUID) -> Optional[RunParticipation]:
+    def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:
         """Get a user's participation in a run."""
         raise NotImplementedError("Subclass must implement get_participation")
 
     @abstractmethod
-    def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
+    def get_run_participations(self, run_id: UUID) -> list[RunParticipation]:
         """Get all participations for a run."""
         raise NotImplementedError("Subclass must implement get_run_participations")
 
     @abstractmethod
-    def get_run_participations_with_users(self, run_id: UUID) -> List[RunParticipation]:
+    def get_run_participations_with_users(self, run_id: UUID) -> list[RunParticipation]:
         """
         Get all participations for a run with user data eagerly loaded.
 
@@ -251,17 +251,17 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement create_participation")
 
     @abstractmethod
-    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> Optional[RunParticipation]:
+    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> RunParticipation | None:
         """Update the ready status of a participation."""
         raise NotImplementedError("Subclass must implement update_participation_ready")
 
     @abstractmethod
-    def get_run_by_id(self, run_id: UUID) -> Optional[Run]:
+    def get_run_by_id(self, run_id: UUID) -> Run | None:
         """Get run by ID."""
         raise NotImplementedError("Subclass must implement get_run_by_id")
 
     @abstractmethod
-    def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
+    def update_run_state(self, run_id: UUID, new_state: str) -> Run | None:
         """Update the state of a run."""
         raise NotImplementedError("Subclass must implement update_run_state")
 
@@ -273,22 +273,22 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement create_shopping_list_item")
 
     @abstractmethod
-    def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
+    def get_shopping_list_items(self, run_id: UUID) -> list[ShoppingListItem]:
         """Get all shopping list items for a run."""
         raise NotImplementedError("Subclass must implement get_shopping_list_items")
 
     @abstractmethod
-    def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
+    def get_shopping_list_items_by_product(self, product_id: UUID) -> list[ShoppingListItem]:
         """Get all shopping list items for a product across all runs."""
         raise NotImplementedError("Subclass must implement get_shopping_list_items_by_product")
 
     @abstractmethod
-    def get_shopping_list_item(self, item_id: UUID) -> Optional[ShoppingListItem]:
+    def get_shopping_list_item(self, item_id: UUID) -> ShoppingListItem | None:
         """Get a shopping list item by ID."""
         raise NotImplementedError("Subclass must implement get_shopping_list_item")
 
     @abstractmethod
-    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
+    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> ShoppingListItem | None:
         """Mark a shopping list item as purchased."""
         raise NotImplementedError("Subclass must implement mark_item_purchased")
 
@@ -305,12 +305,12 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement get_product_availabilities")
 
     @abstractmethod
-    def create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", user_id: UUID = None) -> Any:
+    def create_product_availability(self, product_id: UUID, store_id: UUID, price: float | None = None, notes: str = "", user_id: UUID = None) -> Any:
         """Create or update a product availability at a store."""
         raise NotImplementedError("Subclass must implement create_product_availability")
 
     @abstractmethod
-    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Optional[Any]:
+    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Any | None:
         """Get a specific product availability by product and store."""
         raise NotImplementedError("Subclass must implement get_availability_by_product_and_store")
 
@@ -322,17 +322,17 @@ class AbstractRepository(ABC):
     # ==================== Notification Methods ====================
 
     @abstractmethod
-    def create_notification(self, user_id: UUID, type: str, data: Dict[str, Any]):
+    def create_notification(self, user_id: UUID, type: str, data: dict[str, Any]) -> Notification:
         """Create a new notification for a user."""
         raise NotImplementedError("Subclass must implement create_notification")
 
     @abstractmethod
-    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> List:
+    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> list[Notification]:
         """Get notifications for a user (paginated)."""
         raise NotImplementedError("Subclass must implement get_user_notifications")
 
     @abstractmethod
-    def get_unread_notifications(self, user_id: UUID) -> List:
+    def get_unread_notifications(self, user_id: UUID) -> list[Notification]:
         """Get all unread notifications for a user."""
         raise NotImplementedError("Subclass must implement get_unread_notifications")
 
@@ -352,34 +352,34 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement mark_all_notifications_as_read")
 
     @abstractmethod
-    def get_notification_by_id(self, notification_id: UUID):
+    def get_notification_by_id(self, notification_id: UUID) -> Notification | None:
         """Get a notification by ID."""
         raise NotImplementedError("Subclass must implement get_notification_by_id")
 
     # ==================== Leader Reassignment Methods ====================
 
     @abstractmethod
-    def create_reassignment_request(self, run_id: UUID, from_user_id: UUID, to_user_id: UUID):
+    def create_reassignment_request(self, run_id: UUID, from_user_id: UUID, to_user_id: UUID) -> LeaderReassignmentRequest:
         """Create a leader reassignment request."""
         raise NotImplementedError("Subclass must implement create_reassignment_request")
 
     @abstractmethod
-    def get_reassignment_request_by_id(self, request_id: UUID):
+    def get_reassignment_request_by_id(self, request_id: UUID) -> LeaderReassignmentRequest | None:
         """Get a reassignment request by ID."""
         raise NotImplementedError("Subclass must implement get_reassignment_request_by_id")
 
     @abstractmethod
-    def get_pending_reassignment_for_run(self, run_id: UUID):
+    def get_pending_reassignment_for_run(self, run_id: UUID) -> LeaderReassignmentRequest | None:
         """Get pending reassignment request for a run (if any)."""
         raise NotImplementedError("Subclass must implement get_pending_reassignment_for_run")
 
     @abstractmethod
-    def get_pending_reassignments_from_user(self, user_id: UUID) -> List:
+    def get_pending_reassignments_from_user(self, user_id: UUID) -> list[LeaderReassignmentRequest]:
         """Get all pending reassignment requests created by a user."""
         raise NotImplementedError("Subclass must implement get_pending_reassignments_from_user")
 
     @abstractmethod
-    def get_pending_reassignments_to_user(self, user_id: UUID) -> List:
+    def get_pending_reassignments_to_user(self, user_id: UUID) -> list[LeaderReassignmentRequest]:
         """Get all pending reassignment requests for a user to respond to."""
         raise NotImplementedError("Subclass must implement get_pending_reassignments_to_user")
 
@@ -419,11 +419,11 @@ class DatabaseRepository(AbstractRepository):
 
     # ==================== User Methods ====================
 
-    def get_user_by_id(self, user_id: UUID) -> Optional[User]:
+    def get_user_by_id(self, user_id: UUID) -> User | None:
         """Get user by ID."""
         return self.db.query(User).filter(User.id == user_id).first()
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    def get_user_by_email(self, email: str) -> User | None:
         """Get user by email."""
         return self.db.query(User).filter(User.email == email).first()
 
@@ -435,25 +435,25 @@ class DatabaseRepository(AbstractRepository):
         self.db.refresh(user)
         return user
 
-    def get_user_groups(self, user: User) -> List[Group]:
+    def get_user_groups(self, user: User) -> list[Group]:
         """Get all groups that a user is a member of."""
         return self.db.query(Group).join(Group.members).filter(User.id == user.id).all()
 
-    def get_all_users(self) -> List[User]:
+    def get_all_users(self) -> list[User]:
         """Get all users."""
         return self.db.query(User).all()
 
     # ==================== Group Methods ====================
 
-    def get_group_by_id(self, group_id: UUID) -> Optional[Group]:
+    def get_group_by_id(self, group_id: UUID) -> Group | None:
         """Get group by ID."""
         return self.db.query(Group).filter(Group.id == group_id).first()
 
-    def get_group_by_invite_token(self, invite_token: str) -> Optional[Group]:
+    def get_group_by_invite_token(self, invite_token: str) -> Group | None:
         """Get group by invite token."""
         return self.db.query(Group).filter(Group.invite_token == invite_token).first()
 
-    def regenerate_group_invite_token(self, group_id: UUID) -> Optional[str]:
+    def regenerate_group_invite_token(self, group_id: UUID) -> str | None:
         """Regenerate invite token for a group."""
         from uuid import uuid4
         group = self.db.query(Group).filter(Group.id == group_id).first()
@@ -528,7 +528,7 @@ class DatabaseRepository(AbstractRepository):
 
         return result[0] if result else False
 
-    def get_group_members_with_admin_status(self, group_id: UUID) -> List[Dict]:
+    def get_group_members_with_admin_status(self, group_id: UUID) -> list[Dict]:
         """Get all members of a group with their admin status."""
         from sqlalchemy import select
         from .models import group_membership
@@ -549,7 +549,7 @@ class DatabaseRepository(AbstractRepository):
             for user, is_admin in results
         ]
 
-    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Optional[Group]:
+    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Group | None:
         """Update whether a group allows joining via invite link."""
         group = self.db.query(Group).filter(Group.id == group_id).first()
         if group:
@@ -561,11 +561,11 @@ class DatabaseRepository(AbstractRepository):
 
     # ==================== Store Methods ====================
 
-    def search_stores(self, query: str) -> List[Store]:
+    def search_stores(self, query: str) -> list[Store]:
         """Search stores by name."""
         return self.db.query(Store).filter(Store.name.ilike(f"%{query}%")).all()
 
-    def get_all_stores(self, limit: int = None, offset: int = 0) -> List[Store]:
+    def get_all_stores(self, limit: int = None, offset: int = 0) -> list[Store]:
         """Get all stores (optionally paginated)."""
         query = self.db.query(Store).order_by(Store.name)
         if limit is not None:
@@ -580,11 +580,11 @@ class DatabaseRepository(AbstractRepository):
         self.db.refresh(store)
         return store
 
-    def get_store_by_id(self, store_id: UUID) -> Optional[Store]:
+    def get_store_by_id(self, store_id: UUID) -> Store | None:
         """Get store by ID."""
         return self.db.query(Store).filter(Store.id == store_id).first()
 
-    def get_products_by_store_from_availabilities(self, store_id: UUID) -> List[Product]:
+    def get_products_by_store_from_availabilities(self, store_id: UUID) -> list[Product]:
         """Get all unique products that are available at a store."""
         from sqlalchemy import distinct
         product_ids = self.db.query(distinct(ProductAvailability.product_id)).filter(
@@ -593,7 +593,7 @@ class DatabaseRepository(AbstractRepository):
         product_ids = [pid[0] for pid in product_ids]
         return self.db.query(Product).filter(Product.id.in_(product_ids)).all()
 
-    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
+    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> list[Run]:
         """Get all active runs for a store across all user's groups."""
         from sqlalchemy import and_, select
         from .models import group_membership
@@ -618,11 +618,11 @@ class DatabaseRepository(AbstractRepository):
 
     # ==================== Run Methods ====================
 
-    def get_runs_by_group(self, group_id: UUID) -> List[Run]:
+    def get_runs_by_group(self, group_id: UUID) -> list[Run]:
         """Get all runs for a group."""
         return self.db.query(Run).filter(Run.group_id == group_id).all()
 
-    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> List[Run]:
+    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> list[Run]:
         """Get completed and cancelled runs for a group (paginated)."""
         from sqlalchemy import or_, case, desc
 
@@ -645,25 +645,25 @@ class DatabaseRepository(AbstractRepository):
 
         return query.limit(limit).offset(offset).all()
 
-    def get_run_by_id(self, run_id: UUID) -> Optional[Run]:
+    def get_run_by_id(self, run_id: UUID) -> Run | None:
         """Get run by ID."""
         return self.db.query(Run).filter(Run.id == run_id).first()
 
     # ==================== Product Methods ====================
 
-    def get_products_by_store(self, store_id: UUID) -> List[Product]:
+    def get_products_by_store(self, store_id: UUID) -> list[Product]:
         """Get all products for a store (via product availabilities)."""
         return self.get_products_by_store_from_availabilities(store_id)
 
-    def search_products(self, query: str) -> List[Product]:
+    def search_products(self, query: str) -> list[Product]:
         """Search for products by name."""
         return self.db.query(Product).filter(Product.name.ilike(f"%{query}%")).all()
 
-    def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
+    def get_product_by_id(self, product_id: UUID) -> Product | None:
         """Get product by ID."""
         return self.db.query(Product).filter(Product.id == product_id).first()
 
-    def create_product(self, name: str, brand: Optional[str] = None, unit: Optional[str] = None) -> Product:
+    def create_product(self, name: str, brand: str | None = None, unit: str | None = None) -> Product:
         """Create a new product (store-agnostic)."""
         product = Product(
             name=name,
@@ -675,19 +675,19 @@ class DatabaseRepository(AbstractRepository):
         self.db.refresh(product)
         return product
 
-    def get_all_products(self) -> List[Product]:
+    def get_all_products(self) -> list[Product]:
         """Get all products."""
         return self.db.query(Product).all()
 
     # ==================== Product Bid Methods ====================
 
-    def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
+    def get_bids_by_run(self, run_id: UUID) -> list[ProductBid]:
         """Get all bids for a run."""
         return self.db.query(ProductBid).join(RunParticipation).filter(
             RunParticipation.run_id == run_id
         ).all()
 
-    def get_bids_by_run_with_participations(self, run_id: UUID) -> List[ProductBid]:
+    def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
         """Get all bids for a run with participation and user data eagerly loaded."""
         from sqlalchemy.orm import joinedload
 
@@ -734,14 +734,14 @@ class DatabaseRepository(AbstractRepository):
         self.db.commit()
         return result > 0
 
-    def get_bid(self, participation_id: UUID, product_id: UUID) -> Optional[ProductBid]:
+    def get_bid(self, participation_id: UUID, product_id: UUID) -> ProductBid | None:
         """Get a specific bid."""
         return self.db.query(ProductBid).filter(
             ProductBid.participation_id == participation_id,
             ProductBid.product_id == product_id
         ).first()
 
-    def get_bid_by_id(self, bid_id: UUID) -> Optional[ProductBid]:
+    def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
         """Get a bid by its ID."""
         return self.db.query(ProductBid).filter(ProductBid.id == bid_id).first()
 
@@ -778,20 +778,20 @@ class DatabaseRepository(AbstractRepository):
         self.db.refresh(run)
         return run
 
-    def get_participation(self, user_id: UUID, run_id: UUID) -> Optional[RunParticipation]:
+    def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:
         """Get a user's participation in a run."""
         return self.db.query(RunParticipation).filter(
             RunParticipation.user_id == user_id,
             RunParticipation.run_id == run_id
         ).first()
 
-    def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
+    def get_run_participations(self, run_id: UUID) -> list[RunParticipation]:
         """Get all participations for a run."""
         return self.db.query(RunParticipation).filter(
             RunParticipation.run_id == run_id
         ).all()
 
-    def get_run_participations_with_users(self, run_id: UUID) -> List[RunParticipation]:
+    def get_run_participations_with_users(self, run_id: UUID) -> list[RunParticipation]:
         """Get all participations for a run with user data eagerly loaded."""
         from sqlalchemy.orm import joinedload
 
@@ -807,7 +807,7 @@ class DatabaseRepository(AbstractRepository):
         self.db.refresh(participation)
         return participation
 
-    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> Optional[RunParticipation]:
+    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> RunParticipation | None:
         """Update the ready status of a participation."""
         participation = self.db.query(RunParticipation).filter(
             RunParticipation.id == participation_id
@@ -819,7 +819,7 @@ class DatabaseRepository(AbstractRepository):
             return participation
         return None
 
-    def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
+    def update_run_state(self, run_id: UUID, new_state: str) -> Run | None:
         """Update the state of a run."""
         from datetime import datetime
 
@@ -870,25 +870,25 @@ class DatabaseRepository(AbstractRepository):
         self.db.refresh(item)
         return item
 
-    def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
+    def get_shopping_list_items(self, run_id: UUID) -> list[ShoppingListItem]:
         """Get all shopping list items for a run."""
         return self.db.query(ShoppingListItem).filter(
             ShoppingListItem.run_id == run_id
         ).all()
 
-    def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
+    def get_shopping_list_items_by_product(self, product_id: UUID) -> list[ShoppingListItem]:
         """Get all shopping list items for a product across all runs."""
         return self.db.query(ShoppingListItem).filter(
             ShoppingListItem.product_id == product_id
         ).all()
 
-    def get_shopping_list_item(self, item_id: UUID) -> Optional[ShoppingListItem]:
+    def get_shopping_list_item(self, item_id: UUID) -> ShoppingListItem | None:
         """Get a shopping list item by ID."""
         return self.db.query(ShoppingListItem).filter(
             ShoppingListItem.id == item_id
         ).first()
 
-    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
+    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> ShoppingListItem | None:
         """Mark a shopping list item as purchased."""
         item = self.db.query(ShoppingListItem).filter(
             ShoppingListItem.id == item_id
@@ -923,14 +923,14 @@ class DatabaseRepository(AbstractRepository):
 
         return query.all()
 
-    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Optional[ProductAvailability]:
+    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> ProductAvailability | None:
         """Get the most recent product availability by product and store."""
         return self.db.query(ProductAvailability).filter(
             ProductAvailability.product_id == product_id,
             ProductAvailability.store_id == store_id
         ).order_by(ProductAvailability.created_at.desc()).first()
 
-    def create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", user_id: UUID = None) -> ProductAvailability:
+    def create_product_availability(self, product_id: UUID, store_id: UUID, price: float | None = None, notes: str = "", user_id: UUID = None) -> ProductAvailability:
         """Create a new product availability record (price observation)."""
         # Always create a new record to track price history
         availability = ProductAvailability(
@@ -962,7 +962,7 @@ class DatabaseRepository(AbstractRepository):
 
     # ==================== Notification Methods ====================
 
-    def create_notification(self, user_id: UUID, type: str, data: Dict[str, Any]) -> Notification:
+    def create_notification(self, user_id: UUID, type: str, data: dict[str, Any]) -> Notification:
         """Create a new notification for a user."""
         notification = Notification(user_id=user_id, type=type, data=data, read=False)
         self.db.add(notification)
@@ -970,13 +970,13 @@ class DatabaseRepository(AbstractRepository):
         self.db.refresh(notification)
         return notification
 
-    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> List[Notification]:
+    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> list[Notification]:
         """Get notifications for a user (paginated)."""
         return self.db.query(Notification).filter(
             Notification.user_id == user_id
         ).order_by(Notification.created_at.desc()).limit(limit).offset(offset).all()
 
-    def get_unread_notifications(self, user_id: UUID) -> List[Notification]:
+    def get_unread_notifications(self, user_id: UUID) -> list[Notification]:
         """Get all unread notifications for a user."""
         return self.db.query(Notification).filter(
             Notification.user_id == user_id,
@@ -1010,7 +1010,7 @@ class DatabaseRepository(AbstractRepository):
         self.db.commit()
         return count
 
-    def get_notification_by_id(self, notification_id: UUID) -> Optional[Notification]:
+    def get_notification_by_id(self, notification_id: UUID) -> Notification | None:
         """Get a notification by ID."""
         return self.db.query(Notification).filter(
             Notification.id == notification_id
@@ -1031,27 +1031,27 @@ class DatabaseRepository(AbstractRepository):
         self.db.refresh(request)
         return request
 
-    def get_reassignment_request_by_id(self, request_id: UUID) -> Optional[LeaderReassignmentRequest]:
+    def get_reassignment_request_by_id(self, request_id: UUID) -> LeaderReassignmentRequest | None:
         """Get a reassignment request by ID."""
         return self.db.query(LeaderReassignmentRequest).filter(
             LeaderReassignmentRequest.id == request_id
         ).first()
 
-    def get_pending_reassignment_for_run(self, run_id: UUID) -> Optional[LeaderReassignmentRequest]:
+    def get_pending_reassignment_for_run(self, run_id: UUID) -> LeaderReassignmentRequest | None:
         """Get pending reassignment request for a run (if any)."""
         return self.db.query(LeaderReassignmentRequest).filter(
             LeaderReassignmentRequest.run_id == run_id,
             LeaderReassignmentRequest.status == "pending"
         ).first()
 
-    def get_pending_reassignments_from_user(self, user_id: UUID) -> List[LeaderReassignmentRequest]:
+    def get_pending_reassignments_from_user(self, user_id: UUID) -> list[LeaderReassignmentRequest]:
         """Get all pending reassignment requests created by a user."""
         return self.db.query(LeaderReassignmentRequest).filter(
             LeaderReassignmentRequest.from_user_id == user_id,
             LeaderReassignmentRequest.status == "pending"
         ).all()
 
-    def get_pending_reassignments_to_user(self, user_id: UUID) -> List[LeaderReassignmentRequest]:
+    def get_pending_reassignments_to_user(self, user_id: UUID) -> list[LeaderReassignmentRequest]:
         """Get all pending reassignment requests for a user to respond to."""
         return self.db.query(LeaderReassignmentRequest).filter(
             LeaderReassignmentRequest.to_user_id == user_id,
@@ -1103,20 +1103,20 @@ class MemoryRepository(AbstractRepository):
     def _init_storage(self):
         """Initialize storage dictionaries and create test data. Called once by __new__."""
         # Storage dictionaries
-        self._users: Dict[UUID, User] = {}
-        self._users_by_email: Dict[str, User] = {}
-        self._groups: Dict[UUID, Group] = {}
-        self._group_memberships: Dict[UUID, List[UUID]] = {}  # group_id -> [user_ids]
-        self._group_admin_status: Dict[tuple, bool] = {}  # (group_id, user_id) -> is_admin
-        self._stores: Dict[UUID, Store] = {}
-        self._runs: Dict[UUID, Run] = {}
-        self._products: Dict[UUID, Product] = {}
-        self._participations: Dict[UUID, RunParticipation] = {}
-        self._bids: Dict[UUID, ProductBid] = {}
-        self._shopping_list_items: Dict[UUID, ShoppingListItem] = {}
-        self._product_availabilities: Dict[UUID, ProductAvailability] = {}
-        self._notifications: Dict[UUID, Notification] = {}
-        self._reassignment_requests: Dict[UUID, LeaderReassignmentRequest] = {}
+        self._users: dict[UUID, User] = {}
+        self._users_by_email: dict[str, User] = {}
+        self._groups: dict[UUID, Group] = {}
+        self._group_memberships: dict[UUID, list[UUID]] = {}  # group_id -> [user_ids]
+        self._group_admin_status: dict[tuple, bool] = {}  # (group_id, user_id) -> is_admin
+        self._stores: dict[UUID, Store] = {}
+        self._runs: dict[UUID, Run] = {}
+        self._products: dict[UUID, Product] = {}
+        self._participations: dict[UUID, RunParticipation] = {}
+        self._bids: dict[UUID, ProductBid] = {}
+        self._shopping_list_items: dict[UUID, ShoppingListItem] = {}
+        self._product_availabilities: dict[UUID, ProductAvailability] = {}
+        self._notifications: dict[UUID, Notification] = {}
+        self._reassignment_requests: dict[UUID, LeaderReassignmentRequest] = {}
 
         # Create test data
         self._create_test_data()
@@ -1630,10 +1630,10 @@ class MemoryRepository(AbstractRepository):
 
         # Product availabilities already created above with _create_product_availability
 
-    def get_user_by_id(self, user_id: UUID) -> Optional[User]:
+    def get_user_by_id(self, user_id: UUID) -> User | None:
         return self._users.get(user_id)
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    def get_user_by_email(self, email: str) -> User | None:
         return self._users_by_email.get(email)
 
     def create_user(self, name: str, email: str, password_hash: str) -> User:
@@ -1642,10 +1642,10 @@ class MemoryRepository(AbstractRepository):
         self._users_by_email[email] = user
         return user
 
-    def get_all_users(self) -> List[User]:
+    def get_all_users(self) -> list[User]:
         return list(self._users.values())
 
-    def get_user_groups(self, user: User) -> List[Group]:
+    def get_user_groups(self, user: User) -> list[Group]:
         user_groups = []
         for group_id, member_ids in self._group_memberships.items():
             if user.id in member_ids:
@@ -1657,7 +1657,7 @@ class MemoryRepository(AbstractRepository):
                     user_groups.append(group)
         return user_groups
 
-    def get_group_by_id(self, group_id: UUID) -> Optional[Group]:
+    def get_group_by_id(self, group_id: UUID) -> Group | None:
         group = self._groups.get(group_id)
         if group:
             # Set up relationships
@@ -1666,7 +1666,7 @@ class MemoryRepository(AbstractRepository):
             group.members = [self._users.get(uid) for uid in member_ids if uid in self._users]
         return group
 
-    def get_group_by_invite_token(self, invite_token: str) -> Optional[Group]:
+    def get_group_by_invite_token(self, invite_token: str) -> Group | None:
         for group in self._groups.values():
             if group.invite_token == invite_token:
                 # Set up relationships
@@ -1676,7 +1676,7 @@ class MemoryRepository(AbstractRepository):
                 return group
         return None
 
-    def regenerate_group_invite_token(self, group_id: UUID) -> Optional[str]:
+    def regenerate_group_invite_token(self, group_id: UUID) -> str | None:
         group = self._groups.get(group_id)
         if group:
             new_token = str(uuid4())
@@ -1712,7 +1712,7 @@ class MemoryRepository(AbstractRepository):
         """Check if a user is an admin of a group."""
         return self._group_admin_status.get((group_id, user_id), False)
 
-    def get_group_members_with_admin_status(self, group_id: UUID) -> List[Dict]:
+    def get_group_members_with_admin_status(self, group_id: UUID) -> list[Dict]:
         """Get all members of a group with their admin status."""
         member_ids = self._group_memberships.get(group_id, [])
         members = []
@@ -1727,7 +1727,7 @@ class MemoryRepository(AbstractRepository):
                 })
         return members
 
-    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Optional[Group]:
+    def update_group_joining_allowed(self, group_id: UUID, is_joining_allowed: bool) -> Group | None:
         """Update whether a group allows joining via invite link."""
         group = self._groups.get(group_id)
         if group:
@@ -1735,14 +1735,14 @@ class MemoryRepository(AbstractRepository):
             return group
         return None
 
-    def search_stores(self, query: str) -> List[Store]:
+    def search_stores(self, query: str) -> list[Store]:
         query_lower = query.lower()
         return [
             store for store in self._stores.values()
             if query_lower in store.name.lower()
         ]
 
-    def get_all_stores(self, limit: int = None, offset: int = 0) -> List[Store]:
+    def get_all_stores(self, limit: int = None, offset: int = 0) -> list[Store]:
         stores = list(self._stores.values())
         # Sort by name for consistent ordering
         stores.sort(key=lambda s: s.name)
@@ -1750,10 +1750,10 @@ class MemoryRepository(AbstractRepository):
             return stores[offset:offset + limit]
         return stores
 
-    def get_store_by_id(self, store_id: UUID) -> Optional[Store]:
+    def get_store_by_id(self, store_id: UUID) -> Store | None:
         return self._stores.get(store_id)
 
-    def get_products_by_store_from_availabilities(self, store_id: UUID) -> List[Product]:
+    def get_products_by_store_from_availabilities(self, store_id: UUID) -> list[Product]:
         """Get all unique products that have availability records at a store."""
         product_ids = set()
         for avail in self._product_availabilities.values():
@@ -1761,7 +1761,7 @@ class MemoryRepository(AbstractRepository):
                 product_ids.add(avail.product_id)
         return [self._products[pid] for pid in product_ids if pid in self._products]
 
-    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> List[Run]:
+    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> list[Run]:
         """Get all active runs for a store across all user's groups."""
         # Get user's groups by checking which groups have this user as a member
         user_group_ids = []
@@ -1777,10 +1777,10 @@ class MemoryRepository(AbstractRepository):
                 runs.append(run)
         return runs
 
-    def get_runs_by_group(self, group_id: UUID) -> List[Run]:
+    def get_runs_by_group(self, group_id: UUID) -> list[Run]:
         return [run for run in self._runs.values() if run.group_id == group_id]
 
-    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> List[Run]:
+    def get_completed_cancelled_runs_by_group(self, group_id: UUID, limit: int = 10, offset: int = 0) -> list[Run]:
         """Get completed and cancelled runs for a group (paginated)."""
         from datetime import datetime, timezone
         # Get all completed and cancelled runs for the group
@@ -1798,30 +1798,30 @@ class MemoryRepository(AbstractRepository):
         runs.sort(key=get_timestamp, reverse=True)
         return runs[offset:offset + limit]
 
-    def get_products_by_store(self, store_id: UUID) -> List[Product]:
+    def get_products_by_store(self, store_id: UUID) -> list[Product]:
         """Get all products for a store (via product availabilities)."""
         return self.get_products_by_store_from_availabilities(store_id)
 
-    def get_products_by_store_from_availabilities(self, store_id: UUID) -> List[Product]:
+    def get_products_by_store_from_availabilities(self, store_id: UUID) -> list[Product]:
         """Get all unique products that are available at a store."""
         product_ids = {avail.product_id for avail in self._product_availabilities.values() if avail.store_id == store_id}
         return [product for product in self._products.values() if product.id in product_ids]
 
-    def search_products(self, query: str) -> List[Product]:
+    def search_products(self, query: str) -> list[Product]:
         query_lower = query.lower()
         return [product for product in self._products.values() if query_lower in product.name.lower()]
 
-    def get_product_by_id(self, product_id: UUID) -> Optional[Product]:
+    def get_product_by_id(self, product_id: UUID) -> Product | None:
         return self._products.get(product_id)
 
-    def get_bids_by_run(self, run_id: UUID) -> List[ProductBid]:
+    def get_bids_by_run(self, run_id: UUID) -> list[ProductBid]:
         # Get all participations for this run
         participations = [p for p in self._participations.values() if p.run_id == run_id]
         participation_ids = {p.id for p in participations}
         # Get all bids for these participations
         return [bid for bid in self._bids.values() if bid.participation_id in participation_ids]
 
-    def get_bids_by_run_with_participations(self, run_id: UUID) -> List[ProductBid]:
+    def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
         """Get bids with participation and user data eagerly loaded to avoid N+1 queries."""
         # Get all participations for this run with users loaded
         participations = [p for p in self._participations.values() if p.run_id == run_id]
@@ -1852,7 +1852,7 @@ class MemoryRepository(AbstractRepository):
         self._stores[store.id] = store
         return store
 
-    def create_product(self, name: str, brand: Optional[str] = None, unit: Optional[str] = None) -> Product:
+    def create_product(self, name: str, brand: str | None = None, unit: str | None = None) -> Product:
         """Create a new product (store-agnostic)."""
         from datetime import datetime
         product = Product(
@@ -1866,7 +1866,7 @@ class MemoryRepository(AbstractRepository):
         self._products[product.id] = product
         return product
 
-    def get_all_products(self) -> List[Product]:
+    def get_all_products(self) -> list[Product]:
         return list(self._products.values())
 
     def create_or_update_bid(self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool) -> ProductBid:
@@ -1911,7 +1911,7 @@ class MemoryRepository(AbstractRepository):
             return True
         return False
 
-    def get_bid(self, participation_id: UUID, product_id: UUID) -> Optional[ProductBid]:
+    def get_bid(self, participation_id: UUID, product_id: UUID) -> ProductBid | None:
         """Get a specific bid."""
         for bid in self._bids.values():
             if bid.participation_id == participation_id and bid.product_id == product_id:
@@ -1921,7 +1921,7 @@ class MemoryRepository(AbstractRepository):
                 return bid
         return None
 
-    def get_bid_by_id(self, bid_id: UUID) -> Optional[ProductBid]:
+    def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
         """Get a bid by its ID."""
         return self._bids.get(bid_id)
 
@@ -1942,7 +1942,7 @@ class MemoryRepository(AbstractRepository):
         self._stores[store.id] = store
         return store
 
-    def _create_product(self, name: str, brand: Optional[str] = None, unit: Optional[str] = None) -> Product:
+    def _create_product(self, name: str, brand: str | None = None, unit: str | None = None) -> Product:
         """Helper to create product without store association."""
         from datetime import datetime
         product = Product(
@@ -1956,7 +1956,7 @@ class MemoryRepository(AbstractRepository):
         self._products[product.id] = product
         return product
 
-    def _create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", days_ago: float = 0) -> ProductAvailability:
+    def _create_product_availability(self, product_id: UUID, store_id: UUID, price: float | None = None, notes: str = "", days_ago: float = 0) -> ProductAvailability:
         """Helper to create product availability at a store."""
         from datetime import datetime, timedelta
         created_time = datetime.now() - timedelta(days=days_ago)
@@ -2051,7 +2051,7 @@ class MemoryRepository(AbstractRepository):
         self._create_participation(leader_id, run.id, is_leader=True)
         return run
 
-    def get_participation(self, user_id: UUID, run_id: UUID) -> Optional[RunParticipation]:
+    def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:
         for participation in self._participations.values():
             if participation.user_id == user_id and participation.run_id == run_id:
                 # Set up relationships
@@ -2060,7 +2060,7 @@ class MemoryRepository(AbstractRepository):
                 return participation
         return None
 
-    def get_run_participations(self, run_id: UUID) -> List[RunParticipation]:
+    def get_run_participations(self, run_id: UUID) -> list[RunParticipation]:
         participations = []
         for participation in self._participations.values():
             if participation.run_id == run_id:
@@ -2070,7 +2070,7 @@ class MemoryRepository(AbstractRepository):
                 participations.append(participation)
         return participations
 
-    def get_run_participations_with_users(self, run_id: UUID) -> List[RunParticipation]:
+    def get_run_participations_with_users(self, run_id: UUID) -> list[RunParticipation]:
         """Get participations with user data eagerly loaded to avoid N+1 queries."""
         participations = []
         for participation in self._participations.values():
@@ -2089,17 +2089,17 @@ class MemoryRepository(AbstractRepository):
         self._participations[participation.id] = participation
         return participation
 
-    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> Optional[RunParticipation]:
+    def update_participation_ready(self, participation_id: UUID, is_ready: bool) -> RunParticipation | None:
         participation = self._participations.get(participation_id)
         if participation:
             participation.is_ready = is_ready
             return participation
         return None
 
-    def get_run_by_id(self, run_id: UUID) -> Optional[Run]:
+    def get_run_by_id(self, run_id: UUID) -> Run | None:
         return self._runs.get(run_id)
 
-    def update_run_state(self, run_id: UUID, new_state: str) -> Optional[Run]:
+    def update_run_state(self, run_id: UUID, new_state: str) -> Run | None:
         from datetime import datetime
         run = self._runs.get(run_id)
         if run:
@@ -2144,7 +2144,7 @@ class MemoryRepository(AbstractRepository):
         self._shopping_list_items[item.id] = item
         return item
 
-    def get_shopping_list_items(self, run_id: UUID) -> List[ShoppingListItem]:
+    def get_shopping_list_items(self, run_id: UUID) -> list[ShoppingListItem]:
         items = []
         for item in self._shopping_list_items.values():
             if item.run_id == run_id:
@@ -2154,7 +2154,7 @@ class MemoryRepository(AbstractRepository):
                 items.append(item)
         return items
 
-    def get_shopping_list_items_by_product(self, product_id: UUID) -> List[ShoppingListItem]:
+    def get_shopping_list_items_by_product(self, product_id: UUID) -> list[ShoppingListItem]:
         items = []
         for item in self._shopping_list_items.values():
             if item.product_id == product_id:
@@ -2164,10 +2164,10 @@ class MemoryRepository(AbstractRepository):
                 items.append(item)
         return items
 
-    def get_shopping_list_item(self, item_id: UUID) -> Optional[ShoppingListItem]:
+    def get_shopping_list_item(self, item_id: UUID) -> ShoppingListItem | None:
         return self._shopping_list_items.get(item_id)
 
-    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> Optional[ShoppingListItem]:
+    def mark_item_purchased(self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int) -> ShoppingListItem | None:
         item = self._shopping_list_items.get(item_id)
         if item:
             item.purchased_quantity = quantity
@@ -2195,7 +2195,7 @@ class MemoryRepository(AbstractRepository):
                     results.append(avail)
         return results
 
-    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Optional[ProductAvailability]:
+    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> ProductAvailability | None:
         """Get the most recent product availability by product and store."""
         matches = []
         for avail in self._product_availabilities.values():
@@ -2208,7 +2208,7 @@ class MemoryRepository(AbstractRepository):
         # Return the most recent one
         return sorted(matches, key=lambda x: x.created_at if x.created_at else "", reverse=True)[0]
 
-    def create_product_availability(self, product_id: UUID, store_id: UUID, price: Optional[float] = None, notes: str = "", user_id: UUID = None) -> ProductAvailability:
+    def create_product_availability(self, product_id: UUID, store_id: UUID, price: float | None = None, notes: str = "", user_id: UUID = None) -> ProductAvailability:
         """Create a new product availability record (price observation)."""
         from datetime import datetime
 
@@ -2239,7 +2239,7 @@ class MemoryRepository(AbstractRepository):
 
     # ==================== Notification Methods ====================
 
-    def create_notification(self, user_id: UUID, type: str, data: Dict[str, Any]) -> Notification:
+    def create_notification(self, user_id: UUID, type: str, data: dict[str, Any]) -> Notification:
         """Create a new notification for a user."""
         from datetime import datetime, timezone
         notification = Notification(
@@ -2253,7 +2253,7 @@ class MemoryRepository(AbstractRepository):
         self._notifications[notification.id] = notification
         return notification
 
-    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> List[Notification]:
+    def get_user_notifications(self, user_id: UUID, limit: int = 20, offset: int = 0) -> list[Notification]:
         """Get notifications for a user (paginated)."""
         from datetime import datetime, timezone
         user_notifications = [n for n in self._notifications.values() if n.user_id == user_id]
@@ -2261,7 +2261,7 @@ class MemoryRepository(AbstractRepository):
         user_notifications.sort(key=lambda n: n.created_at or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
         return user_notifications[offset:offset + limit]
 
-    def get_unread_notifications(self, user_id: UUID) -> List[Notification]:
+    def get_unread_notifications(self, user_id: UUID) -> list[Notification]:
         """Get all unread notifications for a user."""
         unread = [n for n in self._notifications.values() if n.user_id == user_id and not n.read]
         # Sort by created_at descending
@@ -2289,7 +2289,7 @@ class MemoryRepository(AbstractRepository):
                 count += 1
         return count
 
-    def get_notification_by_id(self, notification_id: UUID) -> Optional[Notification]:
+    def get_notification_by_id(self, notification_id: UUID) -> Notification | None:
         """Get a notification by ID."""
         return self._notifications.get(notification_id)
 
@@ -2312,25 +2312,25 @@ class MemoryRepository(AbstractRepository):
         self._reassignment_requests[request_id] = request
         return request
 
-    def get_reassignment_request_by_id(self, request_id: UUID) -> Optional[LeaderReassignmentRequest]:
+    def get_reassignment_request_by_id(self, request_id: UUID) -> LeaderReassignmentRequest | None:
         """Get a reassignment request by ID."""
         return self._reassignment_requests.get(request_id)
 
-    def get_pending_reassignment_for_run(self, run_id: UUID) -> Optional[LeaderReassignmentRequest]:
+    def get_pending_reassignment_for_run(self, run_id: UUID) -> LeaderReassignmentRequest | None:
         """Get pending reassignment request for a run (if any)."""
         for request in self._reassignment_requests.values():
             if request.run_id == run_id and request.status == "pending":
                 return request
         return None
 
-    def get_pending_reassignments_from_user(self, user_id: UUID) -> List[LeaderReassignmentRequest]:
+    def get_pending_reassignments_from_user(self, user_id: UUID) -> list[LeaderReassignmentRequest]:
         """Get all pending reassignment requests created by a user."""
         return [
             request for request in self._reassignment_requests.values()
             if request.from_user_id == user_id and request.status == "pending"
         ]
 
-    def get_pending_reassignments_to_user(self, user_id: UUID) -> List[LeaderReassignmentRequest]:
+    def get_pending_reassignments_to_user(self, user_id: UUID) -> list[LeaderReassignmentRequest]:
         """Get all pending reassignment requests for a user to respond to."""
         return [
             request for request in self._reassignment_requests.values()

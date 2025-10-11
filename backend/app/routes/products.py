@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID
 from ..database import get_db
 from ..routes.auth import require_auth
@@ -17,7 +17,7 @@ from ..schemas import (
 
 router = APIRouter(prefix="/products", tags=["products"])
 
-@router.get("/search", response_model=List[ProductSearchResult])
+@router.get("/search", response_model=list[ProductSearchResult])
 async def search_products(
     q: str = Query(..., min_length=1, description="Search query"),
     current_user: User = Depends(require_auth),

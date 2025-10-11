@@ -1,6 +1,6 @@
 """Admin service for managing users, products, and stores."""
 
-from typing import List, Dict, Any, Optional
+from typing import Any
 from uuid import UUID
 from datetime import datetime, timezone
 
@@ -14,11 +14,11 @@ class AdminService(BaseService):
 
     def get_users(
         self,
-        search: Optional[str] = None,
-        verified: Optional[bool] = None,
+        search: str | None = None,
+        verified: bool | None = None,
         limit: int = 100,
         offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get all users with optional search and filtering (paginated).
 
@@ -64,7 +64,7 @@ class AdminService(BaseService):
             for u in paginated_users
         ]
 
-    def toggle_user_verification(self, user_id: UUID, admin_user: User) -> Dict[str, Any]:
+    def toggle_user_verification(self, user_id: UUID, admin_user: User) -> dict[str, Any]:
         """
         Toggle user verification status.
 
@@ -93,11 +93,11 @@ class AdminService(BaseService):
 
     def get_products(
         self,
-        search: Optional[str] = None,
-        verified: Optional[bool] = None,
+        search: str | None = None,
+        verified: bool | None = None,
         limit: int = 100,
         offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get all products with optional search and filtering (paginated).
 
@@ -143,7 +143,7 @@ class AdminService(BaseService):
             for p in paginated_products
         ]
 
-    def toggle_product_verification(self, product_id: UUID, admin_user: User) -> Dict[str, Any]:
+    def toggle_product_verification(self, product_id: UUID, admin_user: User) -> dict[str, Any]:
         """
         Toggle product verification status.
 
@@ -178,11 +178,11 @@ class AdminService(BaseService):
 
     def get_stores(
         self,
-        search: Optional[str] = None,
-        verified: Optional[bool] = None,
+        search: str | None = None,
+        verified: bool | None = None,
         limit: int = 100,
         offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get all stores with optional search and filtering (paginated).
 
@@ -229,7 +229,7 @@ class AdminService(BaseService):
             for s in paginated_stores
         ]
 
-    def toggle_store_verification(self, store_id: UUID, admin_user: User) -> Dict[str, Any]:
+    def toggle_store_verification(self, store_id: UUID, admin_user: User) -> dict[str, Any]:
         """
         Toggle store verification status.
 

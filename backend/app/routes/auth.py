@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
 
 from ..database import get_db
 from ..models import User
@@ -35,7 +34,7 @@ class UserResponse(BaseModel):
 class MessageResponse(BaseModel):
     message: str
 
-def get_current_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> User | None:
     """Get current user from session cookie."""
     session_token = request.cookies.get("session_token")
     if not session_token:

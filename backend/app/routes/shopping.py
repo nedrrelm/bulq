@@ -20,7 +20,7 @@ from ..schemas import (
 router = APIRouter(prefix="/shopping", tags=["shopping"])
 logger = get_logger(__name__)
 
-@router.get("/{run_id}/items", response_model=List[ShoppingListItemResponse])
+@router.get("/{run_id}/items", response_model=list[ShoppingListItemResponse])
 async def get_shopping_list(
     run_id: str,
     current_user: User = Depends(require_auth),

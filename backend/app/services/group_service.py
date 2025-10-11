@@ -1,6 +1,6 @@
 """Service layer for group-related business logic."""
 
-from typing import List, Dict, Any
+from typing import Any
 from uuid import UUID
 
 from .base_service import BaseService
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 class GroupService(BaseService):
     """Service for managing groups and group operations."""
 
-    def get_user_groups(self, user: User) -> List[GroupResponse]:
+    def get_user_groups(self, user: User) -> list[GroupResponse]:
         """
         Get all groups the user is a member of with run counts.
 
@@ -178,7 +178,7 @@ class GroupService(BaseService):
             is_current_user_admin=is_current_user_admin
         )
 
-    def get_group_runs(self, group_id: str, user: User) -> List[RunResponse]:
+    def get_group_runs(self, group_id: str, user: User) -> list[RunResponse]:
         """
         Get all runs for a specific group with authorization check.
 
@@ -242,7 +242,7 @@ class GroupService(BaseService):
 
         return run_responses
 
-    def get_group_completed_cancelled_runs(self, group_id: str, user: User, limit: int = 10, offset: int = 0) -> List[RunResponse]:
+    def get_group_completed_cancelled_runs(self, group_id: str, user: User, limit: int = 10, offset: int = 0) -> list[RunResponse]:
         """
         Get completed and cancelled runs for a specific group with pagination.
 

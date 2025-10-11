@@ -11,7 +11,7 @@ class CreateGroupRequest(BaseModel):
 
     @field_validator('name')
     @classmethod
-    def validate_name(cls, v):
+    def validate_name(cls, v: str) -> str:
         v = v.strip()
 
         if len(v) < 2:
@@ -42,7 +42,7 @@ class GroupResponse(BaseModel):
     member_count: int
     active_runs_count: int
     completed_runs_count: int
-    active_runs: List[RunSummary]
+    active_runs: list[RunSummary]
     created_at: str
 
     class Config:
@@ -56,7 +56,7 @@ class CreateGroupResponse(BaseModel):
     member_count: int
     active_runs_count: int
     completed_runs_count: int
-    active_runs: List[RunSummary]
+    active_runs: list[RunSummary]
 
 
 class RunResponse(BaseModel):
@@ -80,7 +80,7 @@ class GroupDetailResponse(BaseModel):
     name: str
     invite_token: str
     is_joining_allowed: bool
-    members: List[dict]  # Contains user info dicts
+    members: list[dict]  # Contains user info dicts
     is_current_user_admin: bool
 
 

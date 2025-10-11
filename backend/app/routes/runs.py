@@ -238,7 +238,7 @@ async def finish_adjusting(
 
     return result
 
-@router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
+@router.get("/{run_id}/available-products", response_model=list[AvailableProductResponse])
 async def get_available_products(
     run_id: str,
     current_user: User = Depends(require_auth),

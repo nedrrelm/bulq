@@ -1,6 +1,7 @@
 import os
+from typing import Generator
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 from .models import Base
 
@@ -29,11 +30,11 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def create_tables():
+def create_tables() -> None:
     """Create all tables in the database."""
     Base.metadata.create_all(bind=engine)
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     """Dependency to get database session."""
     db = SessionLocal()
     try:

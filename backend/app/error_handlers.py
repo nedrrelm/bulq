@@ -52,7 +52,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 async def validation_exception_handler(
     request: Request,
-    exc: Union[RequestValidationError, PydanticValidationError]
+    exc: RequestValidationError | PydanticValidationError
 ) -> JSONResponse:
     """
     Handle Pydantic validation errors.
