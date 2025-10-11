@@ -9,32 +9,14 @@ from ..services import DistributionService
 from ..websocket_manager import manager
 from ..run_state import RunState
 from ..exceptions import BadRequestError, NotFoundError, ForbiddenError
-from pydantic import BaseModel
+from ..schemas import (
+    DistributionUser,
+    MessageResponse,
+    StateChangeResponse,
+)
 from uuid import UUID
 
 router = APIRouter(prefix="/distribution", tags=["distribution"])
-
-class DistributionProduct(BaseModel):
-    bid_id: str
-    product_id: str
-    product_name: str
-    requested_quantity: int
-    distributed_quantity: int
-    price_per_unit: str
-    subtotal: str
-    is_picked_up: bool
-
-class DistributionUser(BaseModel):
-    user_id: str
-    user_name: str
-    products: List[DistributionProduct]
-
-class StateChangeResponse(BaseModel):
-    message: str
-    state: str
-
-class MessageResponse(BaseModel):
-    message: str
 
 @router.get("/{run_id}", response_model=List[DistributionUser])
 async def get_distribution_data(
@@ -52,22 +34,7 @@ async def get_distribution_data(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid run ID format")
 
-    # Get distribution summary from service
-    users_data = service.get_distribution_summary(run_uuid, current_user)
-
-    # Convert to Pydantic models
-    result = [
-        DistributionUser(
-            user_id=user_data['user_id'],
-            user_name=user_data['user_name'],
-            products=[DistributionProduct(**p) for p in user_data['products']],
-            total_cost=user_data['total_cost'],
-            all_picked_up=user_data['all_picked_up']
-        )
-        for user_data in users_data
-    ]
-
-    return result
+    return service.get_distribution_summary(run_uuid, current_user)
 
 @router.post("/{run_id}/pickup/{bid_id}", response_model=MessageResponse)
 async def mark_picked_up(
@@ -87,10 +54,7 @@ async def mark_picked_up(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ID format")
 
-    # Mark as picked up via service
-    result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
-
-    return MessageResponse(**result)
+    return service.mark_picked_up(run_uuid, bid_uuid, current_user)
 
 @router.post("/{run_id}/complete", response_model=StateChangeResponse)
 async def complete_distribution(
@@ -112,19 +76,19 @@ async def complete_distribution(
     result = service.complete_distribution(run_uuid, current_user)
 
     # Broadcast state change to both run and group (using data from service)
-    await manager.broadcast(f"run:{result['run_id']}", {
+    await manager.broadcast(f"run:{result.run_id}", {
         "type": "state_changed",
         "data": {
-            "run_id": result['run_id'],
+            "run_id": result.run_id,
             "new_state": RunState.COMPLETED
         }
     })
-    await manager.broadcast(f"group:{result['group_id']}", {
+    await manager.broadcast(f"group:{result.group_id}", {
         "type": "run_state_changed",
         "data": {
-            "run_id": result['run_id'],
+            "run_id": result.run_id,
             "new_state": RunState.COMPLETED
         }
     })
 
-    return StateChangeResponse(message=result['message'], state=result['state'])
+    return result

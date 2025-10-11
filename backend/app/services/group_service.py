@@ -10,6 +10,18 @@ from ..models import User
 from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
 from ..run_state import RunState
 from ..websocket_manager import manager
+from ..schemas import (
+    GroupResponse,
+    CreateGroupResponse,
+    GroupDetailResponse,
+    RunResponse,
+    RunSummary,
+    RegenerateTokenResponse,
+    PreviewGroupResponse,
+    JoinGroupResponse,
+    MessageResponse,
+    ToggleJoiningResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +29,7 @@ logger = logging.getLogger(__name__)
 class GroupService(BaseService):
     """Service for managing groups and group operations."""
 
-    def get_user_groups(self, user: User) -> List[Dict[str, Any]]:
+    def get_user_groups(self, user: User) -> List[GroupResponse]:
         """
         Get all groups the user is a member of with run counts.
 
@@ -25,7 +37,7 @@ class GroupService(BaseService):
             user: The user to get groups for
 
         Returns:
-            List of group dictionaries with active/completed run counts
+            List of GroupResponse with active/completed run counts
         """
         logger.debug(f"Fetching groups for user", extra={"user_id": str(user.id)})
 
@@ -59,28 +71,29 @@ class GroupService(BaseService):
 
             # Convert to run summary format
             active_runs_summary = [
-                {
-                    "id": str(run.id),
-                    "store_name": store_lookup.get(run.store_id, "Unknown Store"),
-                    "state": run.state
-                }
+                RunSummary(
+                    id=str(run.id),
+                    store_name=store_lookup.get(run.store_id, "Unknown Store"),
+                    state=run.state
+                )
                 for run in sorted_active_runs
             ]
 
-            group_responses.append({
-                "id": str(group.id),
-                "name": group.name,
-                "description": f"Group created by {group.creator.name}" if group.creator else "Group",
-                "member_count": len(group.members),
-                "active_runs_count": len(active_runs),
-                "completed_runs_count": len(completed_runs),
-                "active_runs": active_runs_summary,
-                "created_at": None  # Not available in model yet
-            })
+            from datetime import datetime
+            group_responses.append(GroupResponse(
+                id=str(group.id),
+                name=group.name,
+                description=f"Group created by {group.creator.name}" if group.creator else "Group",
+                member_count=len(group.members),
+                active_runs_count=len(active_runs),
+                completed_runs_count=len(completed_runs),
+                active_runs=active_runs_summary,
+                created_at=datetime.now().isoformat()  # Not available in model yet
+            ))
 
         return group_responses
 
-    def create_group(self, name: str, user: User) -> Dict[str, Any]:
+    def create_group(self, name: str, user: User) -> CreateGroupResponse:
         """
         Create a new group and add the creator as a member.
 
@@ -89,7 +102,7 @@ class GroupService(BaseService):
             user: The user creating the group
 
         Returns:
-            Dictionary with group information
+            CreateGroupResponse with group information
         """
         logger.info(
             f"Creating group: {name}",
@@ -107,16 +120,16 @@ class GroupService(BaseService):
             extra={"user_id": str(user.id), "group_id": str(group.id)}
         )
 
-        return {
-            "id": str(group.id),
-            "name": group.name,
-            "member_count": 1,
-            "active_runs_count": 0,
-            "completed_runs_count": 0,
-            "active_runs": []
-        }
+        return CreateGroupResponse(
+            id=str(group.id),
+            name=group.name,
+            member_count=1,
+            active_runs_count=0,
+            completed_runs_count=0,
+            active_runs=[]
+        )
 
-    def get_group_details(self, group_id: str, user: User) -> Dict[str, Any]:
+    def get_group_details(self, group_id: str, user: User) -> GroupDetailResponse:
         """
         Get details of a specific group with authorization check.
 
@@ -125,7 +138,7 @@ class GroupService(BaseService):
             user: The requesting user
 
         Returns:
-            Dictionary with group details
+            GroupDetailResponse with group details
 
         Raises:
             BadRequestError: If group ID format is invalid
@@ -152,13 +165,20 @@ class GroupService(BaseService):
             )
             raise ForbiddenError("Not a member of this group")
 
-        return {
-            "id": str(group.id),
-            "name": group.name,
-            "invite_token": group.invite_token
-        }
+        # Get members and admin status
+        members = self.repo.get_group_members_with_admin_status(group_uuid)
+        is_current_user_admin = self.repo.is_user_group_admin(group_uuid, user.id)
 
-    def get_group_runs(self, group_id: str, user: User) -> List[Dict[str, Any]]:
+        return GroupDetailResponse(
+            id=str(group.id),
+            name=group.name,
+            invite_token=group.invite_token,
+            is_joining_allowed=group.is_joining_allowed,
+            members=members,
+            is_current_user_admin=is_current_user_admin
+        )
+
+    def get_group_runs(self, group_id: str, user: User) -> List[RunResponse]:
         """
         Get all runs for a specific group with authorization check.
 
@@ -167,7 +187,7 @@ class GroupService(BaseService):
             user: The requesting user
 
         Returns:
-            List of run dictionaries with store names
+            List of RunResponse with store names
 
         Raises:
             BadRequestError: If group ID format is invalid
@@ -209,20 +229,20 @@ class GroupService(BaseService):
             leader_name = leader.user.name if leader and leader.user else "Unknown"
             leader_is_removed = leader.is_removed if leader else False
 
-            run_responses.append({
-                "id": str(run.id),
-                "group_id": str(run.group_id),
-                "store_id": str(run.store_id),
-                "store_name": store_lookup.get(run.store_id, "Unknown Store"),
-                "state": run.state,
-                "leader_name": leader_name,
-                "leader_is_removed": leader_is_removed,
-                "planned_on": run.planned_on.isoformat() if run.planned_on else None
-            })
+            run_responses.append(RunResponse(
+                id=str(run.id),
+                group_id=str(run.group_id),
+                store_id=str(run.store_id),
+                store_name=store_lookup.get(run.store_id, "Unknown Store"),
+                state=run.state,
+                leader_name=leader_name,
+                leader_is_removed=leader_is_removed,
+                planned_on=run.planned_on.isoformat() if run.planned_on else None
+            ))
 
         return run_responses
 
-    def get_group_completed_cancelled_runs(self, group_id: str, user: User, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
+    def get_group_completed_cancelled_runs(self, group_id: str, user: User, limit: int = 10, offset: int = 0) -> List[RunResponse]:
         """
         Get completed and cancelled runs for a specific group with pagination.
 
@@ -274,19 +294,20 @@ class GroupService(BaseService):
             leader = next((p for p in participations if p.is_leader), None)
             leader_name = leader.user.name if leader and leader.user else "Unknown"
 
-            run_responses.append({
-                "id": str(run.id),
-                "group_id": str(run.group_id),
-                "store_id": str(run.store_id),
-                "store_name": store_lookup.get(run.store_id, "Unknown Store"),
-                "state": run.state,
-                "leader_name": leader_name,
-                "planned_on": run.planned_on.isoformat() if run.planned_on else None
-            })
+            run_responses.append(RunResponse(
+                id=str(run.id),
+                group_id=str(run.group_id),
+                store_id=str(run.store_id),
+                store_name=store_lookup.get(run.store_id, "Unknown Store"),
+                state=run.state,
+                leader_name=leader_name,
+                leader_is_removed=False,
+                planned_on=run.planned_on.isoformat() if run.planned_on else None
+            ))
 
         return run_responses
 
-    def regenerate_invite_token(self, group_id: str, user: User) -> Dict[str, str]:
+    def regenerate_invite_token(self, group_id: str, user: User) -> RegenerateTokenResponse:
         """
         Regenerate the invite token for a group (only creator can do this).
 
@@ -330,11 +351,9 @@ class GroupService(BaseService):
         if not new_token:
             raise BadRequestError("Failed to regenerate invite token")
 
-        return {
-            "invite_token": new_token
-        }
+        return RegenerateTokenResponse(invite_token=new_token)
 
-    def preview_group(self, invite_token: str) -> Dict[str, Any]:
+    def preview_group(self, invite_token: str) -> PreviewGroupResponse:
         """
         Preview group information by invite token without joining.
 
@@ -361,14 +380,14 @@ class GroupService(BaseService):
             )
             raise NotFoundError("Group", invite_token)
 
-        return {
-            "id": str(group.id),
-            "name": group.name,
-            "member_count": len(group.members),
-            "creator_name": group.creator.name if group.creator else "Unknown"
-        }
+        return PreviewGroupResponse(
+            id=str(group.id),
+            name=group.name,
+            member_count=len(group.members),
+            creator_name=group.creator.name if group.creator else "Unknown"
+        )
 
-    def join_group(self, invite_token: str, user: User) -> Dict[str, str]:
+    def join_group(self, invite_token: str, user: User) -> JoinGroupResponse:
         """
         Join a group using an invite token.
 
@@ -457,13 +476,13 @@ class GroupService(BaseService):
             }
         }))
 
-        return {
-            "message": "Successfully joined group",
-            "group_id": str(group.id),
-            "group_name": group.name
-        }
+        return JoinGroupResponse(
+            message="Successfully joined group",
+            group_id=str(group.id),
+            group_name=group.name
+        )
 
-    def get_group_members(self, group_id: str, user: User) -> Dict[str, Any]:
+    def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
         """
         Get all members of a group with their admin status.
 
@@ -501,16 +520,16 @@ class GroupService(BaseService):
         # Check if current user is admin
         is_current_user_admin = self.repo.is_user_group_admin(group_uuid, user.id)
 
-        return {
-            "id": str(group.id),
-            "name": group.name,
-            "invite_token": group.invite_token,
-            "is_joining_allowed": group.is_joining_allowed,
-            "members": members,
-            "is_current_user_admin": is_current_user_admin
-        }
+        return GroupDetailResponse(
+            id=str(group.id),
+            name=group.name,
+            invite_token=group.invite_token,
+            is_joining_allowed=group.is_joining_allowed,
+            members=members,
+            is_current_user_admin=is_current_user_admin
+        )
 
-    def remove_member(self, group_id: str, member_id: str, user: User) -> Dict[str, str]:
+    def remove_member(self, group_id: str, member_id: str, user: User) -> MessageResponse:
         """
         Remove a member from a group (admin only).
 
@@ -619,11 +638,9 @@ class GroupService(BaseService):
                 }
             }))
 
-        return {
-            "message": "Member removed successfully"
-        }
+        return MessageResponse(message="Member removed successfully")
 
-    def toggle_joining_allowed(self, group_id: str, user: User) -> Dict[str, Any]:
+    def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
         """
         Toggle whether a group allows joining via invite link (admin only).
 
@@ -669,6 +686,4 @@ class GroupService(BaseService):
             extra={"user_id": str(user.id), "group_id": str(group_uuid), "is_joining_allowed": new_value}
         )
 
-        return {
-            "is_joining_allowed": new_value
-        }
+        return ToggleJoiningResponse(is_joining_allowed=new_value)

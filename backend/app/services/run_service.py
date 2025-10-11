@@ -10,6 +10,19 @@ from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipat
 from ..run_state import RunState, state_machine
 from ..config import MAX_ACTIVE_RUNS_PER_GROUP, MAX_PRODUCTS_PER_RUN
 from .base_service import BaseService
+from ..schemas import (
+    CreateRunResponse,
+    RunDetailResponse,
+    ProductResponse,
+    UserBidResponse,
+    ParticipantResponse,
+    PlaceBidResponse,
+    ReadyToggleResponse,
+    StateChangeResponse,
+    CancelRunResponse,
+    AvailableProductResponse,
+    RetractBidResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +30,7 @@ logger = logging.getLogger(__name__)
 class RunService(BaseService):
     """Service for managing run operations."""
 
-    def create_run(self, group_id: str, store_id: str, user: User) -> Dict[str, Any]:
+    def create_run(self, group_id: str, store_id: str, user: User) -> CreateRunResponse:
         """
         Create a new run for a group.
 
@@ -27,7 +40,7 @@ class RunService(BaseService):
             user: Current user creating the run
 
         Returns:
-            Dict with run data (id, group_id, store_id, state)
+            CreateRunResponse with run data
 
         Raises:
             BadRequestError: If ID format is invalid
@@ -79,16 +92,16 @@ class RunService(BaseService):
             extra={"user_id": str(user.id), "run_id": str(run.id), "group_id": str(group_uuid)}
         )
 
-        return {
-            "id": str(run.id),
-            "group_id": str(run.group_id),
-            "store_id": str(run.store_id),
-            "state": run.state,
-            "store_name": store.name,
-            "leader_name": user.name
-        }
+        return CreateRunResponse(
+            id=str(run.id),
+            group_id=str(run.group_id),
+            store_id=str(run.store_id),
+            state=run.state,
+            store_name=store.name,
+            leader_name=user.name
+        )
 
-    def get_run_details(self, run_id: str, user: User) -> Dict[str, Any]:
+    def get_run_details(self, run_id: str, user: User) -> RunDetailResponse:
         """
         Get detailed information about a specific run.
 
@@ -97,7 +110,7 @@ class RunService(BaseService):
             user: Current user requesting details
 
         Returns:
-            Dict with run details including products, participants, etc.
+            RunDetailResponse with run details including products, participants, etc.
 
         Raises:
             BadRequestError: If run ID format is invalid
@@ -205,31 +218,33 @@ class RunService(BaseService):
                 availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
                 current_price = str(availability.price) if availability and availability.price else None
 
-                products_data.append({
-                    "id": str(product.id),
-                    "name": product.name,
-                    "brand": product.brand,
-                    "current_price": current_price,
-                    "total_quantity": total_quantity,
-                    "interested_count": interested_count,
-                    "user_bids": user_bids_data,
-                    "current_user_bid": current_user_bid,
-                    "purchased_quantity": purchased_qty
-                })
+                products_data.append(ProductResponse(
+                    id=str(product.id),
+                    name=product.name,
+                    brand=product.brand,
+                    current_price=current_price,
+                    total_quantity=total_quantity,
+                    interested_count=interested_count,
+                    user_bids=[UserBidResponse(**ub) for ub in user_bids_data],
+                    current_user_bid=UserBidResponse(**current_user_bid) if current_user_bid else None,
+                    purchased_quantity=purchased_qty
+                ))
 
-        return {
-            "id": str(run.id),
-            "group_id": str(run.group_id),
-            "group_name": group.name,
-            "store_id": str(run.store_id),
-            "store_name": store.name,
-            "state": run.state,
-            "products": products_data,
-            "participants": participants_data,
-            "current_user_is_ready": current_user_is_ready,
-            "current_user_is_leader": current_user_is_leader,
-            "leader_name": leader_name
-        }
+        participants = [ParticipantResponse(**p) for p in participants_data]
+
+        return RunDetailResponse(
+            id=str(run.id),
+            group_id=str(run.group_id),
+            group_name=group.name,
+            store_id=str(run.store_id),
+            store_name=store.name,
+            state=run.state,
+            products=products_data,
+            participants=participants,
+            current_user_is_ready=current_user_is_ready,
+            current_user_is_leader=current_user_is_leader,
+            leader_name=leader_name
+        )
 
     def place_bid(
         self,
@@ -238,7 +253,7 @@ class RunService(BaseService):
         quantity: float,
         interested_only: bool,
         user: User
-    ) -> Dict[str, Any]:
+    ) -> PlaceBidResponse:
         """
         Place or update a bid on a product in a run.
 
@@ -256,7 +271,7 @@ class RunService(BaseService):
             user: Current user placing the bid
 
         Returns:
-            Dict with status and calculated totals for broadcasting
+            PlaceBidResponse with status and calculated totals for broadcasting
 
         Raises:
             BadRequestError: If IDs are invalid or state doesn't allow bidding
@@ -380,21 +395,21 @@ class RunService(BaseService):
         product_bids = [bid for bid in all_bids if bid.product_id == product_uuid]
         new_total = sum(bid.quantity for bid in product_bids if not bid.interested_only)
 
-        return {
-            "message": "Bid placed successfully",
-            "product_id": str(product_uuid),
-            "user_id": str(user.id),
-            "user_name": user.name,
-            "quantity": quantity,
-            "interested_only": interested_only,
-            "new_total": new_total,
-            "state_changed": state_changed,
-            "new_state": RunState.ACTIVE if state_changed else run.state,
-            "run_id": str(run_uuid),
-            "group_id": str(run.group_id)
-        }
+        return PlaceBidResponse(
+            message="Bid placed successfully",
+            product_id=str(product_uuid),
+            user_id=str(user.id),
+            user_name=user.name,
+            quantity=quantity,
+            interested_only=interested_only,
+            new_total=new_total,
+            state_changed=state_changed,
+            new_state=RunState.ACTIVE if state_changed else run.state,
+            run_id=str(run_uuid),
+            group_id=str(run.group_id)
+        )
 
-    def toggle_ready(self, run_id: str, user: User) -> Dict[str, Any]:
+    def toggle_ready(self, run_id: str, user: User) -> ReadyToggleResponse:
         """
         Toggle the current user's ready status for a run.
 
@@ -405,7 +420,7 @@ class RunService(BaseService):
             user: Current user toggling ready status
 
         Returns:
-            Dict with ready status and whether state changed
+            ReadyToggleResponse with ready status and whether state changed
 
         Raises:
             BadRequestError: If run ID invalid or state doesn't allow toggling ready
@@ -456,25 +471,27 @@ class RunService(BaseService):
             # Create notifications for all participants
             self._notify_run_state_change(run, old_state, RunState.CONFIRMED)
 
-            return {
-                "message": "All participants ready! Run confirmed.",
-                "is_ready": new_ready_status,
-                "state_changed": True,
-                "new_state": RunState.CONFIRMED,
-                "run_id": str(run_uuid),
-                "group_id": str(run.group_id),
-                "user_id": str(user.id)
-            }
+            return ReadyToggleResponse(
+                message="All participants ready! Run confirmed.",
+                is_ready=new_ready_status,
+                state_changed=True,
+                new_state=RunState.CONFIRMED,
+                run_id=str(run_uuid),
+                group_id=str(run.group_id),
+                user_id=str(user.id)
+            )
 
-        return {
-            "message": f"Ready status updated to {new_ready_status}",
-            "is_ready": new_ready_status,
-            "state_changed": False,
-            "run_id": str(run_uuid),
-            "user_id": str(user.id)
-        }
+        return ReadyToggleResponse(
+            message=f"Ready status updated to {new_ready_status}",
+            is_ready=new_ready_status,
+            state_changed=False,
+            new_state=None,
+            run_id=str(run_uuid),
+            user_id=str(user.id),
+            group_id=None
+        )
 
-    def start_run(self, run_id: str, user: User) -> Dict[str, Any]:
+    def start_run(self, run_id: str, user: User) -> StateChangeResponse:
         """
         Start shopping - transition from confirmed to shopping state (leader only).
 
@@ -485,7 +502,7 @@ class RunService(BaseService):
             user: Current user (must be leader)
 
         Returns:
-            Dict with success message and new state
+            StateChangeResponse with success message and new state
 
         Raises:
             BadRequestError: If run ID invalid or state doesn't allow starting
@@ -540,14 +557,14 @@ class RunService(BaseService):
         # Create notifications for all participants
         self._notify_run_state_change(run, old_state, RunState.SHOPPING)
 
-        return {
-            "message": "Shopping started!",
-            "state": RunState.SHOPPING,
-            "run_id": str(run_uuid),
-            "group_id": str(run.group_id)
-        }
+        return StateChangeResponse(
+            message="Shopping started!",
+            state=RunState.SHOPPING,
+            run_id=str(run_uuid),
+            group_id=str(run.group_id)
+        )
 
-    def get_available_products(self, run_id: str, user: User) -> List[Dict[str, Any]]:
+    def get_available_products(self, run_id: str, user: User) -> List[AvailableProductResponse]:
         """
         Get products available for bidding (all products without bids yet).
         Products with availability at the run's store are sorted first.
@@ -557,7 +574,7 @@ class RunService(BaseService):
             user: Current user
 
         Returns:
-            List of available product dicts, sorted with store products first
+            List of AvailableProductResponse, sorted with store products first
 
         Raises:
             BadRequestError: If run ID format is invalid
@@ -595,20 +612,20 @@ class RunService(BaseService):
                 current_price = str(availability.price) if availability and availability.price else None
                 has_store_availability = availability is not None
 
-                available_products.append({
-                    "id": str(product.id),
-                    "name": product.name,
-                    "brand": product.brand,
-                    "current_price": current_price,
-                    "has_store_availability": has_store_availability
-                })
+                available_products.append(AvailableProductResponse(
+                    id=str(product.id),
+                    name=product.name,
+                    brand=product.brand,
+                    current_price=current_price,
+                    has_store_availability=has_store_availability
+                ))
 
         # Sort: products with store availability first, then alphabetically by name
-        available_products.sort(key=lambda p: (not p["has_store_availability"], p["name"].lower()))
+        available_products.sort(key=lambda p: (not p.has_store_availability, p.name.lower()))
 
         return available_products
 
-    def transition_to_shopping(self, run_id: str, user: User) -> Dict[str, Any]:
+    def transition_to_shopping(self, run_id: str, user: User) -> StateChangeResponse:
         """
         Transition from confirmed to shopping state.
 
@@ -619,7 +636,7 @@ class RunService(BaseService):
             user: Current user (must be leader)
 
         Returns:
-            Dict with success message and new state
+            StateChangeResponse with success message and new state
 
         Raises:
             BadRequestError: If run ID invalid or state doesn't allow transition
@@ -628,7 +645,7 @@ class RunService(BaseService):
         """
         return self.start_run(run_id, user)
 
-    def finish_adjusting(self, run_id: str, user: User) -> Dict[str, Any]:
+    def finish_adjusting(self, run_id: str, user: User) -> StateChangeResponse:
         """
         Finish adjusting bids - transition from adjusting to distributing state (leader only).
 
@@ -639,7 +656,7 @@ class RunService(BaseService):
             user: Current user (must be leader)
 
         Returns:
-            Dict with success message and new state
+            StateChangeResponse with success message and new state
 
         Raises:
             BadRequestError: If run ID invalid, state doesn't allow, or quantities don't match
@@ -717,14 +734,14 @@ class RunService(BaseService):
         # Create notifications for all participants
         self._notify_run_state_change(run, old_state, RunState.DISTRIBUTING)
 
-        return {
-            "message": "Adjustments complete! Moving to distribution.",
-            "state": RunState.DISTRIBUTING,
-            "run_id": str(run_uuid),
-            "group_id": str(run.group_id)
-        }
+        return StateChangeResponse(
+            message="Adjustments complete! Moving to distribution.",
+            state=RunState.DISTRIBUTING,
+            run_id=str(run_uuid),
+            group_id=str(run.group_id)
+        )
 
-    def cancel_run(self, run_id: str, user: User) -> Dict[str, Any]:
+    def cancel_run(self, run_id: str, user: User) -> CancelRunResponse:
         """
         Cancel a run. Can be called by leader from any state except completed/cancelled.
 
@@ -733,7 +750,7 @@ class RunService(BaseService):
             user: Current user (must be leader)
 
         Returns:
-            Dict with success message
+            CancelRunResponse with success message
 
         Raises:
             BadRequestError: If run ID format is invalid or run already in terminal state
@@ -783,14 +800,14 @@ class RunService(BaseService):
             }
         )
 
-        return {
-            "message": "Run cancelled successfully",
-            "run_id": str(run_uuid),
-            "group_id": str(run.group_id),
-            "state": RunState.CANCELLED.value
-        }
+        return CancelRunResponse(
+            message="Run cancelled successfully",
+            run_id=str(run_uuid),
+            group_id=str(run.group_id),
+            state=RunState.CANCELLED.value
+        )
 
-    def delete_run(self, run_id: str, user: User) -> Dict[str, Any]:
+    def delete_run(self, run_id: str, user: User) -> CancelRunResponse:
         """
         Delete a run (alias for cancel_run for backward compatibility).
 
@@ -799,7 +816,7 @@ class RunService(BaseService):
             user: Current user (must be leader)
 
         Returns:
-            Dict with success message
+            CancelRunResponse with success message
 
         Raises:
             BadRequestError: If run ID format is invalid
@@ -808,7 +825,7 @@ class RunService(BaseService):
         """
         return self.cancel_run(run_id, user)
 
-    def retract_bid(self, run_id: str, product_id: str, user: User) -> Dict[str, Any]:
+    def retract_bid(self, run_id: str, product_id: str, user: User) -> RetractBidResponse:
         """
         Retract a user's bid on a product in a run.
 
@@ -818,7 +835,7 @@ class RunService(BaseService):
             user: Current user retracting the bid
 
         Returns:
-            Dict with success message and updated totals
+            RetractBidResponse with success message and updated totals
 
         Raises:
             BadRequestError: If ID format is invalid or bid modification not allowed in current state
@@ -899,13 +916,13 @@ class RunService(BaseService):
             }
         )
 
-        return {
-            "message": "Bid retracted successfully",
-            "run_id": str(run_uuid),
-            "product_id": str(product_uuid),
-            "user_id": str(user.id),
-            "new_total": new_total
-        }
+        return RetractBidResponse(
+            message="Bid retracted successfully",
+            run_id=str(run_uuid),
+            product_id=str(product_uuid),
+            user_id=str(user.id),
+            new_total=new_total
+        )
 
     def _notify_run_state_change(self, run: Run, old_state: str, new_state: str) -> None:
         """

@@ -8,42 +8,21 @@ from ..repository import get_repository
 from ..services import RunService
 from ..websocket_manager import manager
 from ..run_state import RunState
-from pydantic import BaseModel, field_validator, Field
+from ..schemas import (
+    CreateRunRequest,
+    CreateRunResponse,
+    PlaceBidRequest,
+    RunDetailResponse,
+    MessageResponse,
+    StateChangeResponse,
+    ReadyToggleResponse,
+    CancelRunResponse,
+    AvailableProductResponse,
+)
 import logging
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 logger = logging.getLogger(__name__)
-
-class CreateRunRequest(BaseModel):
-    group_id: str
-    store_id: str
-
-class CreateRunResponse(BaseModel):
-    id: str
-    group_id: str
-    store_id: str
-    state: str
-
-    class Config:
-        from_attributes = True
-
-class MessageResponse(BaseModel):
-    message: str
-
-class StateChangeResponse(BaseModel):
-    message: str
-    state: str
-
-class ReadyToggleResponse(BaseModel):
-    message: str
-    is_ready: bool
-    state_changed: bool = False
-
-class CancelRunResponse(BaseModel):
-    message: str
-    run_id: str
-    group_id: str
-    state: str
 
 @router.post("/create", response_model=CreateRunResponse)
 async def create_run(
@@ -58,71 +37,18 @@ async def create_run(
     result = service.create_run(request.group_id, request.store_id, current_user)
 
     # Broadcast to group room
-    await manager.broadcast(f"group:{result['group_id']}", {
+    await manager.broadcast(f"group:{result.group_id}", {
         "type": "run_created",
         "data": {
-            "run_id": result['id'],
-            "store_id": result['store_id'],
-            "store_name": result['store_name'],
-            "state": result['state'],
-            "leader_name": result['leader_name']
+            "run_id": result.id,
+            "store_id": result.store_id,
+            "store_name": result.store_name,
+            "state": result.state,
+            "leader_name": result.leader_name
         }
     })
 
-    return CreateRunResponse(
-        id=result['id'],
-        group_id=result['group_id'],
-        store_id=result['store_id'],
-        state=result['state']
-    )
-
-class UserBidResponse(BaseModel):
-    user_id: str
-    user_name: str
-    quantity: int
-    interested_only: bool
-
-    class Config:
-        from_attributes = True
-
-class ProductResponse(BaseModel):
-    id: str
-    name: str
-    brand: str | None = None
-    current_price: str | None
-    total_quantity: int
-    interested_count: int
-    user_bids: list[UserBidResponse]
-    current_user_bid: UserBidResponse | None
-    purchased_quantity: int | None = None  # For adjusting state
-
-    class Config:
-        from_attributes = True
-
-class ParticipantResponse(BaseModel):
-    user_id: str
-    user_name: str
-    is_leader: bool
-    is_ready: bool
-
-    class Config:
-        from_attributes = True
-
-class RunDetailResponse(BaseModel):
-    id: str
-    group_id: str
-    group_name: str
-    store_id: str
-    store_name: str
-    state: str
-    products: List[ProductResponse]
-    participants: List[ParticipantResponse]
-    current_user_is_ready: bool
-    current_user_is_leader: bool
-    leader_name: str
-
-    class Config:
-        from_attributes = True
+    return result
 
 @router.get("/{run_id}", response_model=RunDetailResponse)
 async def get_run_details(
@@ -134,57 +60,7 @@ async def get_run_details(
     repo = get_repository(db)
     service = RunService(repo)
 
-    result = service.get_run_details(run_id, current_user)
-
-    # Convert dict data to Pydantic models
-    products = [
-        ProductResponse(
-            id=p['id'],
-            name=p['name'],
-            brand=p.get('brand'),
-            current_price=p.get('current_price'),
-            total_quantity=p['total_quantity'],
-            interested_count=p['interested_count'],
-            user_bids=[UserBidResponse(**ub) for ub in p['user_bids']],
-            current_user_bid=UserBidResponse(**p['current_user_bid']) if p['current_user_bid'] else None,
-            purchased_quantity=p.get('purchased_quantity')
-        )
-        for p in result['products']
-    ]
-
-    participants = [
-        ParticipantResponse(**p)
-        for p in result['participants']
-    ]
-
-    return RunDetailResponse(
-        id=result['id'],
-        group_id=result['group_id'],
-        group_name=result['group_name'],
-        store_id=result['store_id'],
-        store_name=result['store_name'],
-        state=result['state'],
-        products=products,
-        participants=participants,
-        current_user_is_ready=result['current_user_is_ready'],
-        current_user_is_leader=result['current_user_is_leader'],
-        leader_name=result['leader_name']
-    )
-
-class PlaceBidRequest(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0, le=9999)
-    interested_only: bool = False
-
-    @field_validator('quantity')
-    @classmethod
-    def validate_quantity(cls, v):
-        if v <= 0:
-            raise ValueError('Quantity must be greater than 0')
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('Quantity can have at most 2 decimal places')
-        return v
+    return service.get_run_details(run_id, current_user)
 
 @router.post("/{run_id}/bids", response_model=MessageResponse)
 async def place_bid(
@@ -206,36 +82,36 @@ async def place_bid(
     )
 
     # Broadcast to run room
-    await manager.broadcast(f"run:{result['run_id']}", {
+    await manager.broadcast(f"run:{result.run_id}", {
         "type": "bid_updated",
         "data": {
-            "product_id": result['product_id'],
-            "user_id": result['user_id'],
-            "user_name": result['user_name'],
-            "quantity": result['quantity'],
-            "interested_only": result['interested_only'],
-            "new_total": result['new_total']
+            "product_id": result.product_id,
+            "user_id": result.user_id,
+            "user_name": result.user_name,
+            "quantity": result.quantity,
+            "interested_only": result.interested_only,
+            "new_total": result.new_total
         }
     })
 
     # If state changed, broadcast to both run and group
-    if result.get('state_changed'):
-        await manager.broadcast(f"run:{result['run_id']}", {
+    if result.state_changed:
+        await manager.broadcast(f"run:{result.run_id}", {
             "type": "state_changed",
             "data": {
-                "run_id": result['run_id'],
-                "new_state": result['new_state']
+                "run_id": result.run_id,
+                "new_state": result.new_state
             }
         })
-        await manager.broadcast(f"group:{result['group_id']}", {
+        await manager.broadcast(f"group:{result.group_id}", {
             "type": "run_state_changed",
             "data": {
-                "run_id": result['run_id'],
-                "new_state": result['new_state']
+                "run_id": result.run_id,
+                "new_state": result.new_state
             }
         })
 
-    return MessageResponse(message=result['message'])
+    return MessageResponse(message=result.message)
 
 @router.delete("/{run_id}/bids/{product_id}", response_model=MessageResponse)
 async def retract_bid(
@@ -251,26 +127,16 @@ async def retract_bid(
     result = service.retract_bid(run_id, product_id, current_user)
 
     # Broadcast to run room
-    await manager.broadcast(f"run:{result['run_id']}", {
+    await manager.broadcast(f"run:{result.run_id}", {
         "type": "bid_retracted",
         "data": {
-            "product_id": result['product_id'],
-            "user_id": result['user_id'],
-            "new_total": result['new_total']
+            "product_id": result.product_id,
+            "user_id": result.user_id,
+            "new_total": result.new_total
         }
     })
 
-    return MessageResponse(message=result['message'])
-
-class AvailableProductResponse(BaseModel):
-    id: str
-    name: str
-    brand: str | None = None
-    current_price: str | None
-    has_store_availability: bool = False
-
-    class Config:
-        from_attributes = True
+    return MessageResponse(message=result.message)
 
 @router.post("/{run_id}/ready", response_model=ReadyToggleResponse)
 async def toggle_ready(
@@ -285,36 +151,32 @@ async def toggle_ready(
     result = service.toggle_ready(run_id, current_user)
 
     # Broadcast ready toggle to run room
-    await manager.broadcast(f"run:{result['run_id']}", {
+    await manager.broadcast(f"run:{result.run_id}", {
         "type": "ready_toggled",
         "data": {
-            "user_id": result['user_id'],
-            "is_ready": result['is_ready']
+            "user_id": result.user_id,
+            "is_ready": result.is_ready
         }
     })
 
     # If state changed, broadcast state change to both run and group
-    if result.get('state_changed'):
-        await manager.broadcast(f"run:{result['run_id']}", {
+    if result.state_changed:
+        await manager.broadcast(f"run:{result.run_id}", {
             "type": "state_changed",
             "data": {
-                "run_id": result['run_id'],
-                "new_state": result['new_state']
+                "run_id": result.run_id,
+                "new_state": result.new_state
             }
         })
-        await manager.broadcast(f"group:{result['group_id']}", {
+        await manager.broadcast(f"group:{result.group_id}", {
             "type": "run_state_changed",
             "data": {
-                "run_id": result['run_id'],
-                "new_state": result['new_state']
+                "run_id": result.run_id,
+                "new_state": result.new_state
             }
         })
 
-    return ReadyToggleResponse(
-        message=result['message'],
-        is_ready=result['is_ready'],
-        state_changed=result.get('state_changed', False)
-    )
+    return result
 
 @router.post("/{run_id}/start-shopping", response_model=StateChangeResponse)
 async def start_shopping(
@@ -329,22 +191,22 @@ async def start_shopping(
     result = service.start_run(run_id, current_user)
 
     # Broadcast state change to both run and group
-    await manager.broadcast(f"run:{result['run_id']}", {
+    await manager.broadcast(f"run:{result.run_id}", {
         "type": "state_changed",
         "data": {
-            "run_id": result['run_id'],
-            "new_state": result['state']
+            "run_id": result.run_id,
+            "new_state": result.state
         }
     })
-    await manager.broadcast(f"group:{result['group_id']}", {
+    await manager.broadcast(f"group:{result.group_id}", {
         "type": "run_state_changed",
         "data": {
-            "run_id": result['run_id'],
-            "new_state": result['state']
+            "run_id": result.run_id,
+            "new_state": result.state
         }
     })
 
-    return StateChangeResponse(message=result['message'], state=result['state'])
+    return result
 
 @router.post("/{run_id}/finish-adjusting", response_model=StateChangeResponse)
 async def finish_adjusting(
@@ -359,22 +221,22 @@ async def finish_adjusting(
     result = service.finish_adjusting(run_id, current_user)
 
     # Broadcast state change to both run and group
-    await manager.broadcast(f"run:{result['run_id']}", {
+    await manager.broadcast(f"run:{result.run_id}", {
         "type": "state_changed",
         "data": {
-            "run_id": result['run_id'],
-            "new_state": result['state']
+            "run_id": result.run_id,
+            "new_state": result.state
         }
     })
-    await manager.broadcast(f"group:{result['group_id']}", {
+    await manager.broadcast(f"group:{result.group_id}", {
         "type": "run_state_changed",
         "data": {
-            "run_id": result['run_id'],
-            "new_state": result['state']
+            "run_id": result.run_id,
+            "new_state": result.state
         }
     })
 
-    return StateChangeResponse(message=result['message'], state=result['state'])
+    return result
 
 @router.get("/{run_id}/available-products", response_model=List[AvailableProductResponse])
 async def get_available_products(
@@ -386,18 +248,7 @@ async def get_available_products(
     repo = get_repository(db)
     service = RunService(repo)
 
-    result = service.get_available_products(run_id, current_user)
-
-    return [
-        AvailableProductResponse(
-            id=p['id'],
-            name=p['name'],
-            brand=p.get('brand'),
-            current_price=p.get('current_price'),
-            has_store_availability=p.get('has_store_availability', False)
-        )
-        for p in result
-    ]
+    return service.get_available_products(run_id, current_user)
 
 @router.post("/{run_id}/transition-shopping", response_model=StateChangeResponse)
 async def transition_to_shopping(
@@ -412,22 +263,22 @@ async def transition_to_shopping(
     result = service.transition_to_shopping(run_id, current_user)
 
     # Broadcast state change to both run and group
-    await manager.broadcast(f"run:{result['run_id']}", {
+    await manager.broadcast(f"run:{result.run_id}", {
         "type": "state_changed",
         "data": {
-            "run_id": result['run_id'],
-            "new_state": result['state']
+            "run_id": result.run_id,
+            "new_state": result.state
         }
     })
-    await manager.broadcast(f"group:{result['group_id']}", {
+    await manager.broadcast(f"group:{result.group_id}", {
         "type": "run_state_changed",
         "data": {
-            "run_id": result['run_id'],
-            "new_state": result['state']
+            "run_id": result.run_id,
+            "new_state": result.state
         }
     })
 
-    return StateChangeResponse(message=result['message'], state=result['state'])
+    return result
 
 @router.post("/{run_id}/cancel", response_model=CancelRunResponse)
 async def cancel_run(
@@ -442,15 +293,15 @@ async def cancel_run(
     result = service.cancel_run(run_id, current_user)
 
     # Broadcast to group room
-    await manager.broadcast(f"group:{result['group_id']}", {
+    await manager.broadcast(f"group:{result.group_id}", {
         "type": "run_cancelled",
         "data": {
-            "run_id": result['run_id'],
-            "state": result['state']
+            "run_id": result.run_id,
+            "state": result.state
         }
     })
 
-    return CancelRunResponse(**result)
+    return result
 
 @router.delete("/{run_id}", response_model=MessageResponse)
 async def delete_run(
@@ -464,13 +315,12 @@ async def delete_run(
 
     result = service.delete_run(run_id, current_user)
 
-    # Broadcast to group room (try to get from service result)
-    group_id = result.get('group_id', 'unknown')
-    await manager.broadcast(f"group:{group_id}", {
+    # Broadcast to group room
+    await manager.broadcast(f"group:{result.group_id}", {
         "type": "run_cancelled",
         "data": {
-            "run_id": result['run_id']
+            "run_id": result.run_id
         }
     })
 
-    return MessageResponse(message=result['message'])
+    return MessageResponse(message=result.message)

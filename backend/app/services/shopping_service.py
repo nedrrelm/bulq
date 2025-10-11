@@ -11,6 +11,13 @@ from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..models import User
 from ..run_state import RunState, state_machine
 from ..websocket_manager import manager
+from ..schemas import (
+    ShoppingListItemResponse,
+    PriceObservation,
+    MessageResponse,
+    MarkPurchasedResponse,
+    CompleteShoppingResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +86,7 @@ class ShoppingService(BaseService):
         self,
         run_id: str,
         user: User
-    ) -> List[Dict[str, Any]]:
+    ) -> List[ShoppingListItemResponse]:
         """
         Get shopping list for a run with auth check.
 
@@ -88,7 +95,7 @@ class ShoppingService(BaseService):
             user: The authenticated user
 
         Returns:
-            List of shopping list items with product details
+            List of ShoppingListItemResponse with product details
 
         Raises:
             BadRequestError: If run ID format is invalid
@@ -160,21 +167,23 @@ class ShoppingService(BaseService):
                 # Sort by created_at descending (newest first)
                 recent_day_prices.sort(key=lambda x: x["created_at"] if x["created_at"] else "", reverse=True)
 
-            response_items.append({
-                "id": str(item.id),
-                "product_id": str(item.product_id),
-                "product_name": product.name if product else "Unknown Product",
-                "requested_quantity": item.requested_quantity,
-                "recent_prices": recent_day_prices,
-                "purchased_quantity": item.purchased_quantity,
-                "purchased_price_per_unit": str(item.purchased_price_per_unit) if item.purchased_price_per_unit else None,
-                "purchased_total": str(item.purchased_total) if item.purchased_total else None,
-                "is_purchased": item.is_purchased,
-                "purchase_order": item.purchase_order
-            })
+            recent_prices_models = [PriceObservation(**p) for p in recent_day_prices]
+
+            response_items.append(ShoppingListItemResponse(
+                id=str(item.id),
+                product_id=str(item.product_id),
+                product_name=product.name if product else "Unknown Product",
+                requested_quantity=item.requested_quantity,
+                recent_prices=recent_prices_models,
+                purchased_quantity=item.purchased_quantity,
+                purchased_price_per_unit=str(item.purchased_price_per_unit) if item.purchased_price_per_unit else None,
+                purchased_total=str(item.purchased_total) if item.purchased_total else None,
+                is_purchased=item.is_purchased,
+                purchase_order=item.purchase_order
+            ))
 
         # Sort: unpurchased first, then purchased by purchase order
-        response_items.sort(key=lambda x: (x["is_purchased"], x["purchase_order"] if x["purchase_order"] else 999))
+        response_items.sort(key=lambda x: (x.is_purchased, x.purchase_order if x.purchase_order else 999))
 
         return response_items
 
@@ -185,7 +194,7 @@ class ShoppingService(BaseService):
         price: float,
         notes: str,
         user: User
-    ) -> Dict[str, str]:
+    ) -> MessageResponse:
         """
         Update product availability price for a shopping list item.
 
@@ -197,7 +206,7 @@ class ShoppingService(BaseService):
             user: The authenticated user
 
         Returns:
-            Success message dictionary
+            MessageResponse with success message
 
         Raises:
             BadRequestError: If ID format is invalid
@@ -235,7 +244,7 @@ class ShoppingService(BaseService):
             user_id=user.id
         )
 
-        return {"message": "Price updated successfully"}
+        return MessageResponse(message="Price updated successfully")
 
     async def mark_purchased(
         self,
@@ -245,7 +254,7 @@ class ShoppingService(BaseService):
         price_per_unit: float,
         total: float,
         user: User
-    ) -> Dict[str, Any]:
+    ) -> MarkPurchasedResponse:
         """
         Mark a shopping list item as purchased.
 
@@ -258,7 +267,7 @@ class ShoppingService(BaseService):
             user: The authenticated user
 
         Returns:
-            Dictionary with success message and purchase order
+            MarkPurchasedResponse with success message and purchase order
 
         Raises:
             BadRequestError: If ID format is invalid
@@ -306,14 +315,14 @@ class ShoppingService(BaseService):
             user.id
         )
 
-        return {"message": "Item marked as purchased", "purchase_order": next_order}
+        return MarkPurchasedResponse(message="Item marked as purchased", purchase_order=next_order)
 
     async def complete_shopping(
         self,
         run_id: str,
         user: User,
         db: Any = None
-    ) -> Dict[str, Any]:
+    ) -> CompleteShoppingResponse:
         """
         Complete shopping and handle shortages/transitions.
 
@@ -330,7 +339,7 @@ class ShoppingService(BaseService):
             db: Optional database session (for direct DB updates)
 
         Returns:
-            Dictionary with message and new state
+            CompleteShoppingResponse with message and new state
 
         Raises:
             BadRequestError: If run ID format is invalid or state is not 'shopping'
@@ -400,10 +409,10 @@ class ShoppingService(BaseService):
                 }
             })
 
-            return {
-                "message": "Some items have insufficient quantities. Participants need to adjust their bids.",
-                "state": RunState.ADJUSTING
-            }
+            return CompleteShoppingResponse(
+                message="Some items have insufficient quantities. Participants need to adjust their bids.",
+                state=RunState.ADJUSTING
+            )
 
         # Otherwise, proceed with distribution
         # For each shopping item (purchased product), distribute to users who bid
@@ -447,7 +456,7 @@ class ShoppingService(BaseService):
             }
         })
 
-        return {"message": "Shopping completed! Moving to distribution.", "state": RunState.DISTRIBUTING}
+        return CompleteShoppingResponse(message="Shopping completed! Moving to distribution.", state=RunState.DISTRIBUTING)
 
     def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
         """
