@@ -336,7 +336,7 @@ class RunService(BaseService):
             ForbiddenError: If user not authorized
         """
         logger.info(
-            f"Placing bid on product",
+            "Placing bid on product",
             extra={"user_id": str(user.id), "run_id": run_id, "product_id": product_id, "quantity": quantity}
         )
 

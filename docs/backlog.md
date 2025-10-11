@@ -90,25 +90,6 @@ Code smells and refactoring opportunities identified during backend review.
 
 ---
 
-### 4. Extract Long Service Methods
-**Status**: High Priority (maintainability)
-**Affected files**: `app/services/run_service.py`, `app/services/group_service.py`
-
-**Problem:** Methods exceeding 50+ lines violate Single Responsibility Principle.
-- `RunService.place_bid()` - 67 lines (306-373)
-- `RunService.get_run_details()` - 48 lines (104-152)
-- `GroupService._find_and_cancel_affected_runs()` - mixes concerns
-
-**Impact:** Hard to test, understand, and maintain.
-
-**Fix:** Extract helper methods:
-- `_validate_bid_request()`
-- `_ensure_user_participation()`
-- `_validate_bid_for_state()`
-- etc.
-
----
-
 ### 5. Centralize WebSocket Broadcasting
 **Status**: High Priority (architecture)
 **Affected files**: `app/routes/runs.py`, `app/routes/groups.py`, multiple routes
@@ -125,24 +106,6 @@ await manager.broadcast(f"run:{result.run_id}", {
 **Impact:** Code duplication, inconsistent message formats, hard to test.
 
 **Fix:** Move broadcasting to service layer with event system or observer pattern.
-
----
-
-### 6. Add Missing Type Hints
-**Status**: High Priority (type safety)
-**Affected files**: `app/routes/auth.py:16, 32`, `app/services/group_service.py:235`
-
-**Problem:** Dependency functions and some service methods lack return type annotations.
-```python
-# Missing return type:
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-# Should be:
-def get_current_user(request: Request, db: Session = Depends(get_db)) -> User | None:
-```
-
-**Impact:** Reduces IDE support, type checking effectiveness.
-
-**Fix:** Add type hints to all functions, especially public APIs.
 
 ---
 
