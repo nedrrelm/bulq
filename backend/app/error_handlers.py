@@ -1,7 +1,6 @@
 """Global exception handlers for FastAPI application."""
 
 import traceback
-from typing import Union
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse

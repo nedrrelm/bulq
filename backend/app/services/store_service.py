@@ -1,6 +1,6 @@
 """Store service for handling store-related business logic."""
 
-from typing import Optional, Any
+from typing import Any
 from uuid import UUID
 from ..models import Store, Product, Run
 from .base_service import BaseService
