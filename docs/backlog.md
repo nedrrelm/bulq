@@ -109,25 +109,6 @@ await manager.broadcast(f"run:{result.run_id}", {
 
 ---
 
-### 7. Fix Asyncio Task Management
-**Status**: High Priority (reliability)
-**Affected files**: `app/services/run_service.py:1100, 1110`, `app/services/group_service.py:484, 632`
-
-**Problem:** Creating fire-and-forget tasks with `asyncio.create_task()` without tracking.
-```python
-asyncio.create_task(manager.broadcast(...))
-# If this fails, we never know
-```
-
-**Impact:** Silent failures, no error handling, tasks may be cancelled prematurely.
-
-**Fix:**
-- Use task groups or track tasks
-- Add exception handling
-- Log task failures
-
----
-
 ### 8. Remove Repository Leakage from Routes
 **Status**: Medium Priority (architecture)
 **Affected files**: All route files

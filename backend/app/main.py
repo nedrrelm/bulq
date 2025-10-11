@@ -4,6 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 import asyncio
 from .database import create_tables
+from .background_tasks import create_background_task
 from .routes.auth import router as auth_router
 from .routes.groups import router as groups_router
 from .routes.runs import router as runs_router
@@ -89,7 +90,7 @@ async def startup_event():
             await asyncio.sleep(3600)  # Run every hour
             cleanup_expired_sessions()
 
-    asyncio.create_task(session_cleanup_loop())
+    create_background_task(session_cleanup_loop(), task_name="session_cleanup_loop")
 
 @app.get("/")
 async def hello_world():

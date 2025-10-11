@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from .base_service import BaseService
+from ..background_tasks import create_background_task
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..models import User, Group
 from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
@@ -480,16 +481,18 @@ class GroupService(BaseService):
     def _broadcast_member_joined(self, user: User, group: Group) -> None:
         """Broadcast member_joined event to group room."""
         room_id = f"group:{group.id}"
-        import asyncio
-        asyncio.create_task(manager.broadcast(room_id, {
-            "type": "member_joined",
-            "data": {
-                "group_id": str(group.id),
-                "user_id": str(user.id),
-                "user_name": user.name,
-                "user_email": user.email
-            }
-        }))
+        create_background_task(
+            manager.broadcast(room_id, {
+                "type": "member_joined",
+                "data": {
+                    "group_id": str(group.id),
+                    "user_id": str(user.id),
+                    "user_name": user.name,
+                    "user_email": user.email
+                }
+            }),
+            task_name=f"broadcast_member_joined_{group.id}"
+        )
 
     def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
         """
@@ -629,38 +632,45 @@ class GroupService(BaseService):
         self, group_id: UUID, member_id: UUID, affected_runs: list[str], cancelled_runs: list[str]
     ) -> None:
         """Broadcast WebSocket notifications for member removal."""
-        import asyncio
-
         # Broadcast to group room
-        asyncio.create_task(manager.broadcast(f"group:{group_id}", {
-            "type": "member_removed",
-            "data": {
-                "group_id": str(group_id),
-                "removed_user_id": str(member_id),
-                "cancelled_runs": cancelled_runs
-            }
-        }))
+        create_background_task(
+            manager.broadcast(f"group:{group_id}", {
+                "type": "member_removed",
+                "data": {
+                    "group_id": str(group_id),
+                    "removed_user_id": str(member_id),
+                    "cancelled_runs": cancelled_runs
+                }
+            }),
+            task_name=f"broadcast_member_removed_{group_id}"
+        )
 
         # Broadcast participant_removed events for all affected runs
         for run_id in affected_runs:
-            asyncio.create_task(manager.broadcast(f"run:{run_id}", {
-                "type": "participant_removed",
-                "data": {
-                    "run_id": run_id,
-                    "removed_user_id": str(member_id)
-                }
-            }))
+            create_background_task(
+                manager.broadcast(f"run:{run_id}", {
+                    "type": "participant_removed",
+                    "data": {
+                        "run_id": run_id,
+                        "removed_user_id": str(member_id)
+                    }
+                }),
+                task_name=f"broadcast_participant_removed_{run_id}"
+            )
 
         # Broadcast run_cancelled events for cancelled runs
         for run_id in cancelled_runs:
-            asyncio.create_task(manager.broadcast(f"run:{run_id}", {
-                "type": "run_cancelled",
-                "data": {
-                    "run_id": run_id,
-                    "state": "cancelled",
-                    "new_state": "cancelled"
-                }
-            }))
+            create_background_task(
+                manager.broadcast(f"run:{run_id}", {
+                    "type": "run_cancelled",
+                    "data": {
+                        "run_id": run_id,
+                        "state": "cancelled",
+                        "new_state": "cancelled"
+                    }
+                }),
+                task_name=f"broadcast_run_cancelled_{run_id}"
+            )
 
     def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
         """

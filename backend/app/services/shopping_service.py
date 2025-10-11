@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from .base_service import BaseService
+from ..background_tasks import create_background_task
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..models import User
 from ..run_state import RunState, state_machine
@@ -495,8 +496,8 @@ class ShoppingService(BaseService):
             )
 
             # Broadcast to user's WebSocket connection
-            try:
-                asyncio.create_task(manager.broadcast(f"user:{participation.user_id}", {
+            create_background_task(
+                manager.broadcast(f"user:{participation.user_id}", {
                     "type": "new_notification",
                     "data": {
                         "id": str(notification.id),
@@ -505,16 +506,9 @@ class ShoppingService(BaseService):
                         "read": notification.read,
                         "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
                     }
-                }))
-            except Exception as e:
-                logger.warning(
-                    "Failed to broadcast notification via WebSocket",
-                    extra={
-                        "error": str(e),
-                        "user_id": str(participant.user_id),
-                        "notification_id": str(notification.id)
-                    }
-                )
+                }),
+                task_name=f"broadcast_shopping_notification_{participation.user_id}"
+            )
 
         logger.debug(
             f"Created notifications for run state change",

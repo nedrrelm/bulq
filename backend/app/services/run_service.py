@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from ..background_tasks import create_background_task
 from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError, BadRequestError
 from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipation, ShoppingListItem
 from ..run_state import RunState, state_machine
@@ -1096,8 +1097,8 @@ class RunService(BaseService):
             )
 
             # Broadcast to user's WebSocket connection
-            try:
-                asyncio.create_task(manager.broadcast(f"user:{participation.user_id}", {
+            create_background_task(
+                manager.broadcast(f"user:{participation.user_id}", {
                     "type": "new_notification",
                     "data": {
                         "id": str(notification.id),
@@ -1106,16 +1107,9 @@ class RunService(BaseService):
                         "read": notification.read,
                         "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
                     }
-                }))
-            except Exception as e:
-                logger.warning(
-                    "Failed to broadcast notification via WebSocket",
-                    extra={
-                        "error": str(e),
-                        "user_id": str(participation.user_id),
-                        "notification_id": str(notification.id)
-                    }
-                )
+                }),
+                task_name=f"broadcast_notification_to_user_{participation.user_id}"
+            )
 
         logger.debug(
             "Created notifications for run state change",
