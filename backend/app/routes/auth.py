@@ -9,7 +9,7 @@ from ..models import User
 from ..auth import hash_password, create_session, get_session, delete_session
 from ..repository import get_repository
 from ..exceptions import UnauthorizedError, BadRequestError
-from ..config import SESSION_EXPIRY_HOURS
+from ..config import SESSION_EXPIRY_HOURS, SECURE_COOKIES
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
         value=session_token,
         max_age=SESSION_EXPIRY_HOURS * 3600,  # Convert hours to seconds
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=SECURE_COOKIES,
         samesite="lax",
         path="/"
     )
@@ -121,7 +121,7 @@ async def login(user_data: UserLogin, response: Response, db: Session = Depends(
         value=session_token,
         max_age=SESSION_EXPIRY_HOURS * 3600,  # Convert hours to seconds
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=SECURE_COOKIES,
         samesite="lax",
         path="/"
     )
