@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..repository import get_repository
 from ..services import DistributionService
 from ..websocket_manager import manager
 from ..run_state import RunState
@@ -24,8 +23,7 @@ async def get_distribution_data(
     db: Session = Depends(get_db)
 ):
     """Get distribution data aggregated by user."""
-    repo = get_repository(db)
-    service = DistributionService(repo)
+    service = DistributionService(db)
 
     # Validate run ID
     try:
@@ -43,8 +41,7 @@ async def mark_picked_up(
     db: Session = Depends(get_db)
 ):
     """Mark a product as picked up by a user."""
-    repo = get_repository(db)
-    service = DistributionService(repo)
+    service = DistributionService(db)
 
     # Validate IDs
     try:
@@ -62,8 +59,7 @@ async def complete_distribution(
     db: Session = Depends(get_db)
 ):
     """Complete distribution - transition from distributing to completed state (leader only)."""
-    repo = get_repository(db)
-    service = DistributionService(repo)
+    service = DistributionService(db)
 
     # Validate run ID
     try:

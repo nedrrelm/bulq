@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..repository import get_repository
 from ..services import ShoppingService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..request_context import get_logger
@@ -26,8 +25,7 @@ async def get_shopping_list(
     db: Session = Depends(get_db)
 ):
     """Get shopping list for a run."""
-    repo = get_repository(db)
-    service = ShoppingService(repo)
+    service = ShoppingService(db)
 
     return await service.get_shopping_list(run_id, current_user)
 
@@ -40,8 +38,7 @@ async def update_availability_price(
     db: Session = Depends(get_db)
 ):
     """Update product availability price for a shopping list item."""
-    repo = get_repository(db)
-    service = ShoppingService(repo)
+    service = ShoppingService(db)
 
     return await service.add_availability_price(
         run_id,
@@ -60,8 +57,7 @@ async def mark_purchased(
     db: Session = Depends(get_db)
 ):
     """Mark a shopping list item as purchased."""
-    repo = get_repository(db)
-    service = ShoppingService(repo)
+    service = ShoppingService(db)
 
     return await service.mark_purchased(
         run_id,
@@ -83,7 +79,6 @@ async def complete_shopping(
         "Completing shopping for run",
         extra={"user_id": str(current_user.id), "run_id": run_id}
     )
-    repo = get_repository(db)
-    service = ShoppingService(repo)
+    service = ShoppingService(db)
 
     return await service.complete_shopping(run_id, current_user, db)

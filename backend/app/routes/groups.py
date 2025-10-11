@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..repository import get_repository
 from ..services import GroupService
 from ..request_context import get_logger
 from ..schemas import (
@@ -28,8 +27,7 @@ async def get_my_groups(
     db: Session = Depends(get_db)
 ):
     """Get all groups the current user is a member of."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.get_user_groups(current_user)
 
@@ -40,8 +38,7 @@ async def create_group(
     db: Session = Depends(get_db)
 ):
     """Create a new group."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.create_group(request.name, current_user)
 
@@ -52,8 +49,7 @@ async def get_group(
     db: Session = Depends(get_db)
 ):
     """Get details of a specific group."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.get_group_details(group_id, current_user)
 
@@ -64,8 +60,7 @@ async def get_group_runs(
     db: Session = Depends(get_db)
 ):
     """Get all runs for a specific group."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.get_group_runs(group_id, current_user)
 
@@ -78,8 +73,7 @@ async def get_group_completed_cancelled_runs(
     db: Session = Depends(get_db)
 ):
     """Get completed and cancelled runs for a specific group (paginated)."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.get_group_completed_cancelled_runs(group_id, current_user, limit, offset)
 
@@ -90,8 +84,7 @@ async def regenerate_invite_token(
     db: Session = Depends(get_db)
 ):
     """Regenerate the invite token for a group."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.regenerate_invite_token(group_id, current_user)
 
@@ -101,8 +94,7 @@ async def preview_group_by_invite(
     db: Session = Depends(get_db)
 ):
     """Preview group information by invite token without joining."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.preview_group(invite_token)
 
@@ -113,8 +105,7 @@ async def join_group_by_invite(
     db: Session = Depends(get_db)
 ):
     """Join a group using an invite token."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.join_group(invite_token, current_user)
 
@@ -125,8 +116,7 @@ async def get_group_members(
     db: Session = Depends(get_db)
 ):
     """Get all members of a group with their admin status."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.get_group_members(group_id, current_user)
 
@@ -138,8 +128,7 @@ async def remove_group_member(
     db: Session = Depends(get_db)
 ):
     """Remove a member from a group (admin only)."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.remove_member(group_id, member_id, current_user)
 
@@ -150,7 +139,6 @@ async def toggle_group_joining(
     db: Session = Depends(get_db)
 ):
     """Toggle whether a group allows joining via invite link (admin only)."""
-    repo = get_repository(db)
-    service = GroupService(repo)
+    service = GroupService(db)
 
     return service.toggle_joining_allowed(group_id, current_user)

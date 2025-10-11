@@ -5,7 +5,6 @@ from uuid import UUID
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..repository import get_repository
 from ..services import StoreService
 from ..exceptions import NotFoundError
 from ..schemas import (
@@ -26,8 +25,7 @@ async def get_stores(
     db: Session = Depends(get_db)
 ):
     """Get all available stores (paginated, max 100 per page)."""
-    repo = get_repository(db)
-    service = StoreService(repo)
+    service = StoreService(db)
     stores = service.get_all_stores(limit, offset)
 
     return [StoreResponse(id=str(store.id), name=store.name) for store in stores]
@@ -44,8 +42,7 @@ async def get_store_page(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid store ID format")
 
-    repo = get_repository(db)
-    service = StoreService(repo)
+    service = StoreService(db)
 
     data = service.get_store_page_data(store_uuid, current_user.id)
 
@@ -63,8 +60,7 @@ async def create_store(
     db: Session = Depends(get_db)
 ):
     """Create a new store."""
-    repo = get_repository(db)
-    service = StoreService(repo)
+    service = StoreService(db)
     store = service.create_store(request.name)
 
     return StoreResponse(id=str(store.id), name=store.name)

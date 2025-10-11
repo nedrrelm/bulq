@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..routes.auth import require_auth
 from ..models import User
-from ..repository import get_repository
 from ..services import ProductService
 from ..schemas import (
     ProductSearchResult,
@@ -25,10 +24,9 @@ async def search_all(
     Consolidated search across products, stores, and groups.
     Returns up to 3 results per category.
     """
-    repo = get_repository(db)
-
     # Search products
-    product_service = ProductService(repo)
+    product_service = ProductService(db)
+    repo = product_service.repo
     all_products = product_service.search_products(q)
     products = all_products[:3]  # Limit to 3
 
