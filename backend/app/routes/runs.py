@@ -8,6 +8,7 @@ from ..repository import get_repository
 from ..services import RunService
 from ..websocket_manager import manager
 from ..run_state import RunState
+from ..request_context import get_logger
 from ..schemas import (
     CreateRunRequest,
     CreateRunResponse,
@@ -19,10 +20,9 @@ from ..schemas import (
     CancelRunResponse,
     AvailableProductResponse,
 )
-import logging
 
 router = APIRouter(prefix="/runs", tags=["runs"])
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @router.post("/create", response_model=CreateRunResponse)
 async def create_run(

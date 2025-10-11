@@ -2,9 +2,10 @@
 
 from enum import Enum
 from typing import Optional
-import logging
 
-logger = logging.getLogger(__name__)
+from .request_context import get_logger
+
+logger = get_logger(__name__)
 
 
 class RunState(str, Enum):

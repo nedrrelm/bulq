@@ -7,6 +7,7 @@ from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import ShoppingService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
+from ..request_context import get_logger
 from ..schemas import (
     ShoppingListItemResponse,
     UpdateAvailabilityPriceRequest,
@@ -15,10 +16,9 @@ from ..schemas import (
     MarkPurchasedResponse,
     CompleteShoppingResponse,
 )
-import logging
 
 router = APIRouter(prefix="/shopping", tags=["shopping"])
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @router.get("/{run_id}/items", response_model=List[ShoppingListItemResponse])
 async def get_shopping_list(

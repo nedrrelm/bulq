@@ -1,6 +1,5 @@
 """Service layer for notification-related business logic."""
 
-import logging
 from typing import List, Dict, Any
 from uuid import UUID
 from collections import defaultdict
@@ -9,8 +8,9 @@ from datetime import datetime, timedelta
 from .base_service import BaseService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..models import User
+from ..request_context import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class NotificationService(BaseService):

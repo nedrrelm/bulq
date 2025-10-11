@@ -1,6 +1,5 @@
 """Shopping service for handling shopping list operations."""
 
-import logging
 from typing import List, Dict, Any, Optional
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -11,6 +10,7 @@ from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
 from ..models import User
 from ..run_state import RunState, state_machine
 from ..websocket_manager import manager
+from ..request_context import get_logger
 from ..schemas import (
     ShoppingListItemResponse,
     PriceObservation,
@@ -19,7 +19,7 @@ from ..schemas import (
     CompleteShoppingResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ShoppingService(BaseService):

@@ -1,6 +1,5 @@
 """Run service for managing run business logic."""
 
-import logging
 from decimal import Decimal
 from typing import Optional, Dict, Any, List, Tuple
 from uuid import UUID
@@ -9,6 +8,7 @@ from ..exceptions import NotFoundError, ForbiddenError, ValidationError, Conflic
 from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipation, ShoppingListItem
 from ..run_state import RunState, state_machine
 from ..config import MAX_ACTIVE_RUNS_PER_GROUP, MAX_PRODUCTS_PER_RUN
+from ..request_context import get_logger
 from .base_service import BaseService
 from ..schemas import (
     CreateRunResponse,
@@ -24,7 +24,7 @@ from ..schemas import (
     RetractBidResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class RunService(BaseService):
