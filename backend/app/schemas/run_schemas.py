@@ -1,6 +1,5 @@
 """Schemas for run-related requests and responses."""
 
-from typing import List
 from pydantic import BaseModel, field_validator, Field
 
 

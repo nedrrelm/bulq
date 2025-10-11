@@ -1,6 +1,5 @@
 """Schemas for product-related requests and responses."""
 
-from typing import List
 from pydantic import BaseModel
 
 
