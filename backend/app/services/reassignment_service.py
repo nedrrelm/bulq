@@ -103,7 +103,14 @@ class ReassignmentService:
                 }
             )
         except Exception as e:
-            logger.warning(f"Failed to broadcast notification to user: {e}")
+            logger.warning(
+                "Failed to broadcast notification to user",
+                extra={
+                    "error": str(e),
+                    "user_id": str(to_user_id),
+                    "run_id": str(run_id)
+                }
+            )
 
         # Broadcast to run participants
         try:
@@ -120,7 +127,15 @@ class ReassignmentService:
                 }
             )
         except Exception as e:
-            logger.warning(f"Failed to broadcast reassignment request: {e}")
+            logger.warning(
+                "Failed to broadcast reassignment request",
+                extra={
+                    "error": str(e),
+                    "run_id": str(run_id),
+                    "from_user_id": str(from_user.id),
+                    "to_user_id": str(to_user_id)
+                }
+            )
 
         logger.info(
             f"Leader reassignment requested",
@@ -222,7 +237,14 @@ class ReassignmentService:
                 }
             )
         except Exception as e:
-            logger.warning(f"Failed to broadcast notification to user: {e}")
+            logger.warning(
+                "Failed to broadcast notification to user",
+                extra={
+                    "error": str(e),
+                    "user_id": str(request.from_user_id),
+                    "run_id": str(request.run_id)
+                }
+            )
 
         # Broadcast to run participants
         try:
@@ -239,7 +261,14 @@ class ReassignmentService:
                 }
             )
         except Exception as e:
-            logger.warning(f"Failed to broadcast reassignment acceptance: {e}")
+            logger.warning(
+                "Failed to broadcast reassignment acceptance",
+                extra={
+                    "error": str(e),
+                    "run_id": str(request.run_id),
+                    "request_id": str(request_id)
+                }
+            )
 
         logger.info(
             f"Leader reassignment accepted",
@@ -330,7 +359,14 @@ class ReassignmentService:
                 }
             )
         except Exception as e:
-            logger.warning(f"Failed to broadcast notification to user: {e}")
+            logger.warning(
+                "Failed to broadcast notification to user",
+                extra={
+                    "error": str(e),
+                    "user_id": str(request.from_user_id),
+                    "run_id": str(request.run_id)
+                }
+            )
 
         # Broadcast to run participants
         try:
@@ -347,7 +383,14 @@ class ReassignmentService:
                 }
             )
         except Exception as e:
-            logger.warning(f"Failed to broadcast reassignment decline: {e}")
+            logger.warning(
+                "Failed to broadcast reassignment decline",
+                extra={
+                    "error": str(e),
+                    "run_id": str(request.run_id),
+                    "request_id": str(request_id)
+                }
+            )
 
         logger.info(
             f"Leader reassignment declined",

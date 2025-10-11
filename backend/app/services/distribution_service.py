@@ -151,7 +151,14 @@ class DistributionService(BaseService):
         bid.is_picked_up = True
         self._commit_changes()
 
-        logger.info(f"Bid {bid_id} marked as picked up by user {current_user.id}")
+        logger.info(
+            "Bid marked as picked up",
+            extra={
+                "bid_id": str(bid_id),
+                "user_id": str(current_user.id),
+                "run_id": str(bid.participation.run_id)
+            }
+        )
         return {"message": "Marked as picked up"}
 
     def complete_distribution(
@@ -203,7 +210,13 @@ class DistributionService(BaseService):
         # Create notifications for all participants
         self._notify_run_state_change(run, old_state, RunState.COMPLETED)
 
-        logger.info(f"Distribution completed for run {run_id} by user {current_user.id}")
+        logger.info(
+            "Distribution completed",
+            extra={
+                "run_id": str(run_id),
+                "user_id": str(current_user.id)
+            }
+        )
         return {
             "message": "Distribution completed!",
             "state": RunState.COMPLETED,
@@ -273,7 +286,14 @@ class DistributionService(BaseService):
                     }
                 }))
             except Exception as e:
-                logger.warning(f"Failed to broadcast notification via WebSocket: {e}")
+                logger.warning(
+                    "Failed to broadcast notification via WebSocket",
+                    extra={
+                        "error": str(e),
+                        "user_id": str(participation.user_id),
+                        "notification_id": str(notification.id)
+                    }
+                )
 
         logger.debug(
             f"Created notifications for run state change",

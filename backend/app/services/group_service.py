@@ -347,12 +347,18 @@ class GroupService(BaseService):
         Raises:
             NotFoundError: If group with invite token doesn't exist
         """
-        logger.debug(f"Previewing group with invite token")
+        logger.debug(
+            "Previewing group with invite token",
+            extra={"invite_token": invite_token}
+        )
 
         # Find the group by invite token
         group = self.repo.get_group_by_invite_token(invite_token)
         if not group:
-            logger.warning(f"Invalid invite token used for preview")
+            logger.warning(
+                "Invalid invite token used for preview",
+                extra={"invite_token": invite_token}
+            )
             raise NotFoundError("Group", invite_token)
 
         return {
@@ -378,14 +384,17 @@ class GroupService(BaseService):
             BadRequestError: If user is already a member or join fails
         """
         logger.info(
-            f"User attempting to join group via invite",
-            extra={"user_id": str(user.id)}
+            "User attempting to join group via invite",
+            extra={"user_id": str(user.id), "invite_token": invite_token}
         )
 
         # Find the group by invite token
         group = self.repo.get_group_by_invite_token(invite_token)
         if not group:
-            logger.warning(f"Invalid invite token used for join")
+            logger.warning(
+                "Invalid invite token used for join",
+                extra={"user_id": str(user.id), "invite_token": invite_token}
+            )
             raise NotFoundError("Group", invite_token)
 
         # Check if joining is allowed

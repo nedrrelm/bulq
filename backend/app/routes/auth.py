@@ -62,13 +62,19 @@ def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
 @router.post("/register", response_model=UserResponse)
 async def register(user_data: UserRegister, response: Response, db: Session = Depends(get_db)):
     """Register a new user."""
-    logger.info(f"Registration attempt for email: {user_data.email}")
+    logger.info(
+        "Registration attempt",
+        extra={"email": user_data.email}
+    )
     repo = get_repository(db)
 
     # Check if user already exists
     existing_user = repo.get_user_by_email(user_data.email)
     if existing_user:
-        logger.warning(f"Registration failed - email already exists: {user_data.email}")
+        logger.warning(
+            "Registration failed - email already exists",
+            extra={"email": user_data.email}
+        )
         raise BadRequestError("Email already registered")
 
     # Create new user
@@ -92,7 +98,7 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
     )
 
     logger.info(
-        f"User registered successfully",
+        "User registered successfully",
         extra={"user_id": str(new_user.id), "email": new_user.email}
     )
 
@@ -105,13 +111,19 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
 @router.post("/login", response_model=UserResponse)
 async def login(user_data: UserLogin, response: Response, db: Session = Depends(get_db)):
     """Login user."""
-    logger.info(f"Login attempt for email: {user_data.email}")
+    logger.info(
+        "Login attempt",
+        extra={"email": user_data.email}
+    )
     repo = get_repository(db)
 
     # Find user by email
     user = repo.get_user_by_email(user_data.email)
     if not user or not repo.verify_password(user_data.password, user.password_hash):
-        logger.warning(f"Failed login attempt for email: {user_data.email}")
+        logger.warning(
+            "Failed login attempt",
+            extra={"email": user_data.email}
+        )
         raise UnauthorizedError("Invalid email or password")
 
     # Create session
@@ -127,7 +139,7 @@ async def login(user_data: UserLogin, response: Response, db: Session = Depends(
     )
 
     logger.info(
-        f"User logged in successfully - Session cookie set",
+        "User logged in successfully - Session cookie set",
         extra={
             "user_id": str(user.id),
             "email": user.email,
@@ -149,7 +161,10 @@ async def logout(request: Request, response: Response):
     session_token = request.cookies.get("session_token")
     if session_token:
         delete_session(session_token)
-        logger.info("User logged out successfully")
+        logger.info(
+            "User logged out successfully",
+            extra={"session_token_length": len(session_token)}
+        )
 
     response.delete_cookie(key="session_token")
     return {"message": "Logged out successfully"}
