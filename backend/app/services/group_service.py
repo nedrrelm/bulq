@@ -39,7 +39,7 @@ class GroupService(BaseService):
         Returns:
             List of GroupResponse with active/completed run counts
         """
-        logger.debug(f"Fetching groups for user", extra={"user_id": str(user.id)})
+        logger.debug("Fetching groups for user", extra={"user_id": str(user.id)})
 
         # Get groups where the user is a member
         groups = self.repo.get_user_groups(user)

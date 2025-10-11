@@ -90,24 +90,6 @@ Code smells and refactoring opportunities identified during backend review.
 
 ---
 
-### 3. Standardize Structured Logging
-**Status**: High Priority (observability)
-**Affected files**: `app/auth.py:74`, multiple service files
-
-**Problem:** Inconsistent logging patterns - some use f-strings, some don't use `extra` dict.
-```python
-# Bad:
-logger.info(f"Cleaned up {len(expired_tokens)} expired sessions. Active sessions: {len(sessions)}")
-# Good:
-logger.info("Cleaned up expired sessions", extra={"expired_count": len(expired_tokens), "active_count": len(sessions)})
-```
-
-**Impact:** Hard to parse logs, can't filter/search by structured fields.
-
-**Fix:** Ensure all logs use `extra` dict, avoid f-strings in messages.
-
----
-
 ### 4. Extract Long Service Methods
 **Status**: High Priority (maintainability)
 **Affected files**: `app/services/run_service.py`, `app/services/group_service.py`

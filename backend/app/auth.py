@@ -71,6 +71,12 @@ def cleanup_expired_sessions() -> int:
         del sessions[token]
 
     if expired_tokens:
-        logger.info(f"Cleaned up {len(expired_tokens)} expired sessions. Active sessions: {len(sessions)}")
+        logger.info(
+            "Cleaned up expired sessions",
+            extra={
+                "expired_count": len(expired_tokens),
+                "active_count": len(sessions)
+            }
+        )
 
     return len(expired_tokens)
