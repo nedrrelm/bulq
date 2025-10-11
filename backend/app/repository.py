@@ -82,7 +82,7 @@ class AbstractRepository(ABC):
         raise NotImplementedError("Subclass must implement is_user_group_admin")
 
     @abstractmethod
-    def get_group_members_with_admin_status(self, group_id: UUID) -> list[Dict]:
+    def get_group_members_with_admin_status(self, group_id: UUID) -> list[dict]:
         """Get all members of a group with their admin status."""
         raise NotImplementedError("Subclass must implement get_group_members_with_admin_status")
 
@@ -300,7 +300,7 @@ class AbstractRepository(ABC):
     # ==================== ProductAvailability Methods ====================
 
     @abstractmethod
-    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> List:
+    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
         """Get product availabilities, optionally filtered by store."""
         raise NotImplementedError("Subclass must implement get_product_availabilities")
 
@@ -528,7 +528,7 @@ class DatabaseRepository(AbstractRepository):
 
         return result[0] if result else False
 
-    def get_group_members_with_admin_status(self, group_id: UUID) -> list[Dict]:
+    def get_group_members_with_admin_status(self, group_id: UUID) -> list[dict]:
         """Get all members of a group with their admin status."""
         from sqlalchemy import select
         from .models import group_membership
@@ -912,7 +912,7 @@ class DatabaseRepository(AbstractRepository):
 
     # ==================== ProductAvailability Methods ====================
 
-    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> List:
+    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
         """Get product availabilities, optionally filtered by store."""
         query = self.db.query(ProductAvailability).filter(
             ProductAvailability.product_id == product_id
@@ -1712,7 +1712,7 @@ class MemoryRepository(AbstractRepository):
         """Check if a user is an admin of a group."""
         return self._group_admin_status.get((group_id, user_id), False)
 
-    def get_group_members_with_admin_status(self, group_id: UUID) -> list[Dict]:
+    def get_group_members_with_admin_status(self, group_id: UUID) -> list[dict]:
         """Get all members of a group with their admin status."""
         member_ids = self._group_memberships.get(group_id, [])
         members = []
@@ -2186,7 +2186,7 @@ class MemoryRepository(AbstractRepository):
 
     # ==================== ProductAvailability Methods ====================
 
-    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> List:
+    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
         """Get product availabilities, optionally filtered by store."""
         results = []
         for avail in self._product_availabilities.values():

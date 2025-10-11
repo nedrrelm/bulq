@@ -5,7 +5,7 @@ from uuid import UUID
 
 from .base_service import BaseService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
-from ..models import User
+from ..models import User, Group
 from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
 from ..run_state import RunState
 from ..websocket_manager import manager

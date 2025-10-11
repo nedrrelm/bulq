@@ -143,7 +143,7 @@ class NotificationService(BaseService):
             "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
         }
 
-    def _group_notifications(self, notifications: List) -> list[dict[str, Any]]:
+    def _group_notifications(self, notifications: list) -> list[dict[str, Any]]:
         """
         Group similar notifications that occurred close together.
 

@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List
 from uuid import UUID
 from pydantic import BaseModel
 

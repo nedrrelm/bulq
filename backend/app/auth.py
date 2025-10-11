@@ -1,6 +1,5 @@
 import bcrypt
 import secrets
-from typing import Dict
 from datetime import datetime, timedelta
 from app.config import SESSION_EXPIRY_HOURS, SECRET_KEY
 from app.request_context import get_logger
