@@ -1118,7 +1118,7 @@ class RunService(BaseService):
                 )
 
         logger.debug(
-            f"Created notifications for run state change",
+            "Created notifications for run state change",
             extra={
                 "run_id": str(run.id),
                 "old_state": old_state,
