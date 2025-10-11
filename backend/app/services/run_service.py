@@ -1112,7 +1112,7 @@ class RunService(BaseService):
                     "Failed to broadcast notification via WebSocket",
                     extra={
                         "error": str(e),
-                        "user_id": str(participant.user_id),
+                        "user_id": str(participation.user_id),
                         "notification_id": str(notification.id)
                     }
                 )

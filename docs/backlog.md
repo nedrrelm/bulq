@@ -90,22 +90,6 @@ Code smells and refactoring opportunities identified during backend review.
 
 ---
 
-### 2. Fix Variable Name Error in Notification Broadcasting
-**Status**: Critical (bug)
-**Affected files**: `app/services/run_service.py:1115`
-
-**Problem:** Using `participant.user_id` when variable is named `participation`.
-```python
-# Line 1115 - should be participation not participant
-"user_id": str(participant.user_id),
-```
-
-**Impact:** Runtime AttributeError waiting to happen.
-
-**Fix:** Change to `participation.user_id`.
-
----
-
 ### 3. Standardize Structured Logging
 **Status**: High Priority (observability)
 **Affected files**: `app/auth.py:74`, multiple service files
