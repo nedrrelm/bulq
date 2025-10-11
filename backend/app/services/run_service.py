@@ -2,7 +2,7 @@
 
 import logging
 from decimal import Decimal
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from uuid import UUID
 
 from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError, BadRequestError
@@ -117,23 +117,11 @@ class RunService(BaseService):
             NotFoundError: If run not found
             ForbiddenError: If user is not authorized to view the run
         """
-        # Validate run ID format
-        try:
-            run_uuid = UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        # Validate and get run with authorization check
+        run_uuid = self._validate_run_id(run_id)
+        run = self._get_run_with_auth_check(run_uuid, user)
 
-        # Find the run
-        run = self.repo.get_run_by_id(run_uuid)
-        if not run:
-            raise NotFoundError("Run", run_id)
-
-        # Verify user has access to this run (member of the group)
-        user_groups = self.repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError("Not authorized to view this run")
-
-        # Get group and store information
+        # Get related entities
         group = self.repo.get_group_by_id(run.group_id)
         all_stores = self.repo.get_all_stores()
         store = next((s for s in all_stores if s.id == run.store_id), None)
@@ -141,16 +129,67 @@ class RunService(BaseService):
         if not group or not store:
             raise NotFoundError("Group or Store", str(run.group_id) + " or " + str(run.store_id))
 
-        # Get participants with users eagerly loaded to avoid N+1 queries
+        # Get participants data
+        participants, current_user_is_ready, current_user_is_leader, leader_name = self._get_participants_data(
+            run.id, user.id
+        )
+
+        # Get products data
+        products = self._get_products_data(run, user.id)
+
+        return RunDetailResponse(
+            id=str(run.id),
+            group_id=str(run.group_id),
+            group_name=group.name,
+            store_id=str(run.store_id),
+            store_name=store.name,
+            state=run.state,
+            products=products,
+            participants=participants,
+            current_user_is_ready=current_user_is_ready,
+            current_user_is_leader=current_user_is_leader,
+            leader_name=leader_name
+        )
+
+    def _validate_run_id(self, run_id: str) -> UUID:
+        """Validate and convert run ID string to UUID."""
+        try:
+            return UUID(run_id)
+        except ValueError:
+            raise BadRequestError("Invalid run ID format")
+
+    def _get_run_with_auth_check(self, run_uuid: UUID, user: User) -> Run:
+        """Get run and verify user has access to it."""
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError("Run", str(run_uuid))
+
+        # Verify user has access to this run (member of the group)
+        user_groups = self.repo.get_user_groups(user)
+        if not any(g.id == run.group_id for g in user_groups):
+            raise ForbiddenError("Not authorized to view this run")
+
+        return run
+
+    def _get_participants_data(
+        self, run_id: UUID, current_user_id: UUID
+    ) -> tuple[List[ParticipantResponse], bool, bool, str]:
+        """
+        Get participants data for a run.
+
+        Returns:
+            Tuple of (participants_list, current_user_is_ready, current_user_is_leader, leader_name)
+        """
         participants_data = []
         current_user_is_ready = False
         current_user_is_leader = False
         leader_name = "Unknown"
-        participations = self.repo.get_run_participations_with_users(run.id)
+
+        participations = self.repo.get_run_participations_with_users(run_id)
 
         for participation in participations:
             # Check if this is the current user's participation
-            if participation.user_id == user.id:
+            if participation.user_id == current_user_id:
                 current_user_is_ready = participation.is_ready
                 current_user_is_leader = participation.is_leader
 
@@ -160,26 +199,25 @@ class RunService(BaseService):
 
             # Add to participants list if user data is available
             if participation.user:
-                participants_data.append({
-                    "user_id": str(participation.user_id),
-                    "user_name": participation.user.name,
-                    "is_leader": participation.is_leader,
-                    "is_ready": participation.is_ready,
-                    "is_removed": participation.is_removed
-                })
+                participants_data.append(ParticipantResponse(
+                    user_id=str(participation.user_id),
+                    user_name=participation.user.name,
+                    is_leader=participation.is_leader,
+                    is_ready=participation.is_ready,
+                    is_removed=participation.is_removed
+                ))
 
-        # Get products and bids for this run
+        return participants_data, current_user_is_ready, current_user_is_leader, leader_name
+
+    def _get_products_data(self, run: Run, current_user_id: UUID) -> List[ProductResponse]:
+        """Get products data with bids for a run."""
         # Get all products for the store
         store_products = self.repo.get_products_by_store(run.store_id)
         # Get bids with participations and users eagerly loaded to avoid N+1 queries
         run_bids = self.repo.get_bids_by_run_with_participations(run.id)
 
         # Get shopping list items if in adjusting state
-        shopping_list_map = {}
-        if run.state == RunState.ADJUSTING:
-            shopping_items = self.repo.get_shopping_list_items(run.id)
-            for item in shopping_items:
-                shopping_list_map[item.product_id] = item
+        shopping_list_map = self._get_shopping_list_map(run) if run.state == RunState.ADJUSTING else {}
 
         # Calculate product statistics
         products_data = []
@@ -187,64 +225,83 @@ class RunService(BaseService):
             product_bids = [bid for bid in run_bids if bid.product_id == product.id]
 
             if len(product_bids) > 0:  # Only include products with bids
-                total_quantity = sum(bid.quantity for bid in product_bids)
-                interested_count = len([bid for bid in product_bids if bid.interested_only or bid.quantity > 0])
+                product_response = self._build_product_response(
+                    product, product_bids, current_user_id, run, shopping_list_map
+                )
+                products_data.append(product_response)
 
-                # Get user details for each bid
-                user_bids_data = []
-                current_user_bid = None
+        return products_data
 
-                for bid in product_bids:
-                    # Participation and user are eagerly loaded on the bid object
-                    if bid.participation and bid.participation.user:
-                        bid_response = {
-                            "user_id": str(bid.participation.user_id),
-                            "user_name": bid.participation.user.name,
-                            "quantity": bid.quantity,
-                            "interested_only": bid.interested_only
-                        }
-                        user_bids_data.append(bid_response)
+    def _get_shopping_list_map(self, run: Run) -> Dict[UUID, Any]:
+        """Get shopping list items mapped by product ID."""
+        shopping_items = self.repo.get_shopping_list_items(run.id)
+        return {item.product_id: item for item in shopping_items}
 
-                        # Check if this is the current user's bid
-                        if bid.participation.user_id == user.id:
-                            current_user_bid = bid_response
+    def _build_product_response(
+        self,
+        product: Product,
+        product_bids: List[ProductBid],
+        current_user_id: UUID,
+        run: Run,
+        shopping_list_map: Dict[UUID, Any]
+    ) -> ProductResponse:
+        """Build a ProductResponse from product and its bids."""
+        # Calculate statistics
+        total_quantity, interested_count = self._calculate_product_statistics(product_bids)
 
-                # Get purchased quantity if in adjusting state
-                purchased_qty = None
-                if run.state == RunState.ADJUSTING and product.id in shopping_list_map:
-                    purchased_qty = shopping_list_map[product.id].purchased_quantity
+        # Get user bids
+        user_bids_data, current_user_bid = self._get_user_bids_data(product_bids, current_user_id)
 
-                # Get product availability/price for this store
-                availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
-                current_price = str(availability.price) if availability and availability.price else None
+        # Get purchased quantity if in adjusting state
+        purchased_qty = None
+        if product.id in shopping_list_map:
+            purchased_qty = shopping_list_map[product.id].purchased_quantity
 
-                products_data.append(ProductResponse(
-                    id=str(product.id),
-                    name=product.name,
-                    brand=product.brand,
-                    current_price=current_price,
-                    total_quantity=total_quantity,
-                    interested_count=interested_count,
-                    user_bids=[UserBidResponse(**ub) for ub in user_bids_data],
-                    current_user_bid=UserBidResponse(**current_user_bid) if current_user_bid else None,
-                    purchased_quantity=purchased_qty
-                ))
+        # Get product availability/price for this store
+        availability = self.repo.get_availability_by_product_and_store(product.id, run.store_id)
+        current_price = str(availability.price) if availability and availability.price else None
 
-        participants = [ParticipantResponse(**p) for p in participants_data]
-
-        return RunDetailResponse(
-            id=str(run.id),
-            group_id=str(run.group_id),
-            group_name=group.name,
-            store_id=str(run.store_id),
-            store_name=store.name,
-            state=run.state,
-            products=products_data,
-            participants=participants,
-            current_user_is_ready=current_user_is_ready,
-            current_user_is_leader=current_user_is_leader,
-            leader_name=leader_name
+        return ProductResponse(
+            id=str(product.id),
+            name=product.name,
+            brand=product.brand,
+            current_price=current_price,
+            total_quantity=total_quantity,
+            interested_count=interested_count,
+            user_bids=user_bids_data,
+            current_user_bid=current_user_bid,
+            purchased_quantity=purchased_qty
         )
+
+    def _calculate_product_statistics(self, product_bids: List[ProductBid]) -> tuple[int, int]:
+        """Calculate total quantity and interested count for product bids."""
+        total_quantity = sum(bid.quantity for bid in product_bids)
+        interested_count = len([bid for bid in product_bids if bid.interested_only or bid.quantity > 0])
+        return total_quantity, interested_count
+
+    def _get_user_bids_data(
+        self, product_bids: List[ProductBid], current_user_id: UUID
+    ) -> tuple[List[UserBidResponse], Optional[UserBidResponse]]:
+        """Get user bids data and identify current user's bid."""
+        user_bids_data = []
+        current_user_bid = None
+
+        for bid in product_bids:
+            # Participation and user are eagerly loaded on the bid object
+            if bid.participation and bid.participation.user:
+                bid_response = UserBidResponse(
+                    user_id=str(bid.participation.user_id),
+                    user_name=bid.participation.user.name,
+                    quantity=bid.quantity,
+                    interested_only=bid.interested_only
+                )
+                user_bids_data.append(bid_response)
+
+                # Check if this is the current user's bid
+                if bid.participation.user_id == current_user_id:
+                    current_user_bid = bid_response
+
+        return user_bids_data, current_user_bid
 
     def place_bid(
         self,
