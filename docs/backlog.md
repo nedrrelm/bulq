@@ -90,24 +90,6 @@ Code smells and refactoring opportunities identified during backend review.
 
 ---
 
-### 1. Fix Enum Comparison Bug in RunService
-**Status**: Critical (bug)
-**Affected files**: `app/services/run_service.py:854, 856`
-
-**Problem:** Comparing `run.state` (string) to `RunState.COMPLETED.value` instead of enum directly.
-```python
-# Current (wrong):
-if run.state == RunState.COMPLETED.value:
-# Should be:
-if run.state == RunState.COMPLETED:
-```
-
-**Impact:** Bypasses type safety, fragile code, potential runtime errors.
-
-**Fix:** Remove `.value` from enum comparisons throughout.
-
----
-
 ### 2. Fix Variable Name Error in Notification Broadcasting
 **Status**: Critical (bug)
 **Affected files**: `app/services/run_service.py:1115`

@@ -851,9 +851,9 @@ class RunService(BaseService):
             raise NotFoundError("Run", run_id)
 
         # Check if run is already in a terminal state
-        if run.state == RunState.COMPLETED.value:
+        if run.state == RunState.COMPLETED:
             raise BadRequestError("Cannot cancel a completed run")
-        if run.state == RunState.CANCELLED.value:
+        if run.state == RunState.CANCELLED:
             raise BadRequestError("Run is already cancelled")
 
         # Verify user has access to this run (member of the group)
