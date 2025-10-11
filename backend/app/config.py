@@ -16,6 +16,7 @@ if not SECRET_KEY:
 
 # Session configuration
 SESSION_EXPIRY_HOURS = int(os.getenv("SESSION_EXPIRY_HOURS", "24"))
+SECURE_COOKIES = os.getenv("SECURE_COOKIES", "false").lower() == "true"
 
 # CORS configuration
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
