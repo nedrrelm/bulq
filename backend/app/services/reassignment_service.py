@@ -37,108 +37,14 @@ class ReassignmentService:
             ValidationError: Invalid request (same user, user not in run, etc.)
             ConflictError: Pending request already exists
         """
-        # Get run
-        run = self.repo.get_run_by_id(run_id)
-        if not run:
-            raise NotFoundError("Run", run_id)
-
-        # Check if requesting user is the leader
-        participation = self.repo.get_participation(from_user.id, run_id)
-        if not participation or not participation.is_leader:
-            raise ForbiddenError("Only the run leader can request reassignment")
-
-        # Check if target user exists
-        to_user = self.repo.get_user_by_id(to_user_id)
-        if not to_user:
-            raise NotFoundError("User", to_user_id)
-
-        # Can't reassign to yourself
-        if from_user.id == to_user_id:
-            raise ValidationError("Cannot reassign leadership to yourself")
-
-        # Check if target user is participating in the run
-        target_participation = self.repo.get_participation(to_user_id, run_id)
-        if not target_participation:
-            raise ValidationError("Target user is not participating in this run")
-
-        # Check for existing pending request
-        existing_request = self.repo.get_pending_reassignment_for_run(run_id)
-        if existing_request:
-            raise ConflictError("A pending reassignment request already exists for this run")
-
-        # Create request
-        request = self.repo.create_reassignment_request(run_id, from_user.id, to_user_id)
-
-        # Get store name
-        store = self.repo.get_store_by_id(run.store_id)
-        store_name = store.name if store else "Unknown Store"
-
-        # Create notification for target user
-        notification_data = {
-            "run_id": str(run_id),
-            "from_user_id": str(from_user.id),
-            "from_user_name": from_user.name,
-            "request_id": str(request.id),
-            "store_name": store_name
-        }
-        notification = self.repo.create_notification(
-            to_user_id,
-            "leader_reassignment_request",
-            notification_data
-        )
-
-        # Broadcast to user's WebSocket for immediate notification
-        try:
-            await ws_manager.broadcast(
-                f"user:{to_user_id}",
-                {
-                    "type": "new_notification",
-                    "data": {
-                        "id": str(notification.id),
-                        "type": "leader_reassignment_request",
-                        "data": notification_data,
-                        "read": False,
-                        "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
-                    }
-                }
-            )
-        except Exception as e:
-            logger.warning(
-                "Failed to broadcast notification to user",
-                extra={
-                    "error": str(e),
-                    "user_id": str(to_user_id),
-                    "run_id": str(run_id)
-                }
-            )
-
-        # Broadcast to run participants
-        try:
-            await ws_manager.broadcast(
-                f"run:{run_id}",
-                {
-                    "type": "reassignment_requested",
-                    "data": {
-                        "run_id": str(run_id),
-                        "from_user_id": str(from_user.id),
-                        "to_user_id": str(to_user_id),
-                        "request_id": str(request.id)
-                    }
-                }
-            )
-        except Exception as e:
-            logger.warning(
-                "Failed to broadcast reassignment request",
-                extra={
-                    "error": str(e),
-                    "run_id": str(run_id),
-                    "from_user_id": str(from_user.id),
-                    "to_user_id": str(to_user_id)
-                }
-            )
+        run, to_user = self._validate_reassignment_eligibility(run_id, from_user, to_user_id)
+        self._check_reassignment_permissions(from_user, to_user_id, run_id)
+        request = self._create_reassignment_record(run_id, from_user.id, to_user_id)
+        store_name = self._get_store_name(run.store_id)
+        await self._notify_reassignment_participants(run_id, from_user, to_user_id, request.id, store_name)
 
         logger.info(
-            f"Leader reassignment requested",
+            "Leader reassignment requested",
             extra={
                 "run_id": str(run_id),
                 "from_user_id": str(from_user.id),
@@ -156,6 +62,109 @@ class ReassignmentService:
             "created_at": request.created_at.isoformat()
         }
 
+    def _validate_reassignment_eligibility(
+        self, run_id: UUID, from_user: User, to_user_id: UUID
+    ) -> tuple[Run, User]:
+        """Validate that run and users exist."""
+        run = self.repo.get_run_by_id(run_id)
+        if not run:
+            raise NotFoundError("Run", run_id)
+
+        participation = self.repo.get_participation(from_user.id, run_id)
+        if not participation or not participation.is_leader:
+            raise ForbiddenError("Only the run leader can request reassignment")
+
+        to_user = self.repo.get_user_by_id(to_user_id)
+        if not to_user:
+            raise NotFoundError("User", to_user_id)
+
+        return run, to_user
+
+    def _check_reassignment_permissions(
+        self, from_user: User, to_user_id: UUID, run_id: UUID
+    ) -> None:
+        """Check if reassignment is allowed."""
+        if from_user.id == to_user_id:
+            raise ValidationError("Cannot reassign leadership to yourself")
+
+        target_participation = self.repo.get_participation(to_user_id, run_id)
+        if not target_participation:
+            raise ValidationError("Target user is not participating in this run")
+
+        existing_request = self.repo.get_pending_reassignment_for_run(run_id)
+        if existing_request:
+            raise ConflictError("A pending reassignment request already exists for this run")
+
+    def _create_reassignment_record(
+        self, run_id: UUID, from_user_id: UUID, to_user_id: UUID
+    ) -> LeaderReassignmentRequest:
+        """Create reassignment request in database."""
+        return self.repo.create_reassignment_request(run_id, from_user_id, to_user_id)
+
+    def _get_store_name(self, store_id: UUID) -> str:
+        """Get store name or return default."""
+        store = self.repo.get_store_by_id(store_id)
+        return store.name if store else "Unknown Store"
+
+    async def _notify_reassignment_participants(
+        self, run_id: UUID, from_user: User, to_user_id: UUID, request_id: UUID, store_name: str
+    ) -> None:
+        """Create notification and broadcast to participants."""
+        notification_data = {
+            "run_id": str(run_id),
+            "from_user_id": str(from_user.id),
+            "from_user_name": from_user.name,
+            "request_id": str(request_id),
+            "store_name": store_name
+        }
+
+        notification = self.repo.create_notification(
+            to_user_id,
+            "leader_reassignment_request",
+            notification_data
+        )
+
+        # Broadcast to target user
+        try:
+            await ws_manager.broadcast(
+                f"user:{to_user_id}",
+                {
+                    "type": "new_notification",
+                    "data": {
+                        "id": str(notification.id),
+                        "type": "leader_reassignment_request",
+                        "data": notification_data,
+                        "read": False,
+                        "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
+                    }
+                }
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to broadcast notification to user",
+                extra={"error": str(e), "user_id": str(to_user_id), "run_id": str(run_id)}
+            )
+
+        # Broadcast to run participants
+        try:
+            await ws_manager.broadcast(
+                f"run:{run_id}",
+                {
+                    "type": "reassignment_requested",
+                    "data": {
+                        "run_id": str(run_id),
+                        "from_user_id": str(from_user.id),
+                        "to_user_id": str(to_user_id),
+                        "request_id": str(request_id)
+                    }
+                }
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to broadcast reassignment request",
+                extra={"error": str(e), "run_id": str(run_id), "from_user_id": str(from_user.id), "to_user_id": str(to_user_id)}
+            )
+
     async def accept_reassignment(self, request_id: UUID, accepting_user: User) -> Dict[str, Any]:
         """
         Accept a leader reassignment request.
@@ -172,56 +181,87 @@ class ReassignmentService:
             ForbiddenError: User is not the target of the request
             ValidationError: Request is not pending
         """
-        # Get request
+        request = self._validate_accept_request(request_id, accepting_user)
+        run = self._get_run(request.run_id)
+        self._transfer_leadership(request.run_id, request.from_user_id, request.to_user_id)
+        self.repo.update_reassignment_status(request_id, "accepted")
+        store_name = self._get_store_name(run.store_id)
+        await self._notify_acceptance(request, accepting_user, store_name, request_id)
+
+        logger.info(
+            "Leader reassignment accepted",
+            extra={
+                "run_id": str(request.run_id),
+                "old_leader_id": str(request.from_user_id),
+                "new_leader_id": str(accepting_user.id),
+                "request_id": str(request_id)
+            }
+        )
+
+        return {
+            "id": str(request.id),
+            "run_id": str(request.run_id),
+            "from_user_id": str(request.from_user_id),
+            "to_user_id": str(request.to_user_id),
+            "status": "accepted",
+            "resolved_at": request.resolved_at.isoformat() if request.resolved_at else None
+        }
+
+    def _validate_accept_request(
+        self, request_id: UUID, accepting_user: User
+    ) -> LeaderReassignmentRequest:
+        """Validate accept request."""
         request = self.repo.get_reassignment_request_by_id(request_id)
         if not request:
             raise NotFoundError("Reassignment request", request_id)
 
-        # Check if user is the target
         if request.to_user_id != accepting_user.id:
             raise ForbiddenError("Only the target user can accept this request")
 
-        # Check if request is still pending
         if request.status != "pending":
             raise ValidationError(f"Request is {request.status}, cannot accept")
 
-        # Get run
-        run = self.repo.get_run_by_id(request.run_id)
-        if not run:
-            raise NotFoundError("Run", request.run_id)
+        return request
 
-        # Update participations
-        old_leader_participation = self.repo.get_participation(request.from_user_id, request.run_id)
-        new_leader_participation = self.repo.get_participation(request.to_user_id, request.run_id)
+    def _get_run(self, run_id: UUID) -> Run:
+        """Get run or raise error."""
+        run = self.repo.get_run_by_id(run_id)
+        if not run:
+            raise NotFoundError("Run", run_id)
+        return run
+
+    def _transfer_leadership(
+        self, run_id: UUID, from_user_id: UUID, to_user_id: UUID
+    ) -> None:
+        """Transfer leadership from one user to another."""
+        old_leader_participation = self.repo.get_participation(from_user_id, run_id)
+        new_leader_participation = self.repo.get_participation(to_user_id, run_id)
 
         if not old_leader_participation or not new_leader_participation:
             raise ValidationError("Invalid participation status")
 
-        # Transfer leadership
         old_leader_participation.is_leader = False
         new_leader_participation.is_leader = True
 
-        # Update request status
-        self.repo.update_reassignment_status(request_id, "accepted")
-
-        # Get store name
-        store = self.repo.get_store_by_id(run.store_id)
-        store_name = store.name if store else "Unknown Store"
-
-        # Create notification for old leader
+    async def _notify_acceptance(
+        self, request: LeaderReassignmentRequest, accepting_user: User,
+        store_name: str, request_id: UUID
+    ) -> None:
+        """Create notification and broadcast acceptance."""
         notification_data = {
             "run_id": str(request.run_id),
             "new_leader_id": str(accepting_user.id),
             "new_leader_name": accepting_user.name,
             "store_name": store_name
         }
+
         notification = self.repo.create_notification(
             request.from_user_id,
             "leader_reassignment_accepted",
             notification_data
         )
 
-        # Broadcast to user's WebSocket for immediate notification
+        # Broadcast to old leader
         try:
             await ws_manager.broadcast(
                 f"user:{request.from_user_id}",
@@ -239,11 +279,7 @@ class ReassignmentService:
         except Exception as e:
             logger.warning(
                 "Failed to broadcast notification to user",
-                extra={
-                    "error": str(e),
-                    "user_id": str(request.from_user_id),
-                    "run_id": str(request.run_id)
-                }
+                extra={"error": str(e), "user_id": str(request.from_user_id), "run_id": str(request.run_id)}
             )
 
         # Broadcast to run participants
@@ -263,31 +299,8 @@ class ReassignmentService:
         except Exception as e:
             logger.warning(
                 "Failed to broadcast reassignment acceptance",
-                extra={
-                    "error": str(e),
-                    "run_id": str(request.run_id),
-                    "request_id": str(request_id)
-                }
+                extra={"error": str(e), "run_id": str(request.run_id), "request_id": str(request_id)}
             )
-
-        logger.info(
-            f"Leader reassignment accepted",
-            extra={
-                "run_id": str(request.run_id),
-                "old_leader_id": str(request.from_user_id),
-                "new_leader_id": str(accepting_user.id),
-                "request_id": str(request_id)
-            }
-        )
-
-        return {
-            "id": str(request.id),
-            "run_id": str(request.run_id),
-            "from_user_id": str(request.from_user_id),
-            "to_user_id": str(request.to_user_id),
-            "status": "accepted",
-            "resolved_at": request.resolved_at.isoformat() if request.resolved_at else None
-        }
 
     async def decline_reassignment(self, request_id: UUID, declining_user: User) -> Dict[str, Any]:
         """
@@ -305,45 +318,66 @@ class ReassignmentService:
             ForbiddenError: User is not the target of the request
             ValidationError: Request is not pending
         """
-        # Get request
+        request = self._validate_decline_request(request_id, declining_user)
+        run = self._get_run(request.run_id)
+        self.repo.update_reassignment_status(request_id, "declined")
+        store_name = self._get_store_name(run.store_id)
+        await self._notify_decline(request, declining_user, store_name, request_id)
+
+        logger.info(
+            "Leader reassignment declined",
+            extra={
+                "run_id": str(request.run_id),
+                "from_user_id": str(request.from_user_id),
+                "declined_by_id": str(declining_user.id),
+                "request_id": str(request_id)
+            }
+        )
+
+        return {
+            "id": str(request.id),
+            "run_id": str(request.run_id),
+            "from_user_id": str(request.from_user_id),
+            "to_user_id": str(request.to_user_id),
+            "status": "declined",
+            "resolved_at": request.resolved_at.isoformat() if request.resolved_at else None
+        }
+
+    def _validate_decline_request(
+        self, request_id: UUID, declining_user: User
+    ) -> LeaderReassignmentRequest:
+        """Validate decline request."""
         request = self.repo.get_reassignment_request_by_id(request_id)
         if not request:
             raise NotFoundError("Reassignment request", request_id)
 
-        # Check if user is the target
         if request.to_user_id != declining_user.id:
             raise ForbiddenError("Only the target user can decline this request")
 
-        # Check if request is still pending
         if request.status != "pending":
             raise ValidationError(f"Request is {request.status}, cannot decline")
 
-        # Get run
-        run = self.repo.get_run_by_id(request.run_id)
-        if not run:
-            raise NotFoundError("Run", request.run_id)
+        return request
 
-        # Update request status
-        self.repo.update_reassignment_status(request_id, "declined")
-
-        # Get store name
-        store = self.repo.get_store_by_id(run.store_id)
-        store_name = store.name if store else "Unknown Store"
-
-        # Create notification for old leader
+    async def _notify_decline(
+        self, request: LeaderReassignmentRequest, declining_user: User,
+        store_name: str, request_id: UUID
+    ) -> None:
+        """Create notification and broadcast decline."""
         notification_data = {
             "run_id": str(request.run_id),
             "declined_by_id": str(declining_user.id),
             "declined_by_name": declining_user.name,
             "store_name": store_name
         }
+
         notification = self.repo.create_notification(
             request.from_user_id,
             "leader_reassignment_declined",
             notification_data
         )
 
-        # Broadcast to user's WebSocket for immediate notification
+        # Broadcast to original leader
         try:
             await ws_manager.broadcast(
                 f"user:{request.from_user_id}",
@@ -361,11 +395,7 @@ class ReassignmentService:
         except Exception as e:
             logger.warning(
                 "Failed to broadcast notification to user",
-                extra={
-                    "error": str(e),
-                    "user_id": str(request.from_user_id),
-                    "run_id": str(request.run_id)
-                }
+                extra={"error": str(e), "user_id": str(request.from_user_id), "run_id": str(request.run_id)}
             )
 
         # Broadcast to run participants
@@ -385,31 +415,8 @@ class ReassignmentService:
         except Exception as e:
             logger.warning(
                 "Failed to broadcast reassignment decline",
-                extra={
-                    "error": str(e),
-                    "run_id": str(request.run_id),
-                    "request_id": str(request_id)
-                }
+                extra={"error": str(e), "run_id": str(request.run_id), "request_id": str(request_id)}
             )
-
-        logger.info(
-            f"Leader reassignment declined",
-            extra={
-                "run_id": str(request.run_id),
-                "from_user_id": str(request.from_user_id),
-                "declined_by_id": str(declining_user.id),
-                "request_id": str(request_id)
-            }
-        )
-
-        return {
-            "id": str(request.id),
-            "run_id": str(request.run_id),
-            "from_user_id": str(request.from_user_id),
-            "to_user_id": str(request.to_user_id),
-            "status": "declined",
-            "resolved_at": request.resolved_at.isoformat() if request.resolved_at else None
-        }
 
     def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> Dict[str, Any]:
         """

@@ -407,7 +407,24 @@ class GroupService(BaseService):
             extra={"user_id": str(user.id), "invite_token": invite_token}
         )
 
-        # Find the group by invite token
+        group = self._validate_group_invite(invite_token, user)
+        self._check_membership_constraints(user, group)
+        self._add_member_to_group_db(user, group)
+        self._broadcast_member_joined(user, group)
+
+        logger.info(
+            "User joined group successfully",
+            extra={"user_id": str(user.id), "group_id": str(group.id)}
+        )
+
+        return JoinGroupResponse(
+            message="Successfully joined group",
+            group_id=str(group.id),
+            group_name=group.name
+        )
+
+    def _validate_group_invite(self, invite_token: str, user: User) -> Group:
+        """Validate invite token and check if joining is allowed."""
         group = self.repo.get_group_by_invite_token(invite_token)
         if not group:
             logger.warning(
@@ -416,54 +433,52 @@ class GroupService(BaseService):
             )
             raise NotFoundError("Group", invite_token)
 
-        # Check if joining is allowed
         if not group.is_joining_allowed:
             logger.warning(
-                f"Attempted to join group with joining disabled",
+                "Attempted to join group with joining disabled",
                 extra={"user_id": str(user.id), "group_id": str(group.id)}
             )
             raise ForbiddenError("This group is not accepting new members")
 
-        # Check if user is already a member
+        return group
+
+    def _check_membership_constraints(self, user: User, group: Group) -> None:
+        """Check user/group limits and ensure user is not already a member."""
         user_groups = self.repo.get_user_groups(user)
+
         if any(g.id == group.id for g in user_groups):
             logger.info(
-                f"User already a member of group",
+                "User already a member of group",
                 extra={"user_id": str(user.id), "group_id": str(group.id)}
             )
             raise BadRequestError("Already a member of this group")
 
-        # Check user group limit
         if len(user_groups) >= MAX_GROUPS_PER_USER:
             logger.warning(
-                f"User attempted to join group but already at maximum groups",
+                "User attempted to join group but already at maximum groups",
                 extra={"user_id": str(user.id), "group_id": str(group.id)}
             )
             raise BadRequestError(f"Cannot join more than {MAX_GROUPS_PER_USER} groups")
 
-        # Check group member limit
         if len(group.members) >= MAX_MEMBERS_PER_GROUP:
             logger.warning(
-                f"User attempted to join group but group is full",
+                "User attempted to join group but group is full",
                 extra={"user_id": str(user.id), "group_id": str(group.id)}
             )
             raise BadRequestError(f"Group is full (maximum {MAX_MEMBERS_PER_GROUP} members)")
 
-        # Add user to the group
+    def _add_member_to_group_db(self, user: User, group: Group) -> None:
+        """Add user to the group in the database."""
         success = self.repo.add_group_member(group.id, user)
         if not success:
             logger.error(
-                f"Failed to add user to group",
+                "Failed to add user to group",
                 extra={"user_id": str(user.id), "group_id": str(group.id)}
             )
             raise BadRequestError("Failed to join group")
 
-        logger.info(
-            f"User joined group successfully",
-            extra={"user_id": str(user.id), "group_id": str(group.id)}
-        )
-
-        # Broadcast WebSocket event to group room
+    def _broadcast_member_joined(self, user: User, group: Group) -> None:
+        """Broadcast member_joined event to group room."""
         room_id = f"group:{group.id}"
         import asyncio
         asyncio.create_task(manager.broadcast(room_id, {
@@ -475,12 +490,6 @@ class GroupService(BaseService):
                 "user_email": user.email
             }
         }))
-
-        return JoinGroupResponse(
-            message="Successfully joined group",
-            group_id=str(group.id),
-            group_name=group.name
-        )
 
     def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
         """
@@ -546,73 +555,88 @@ class GroupService(BaseService):
             NotFoundError: If group doesn't exist
             ForbiddenError: If user is not a group admin or trying to remove admin
         """
-        # Verify ID formats
-        try:
-            group_uuid = UUID(group_id)
-            member_uuid = UUID(member_id)
-        except ValueError:
-            raise BadRequestError("Invalid ID format")
-
-        # Get the group
-        group = self.repo.get_group_by_id(group_uuid)
-        if not group:
-            raise NotFoundError("Group", group_uuid)
-
-        # Check if user is a group admin
-        if not self.repo.is_user_group_admin(group_uuid, user.id):
-            logger.warning(
-                f"Non-admin user attempted to remove member",
-                extra={"user_id": str(user.id), "group_id": str(group_uuid)}
-            )
-            raise ForbiddenError("Only group admins can remove members")
-
-        # Check if the member being removed is an admin
-        if self.repo.is_user_group_admin(group_uuid, member_uuid):
-            raise ForbiddenError("Cannot remove group admins")
-
-        # Remove the member
-        success = self.repo.remove_group_member(group_uuid, member_uuid)
-        if not success:
-            raise BadRequestError("Failed to remove member")
-
-        # Mark all participations as removed and cancel runs led by the removed member
-        runs = self.repo.get_runs_by_group(group_uuid)
-        cancelled_runs = []
-        affected_runs = []  # All runs where the user participated (for WebSocket updates)
-
-        for run in runs:
-            # Get participations for this run
-            participations = self.repo.get_run_participations(run.id)
-
-            # Mark removed user's participation as removed
-            user_participated = False
-            for participation in participations:
-                if participation.user_id == member_uuid:
-                    participation.is_removed = True
-                    user_participated = True
-
-            if user_participated:
-                affected_runs.append(str(run.id))
-
-            # If the removed user is the leader and run is not completed, cancel it
-            leader = next((p for p in participations if p.is_leader), None)
-            if leader and leader.user_id == member_uuid and run.state != RunState.COMPLETED:
-                run.state = RunState.CANCELLED
-                cancelled_runs.append(str(run.id))
+        group_uuid, member_uuid = self._validate_member_removal_request(group_id, member_id, user)
+        affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(group_uuid, member_uuid)
+        self._broadcast_removal_notifications(group_uuid, member_uuid, affected_runs, cancelled_runs)
 
         logger.info(
             f"Member removed from group, cancelled {len(cancelled_runs)} runs",
             extra={"user_id": str(user.id), "group_id": str(group_uuid), "removed_user_id": str(member_uuid), "cancelled_runs": cancelled_runs}
         )
 
-        # Broadcast WebSocket event to group room
-        room_id = f"group:{group_uuid}"
+        return MessageResponse(message="Member removed successfully")
+
+    def _validate_member_removal_request(
+        self, group_id: str, member_id: str, user: User
+    ) -> tuple[UUID, UUID]:
+        """Validate member removal request and return UUIDs."""
+        try:
+            group_uuid = UUID(group_id)
+            member_uuid = UUID(member_id)
+        except ValueError:
+            raise BadRequestError("Invalid ID format")
+
+        group = self.repo.get_group_by_id(group_uuid)
+        if not group:
+            raise NotFoundError("Group", group_uuid)
+
+        if not self.repo.is_user_group_admin(group_uuid, user.id):
+            logger.warning(
+                "Non-admin user attempted to remove member",
+                extra={"user_id": str(user.id), "group_id": str(group_uuid)}
+            )
+            raise ForbiddenError("Only group admins can remove members")
+
+        if self.repo.is_user_group_admin(group_uuid, member_uuid):
+            raise ForbiddenError("Cannot remove group admins")
+
+        success = self.repo.remove_group_member(group_uuid, member_uuid)
+        if not success:
+            raise BadRequestError("Failed to remove member")
+
+        return group_uuid, member_uuid
+
+    def _find_and_cancel_affected_runs(
+        self, group_id: UUID, member_id: UUID
+    ) -> tuple[list[str], list[str]]:
+        """Find affected runs and cancel runs led by removed member."""
+        runs = self.repo.get_runs_by_group(group_id)
+        cancelled_runs = []
+        affected_runs = []
+
+        for run in runs:
+            participations = self.repo.get_run_participations(run.id)
+
+            # Mark removed user's participation as removed
+            user_participated = False
+            for participation in participations:
+                if participation.user_id == member_id:
+                    participation.is_removed = True
+                    user_participated = True
+
+            if user_participated:
+                affected_runs.append(str(run.id))
+
+            # Cancel run if removed user is leader and run is not completed
+            leader = next((p for p in participations if p.is_leader), None)
+            if leader and leader.user_id == member_id and run.state != RunState.COMPLETED:
+                run.state = RunState.CANCELLED
+                cancelled_runs.append(str(run.id))
+
+        return affected_runs, cancelled_runs
+
+    def _broadcast_removal_notifications(
+        self, group_id: UUID, member_id: UUID, affected_runs: list[str], cancelled_runs: list[str]
+    ) -> None:
+        """Broadcast WebSocket notifications for member removal."""
         import asyncio
-        asyncio.create_task(manager.broadcast(room_id, {
+
+        # Broadcast to group room
+        asyncio.create_task(manager.broadcast(f"group:{group_id}", {
             "type": "member_removed",
             "data": {
-                "group_id": str(group_uuid),
-                "removed_user_id": str(member_uuid),
+                "group_id": str(group_id),
+                "removed_user_id": str(member_id),
                 "cancelled_runs": cancelled_runs
             }
         }))
@@ -623,11 +647,11 @@ class GroupService(BaseService):
                 "type": "participant_removed",
                 "data": {
                     "run_id": run_id,
-                    "removed_user_id": str(member_uuid)
+                    "removed_user_id": str(member_id)
                 }
             }))
 
-        # Also broadcast run_cancelled events for cancelled runs
+        # Broadcast run_cancelled events for cancelled runs
         for run_id in cancelled_runs:
             asyncio.create_task(manager.broadcast(f"run:{run_id}", {
                 "type": "run_cancelled",
@@ -637,8 +661,6 @@ class GroupService(BaseService):
                     "new_state": "cancelled"
                 }
             }))
-
-        return MessageResponse(message="Member removed successfully")
 
     def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
         """
