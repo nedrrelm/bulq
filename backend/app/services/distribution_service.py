@@ -11,6 +11,7 @@ from ..exceptions import (
     ForbiddenError,
 )
 from ..request_context import get_logger
+from ..validation import validate_run_state_for_action
 from .base_service import BaseService
 from ..schemas import (
     DistributionUser,
@@ -59,8 +60,11 @@ class DistributionService(BaseService):
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError("Not authorized to view this run")
 
-        if run.state not in [RunState.DISTRIBUTING, RunState.COMPLETED]:
-            raise BadRequestError("Distribution only available in distributing state")
+        validate_run_state_for_action(
+            run,
+            [RunState.DISTRIBUTING, RunState.COMPLETED],
+            "distribution"
+        )
 
     def _aggregate_bids_by_user(self, all_bids: list[ProductBid]) -> dict[str, dict[str, Any]]:
         """Group bids by user and aggregate totals."""

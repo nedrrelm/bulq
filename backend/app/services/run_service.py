@@ -6,6 +6,7 @@ from uuid import UUID
 
 from ..background_tasks import create_background_task
 from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError, BadRequestError
+from ..validation import validate_uuid, validate_run_state_for_action
 from ..models import Run, Store, Group, User, Product, ProductBid, RunParticipation, ShoppingListItem
 from ..run_state import RunState, state_machine
 from ..config import MAX_ACTIVE_RUNS_PER_GROUP, MAX_PRODUCTS_PER_RUN
@@ -54,11 +55,8 @@ class RunService(BaseService):
         )
 
         # Validate IDs
-        try:
-            group_uuid = UUID(group_id)
-            store_uuid = UUID(store_id)
-        except ValueError:
-            raise BadRequestError("Invalid ID format")
+        group_uuid = validate_uuid(group_id, "Group")
+        store_uuid = validate_uuid(store_id, "Store")
 
         # Verify group exists and user is a member
         group = self.repo.get_group_by_id(group_uuid)
@@ -154,10 +152,7 @@ class RunService(BaseService):
 
     def _validate_run_id(self, run_id: str) -> UUID:
         """Validate and convert run ID string to UUID."""
-        try:
-            return UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        return validate_uuid(run_id, "Run")
 
     def _get_run_with_auth_check(self, run_uuid: UUID, user: User) -> Run:
         """Get run and verify user has access to it."""
@@ -378,18 +373,18 @@ class RunService(BaseService):
     ) -> tuple[UUID, UUID, Run, Product]:
         """Validate bid request and return validated entities."""
         # Validate IDs
-        try:
-            run_uuid = UUID(run_id)
-            product_uuid = UUID(product_id)
-        except ValueError:
-            raise BadRequestError("Invalid ID format")
+        run_uuid = validate_uuid(run_id, "Run")
+        product_uuid = validate_uuid(product_id, "Product")
 
         # Verify run exists and user has access
         run = self._get_run_with_auth_check(run_uuid, user)
 
         # Check if run allows bidding
-        if run.state not in [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]:
-            raise BadRequestError("Bidding not allowed in current run state")
+        validate_run_state_for_action(
+            run,
+            [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING],
+            "bidding"
+        )
 
         # Verify product exists in store
         store_products = self.repo.get_products_by_store(run.store_id)
@@ -542,10 +537,7 @@ class RunService(BaseService):
 
     def _validate_toggle_ready_request(self, run_id: str, user: User) -> tuple[UUID, Run]:
         """Validate toggle ready request and return run UUID and run object."""
-        try:
-            run_uuid = UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        run_uuid = validate_uuid(run_id, "Run")
 
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
@@ -597,10 +589,7 @@ class RunService(BaseService):
             ForbiddenError: If user is not the leader
         """
         # Validate run ID
-        try:
-            run_uuid = UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        run_uuid = validate_uuid(run_id, "Run")
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
@@ -669,10 +658,7 @@ class RunService(BaseService):
             ForbiddenError: If user not authorized
         """
         # Validate run ID
-        try:
-            run_uuid = UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        run_uuid = validate_uuid(run_id, "Run")
 
         # Verify run exists and user has access
         run = self.repo.get_run_by_id(run_uuid)
@@ -764,10 +750,7 @@ class RunService(BaseService):
 
     def _validate_finish_adjusting_request(self, run_id: str, user: User) -> tuple[UUID, Run]:
         """Validate finish adjusting request and return run UUID and run object."""
-        try:
-            run_uuid = UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        run_uuid = validate_uuid(run_id, "Run")
 
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
@@ -841,10 +824,7 @@ class RunService(BaseService):
             ForbiddenError: If user is not the leader
         """
         # Validate run ID
-        try:
-            run_uuid = UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        run_uuid = validate_uuid(run_id, "Run")
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
@@ -956,11 +936,8 @@ class RunService(BaseService):
 
     def _validate_retract_request(self, run_id: str, product_id: str, user: User) -> tuple[UUID, UUID, Run]:
         """Validate retract request and return UUIDs and run object."""
-        try:
-            run_uuid = UUID(run_id)
-            product_uuid = UUID(product_id)
-        except ValueError:
-            raise BadRequestError("Invalid ID format")
+        run_uuid = validate_uuid(run_id, "Run")
+        product_uuid = validate_uuid(product_id, "Product")
 
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
@@ -970,8 +947,11 @@ class RunService(BaseService):
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError("Not authorized to modify bids on this run")
 
-        if run.state not in [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]:
-            raise BadRequestError("Bid modification not allowed in current run state")
+        validate_run_state_for_action(
+            run,
+            [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING],
+            "bid modification"
+        )
 
         return run_uuid, product_uuid, run
 
