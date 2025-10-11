@@ -19,7 +19,7 @@ class NotificationResponse(BaseModel):
     type: str
     data: dict
     read: bool
-    created_at: Optional[str]
+    created_at: str | None
 
 class UnreadCountResponse(BaseModel):
     count: int
@@ -32,7 +32,7 @@ class MarkAllReadResponse(BaseModel):
     count: int
 
 
-@router.get("", response_model=List[NotificationResponse])
+@router.get("", response_model=list[NotificationResponse])
 async def get_notifications(
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -47,7 +47,7 @@ async def get_notifications(
     return [NotificationResponse(**n) for n in notifications]
 
 
-@router.get("/unread", response_model=List[NotificationResponse])
+@router.get("/unread", response_model=list[NotificationResponse])
 async def get_unread_notifications(
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db)

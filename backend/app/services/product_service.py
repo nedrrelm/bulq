@@ -1,6 +1,6 @@
 """Product service for handling product-related business logic."""
 
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any
 from uuid import UUID
 from ..models import Product, Store, ProductAvailability
 from .base_service import BaseService
@@ -19,7 +19,7 @@ from ..schemas import (
 class ProductService(BaseService):
     """Service for product operations."""
 
-    def search_products(self, query: str) -> List[ProductSearchResult]:
+    def search_products(self, query: str) -> list[ProductSearchResult]:
         """Search for products by name across all stores."""
         products = self.repo.search_products(query)
 
@@ -46,7 +46,7 @@ class ProductService(BaseService):
 
         return result
 
-    def get_product_details(self, product_id: UUID) -> Optional[ProductDetailResponse]:
+    def get_product_details(self, product_id: UUID) -> ProductDetailResponse | None:
         """
         Get detailed product information including price history from shopping list items and availabilities.
         Shows the product across different stores with price history.
@@ -124,12 +124,12 @@ class ProductService(BaseService):
     def create_product(
         self,
         name: str,
-        brand: Optional[str] = None,
-        unit: Optional[str] = None,
-        store_id: Optional[UUID] = None,
-        price: Optional[float] = None,
-        user_id: Optional[UUID] = None
-    ) -> tuple[Product, Optional[Any]]:
+        brand: str | None = None,
+        unit: str | None = None,
+        store_id: UUID | None = None,
+        price: float | None = None,
+        user_id: UUID | None = None
+    ) -> tuple[Product, Any | None]:
         """
         Create a new product (store-agnostic).
         Optionally create a product availability if store_id is provided.

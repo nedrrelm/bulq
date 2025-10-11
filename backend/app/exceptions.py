@@ -1,6 +1,6 @@
 """Custom exception classes for the application."""
 
-from typing import Any, Optional
+from typing import Any
 from fastapi import status
 
 
@@ -11,7 +11,7 @@ class AppException(Exception):
         self,
         message: str,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any | None] = None,
     ):
         self.message = message
         self.status_code = status_code
@@ -22,7 +22,7 @@ class AppException(Exception):
 class NotFoundError(AppException):
     """Raised when a resource is not found."""
 
-    def __init__(self, resource: str, identifier: Any, details: Optional[dict[str, Any]] = None):
+    def __init__(self, resource: str, identifier: Any, details: dict[str, Any | None] = None):
         message = f"{resource} not found"
         super().__init__(
             message=message,
@@ -34,7 +34,7 @@ class NotFoundError(AppException):
 class UnauthorizedError(AppException):
     """Raised when authentication is required but not provided."""
 
-    def __init__(self, message: str = "Authentication required", details: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str = "Authentication required", details: dict[str, Any | None] = None):
         super().__init__(
             message=message,
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -45,7 +45,7 @@ class UnauthorizedError(AppException):
 class ForbiddenError(AppException):
     """Raised when user doesn't have permission to perform an action."""
 
-    def __init__(self, message: str = "Insufficient permissions", details: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str = "Insufficient permissions", details: dict[str, Any | None] = None):
         super().__init__(
             message=message,
             status_code=status.HTTP_403_FORBIDDEN,
@@ -56,7 +56,7 @@ class ForbiddenError(AppException):
 class ValidationError(AppException):
     """Raised when business logic validation fails."""
 
-    def __init__(self, message: str, field: Optional[str] = None, details: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str, field: str | None = None, details: dict[str, Any | None] = None):
         extra_details = details or {}
         if field:
             extra_details["field"] = field
@@ -70,7 +70,7 @@ class ValidationError(AppException):
 class ConflictError(AppException):
     """Raised when an operation conflicts with current state."""
 
-    def __init__(self, message: str, details: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any | None] = None):
         super().__init__(
             message=message,
             status_code=status.HTTP_409_CONFLICT,
@@ -81,7 +81,7 @@ class ConflictError(AppException):
 class BadRequestError(AppException):
     """Raised when request data is invalid."""
 
-    def __init__(self, message: str, details: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any | None] = None):
         super().__init__(
             message=message,
             status_code=status.HTTP_400_BAD_REQUEST,

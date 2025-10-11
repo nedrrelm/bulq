@@ -18,7 +18,7 @@ from uuid import UUID
 
 router = APIRouter(prefix="/distribution", tags=["distribution"])
 
-@router.get("/{run_id}", response_model=List[DistributionUser])
+@router.get("/{run_id}", response_model=list[DistributionUser])
 async def get_distribution_data(
     run_id: str,
     current_user: User = Depends(require_auth),

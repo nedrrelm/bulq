@@ -1,7 +1,6 @@
 """Run state machine for managing run state transitions."""
 
 from enum import Enum
-from typing import Optional
 
 from .request_context import get_logger
 
@@ -94,7 +93,7 @@ class RunStateMachine:
         self,
         from_state: RunState,
         to_state: RunState,
-        run_id: Optional[str] = None
+        run_id: str | None = None
     ) -> None:
         """
         Validate a state transition and raise exception if invalid.

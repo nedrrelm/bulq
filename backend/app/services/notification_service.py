@@ -1,6 +1,6 @@
 """Service layer for notification-related business logic."""
 
-from typing import List, Dict, Any
+from typing import Any
 from uuid import UUID
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 class NotificationService(BaseService):
     """Service for managing notifications."""
 
-    def get_user_notifications(self, user: User, limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
+    def get_user_notifications(self, user: User, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
         """
         Get notifications for a user (paginated) with grouping.
 
@@ -40,7 +40,7 @@ class NotificationService(BaseService):
 
         return grouped
 
-    def get_unread_notifications(self, user: User) -> List[Dict[str, Any]]:
+    def get_unread_notifications(self, user: User) -> list[dict[str, Any]]:
         """
         Get all unread notifications for a user.
 
@@ -70,7 +70,7 @@ class NotificationService(BaseService):
         """
         return self.repo.get_unread_count(user.id)
 
-    def mark_as_read(self, notification_id: str, user: User) -> Dict[str, str]:
+    def mark_as_read(self, notification_id: str, user: User) -> dict[str, str]:
         """
         Mark a notification as read (with authorization check).
 
@@ -114,7 +114,7 @@ class NotificationService(BaseService):
 
         return {"message": "Notification marked as read"}
 
-    def mark_all_as_read(self, user: User) -> Dict[str, Any]:
+    def mark_all_as_read(self, user: User) -> dict[str, Any]:
         """
         Mark all notifications as read for a user.
 
@@ -133,7 +133,7 @@ class NotificationService(BaseService):
 
         return {"message": "All notifications marked as read", "count": count}
 
-    def _notification_to_dict(self, notification) -> Dict[str, Any]:
+    def _notification_to_dict(self, notification) -> dict[str, Any]:
         """Convert notification model to dictionary."""
         return {
             "id": str(notification.id),
@@ -143,7 +143,7 @@ class NotificationService(BaseService):
             "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
         }
 
-    def _group_notifications(self, notifications: List) -> List[Dict[str, Any]]:
+    def _group_notifications(self, notifications: List) -> list[dict[str, Any]]:
         """
         Group similar notifications that occurred close together.
 

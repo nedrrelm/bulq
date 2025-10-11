@@ -1,16 +1,16 @@
 """Error response models for consistent API error responses."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from pydantic import BaseModel, Field
 
 
 class ErrorDetail(BaseModel):
     """Detailed error information."""
 
-    field: Optional[str] = Field(None, description="Field that caused the error, if applicable")
+    field: str | None = Field(None, description="Field that caused the error, if applicable")
     message: str = Field(..., description="Human-readable error message")
-    code: Optional[str] = Field(None, description="Machine-readable error code")
+    code: str | None = Field(None, description="Machine-readable error code")
 
 
 class ErrorResponse(BaseModel):
@@ -21,7 +21,7 @@ class ErrorResponse(BaseModel):
     message: str = Field(..., description="Human-readable error message")
     details: dict[str, Any] = Field(default_factory=dict, description="Additional error context")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="When the error occurred")
-    path: Optional[str] = Field(None, description="Request path that caused the error")
+    path: str | None = Field(None, description="Request path that caused the error")
 
     class Config:
         json_schema_extra = {

@@ -1,6 +1,6 @@
 """Store service for handling store-related business logic."""
 
-from typing import List, Optional, Dict, Any
+from typing import Optional, Any
 from uuid import UUID
 from ..models import Store, Product, Run
 from .base_service import BaseService
@@ -10,7 +10,7 @@ from ..exceptions import ValidationError, NotFoundError
 class StoreService(BaseService):
     """Service for store operations."""
 
-    def get_all_stores(self, limit: int = 100, offset: int = 0) -> List[Store]:
+    def get_all_stores(self, limit: int = 100, offset: int = 0) -> list[Store]:
         """Get all available stores (paginated)."""
         return self.repo.get_all_stores(limit, offset)
 
@@ -27,7 +27,7 @@ class StoreService(BaseService):
             raise NotFoundError("Store", store_id)
         return store
 
-    def get_store_page_data(self, store_id: UUID, user_id: UUID) -> Dict[str, Any]:
+    def get_store_page_data(self, store_id: UUID, user_id: UUID) -> dict[str, Any]:
         """
         Get all data needed for the store page with fully formatted response.
 

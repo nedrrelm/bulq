@@ -1,5 +1,4 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Cookie, HTTPException
-from typing import Optional
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..repository import get_repository
@@ -10,7 +9,7 @@ router = APIRouter()
 
 
 async def get_current_user_ws(
-    session_token: Optional[str] = Cookie(None, alias="session_token"),
+    session_token: str | None = Cookie(None, alias="session_token"),
     db: Session = Depends(get_db)
 ):
     """Get current user from WebSocket connection (via cookie)."""

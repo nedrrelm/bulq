@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -26,7 +26,7 @@ class ReassignmentResponse(BaseModel):
     to_user_id: str
     status: str
     created_at: str
-    resolved_at: Optional[str] = None
+    resolved_at: str | None = None
 
 class ReassignmentDetailResponse(BaseModel):
     id: str
@@ -40,11 +40,11 @@ class ReassignmentDetailResponse(BaseModel):
     created_at: str
 
 class MyRequestsResponse(BaseModel):
-    sent: List[ReassignmentDetailResponse]
-    received: List[ReassignmentDetailResponse]
+    sent: list[ReassignmentDetailResponse]
+    received: list[ReassignmentDetailResponse]
 
 class RunRequestResponse(BaseModel):
-    request: Optional[ReassignmentDetailResponse]
+    request: ReassignmentDetailResponse | None
 
 
 @router.post("/request", response_model=ReassignmentResponse)

@@ -17,7 +17,7 @@ class ShoppingListItemResponse(BaseModel):
     product_id: str
     product_name: str
     requested_quantity: int
-    recent_prices: List[PriceObservation]
+    recent_prices: list[PriceObservation]
     purchased_quantity: int | None
     purchased_price_per_unit: str | None
     purchased_total: str | None
@@ -32,7 +32,7 @@ class UpdateAvailabilityPriceRequest(BaseModel):
 
     @field_validator('price')
     @classmethod
-    def validate_price(cls, v):
+    def validate_price(cls, v: float) -> float:
         if v <= 0:
             raise ValueError('Price must be greater than 0')
         # Check max 2 decimal places
@@ -42,7 +42,7 @@ class UpdateAvailabilityPriceRequest(BaseModel):
 
     @field_validator('notes')
     @classmethod
-    def validate_notes(cls, v):
+    def validate_notes(cls, v: str) -> str:
         return v.strip()[:200]
 
 
@@ -54,7 +54,7 @@ class MarkPurchasedRequest(BaseModel):
 
     @field_validator('quantity')
     @classmethod
-    def validate_quantity(cls, v):
+    def validate_quantity(cls, v: float) -> float:
         if v <= 0:
             raise ValueError('Quantity must be greater than 0')
         # Check max 2 decimal places
@@ -64,7 +64,7 @@ class MarkPurchasedRequest(BaseModel):
 
     @field_validator('price_per_unit')
     @classmethod
-    def validate_price_per_unit(cls, v):
+    def validate_price_per_unit(cls, v: float) -> float:
         if v <= 0:
             raise ValueError('Price per unit must be greater than 0')
         # Check max 2 decimal places
@@ -74,7 +74,7 @@ class MarkPurchasedRequest(BaseModel):
 
     @field_validator('total')
     @classmethod
-    def validate_total(cls, v):
+    def validate_total(cls, v: float) -> float:
         if v <= 0:
             raise ValueError('Total must be greater than 0')
         # Check max 2 decimal places

@@ -1,7 +1,7 @@
 """Run service for managing run business logic."""
 
 from decimal import Decimal
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Any
 from uuid import UUID
 
 from ..exceptions import NotFoundError, ForbiddenError, ValidationError, ConflictError, BadRequestError
@@ -173,7 +173,7 @@ class RunService(BaseService):
 
     def _get_participants_data(
         self, run_id: UUID, current_user_id: UUID
-    ) -> tuple[List[ParticipantResponse], bool, bool, str]:
+    ) -> tuple[list[ParticipantResponse], bool, bool, str]:
         """
         Get participants data for a run.
 
@@ -209,7 +209,7 @@ class RunService(BaseService):
 
         return participants_data, current_user_is_ready, current_user_is_leader, leader_name
 
-    def _get_products_data(self, run: Run, current_user_id: UUID) -> List[ProductResponse]:
+    def _get_products_data(self, run: Run, current_user_id: UUID) -> list[ProductResponse]:
         """Get products data with bids for a run."""
         # Get all products for the store
         store_products = self.repo.get_products_by_store(run.store_id)
@@ -232,7 +232,7 @@ class RunService(BaseService):
 
         return products_data
 
-    def _get_shopping_list_map(self, run: Run) -> Dict[UUID, Any]:
+    def _get_shopping_list_map(self, run: Run) -> dict[UUID, Any]:
         """Get shopping list items mapped by product ID."""
         shopping_items = self.repo.get_shopping_list_items(run.id)
         return {item.product_id: item for item in shopping_items}
@@ -240,10 +240,10 @@ class RunService(BaseService):
     def _build_product_response(
         self,
         product: Product,
-        product_bids: List[ProductBid],
+        product_bids: list[ProductBid],
         current_user_id: UUID,
         run: Run,
-        shopping_list_map: Dict[UUID, Any]
+        shopping_list_map: dict[UUID, Any]
     ) -> ProductResponse:
         """Build a ProductResponse from product and its bids."""
         # Calculate statistics
@@ -273,15 +273,15 @@ class RunService(BaseService):
             purchased_quantity=purchased_qty
         )
 
-    def _calculate_product_statistics(self, product_bids: List[ProductBid]) -> tuple[int, int]:
+    def _calculate_product_statistics(self, product_bids: list[ProductBid]) -> tuple[int, int]:
         """Calculate total quantity and interested count for product bids."""
         total_quantity = sum(bid.quantity for bid in product_bids)
         interested_count = len([bid for bid in product_bids if bid.interested_only or bid.quantity > 0])
         return total_quantity, interested_count
 
     def _get_user_bids_data(
-        self, product_bids: List[ProductBid], current_user_id: UUID
-    ) -> tuple[List[UserBidResponse], Optional[UserBidResponse]]:
+        self, product_bids: list[ProductBid], current_user_id: UUID
+    ) -> tuple[list[UserBidResponse], UserBidResponse | None]:
         """Get user bids data and identify current user's bid."""
         user_bids_data = []
         current_user_bid = None
@@ -374,7 +374,7 @@ class RunService(BaseService):
 
     def _validate_bid_request(
         self, run_id: str, product_id: str, user: User
-    ) -> Tuple[UUID, UUID, Run, Product]:
+    ) -> tuple[UUID, UUID, Run, Product]:
         """Validate bid request and return validated entities."""
         # Validate IDs
         try:
@@ -400,7 +400,7 @@ class RunService(BaseService):
 
     def _ensure_user_participation(
         self, run_uuid: UUID, run: Run, user: User
-    ) -> Tuple[RunParticipation, bool]:
+    ) -> tuple[RunParticipation, bool]:
         """Get or create user participation in run."""
         participation = self.repo.get_participation(user.id, run_uuid)
         is_new_participant = False
@@ -417,7 +417,7 @@ class RunService(BaseService):
 
     def _validate_bid_for_state(
         self, run: Run, product_uuid: UUID, quantity: float, participation: RunParticipation
-    ) -> Optional[ProductBid]:
+    ) -> ProductBid | None:
         """Validate bid based on run state and return existing bid if any."""
         # Basic quantity validation
         if quantity < 0:
@@ -650,7 +650,7 @@ class RunService(BaseService):
             group_id=str(run.group_id)
         )
 
-    def get_available_products(self, run_id: str, user: User) -> List[AvailableProductResponse]:
+    def get_available_products(self, run_id: str, user: User) -> list[AvailableProductResponse]:
         """
         Get products available for bidding (all products without bids yet).
         Products with availability at the run's store are sorted first.
