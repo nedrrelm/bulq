@@ -41,7 +41,7 @@ def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_data: UserRegister, response: Response, db: Session = Depends(get_db)):
+async def register(user_data: UserRegister, response: Response, db: Session = Depends(get_db)) -> UserResponse:
     """Register a new user."""
     logger.info(
         "Registration attempt",
@@ -90,7 +90,7 @@ async def register(user_data: UserRegister, response: Response, db: Session = De
     )
 
 @router.post("/login", response_model=UserResponse)
-async def login(user_data: UserLogin, response: Response, db: Session = Depends(get_db)):
+async def login(user_data: UserLogin, response: Response, db: Session = Depends(get_db)) -> UserResponse:
     """Login user."""
     logger.info(
         "Login attempt",
@@ -137,7 +137,7 @@ async def login(user_data: UserLogin, response: Response, db: Session = Depends(
     )
 
 @router.post("/logout", response_model=MessageResponse)
-async def logout(request: Request, response: Response):
+async def logout(request: Request, response: Response) -> MessageResponse:
     """Logout user."""
     session_token = request.cookies.get("session_token")
     if session_token:
@@ -151,7 +151,7 @@ async def logout(request: Request, response: Response):
     return MessageResponse(message="Logged out successfully")
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(require_auth)):
+async def get_current_user_info(current_user: User = Depends(require_auth)) -> UserResponse:
     """Get current user information."""
     return UserResponse(
         id=str(current_user.id),

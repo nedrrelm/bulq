@@ -32,7 +32,7 @@ async def get_current_user_ws(
 async def websocket_group_endpoint(
     websocket: WebSocket,
     group_id: str
-):
+) -> None:
     """WebSocket endpoint for group-level updates (new runs, run state changes)."""
 
     # IMPORTANT: Accept the WebSocket connection FIRST
@@ -151,7 +151,7 @@ async def websocket_group_endpoint(
 async def websocket_run_endpoint(
     websocket: WebSocket,
     run_id: str
-):
+) -> None:
     """WebSocket endpoint for run-level updates (bids, ready status, state changes)."""
 
     # IMPORTANT: Accept the WebSocket connection FIRST
@@ -246,7 +246,7 @@ async def websocket_run_endpoint(
 
 
 @router.websocket("/ws/user")
-async def websocket_user_endpoint(websocket: WebSocket):
+async def websocket_user_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for user-level updates (notifications)."""
 
     # IMPORTANT: Accept the WebSocket connection FIRST
