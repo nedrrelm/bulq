@@ -84,102 +84,426 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 ---
 
-## 🧹 Last Pass: Code Quality & Technical Debt
+## 🧹 Code Quality & Technical Debt
 
-Technical debt and code quality improvements to address before production deployment.
+Code smells and refactoring opportunities identified during backend review.
 
 ---
 
-### 3. Hardcoded Secure Cookie Setting
-**Status**: High Priority (security)
-**Affected files**: `app/routes/auth.py:89, 124`
+### 1. Fix Enum Comparison Bug in RunService
+**Status**: Critical (bug)
+**Affected files**: `app/services/run_service.py:854, 856`
 
-**Problem:** Security-critical `secure` flag is hardcoded to `False` instead of being environment-based.
+**Problem:** Comparing `run.state` (string) to `RunState.COMPLETED.value` instead of enum directly.
 ```python
-secure=False,  # Set to True in production with HTTPS
+# Current (wrong):
+if run.state == RunState.COMPLETED.value:
+# Should be:
+if run.state == RunState.COMPLETED:
 ```
 
-**Risk:** Easy to forget to enable in production, leaving sessions vulnerable to interception.
+**Impact:** Bypasses type safety, fragile code, potential runtime errors.
 
-**Fix:**
+**Fix:** Remove `.value` from enum comparisons throughout.
+
+---
+
+### 2. Fix Variable Name Error in Notification Broadcasting
+**Status**: Critical (bug)
+**Affected files**: `app/services/run_service.py:1115`
+
+**Problem:** Using `participant.user_id` when variable is named `participation`.
 ```python
-secure=os.getenv("ENVIRONMENT") == "production"
-# or
-secure=os.getenv("SECURE_COOKIES", "False").lower() == "true"
+# Line 1115 - should be participation not participant
+"user_id": str(participant.user_id),
 ```
 
+**Impact:** Runtime AttributeError waiting to happen.
+
+**Fix:** Change to `participation.user_id`.
+
 ---
 
-### 14. Inconsistent Response Model Pattern
-**Status**: Medium Priority (type safety)
-**Affected files**: Multiple route files
+### 3. Standardize Structured Logging
+**Status**: High Priority (observability)
+**Affected files**: `app/auth.py:74`, multiple service files
 
-**Problem:** Mixing dict returns with typed Pydantic responses.
+**Problem:** Inconsistent logging patterns - some use f-strings, some don't use `extra` dict.
 ```python
-return {"id": str(run.id), ...}  # dict
-return CreateRunResponse(...)     # model
+# Bad:
+logger.info(f"Cleaned up {len(expired_tokens)} expired sessions. Active sessions: {len(sessions)}")
+# Good:
+logger.info("Cleaned up expired sessions", extra={"expired_count": len(expired_tokens), "active_count": len(sessions)})
 ```
 
-**Fix:** Standardize on Pydantic response models throughout for better type safety and automatic validation.
+**Impact:** Hard to parse logs, can't filter/search by structured fields.
+
+**Fix:** Ensure all logs use `extra` dict, avoid f-strings in messages.
 
 ---
 
-### 15. Missing Type Hints
-**Status**: Low Priority (type safety)
-**Affected files**: Various files throughout codebase
+### 4. Extract Long Service Methods
+**Status**: High Priority (maintainability)
+**Affected files**: `app/services/run_service.py`, `app/services/group_service.py`
 
-**Problem:** Some functions lack complete type hints for parameters and returns.
-
-**Fix:** Add comprehensive type hints throughout, especially in service layer methods.
-
----
-
-### 16. Long Service Methods
-**Status**: Medium Priority (maintainability)
-**Affected files**: `app/services/run_service.py:91-200`
-
-**Problem:** Methods like `get_run_details()` exceed 100 lines, violating Single Responsibility Principle.
+**Problem:** Methods exceeding 50+ lines violate Single Responsibility Principle.
+- `RunService.place_bid()` - 67 lines (306-373)
+- `RunService.get_run_details()` - 48 lines (104-152)
+- `GroupService._find_and_cancel_affected_runs()` - mixes concerns
 
 **Impact:** Hard to test, understand, and maintain.
 
 **Fix:** Extract helper methods:
-- `_get_participants_data()`
-- `_get_products_data()`
-- `_calculate_product_statistics()`
+- `_validate_bid_request()`
+- `_ensure_user_participation()`
+- `_validate_bid_for_state()`
+- etc.
 
 ---
 
-### 17. Inconsistent Logging Styles
-**Status**: Medium Priority (observability)
-**Affected files**: Multiple service and route files
+### 5. Centralize WebSocket Broadcasting
+**Status**: High Priority (architecture)
+**Affected files**: `app/routes/runs.py`, `app/routes/groups.py`, multiple routes
 
-**Problem:** Not all logs include structured `extra` context dictionary.
+**Problem:** Routes manually broadcast WebSocket messages, duplicating logic across handlers.
 ```python
-# Inconsistent:
-logger.info(f"Message")
-logger.info(f"Message", extra={...})
+# Repeated in multiple route handlers:
+await manager.broadcast(f"run:{result.run_id}", {
+    "type": "bid_updated",
+    "data": {...}
+})
 ```
 
-**Fix:** Always use `extra` dict for structured logging to enable better querying in production:
+**Impact:** Code duplication, inconsistent message formats, hard to test.
+
+**Fix:** Move broadcasting to service layer with event system or observer pattern.
+
+---
+
+### 6. Add Missing Type Hints
+**Status**: High Priority (type safety)
+**Affected files**: `app/routes/auth.py:16, 32`, `app/services/group_service.py:235`
+
+**Problem:** Dependency functions and some service methods lack return type annotations.
 ```python
-logger.info(
-    "Run created",
-    extra={"user_id": str(user.id), "run_id": str(run.id)}
-)
+# Missing return type:
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+# Should be:
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> User | None:
 ```
 
-### 19. No Request ID Propagation
-**Status**: Medium Priority (observability)
-**Affected files**: `app/middleware.py:27`
+**Impact:** Reduces IDE support, type checking effectiveness.
 
-**Problem:** Request ID generated but not consistently attached to request context or all log calls.
+**Fix:** Add type hints to all functions, especially public APIs.
 
-**Impact:** Harder to trace requests through distributed logs.
+---
+
+### 7. Fix Asyncio Task Management
+**Status**: High Priority (reliability)
+**Affected files**: `app/services/run_service.py:1100, 1110`, `app/services/group_service.py:484, 632`
+
+**Problem:** Creating fire-and-forget tasks with `asyncio.create_task()` without tracking.
+```python
+asyncio.create_task(manager.broadcast(...))
+# If this fails, we never know
+```
+
+**Impact:** Silent failures, no error handling, tasks may be cancelled prematurely.
 
 **Fix:**
-1. Add to request state: `request.state.request_id = request_id`
-2. Extract in logging calls throughout handlers
-3. Consider using contextvars for thread-safe propagation
+- Use task groups or track tasks
+- Add exception handling
+- Log task failures
+
+---
+
+### 8. Remove Repository Leakage from Routes
+**Status**: Medium Priority (architecture)
+**Affected files**: All route files
+
+**Problem:** Routes import both `get_repository` and service classes, creating unnecessary coupling.
+```python
+# Routes shouldn't need repository:
+repo = get_repository(db)
+service = RunService(repo)
+```
+
+**Impact:** Violates layering, makes refactoring harder.
+
+**Fix:** Services should accept `db: Session` and get repository internally, or use dependency injection.
+
+---
+
+### 9. Extract Validation Helpers
+**Status**: Medium Priority (DRY)
+**Affected files**: Multiple service files
+
+**Problem:** UUID validation, state validation repeated across services.
+```python
+# Repeated everywhere:
+try:
+    run_uuid = UUID(run_id)
+except ValueError:
+    raise BadRequestError("Invalid ID format")
+```
+
+**Impact:** Code duplication, inconsistent error messages.
+
+**Fix:** Create validation utilities:
+- `validate_uuid(id_str: str, resource_name: str) -> UUID`
+- `validate_state_transition(run: Run, target_state: RunState)`
+
+---
+
+### 10. Replace Magic Numbers with Constants
+**Status**: Medium Priority (readability)
+**Affected files**: `app/routes/auth.py:74, 115`
+
+**Problem:** Hardcoded `3600` for seconds-to-hours conversion.
+```python
+max_age=SESSION_EXPIRY_HOURS * 3600,  # Magic number
+```
+
+**Impact:** Unclear what 3600 represents, could cause errors if changed wrong.
+
+**Fix:** Create constant `SECONDS_PER_HOUR = 3600` or use helper function.
+
+---
+
+### 11. Split RunService God Object
+**Status**: Medium Priority (architecture)
+**Affected files**: `app/services/run_service.py` (1129 lines)
+
+**Problem:** RunService handles bidding, state transitions, notifications, shopping lists - too many responsibilities.
+
+**Impact:** Hard to navigate, test, reason about.
+
+**Fix:** Split into:
+- `BidService` - bid placement, retraction, validation
+- `RunStateService` - state transitions, state machine
+- `RunNotificationService` - creating/broadcasting notifications
+
+---
+
+### 12. Implement Redis Session Store
+**Status**: Medium Priority (production readiness)
+**Affected files**: `app/auth.py:10`
+
+**Problem:** In-memory dict for sessions with comment "use Redis in production".
+```python
+sessions: dict[str, dict] = {}  # Not production-ready
+```
+
+**Impact:** Sessions lost on restart, won't work with multiple instances.
+
+**Fix:**
+- Implement Redis session store
+- Create abstract SessionStore interface
+- Keep in-memory for development
+
+---
+
+### 13. Add Connection Pool Monitoring
+**Status**: Low Priority (observability)
+**Affected files**: `app/database.py`
+
+**Problem:** Database connection pool configured but no metrics/logging for pool exhaustion.
+
+**Impact:** Can't diagnose connection pool issues in production.
+
+**Fix:**
+- Log pool statistics periodically
+- Add metrics for pool size, overflow, timeouts
+- Alert on pool exhaustion
+
+---
+
+### 14. Decouple WebSocket Manager
+**Status**: Low Priority (testability)
+**Affected files**: Services importing `websocket_manager.manager`
+
+**Problem:** Services directly import global `manager` singleton.
+
+**Impact:** Hard to test, tight coupling.
+
+**Fix:** Use dependency injection for WebSocket manager.
+
+---
+
+### 15. Add Transaction Management
+**Status**: Low Priority (data integrity)
+**Affected files**: `app/services/group_service.py` (member removal)
+
+**Problem:** Multi-step operations not wrapped in transactions.
+
+**Impact:** Could leave database in inconsistent state on partial failures.
+
+**Fix:** Wrap multi-step operations in database transactions.
+
+---
+
+### 16. Standardize Docstring Format
+**Status**: Low Priority (documentation)
+**Affected files**: Multiple service methods
+
+**Problem:** Inconsistent docstring format - some have `Raises:`, others don't.
+
+**Impact:** Harder to understand what exceptions methods can raise.
+
+**Fix:** Use consistent Google or NumPy docstring format throughout.
+
+---
+
+### 17. Remove Unused Imports
+**Status**: Low Priority (cleanup)
+**Affected files**: `app/routes/auth.py:1`, others
+
+**Problem:** Importing modules that aren't used.
+
+**Impact:** Minor - clutters imports, could cause confusion.
+
+**Fix:** Run linter to remove unused imports.
+
+---
+
+### 18. Organize Imports Consistently
+**Status**: Low Priority (style)
+**Affected files**: Multiple files
+
+**Problem:** Mixed import ordering (alphabetical vs grouped by type).
+
+**Impact:** Minor - harder to scan imports.
+
+**Fix:** Use isort or similar tool to standardize import order.
+
+---
+
+### 19. Inconsistent Return Types in Services
+**Status**: Medium Priority (consistency)
+**Affected files**: `app/services/group_service.py:91`
+
+**Problem:** Some service methods return Pydantic models, others construct data inline.
+```python
+# Inconsistent - creating datetime.now() but not in model:
+created_at=datetime.now().isoformat()  # Not in actual model
+```
+
+**Impact:** Confusing API contract, may return data that doesn't match actual model.
+
+**Fix:** Always return proper Pydantic response models, don't fabricate fields.
+
+---
+
+### 20. Verbose Exception Construction
+**Status**: Low Priority (style)
+**Affected files**: `app/exceptions.py`
+
+**Problem:** Exception classes have verbose `__init__` methods that could be simplified.
+
+**Impact:** Minor - slightly more code to maintain.
+
+**Fix:** Consider using dataclasses or attrs to reduce boilerplate.
+
+---
+
+### 21. Mixed Responsibilities in Route Handlers
+**Status**: High Priority (architecture)
+**Affected files**: `app/routes/runs.py`, `app/routes/groups.py`
+
+**Problem:** Route handlers doing WebSocket broadcasting in addition to calling services.
+```python
+# Routes doing too much:
+result = service.create_run(...)
+await manager.broadcast(...)  # Should be in service
+```
+
+**Impact:** Business logic leaking into presentation layer, hard to test.
+
+**Fix:** Move all WebSocket broadcasting into service layer, routes should only handle HTTP.
+
+---
+
+### 22. Tight Coupling to WebSocket Manager Singleton
+**Status**: Medium Priority (testability)
+**Affected files**: `app/services/run_service.py`, `app/services/group_service.py`
+
+**Problem:** Services directly import and use global `manager` singleton.
+```python
+from ..websocket_manager import manager  # Global singleton
+# ...
+asyncio.create_task(manager.broadcast(...))
+```
+
+**Impact:**
+- Makes unit testing harder (need to mock global)
+- Violates dependency injection principle
+- Can't swap implementations
+
+**Fix:** Inject WebSocket manager as dependency in service constructors.
+
+---
+
+### 23. No Circuit Breaker for WebSocket Broadcasting
+**Status**: Low Priority (reliability)
+**Affected files**: `app/services/run_service.py:1110-1118`
+
+**Problem:** WebSocket broadcast failures logged but no circuit breaker or retry logic.
+```python
+try:
+    asyncio.create_task(manager.broadcast(...))
+except Exception as e:
+    logger.warning("Failed to broadcast...")
+    # Then what? No alerting, no retry
+```
+
+**Impact:** Could accumulate errors silently without alerting operators.
+
+**Fix:**
+- Implement circuit breaker pattern
+- Add metrics for broadcast failures
+- Alert on high failure rates
+
+---
+
+### 24. Duplicate State Validation Logic
+**Status**: Medium Priority (DRY)
+**Affected files**: `app/services/run_service.py`, multiple methods
+
+**Problem:** State checking logic duplicated instead of using state machine consistently.
+```python
+# Checking states manually instead of using state machine:
+if run.state not in [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]:
+    raise BadRequestError("Bidding not allowed in current run state")
+```
+
+**Impact:** State transition rules spread across codebase, hard to maintain.
+
+**Fix:** Centralize state validation in state machine, services should ask state machine "can I do X?"
+
+---
+
+### 25. Missing Database Transaction Context
+**Status**: Medium Priority (data integrity)
+**Affected files**: `app/services/group_service.py:599-626`, `app/services/run_service.py`
+
+**Problem:** Multi-step database operations not wrapped in explicit transactions.
+```python
+# Multiple DB operations without transaction:
+self.repo.remove_group_member(...)
+for run in runs:
+    # Cancel runs
+    # Update participations
+# If one fails, partial state changes persist
+```
+
+**Impact:** Database could be left in inconsistent state if operation fails halfway.
+
+**Fix:**
+- Wrap multi-step operations in `db.begin()` / `db.commit()` blocks
+- Add explicit transaction management to repository
+- Use SQLAlchemy session properly
+
+---
 
 ## 📝 Notes
 
