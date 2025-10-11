@@ -1,33 +1,19 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+
 from ..database import get_db
 from ..routes.auth import require_auth
 from ..models import User
 from ..repository import get_repository
 from ..services import ProductService
+from ..schemas import (
+    ProductSearchResult,
+    StoreSearchResult,
+    GroupSearchResult,
+    SearchResponse,
+)
 
 router = APIRouter(prefix="/search", tags=["search"])
-
-class ProductSearchResult(BaseModel):
-    id: str
-    name: str
-    brand: str | None
-
-class StoreSearchResult(BaseModel):
-    id: str
-    name: str
-    address: str | None
-
-class GroupSearchResult(BaseModel):
-    id: str
-    name: str
-    member_count: int
-
-class SearchResponse(BaseModel):
-    products: list[ProductSearchResult]
-    stores: list[StoreSearchResult]
-    groups: list[GroupSearchResult]
 
 @router.get("", response_model=SearchResponse)
 async def search_all(
@@ -44,7 +30,7 @@ async def search_all(
     # Search products
     product_service = ProductService(repo)
     all_products = product_service.search_products(q)
-    products = [ProductSearchResult(**p) for p in all_products[:3]]  # Limit to 3
+    products = all_products[:3]  # Limit to 3
 
     # Search stores
     all_stores = repo.search_stores(q)
@@ -63,7 +49,7 @@ async def search_all(
     for group in user_groups:
         if q.lower() in group.name.lower():
             # Group object has members relationship set up by repository
-            member_count = len(group.members) if hasattr(group, 'members') else 0
+            member_count = len(group.members)
             matching_groups.append(GroupSearchResult(
                 id=str(group.id),
                 name=group.name,

@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import User
@@ -10,25 +9,14 @@ from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import NotificationService
 from ..exceptions import NotFoundError, ForbiddenError, BadRequestError, AppException
+from ..schemas import (
+    NotificationResponse,
+    UnreadCountResponse,
+    MessageResponse,
+    MarkAllReadResponse,
+)
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
-
-class NotificationResponse(BaseModel):
-    id: str
-    type: str
-    data: dict
-    read: bool
-    created_at: str | None
-
-class UnreadCountResponse(BaseModel):
-    count: int
-
-class MessageResponse(BaseModel):
-    message: str
-
-class MarkAllReadResponse(BaseModel):
-    message: str
-    count: int
 
 
 @router.get("", response_model=list[NotificationResponse])

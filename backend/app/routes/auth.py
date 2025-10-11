@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import User
@@ -9,30 +8,10 @@ from ..repository import get_repository
 from ..exceptions import UnauthorizedError, BadRequestError
 from ..config import SESSION_EXPIRY_HOURS, SECURE_COOKIES
 from ..request_context import get_logger
+from ..schemas import UserRegister, UserLogin, UserResponse, MessageResponse
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 logger = get_logger(__name__)
-
-
-
-
-class UserRegister(BaseModel):
-    name: str
-    email: str
-    password: str
-
-class UserLogin(BaseModel):
-    email: str
-    password: str
-
-class UserResponse(BaseModel):
-    id: str
-    name: str
-    email: str
-    is_admin: bool = False
-
-class MessageResponse(BaseModel):
-    message: str
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User | None:
     """Get current user from session cookie."""

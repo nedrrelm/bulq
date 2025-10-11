@@ -3,7 +3,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from uuid import UUID
-from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import User
@@ -11,39 +10,15 @@ from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import ReassignmentService
 from ..exceptions import AppException
+from ..schemas import (
+    ReassignmentRequestModel,
+    ReassignmentResponse,
+    ReassignmentDetailResponse,
+    MyRequestsResponse,
+    RunRequestResponse,
+)
 
 router = APIRouter(prefix="/reassignment", tags=["reassignment"])
-
-class ReassignmentRequestModel(BaseModel):
-    run_id: str
-    to_user_id: str
-
-class ReassignmentResponse(BaseModel):
-    id: str
-    run_id: str
-    from_user_id: str
-    to_user_id: str
-    status: str
-    created_at: str
-    resolved_at: str | None = None
-
-class ReassignmentDetailResponse(BaseModel):
-    id: str
-    run_id: str
-    from_user_id: str
-    from_user_name: str
-    to_user_id: str
-    to_user_name: str
-    store_name: str
-    status: str
-    created_at: str
-
-class MyRequestsResponse(BaseModel):
-    sent: list[ReassignmentDetailResponse]
-    received: list[ReassignmentDetailResponse]
-
-class RunRequestResponse(BaseModel):
-    request: ReassignmentDetailResponse | None
 
 
 @router.post("/request", response_model=ReassignmentResponse)

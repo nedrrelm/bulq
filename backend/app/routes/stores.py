@@ -1,52 +1,22 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
+
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
 from ..repository import get_repository
 from ..services import StoreService
 from ..exceptions import NotFoundError
-from pydantic import BaseModel
+from ..schemas import (
+    StoreResponse,
+    CreateStoreRequest,
+    StoreProductResponse,
+    StoreRunResponse,
+    StorePageResponse,
+)
 
 router = APIRouter(prefix="/stores", tags=["stores"])
-
-class StoreResponse(BaseModel):
-    id: str
-    name: str
-
-    class Config:
-        from_attributes = True
-
-class CreateStoreRequest(BaseModel):
-    name: str
-
-class ProductResponse(BaseModel):
-    id: str
-    name: str
-    brand: str | None
-    unit: str | None
-    current_price: str | None
-
-    class Config:
-        from_attributes = True
-
-class RunResponse(BaseModel):
-    id: str
-    state: str
-    group_id: str
-    group_name: str
-    store_name: str
-    leader_name: str
-    planned_on: str | None
-
-    class Config:
-        from_attributes = True
-
-class StorePageResponse(BaseModel):
-    store: StoreResponse
-    products: list[ProductResponse]
-    active_runs: list[RunResponse]
 
 @router.get("", response_model=list[StoreResponse])
 async def get_stores(
@@ -82,8 +52,8 @@ async def get_store_page(
     # Service now returns fully formatted data
     return StorePageResponse(
         store=StoreResponse(**data["store"]),
-        products=[ProductResponse(**p) for p in data["products"]],
-        active_runs=[RunResponse(**r) for r in data["active_runs"]]
+        products=[StoreProductResponse(**p) for p in data["products"]],
+        active_runs=[StoreRunResponse(**r) for r in data["active_runs"]]
     )
 
 @router.post("/create", response_model=StoreResponse)

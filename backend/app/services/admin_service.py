@@ -87,8 +87,8 @@ class AdminService(BaseService):
 
         return {
             "id": str(user.id),
-            "name": user.name,
-            "verified": user.verified
+            "verified": user.verified,
+            "message": f"User verification {'enabled' if user.verified else 'disabled'}"
         }
 
     def get_products(
@@ -172,8 +172,8 @@ class AdminService(BaseService):
 
         return {
             "id": str(product.id),
-            "name": product.name,
-            "verified": product.verified
+            "verified": product.verified,
+            "message": f"Product verification {'enabled' if product.verified else 'disabled'}"
         }
 
     def get_stores(
@@ -258,6 +258,6 @@ class AdminService(BaseService):
 
         return {
             "id": str(store.id),
-            "name": store.name,
-            "verified": store.verified
+            "verified": store.verified,
+            "message": f"Store verification {'enabled' if store.verified else 'disabled'}"
         }
