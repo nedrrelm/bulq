@@ -11,6 +11,12 @@ from ..exceptions import (
     ForbiddenError,
 )
 from .base_service import BaseService
+from ..schemas import (
+    DistributionUser,
+    DistributionProduct,
+    MessageResponse,
+    StateChangeResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +26,7 @@ class DistributionService(BaseService):
 
     def get_distribution_summary(
         self, run_id: UUID, current_user: User
-    ) -> List[Dict[str, Any]]:
+    ) -> List[DistributionUser]:
         """
         Get distribution data aggregated by user.
 
@@ -29,7 +35,7 @@ class DistributionService(BaseService):
             current_user: The authenticated user making the request
 
         Returns:
-            List of user distribution data with products and totals
+            List of DistributionUser with products and totals
 
         Raises:
             NotFoundError: If run is not found
@@ -84,40 +90,40 @@ class DistributionService(BaseService):
             price_per_unit = float(bid.distributed_price_per_unit) if bid.distributed_price_per_unit else 0.0
             subtotal = price_per_unit * bid.distributed_quantity
 
-            users_data[user_id]['products'].append({
-                'bid_id': str(bid.id),
-                'product_id': str(bid.product_id),
-                'product_name': product.name,
-                'requested_quantity': bid.quantity,
-                'distributed_quantity': bid.distributed_quantity,
-                'price_per_unit': f"{price_per_unit:.2f}",
-                'subtotal': f"{subtotal:.2f}",
-                'is_picked_up': bid.is_picked_up if bid.is_picked_up is not None else False
-            })
+            users_data[user_id]['products'].append(DistributionProduct(
+                bid_id=str(bid.id),
+                product_id=str(bid.product_id),
+                product_name=product.name,
+                requested_quantity=bid.quantity,
+                distributed_quantity=bid.distributed_quantity,
+                price_per_unit=f"{price_per_unit:.2f}",
+                subtotal=f"{subtotal:.2f}",
+                is_picked_up=bid.is_picked_up if bid.is_picked_up is not None else False
+            ))
 
             users_data[user_id]['total_cost'] += subtotal
 
         # Convert to list and format
         result = []
         for user_data in users_data.values():
-            all_picked_up = all(p['is_picked_up'] for p in user_data['products'])
+            all_picked_up = all(p.is_picked_up for p in user_data['products'])
 
-            result.append({
-                'user_id': user_data['user_id'],
-                'user_name': user_data['user_name'],
-                'products': user_data['products'],
-                'total_cost': f"{user_data['total_cost']:.2f}",
-                'all_picked_up': all_picked_up
-            })
+            result.append(DistributionUser(
+                user_id=user_data['user_id'],
+                user_name=user_data['user_name'],
+                products=user_data['products'],
+                total_cost=f"{user_data['total_cost']:.2f}",
+                all_picked_up=all_picked_up
+            ))
 
         # Sort: users who haven't picked up everything first, then alphabetically
-        result.sort(key=lambda x: (x['all_picked_up'], x['user_name']))
+        result.sort(key=lambda x: (x.all_picked_up, x.user_name))
 
         return result
 
     def mark_picked_up(
         self, run_id: UUID, bid_id: UUID, current_user: User
-    ) -> Dict[str, str]:
+    ) -> MessageResponse:
         """
         Mark a product as picked up by a user.
 
@@ -127,7 +133,7 @@ class DistributionService(BaseService):
             current_user: The authenticated user making the request
 
         Returns:
-            Success message
+            MessageResponse with success message
 
         Raises:
             NotFoundError: If run or bid is not found
@@ -159,11 +165,11 @@ class DistributionService(BaseService):
                 "run_id": str(bid.participation.run_id)
             }
         )
-        return {"message": "Marked as picked up"}
+        return MessageResponse(message="Marked as picked up")
 
     def complete_distribution(
         self, run_id: UUID, current_user: User
-    ) -> Dict[str, str]:
+    ) -> StateChangeResponse:
         """
         Complete distribution - transition from distributing to completed state.
 
@@ -172,7 +178,7 @@ class DistributionService(BaseService):
             current_user: The authenticated user making the request
 
         Returns:
-            Success message with new state
+            StateChangeResponse with success message and new state
 
         Raises:
             NotFoundError: If run is not found
@@ -217,12 +223,12 @@ class DistributionService(BaseService):
                 "user_id": str(current_user.id)
             }
         )
-        return {
-            "message": "Distribution completed!",
-            "state": RunState.COMPLETED,
-            "run_id": str(run_id),
-            "group_id": str(run.group_id)
-        }
+        return StateChangeResponse(
+            message="Distribution completed!",
+            state=RunState.COMPLETED,
+            run_id=str(run_id),
+            group_id=str(run.group_id)
+        )
 
     def _get_product(self, product_id: UUID) -> Product:
         """Get product from repository."""

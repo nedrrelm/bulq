@@ -1,16 +1,25 @@
 """Product service for handling product-related business logic."""
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
-from ..models import Product, Store
+from ..models import Product, Store, ProductAvailability
 from .base_service import BaseService
 from ..exceptions import ValidationError, NotFoundError
+from ..schemas import (
+    ProductSearchResult,
+    ProductDetailResponse,
+    CreateProductResponse,
+    StoreInfo,
+    StoreDetail,
+    PricePoint,
+    AvailabilityInfo,
+)
 
 
 class ProductService(BaseService):
     """Service for product operations."""
 
-    def search_products(self, query: str) -> List[Dict[str, Any]]:
+    def search_products(self, query: str) -> List[ProductSearchResult]:
         """Search for products by name across all stores."""
         products = self.repo.search_products(query)
 
@@ -22,22 +31,22 @@ class ProductService(BaseService):
             for avail in availabilities:
                 store = self.repo.get_store_by_id(avail.store_id)
                 if store:
-                    stores_info.append({
-                        "store_id": str(store.id),
-                        "store_name": store.name,
-                        "price": float(avail.price) if avail.price else None
-                    })
+                    stores_info.append(StoreInfo(
+                        store_id=str(store.id),
+                        store_name=store.name,
+                        price=float(avail.price) if avail.price else None
+                    ))
 
-            result.append({
-                "id": str(product.id),
-                "name": product.name,
-                "brand": product.brand,
-                "stores": stores_info
-            })
+            result.append(ProductSearchResult(
+                id=str(product.id),
+                name=product.name,
+                brand=product.brand,
+                stores=stores_info
+            ))
 
         return result
 
-    def get_product_details(self, product_id: UUID) -> Optional[Dict[str, Any]]:
+    def get_product_details(self, product_id: UUID) -> Optional[ProductDetailResponse]:
         """
         Get detailed product information including price history from shopping list items and availabilities.
         Shows the product across different stores with price history.
@@ -73,11 +82,12 @@ class ProductService(BaseService):
             # Add all availability prices (multiple observations over time)
             for avail in store_availabilities:
                 if avail.price:
-                    all_prices.append({
-                        "price": float(avail.price),
-                        "notes": avail.notes or "",
-                        "timestamp": avail.created_at.isoformat() if hasattr(avail, 'created_at') and avail.created_at else None
-                    })
+                    all_prices.append(PricePoint(
+                        price=float(avail.price),
+                        notes=avail.notes or "",
+                        timestamp=avail.created_at.isoformat() if hasattr(avail, 'created_at') and avail.created_at else None,
+                        run_id=None
+                    ))
 
             # Add purchased prices from shopping items
             for item in shopping_items:
@@ -85,32 +95,31 @@ class ProductService(BaseService):
                     # Check if this item's run was for this store
                     run = self.repo.get_run_by_id(item.run_id)
                     if run and run.store_id == store_id:
-                        all_prices.append({
-                            "price": float(item.purchased_price_per_unit),
-                            "notes": "Purchased",
-                            "run_id": str(item.run_id),
-                            "timestamp": item.updated_at.isoformat() if item.updated_at else None
-                        })
+                        all_prices.append(PricePoint(
+                            price=float(item.purchased_price_per_unit),
+                            notes="Purchased",
+                            timestamp=item.updated_at.isoformat() if item.updated_at else None,
+                            run_id=str(item.run_id)
+                        ))
 
             # Get most recent availability for current price
             most_recent = max(store_availabilities, key=lambda a: a.created_at if a.created_at else "", default=None)
             current_price = float(most_recent.price) if most_recent and most_recent.price else None
 
-            stores_data.append({
-                "store_id": str(store_id),
-                "store_name": store.name,
-                "current_price": current_price,
-                "price_history": all_prices,
-                "notes": ""
-            })
+            stores_data.append(StoreDetail(
+                store_id=str(store_id),
+                store_name=store.name,
+                current_price=current_price,
+                price_history=all_prices
+            ))
 
-        return {
-            "id": str(product.id),
-            "name": product.name,
-            "brand": product.brand,
-            "unit": product.unit,
-            "stores": stores_data
-        }
+        return ProductDetailResponse(
+            id=str(product.id),
+            name=product.name,
+            brand=product.brand,
+            unit=product.unit,
+            stores=stores_data
+        )
 
     def create_product(
         self,

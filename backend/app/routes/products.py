@@ -2,63 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
-from pydantic import BaseModel
 from ..database import get_db
 from ..routes.auth import require_auth
 from ..models import User
 from ..repository import get_repository
 from ..services import ProductService
+from ..schemas import (
+    CreateProductRequest,
+    CreateProductResponse,
+    ProductSearchResult,
+    ProductDetailResponse,
+    AvailabilityInfo,
+)
 
 router = APIRouter(prefix="/products", tags=["products"])
-
-class CreateProductRequest(BaseModel):
-    name: str
-    brand: Optional[str] = None
-    unit: Optional[str] = None
-    store_id: Optional[str] = None  # Optional: add availability if provided
-    price: Optional[float] = None    # Optional: price for availability
-
-class StoreInfo(BaseModel):
-    store_id: str
-    store_name: str
-    price: Optional[float]
-
-class ProductSearchResult(BaseModel):
-    id: str
-    name: str
-    brand: Optional[str]
-    stores: List[StoreInfo]
-
-class AvailabilityInfo(BaseModel):
-    store_id: str
-    price: Optional[float]
-    notes: Optional[str]
-
-class CreateProductResponse(BaseModel):
-    id: str
-    name: str
-    brand: Optional[str]
-    unit: Optional[str]
-    availability: Optional[AvailabilityInfo] = None
-
-class PricePoint(BaseModel):
-    price: float
-    notes: str
-    timestamp: Optional[str]
-    run_id: Optional[str] = None
-
-class StoreDetail(BaseModel):
-    store_id: str
-    store_name: str
-    current_price: Optional[float]
-    price_history: List[PricePoint]
-
-class ProductDetailResponse(BaseModel):
-    id: str
-    name: str
-    brand: Optional[str]
-    unit: Optional[str]
-    stores: List[StoreDetail]
 
 @router.get("/search", response_model=List[ProductSearchResult])
 async def search_products(
@@ -72,8 +29,7 @@ async def search_products(
     """
     repo = get_repository(db)
     service = ProductService(repo)
-    results = service.search_products(q)
-    return [ProductSearchResult(**r) for r in results]
+    return service.search_products(q)
 
 @router.post("/create", response_model=CreateProductResponse)
 async def create_product(
@@ -134,4 +90,4 @@ async def get_product_details(
     if not result:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    return ProductDetailResponse(**result)
+    return result
