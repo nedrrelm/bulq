@@ -1,6 +1,6 @@
 """Shopping service for handling shopping list operations."""
 
-from typing import Any, Optional
+from typing import Any
 from decimal import Decimal
 from datetime import datetime, timedelta
 from uuid import UUID
