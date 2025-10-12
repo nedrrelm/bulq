@@ -63,8 +63,7 @@ def delete_session(session_token: str) -> bool:
 
 
 def cleanup_expired_sessions() -> int:
-    """
-    Remove expired sessions from memory.
+    """Remove expired sessions from memory.
 
     Returns:
         Number of sessions cleaned up

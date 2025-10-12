@@ -9,8 +9,7 @@ class BaseService:
     """Base service class with common functionality."""
 
     def __init__(self, db: Session):
-        """
-        Initialize service with database session.
+        """Initialize service with database session.
 
         Args:
             db: SQLAlchemy database session

@@ -27,6 +27,8 @@ class ErrorResponse(BaseModel):
     path: str | None = Field(None, description='Request path that caused the error')
 
     class Config:
+        """Pydantic model configuration."""
+
         json_schema_extra = {
             'example': {
                 'success': False,
@@ -48,6 +50,8 @@ class ValidationErrorResponse(ErrorResponse):
     errors: list[ErrorDetail] = Field(default_factory=list, description='List of validation errors')
 
     class Config:
+        """Pydantic model configuration."""
+
         json_schema_extra = {
             'example': {
                 'success': False,

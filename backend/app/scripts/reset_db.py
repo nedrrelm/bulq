@@ -1,5 +1,5 @@
-"""
-Reset database schema to match current models.
+"""Reset database schema to match current models.
+
 WARNING: This will DROP all existing tables and recreate them.
 """
 

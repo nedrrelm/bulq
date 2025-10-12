@@ -20,8 +20,8 @@ async def search_all(
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db),
 ):
-    """
-    Consolidated search across products, stores, and groups.
+    """Consolidated search across products, stores, and groups.
+
     Returns up to 3 results per category.
     """
     # Search products

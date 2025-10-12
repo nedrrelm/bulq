@@ -88,8 +88,7 @@ class StructuredFormatter(logging.Formatter):
 
 
 def setup_logging(level: str = 'INFO') -> None:
-    """
-    Configure application logging.
+    """Configure application logging.
 
     Args:
         level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -139,8 +138,7 @@ def setup_logging(level: str = 'INFO') -> None:
 
 
 def get_logger(name: str) -> logging.Logger:
-    """
-    Get a logger instance for a module.
+    """Get a logger instance for a module.
 
     Args:
         name: Logger name (typically __name__)

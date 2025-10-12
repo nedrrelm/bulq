@@ -1,5 +1,5 @@
-"""
-Seed data for the Bulq application.
+"""Seed data for the Bulq application.
+
 This module contains example data to populate the database for development and testing.
 """
 

@@ -28,8 +28,7 @@ class DistributionService(BaseService):
     """Service for distribution operations."""
 
     def get_distribution_summary(self, run_id: UUID, current_user: User) -> list[DistributionUser]:
-        """
-        Get distribution data aggregated by user.
+        """Get distribution data aggregated by user.
 
         Args:
             run_id: The run ID to get distribution for
@@ -133,8 +132,7 @@ class DistributionService(BaseService):
         return distributions
 
     def mark_picked_up(self, run_id: UUID, bid_id: UUID, current_user: User) -> MessageResponse:
-        """
-        Mark a product as picked up by a user.
+        """Mark a product as picked up by a user.
 
         Args:
             run_id: The run ID
@@ -177,8 +175,7 @@ class DistributionService(BaseService):
         return MessageResponse(message='Marked as picked up')
 
     def complete_distribution(self, run_id: UUID, current_user: User) -> StateChangeResponse:
-        """
-        Complete distribution - transition from distributing to completed state.
+        """Complete distribution - transition from distributing to completed state.
 
         Args:
             run_id: The run ID to complete
@@ -247,8 +244,7 @@ class DistributionService(BaseService):
         self.repo.commit_changes()
 
     def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
-        """
-        Create notifications for all participants when run state changes.
+        """Create notifications for all participants when run state changes.
 
         Args:
             run: The run that changed state

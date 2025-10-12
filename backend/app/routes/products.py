@@ -24,8 +24,8 @@ async def search_products(
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db),
 ):
-    """
-    Search for products by name across all stores.
+    """Search for products by name across all stores.
+
     Returns products matching the search query.
     """
     service = ProductService(db)
@@ -38,9 +38,7 @@ async def create_product(
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db),
 ):
-    """
-    Create a new product. Optionally link to a store with price.
-    """
+    """Create a new product and optionally link to a store with price."""
     service = ProductService(db)
 
     try:
@@ -78,8 +76,8 @@ async def create_product(
 async def get_product_details(
     product_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
 ):
-    """
-    Get detailed product information including price history from shopping list items.
+    """Get detailed product information including price history from shopping list items.
+
     Shows the product across different stores and historical prices recorded during shopping.
     """
     service = ProductService(db)

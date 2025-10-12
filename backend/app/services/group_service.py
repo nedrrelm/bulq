@@ -31,8 +31,7 @@ class GroupService(BaseService):
     """Service for managing groups and group operations."""
 
     def get_user_groups(self, user: User) -> list[GroupResponse]:
-        """
-        Get all groups the user is a member of with run counts.
+        """Get all groups the user is a member of with run counts.
 
         Args:
             user: The user to get groups for
@@ -104,8 +103,7 @@ class GroupService(BaseService):
         return group_responses
 
     def create_group(self, name: str, user: User) -> CreateGroupResponse:
-        """
-        Create a new group and add the creator as a member.
+        """Create a new group and add the creator as a member.
 
         Args:
             name: The name of the group
@@ -136,8 +134,7 @@ class GroupService(BaseService):
         )
 
     def get_group_details(self, group_id: str, user: User) -> GroupDetailResponse:
-        """
-        Get details of a specific group with authorization check.
+        """Get details of a specific group with authorization check.
 
         Args:
             group_id: The UUID string of the group
@@ -182,8 +179,7 @@ class GroupService(BaseService):
         )
 
     def get_group_runs(self, group_id: str, user: User) -> list[RunResponse]:
-        """
-        Get all runs for a specific group with authorization check.
+        """Get all runs for a specific group with authorization check.
 
         Args:
             group_id: The UUID string of the group
@@ -246,8 +242,7 @@ class GroupService(BaseService):
     def get_group_completed_cancelled_runs(
         self, group_id: str, user: User, limit: int = 10, offset: int = 0
     ) -> list[RunResponse]:
-        """
-        Get completed and cancelled runs for a specific group with pagination.
+        """Get completed and cancelled runs for a specific group with pagination.
 
         Args:
             group_id: The UUID string of the group
@@ -315,8 +310,7 @@ class GroupService(BaseService):
         return run_responses
 
     def regenerate_invite_token(self, group_id: str, user: User) -> RegenerateTokenResponse:
-        """
-        Regenerate the invite token for a group (only creator can do this).
+        """Regenerate the invite token for a group (only creator can do this).
 
         Args:
             group_id: The UUID string of the group
@@ -358,8 +352,7 @@ class GroupService(BaseService):
         return RegenerateTokenResponse(invite_token=new_token)
 
     def preview_group(self, invite_token: str) -> PreviewGroupResponse:
-        """
-        Preview group information by invite token without joining.
+        """Preview group information by invite token without joining.
 
         Args:
             invite_token: The invite token to preview
@@ -388,8 +381,7 @@ class GroupService(BaseService):
         )
 
     def join_group(self, invite_token: str, user: User) -> JoinGroupResponse:
-        """
-        Join a group using an invite token.
+        """Join a group using an invite token.
 
         Args:
             invite_token: The invite token to use
@@ -495,8 +487,7 @@ class GroupService(BaseService):
         )
 
     def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
-        """
-        Get all members of a group with their admin status.
+        """Get all members of a group with their admin status.
 
         Args:
             group_id: The UUID string of the group
@@ -539,8 +530,7 @@ class GroupService(BaseService):
         )
 
     def remove_member(self, group_id: str, member_id: str, user: User) -> MessageResponse:
-        """
-        Remove a member from a group (admin only).
+        """Remove a member from a group (admin only).
 
         Args:
             group_id: The UUID string of the group
@@ -676,8 +666,7 @@ class GroupService(BaseService):
             )
 
     def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
-        """
-        Toggle whether a group allows joining via invite link (admin only).
+        """Toggle whether a group allows joining via invite link (admin only).
 
         Args:
             group_id: The UUID string of the group

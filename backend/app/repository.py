@@ -193,8 +193,7 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
-        """
-        Get all bids for a run with participation and user data eagerly loaded.
+        """Get all bids for a run with participation and user data eagerly loaded.
 
         This avoids N+1 query problems when you need to access bid.participation.user.
         Each bid will have its participation object populated, and each participation
@@ -262,8 +261,7 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def get_run_participations_with_users(self, run_id: UUID) -> list[RunParticipation]:
-        """
-        Get all participations for a run with user data eagerly loaded.
+        """Get all participations for a run with user data eagerly loaded.
 
         This avoids N+1 query problems when you need to access participation.user.
         For DatabaseRepository, this should use SQLAlchemy's joinedload().
@@ -448,8 +446,7 @@ class AbstractRepository(ABC):
 
 
 class DatabaseRepository(AbstractRepository):
-    """
-    Database implementation using SQLAlchemy.
+    """Database implementation using SQLAlchemy.
 
     Production-ready repository implementation that uses PostgreSQL for data persistence.
     All 74 methods are fully implemented with proper SQLAlchemy queries, eager loading

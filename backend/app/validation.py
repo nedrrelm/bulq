@@ -8,8 +8,7 @@ from .run_state import RunState
 
 
 def validate_uuid(id_str: str, resource_name: str = 'ID') -> UUID:
-    """
-    Validate and convert a string to UUID.
+    """Validate and convert a string to UUID.
 
     Args:
         id_str: The string to convert to UUID
@@ -30,8 +29,7 @@ def validate_uuid(id_str: str, resource_name: str = 'ID') -> UUID:
 def validate_run_state_for_action(
     run: Run, allowed_states: list[RunState], action_name: str
 ) -> None:
-    """
-    Validate that a run is in one of the allowed states for a specific action.
+    """Validate that a run is in one of the allowed states for a specific action.
 
     Args:
         run: The run object to validate
@@ -54,8 +52,7 @@ def validate_state_transition(
     target_state: RunState,
     allowed_transitions: dict[RunState, list[RunState]] | None = None,
 ) -> None:
-    """
-    Validate that a state transition is allowed.
+    """Validate that a state transition is allowed.
 
     Args:
         current_state: Current state

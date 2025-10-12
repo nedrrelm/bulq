@@ -100,11 +100,13 @@ async def startup_event():
 
 @app.get('/')
 async def hello_world():
+    """Root endpoint returning welcome message."""
     return {'message': 'Hello World from Bulq Backend!'}
 
 
 @app.get('/health')
 async def health_check():
+    """Health check endpoint for monitoring."""
     return {'status': 'healthy'}
 
 

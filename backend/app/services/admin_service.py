@@ -19,8 +19,7 @@ class AdminService(BaseService):
         limit: int = 100,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """
-        Get all users with optional search and filtering (paginated).
+        """Get all users with optional search and filtering (paginated).
 
         Args:
             search: Optional search query for name, email, or ID
@@ -69,8 +68,7 @@ class AdminService(BaseService):
         ]
 
     def toggle_user_verification(self, user_id: UUID, admin_user: User) -> dict[str, Any]:
-        """
-        Toggle user verification status.
+        """Toggle user verification status.
 
         Args:
             user_id: ID of user to toggle verification for
@@ -102,8 +100,7 @@ class AdminService(BaseService):
         limit: int = 100,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """
-        Get all products with optional search and filtering (paginated).
+        """Get all products with optional search and filtering (paginated).
 
         Args:
             search: Optional search query for name, brand, or ID
@@ -152,8 +149,7 @@ class AdminService(BaseService):
         ]
 
     def toggle_product_verification(self, product_id: UUID, admin_user: User) -> dict[str, Any]:
-        """
-        Toggle product verification status.
+        """Toggle product verification status.
 
         Args:
             product_id: ID of product to toggle verification for
@@ -191,8 +187,7 @@ class AdminService(BaseService):
         limit: int = 100,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """
-        Get all stores with optional search and filtering (paginated).
+        """Get all stores with optional search and filtering (paginated).
 
         Args:
             search: Optional search query for name, address, chain, or ID
@@ -242,8 +237,7 @@ class AdminService(BaseService):
         ]
 
     def toggle_store_verification(self, store_id: UUID, admin_user: User) -> dict[str, Any]:
-        """
-        Toggle store verification status.
+        """Toggle store verification status.
 
         Args:
             store_id: ID of store to toggle verification for
