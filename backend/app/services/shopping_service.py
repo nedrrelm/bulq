@@ -29,8 +29,7 @@ class ShoppingService(BaseService):
     async def _update_product_availability_if_needed(
         self, product_id: UUID, store_id: UUID, price: float, user_id: UUID
     ) -> None:
-        """
-        Update ProductAvailability if the price differs from prices seen today.
+        """Update ProductAvailability if the price differs from prices seen today.
 
         Args:
             product_id: Product UUID
@@ -81,8 +80,7 @@ class ShoppingService(BaseService):
             )
 
     async def get_shopping_list(self, run_id: str, user: User) -> list[ShoppingListItemResponse]:
-        """
-        Get shopping list for a run with auth check.
+        """Get shopping list for a run with auth check.
 
         Args:
             run_id: The run ID as string
@@ -202,8 +200,7 @@ class ShoppingService(BaseService):
     async def add_availability_price(
         self, run_id: str, item_id: str, price: float, notes: str, user: User
     ) -> MessageResponse:
-        """
-        Update product availability price for a shopping list item.
+        """Update product availability price for a shopping list item.
 
         Args:
             run_id: The run ID as string
@@ -262,8 +259,7 @@ class ShoppingService(BaseService):
         total: float,
         user: User,
     ) -> MarkPurchasedResponse:
-        """
-        Mark a shopping list item as purchased.
+        """Mark a shopping list item as purchased.
 
         Args:
             run_id: The run ID as string
@@ -321,8 +317,7 @@ class ShoppingService(BaseService):
     async def complete_shopping(
         self, run_id: str, user: User, db: Any = None
     ) -> CompleteShoppingResponse:
-        """
-        Complete shopping and handle shortages/transitions.
+        """Complete shopping and handle shortages/transitions.
 
         This method:
         1. Verifies the user is the run leader
@@ -460,8 +455,7 @@ class ShoppingService(BaseService):
         )
 
     def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
-        """
-        Create notifications for all participants when run state changes.
+        """Create notifications for all participants when run state changes.
 
         Args:
             run: The run that changed state

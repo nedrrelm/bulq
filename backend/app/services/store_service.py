@@ -29,8 +29,7 @@ class StoreService(BaseService):
         return store
 
     def get_store_page_data(self, store_id: UUID, user_id: UUID) -> dict[str, Any]:
-        """
-        Get all data needed for the store page with fully formatted response.
+        """Get all data needed for the store page with fully formatted response.
 
         Returns:
             Dict with store info, products with prices, and active runs with full details

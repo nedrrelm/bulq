@@ -47,8 +47,8 @@ class ProductService(BaseService):
         return result
 
     def get_product_details(self, product_id: UUID) -> ProductDetailResponse | None:
-        """
-        Get detailed product information including price history from shopping list items and availabilities.
+        """Get detailed product information including price history from shopping list items and availabilities.
+
         Shows the product across different stores with price history.
         """
         product = self.repo.get_product_by_id(product_id)
@@ -143,8 +143,8 @@ class ProductService(BaseService):
         price: float | None = None,
         user_id: UUID | None = None,
     ) -> tuple[Product, Any | None]:
-        """
-        Create a new product (store-agnostic).
+        """Create a new product (store-agnostic).
+
         Optionally create a product availability if store_id is provided.
         Returns (product, availability) tuple.
         """

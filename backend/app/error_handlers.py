@@ -16,8 +16,7 @@ logger = get_logger(__name__)
 
 
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
-    """
-    Handle custom application exceptions.
+    """Handle custom application exceptions.
 
     Args:
         request: The FastAPI request
@@ -53,8 +52,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError | PydanticValidationError
 ) -> JSONResponse:
-    """
-    Handle Pydantic validation errors.
+    """Handle Pydantic validation errors.
 
     Args:
         request: The FastAPI request
@@ -97,8 +95,7 @@ async def validation_exception_handler(
 
 
 async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-    """
-    Handle SQLAlchemy database errors.
+    """Handle SQLAlchemy database errors.
 
     Args:
         request: The FastAPI request
@@ -132,8 +129,7 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -
 
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """
-    Handle unexpected exceptions.
+    """Handle unexpected exceptions.
 
     Args:
         request: The FastAPI request

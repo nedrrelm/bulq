@@ -9,8 +9,7 @@ request_id_var: ContextVar[str | None] = ContextVar('request_id', default=None)
 
 
 def set_request_id(request_id: str) -> None:
-    """
-    Set the request ID in the current context.
+    """Set the request ID in the current context.
 
     Args:
         request_id: The request ID to set
@@ -19,8 +18,7 @@ def set_request_id(request_id: str) -> None:
 
 
 def get_request_id() -> str | None:
-    """
-    Get the request ID from the current context.
+    """Get the request ID from the current context.
 
     Returns:
         The request ID if set, None otherwise
@@ -29,8 +27,7 @@ def get_request_id() -> str | None:
 
 
 def generate_request_id() -> str:
-    """
-    Generate a new request ID.
+    """Generate a new request ID.
 
     Returns:
         A new UUID-based request ID
@@ -39,8 +36,7 @@ def generate_request_id() -> str:
 
 
 def get_logger(name: str) -> logging.Logger:
-    """
-    Get a logger that automatically includes request ID in logs.
+    """Get a logger that automatically includes request ID in logs.
 
     Args:
         name: Logger name (usually __name__)
@@ -52,8 +48,7 @@ def get_logger(name: str) -> logging.Logger:
 
 
 class RequestContextLogger:
-    """
-    Logger wrapper that automatically adds request_id to all log calls.
+    """Logger wrapper that automatically adds request_id to all log calls.
 
     This ensures request ID is included in all structured logs without
     manually adding it to every log call.

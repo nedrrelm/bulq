@@ -36,15 +36,26 @@ select = [
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
     "SIM", # flake8-simplify
+    "D",   # pydocstyle
 ]
 ignore = [
     "E501", # line too long (handled by formatter)
     "B008", # function call in argument defaults (FastAPI pattern)
     "N818", # exception naming (AppException is intentional base class)
+    "D100", # missing docstring in public module
+    "D102", # missing docstring in public method
+    "D103", # missing docstring in public function
+    "D104", # missing docstring in public package
+    "D105", # missing docstring in magic method
+    "D106", # missing docstring in public nested class
+    "D107", # missing docstring in __init__
 ]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.format]
 quote-style = "single"

@@ -52,8 +52,7 @@ class RunStateMachine:
     }
 
     def can_transition(self, from_state: RunState, to_state: RunState) -> bool:
-        """
-        Check if a state transition is valid.
+        """Check if a state transition is valid.
 
         Args:
             from_state: Current state
@@ -66,8 +65,7 @@ class RunStateMachine:
         return to_state in valid_next_states
 
     def get_valid_transitions(self, from_state: RunState) -> list[RunState]:
-        """
-        Get all valid transitions from a given state.
+        """Get all valid transitions from a given state.
 
         Args:
             from_state: Current state
@@ -78,8 +76,7 @@ class RunStateMachine:
         return self.VALID_TRANSITIONS.get(from_state, [])
 
     def get_state_description(self, state: RunState) -> str:
-        """
-        Get human-readable description of a state.
+        """Get human-readable description of a state.
 
         Args:
             state: The state to describe
@@ -92,8 +89,7 @@ class RunStateMachine:
     def validate_transition(
         self, from_state: RunState, to_state: RunState, run_id: str | None = None
     ) -> None:
-        """
-        Validate a state transition and raise exception if invalid.
+        """Validate a state transition and raise exception if invalid.
 
         Args:
             from_state: Current state
@@ -127,8 +123,7 @@ class RunStateMachine:
             raise ValueError(error_msg)
 
     def is_terminal_state(self, state: RunState) -> bool:
-        """
-        Check if a state is terminal (no further transitions possible).
+        """Check if a state is terminal (no further transitions possible).
 
         Args:
             state: State to check
@@ -139,8 +134,7 @@ class RunStateMachine:
         return len(self.VALID_TRANSITIONS.get(state, [])) == 0
 
     def can_cancel(self, state: RunState) -> bool:
-        """
-        Check if a run can be cancelled from the given state.
+        """Check if a run can be cancelled from the given state.
 
         Args:
             state: Current state

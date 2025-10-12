@@ -21,8 +21,7 @@ class ReassignmentService:
     async def request_reassignment(
         self, run_id: UUID, from_user: User, to_user_id: UUID
     ) -> dict[str, Any]:
-        """
-        Create a leader reassignment request.
+        """Create a leader reassignment request.
 
         Args:
             run_id: Run to reassign
@@ -174,8 +173,7 @@ class ReassignmentService:
             )
 
     async def accept_reassignment(self, request_id: UUID, accepting_user: User) -> dict[str, Any]:
-        """
-        Accept a leader reassignment request.
+        """Accept a leader reassignment request.
 
         Args:
             request_id: Request to accept
@@ -321,8 +319,7 @@ class ReassignmentService:
             )
 
     async def decline_reassignment(self, request_id: UUID, declining_user: User) -> dict[str, Any]:
-        """
-        Decline a leader reassignment request.
+        """Decline a leader reassignment request.
 
         Args:
             request_id: Request to decline
@@ -449,8 +446,7 @@ class ReassignmentService:
             )
 
     def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> dict[str, Any]:
-        """
-        Cancel a pending reassignment request.
+        """Cancel a pending reassignment request.
 
         Args:
             request_id: Request to cancel
@@ -500,8 +496,7 @@ class ReassignmentService:
         }
 
     def get_pending_requests_for_user(self, user_id: UUID) -> dict[str, list[dict[str, Any]]]:
-        """
-        Get all pending reassignment requests involving a user.
+        """Get all pending reassignment requests involving a user.
 
         Args:
             user_id: User to check
@@ -518,8 +513,7 @@ class ReassignmentService:
         }
 
     def get_pending_request_for_run(self, run_id: UUID) -> dict[str, Any | None]:
-        """
-        Get pending reassignment request for a run (if any).
+        """Get pending reassignment request for a run (if any).
 
         Args:
             run_id: Run to check

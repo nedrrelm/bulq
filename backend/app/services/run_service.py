@@ -32,8 +32,7 @@ class RunService(BaseService):
     """Service for managing run operations."""
 
     def create_run(self, group_id: str, store_id: str, user: User) -> CreateRunResponse:
-        """
-        Create a new run for a group.
+        """Create a new run for a group.
 
         Args:
             group_id: Group ID as string
@@ -108,8 +107,7 @@ class RunService(BaseService):
         )
 
     def get_run_details(self, run_id: str, user: User) -> RunDetailResponse:
-        """
-        Get detailed information about a specific run.
+        """Get detailed information about a specific run.
 
         Args:
             run_id: Run ID as string
@@ -177,8 +175,7 @@ class RunService(BaseService):
     def _get_participants_data(
         self, run_id: UUID, current_user_id: UUID
     ) -> tuple[list[ParticipantResponse], bool, bool, str]:
-        """
-        Get participants data for a run.
+        """Get participants data for a run.
 
         Returns:
             Tuple of (participants_list, current_user_is_ready, current_user_is_leader, leader_name)
@@ -315,8 +312,7 @@ class RunService(BaseService):
     def place_bid(
         self, run_id: str, product_id: str, quantity: float, interested_only: bool, user: User
     ) -> PlaceBidResponse:
-        """
-        Place or update a bid on a product in a run.
+        """Place or update a bid on a product in a run.
 
         This is a complex method with state-based logic:
         - In planning/active states: Allow normal bidding
@@ -507,8 +503,7 @@ class RunService(BaseService):
         return sum(bid.quantity for bid in product_bids if not bid.interested_only)
 
     def toggle_ready(self, run_id: str, user: User) -> ReadyToggleResponse:
-        """
-        Toggle the current user's ready status for a run.
+        """Toggle the current user's ready status for a run.
 
         Can trigger auto-transition to confirmed state if all participants are ready.
 
@@ -588,8 +583,7 @@ class RunService(BaseService):
         return len(all_participations) > 0 and all(p.is_ready for p in all_participations)
 
     def start_run(self, run_id: str, user: User) -> StateChangeResponse:
-        """
-        Start shopping - transition from confirmed to shopping state (leader only).
+        """Start shopping - transition from confirmed to shopping state (leader only).
 
         Generates shopping list items from bids.
 
@@ -658,8 +652,8 @@ class RunService(BaseService):
         )
 
     def get_available_products(self, run_id: str, user: User) -> list[AvailableProductResponse]:
-        """
-        Get products available for bidding (all products without bids yet).
+        """Get products available for bidding (all products without bids yet).
+
         Products with availability at the run's store are sorted first.
 
         Args:
@@ -722,8 +716,7 @@ class RunService(BaseService):
         return available_products
 
     def transition_to_shopping(self, run_id: str, user: User) -> StateChangeResponse:
-        """
-        Transition from confirmed to shopping state.
+        """Transition from confirmed to shopping state.
 
         This is an alias for start_run() to match the expected method name.
 
@@ -742,8 +735,7 @@ class RunService(BaseService):
         return self.start_run(run_id, user)
 
     def finish_adjusting(self, run_id: str, user: User) -> StateChangeResponse:
-        """
-        Finish adjusting bids - transition from adjusting to distributing state (leader only).
+        """Finish adjusting bids - transition from adjusting to distributing state (leader only).
 
         Validates that quantities match purchased quantities and distributes items to bidders.
 
@@ -839,8 +831,7 @@ class RunService(BaseService):
                 )
 
     def cancel_run(self, run_id: str, user: User) -> CancelRunResponse:
-        """
-        Cancel a run. Can be called by leader from any state except completed/cancelled.
+        """Cancel a run. Can be called by leader from any state except completed/cancelled.
 
         Args:
             run_id: Run ID as string
@@ -898,8 +889,7 @@ class RunService(BaseService):
         )
 
     def delete_run(self, run_id: str, user: User) -> CancelRunResponse:
-        """
-        Delete a run (alias for cancel_run for backward compatibility).
+        """Delete a run (alias for cancel_run for backward compatibility).
 
         Args:
             run_id: Run ID as string
@@ -916,8 +906,7 @@ class RunService(BaseService):
         return self.cancel_run(run_id, user)
 
     def retract_bid(self, run_id: str, product_id: str, user: User) -> RetractBidResponse:
-        """
-        Retract a user's bid on a product in a run.
+        """Retract a user's bid on a product in a run.
 
         Args:
             run_id: Run ID as string
@@ -1022,8 +1011,7 @@ class RunService(BaseService):
         self.repo.delete_bid(participation.id, product_id)
 
     def _transition_run_state(self, run: Run, new_state: RunState, notify: bool = True) -> str:
-        """
-        Safely transition run to new state with validation and notifications.
+        """Safely transition run to new state with validation and notifications.
 
         Uses the state machine to validate transitions before applying them.
         Optionally creates notifications for all participants.
@@ -1056,8 +1044,7 @@ class RunService(BaseService):
         return old_state
 
     def _notify_run_state_change(self, run: Run, old_state: str, new_state: str) -> None:
-        """
-        Create notifications for all participants when run state changes.
+        """Create notifications for all participants when run state changes.
 
         Args:
             run: The run that changed state

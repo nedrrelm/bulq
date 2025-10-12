@@ -12,8 +12,7 @@ logger = get_logger(__name__)
 def create_background_task(
     coro: Coroutine[Any, Any, Any], task_name: str = 'background_task'
 ) -> asyncio.Task:
-    """
-    Create a background task with proper error handling and logging.
+    """Create a background task with proper error handling and logging.
 
     This wrapper ensures that exceptions in background tasks are logged
     and don't fail silently.
@@ -30,8 +29,7 @@ def create_background_task(
 
 
 async def _wrap_task_with_error_handling(coro: Coroutine[Any, Any, Any], task_name: str) -> Any:
-    """
-    Wrapper that catches and logs exceptions from background tasks.
+    """Wrapper that catches and logs exceptions from background tasks.
 
     Args:
         coro: The coroutine to execute

@@ -19,8 +19,7 @@ class NotificationService(BaseService):
     def get_user_notifications(
         self, user: User, limit: int = 20, offset: int = 0
     ) -> list[dict[str, Any]]:
-        """
-        Get notifications for a user (paginated) with grouping.
+        """Get notifications for a user (paginated) with grouping.
 
         Args:
             user: The user to get notifications for
@@ -43,8 +42,7 @@ class NotificationService(BaseService):
         return grouped
 
     def get_unread_notifications(self, user: User) -> list[dict[str, Any]]:
-        """
-        Get all unread notifications for a user.
+        """Get all unread notifications for a user.
 
         Args:
             user: The user to get unread notifications for
@@ -58,8 +56,7 @@ class NotificationService(BaseService):
         return [self._notification_to_dict(n) for n in notifications]
 
     def get_unread_count(self, user: User) -> int:
-        """
-        Get count of unread notifications for a user.
+        """Get count of unread notifications for a user.
 
         Args:
             user: The user to get count for
@@ -70,8 +67,7 @@ class NotificationService(BaseService):
         return self.repo.get_unread_count(user.id)
 
     def mark_as_read(self, notification_id: str, user: User) -> dict[str, str]:
-        """
-        Mark a notification as read (with authorization check).
+        """Mark a notification as read (with authorization check).
 
         Args:
             notification_id: The notification ID as string
@@ -111,8 +107,7 @@ class NotificationService(BaseService):
         return {'message': 'Notification marked as read'}
 
     def mark_all_as_read(self, user: User) -> dict[str, Any]:
-        """
-        Mark all notifications as read for a user.
+        """Mark all notifications as read for a user.
 
         Args:
             user: The user to mark all notifications for
@@ -139,8 +134,7 @@ class NotificationService(BaseService):
         }
 
     def _group_notifications(self, notifications: list) -> list[dict[str, Any]]:
-        """
-        Group similar notifications that occurred close together.
+        """Group similar notifications that occurred close together.
 
         Groups notifications of the same type with the same run_id
         that occurred within 5 minutes of each other.

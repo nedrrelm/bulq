@@ -32,6 +32,8 @@ group_membership = Table(
 
 
 class User(Base):
+    """User model representing registered users."""
+
     __tablename__ = 'users'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -67,6 +69,8 @@ class User(Base):
 
 
 class Group(Base):
+    """Group model representing friend groups for coordinated shopping."""
+
     __tablename__ = 'groups'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -84,6 +88,8 @@ class Group(Base):
 
 
 class Store(Base):
+    """Store model representing physical retail locations."""
+
     __tablename__ = 'stores'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -104,6 +110,8 @@ class Store(Base):
 
 
 class Run(Base):
+    """Run model representing a shopping run coordinated by a group."""
+
     __tablename__ = 'runs'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -135,6 +143,8 @@ class Run(Base):
 
 
 class Product(Base):
+    """Product model representing items that can be purchased (store-agnostic)."""
+
     __tablename__ = 'products'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -155,6 +165,8 @@ class Product(Base):
 
 
 class RunParticipation(Base):
+    """RunParticipation model tracking user participation in shopping runs."""
+
     __tablename__ = 'run_participations'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -178,6 +190,8 @@ class RunParticipation(Base):
 
 
 class ProductBid(Base):
+    """ProductBid model representing user bids for products in a run."""
+
     __tablename__ = 'product_bids'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -210,6 +224,8 @@ class ProductBid(Base):
 
 
 class ProductAvailability(Base):
+    """ProductAvailability model tracking product pricing and availability at stores."""
+
     __tablename__ = 'product_availabilities'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -235,6 +251,8 @@ class ProductAvailability(Base):
 
 
 class ShoppingListItem(Base):
+    """ShoppingListItem model representing items to purchase during a shopping run."""
+
     __tablename__ = 'shopping_list_items'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -262,6 +280,8 @@ class ShoppingListItem(Base):
 
 
 class Notification(Base):
+    """Notification model for user notifications about run events."""
+
     __tablename__ = 'notifications'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -282,6 +302,8 @@ class Notification(Base):
 
 
 class LeaderReassignmentRequest(Base):
+    """LeaderReassignmentRequest model for tracking run leader transfer requests."""
+
     __tablename__ = 'leader_reassignment_requests'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
