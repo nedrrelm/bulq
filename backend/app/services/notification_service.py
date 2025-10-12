@@ -1,15 +1,14 @@
 """Service layer for notification-related business logic."""
 
-from typing import Any
-from uuid import UUID
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import timedelta
+from typing import Any
 
-from .base_service import BaseService
-from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
-from ..validation import validate_uuid
+from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import User
 from ..request_context import get_logger
+from ..validation import validate_uuid
+from .base_service import BaseService
 
 logger = get_logger(__name__)
 
@@ -17,7 +16,9 @@ logger = get_logger(__name__)
 class NotificationService(BaseService):
     """Service for managing notifications."""
 
-    def get_user_notifications(self, user: User, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
+    def get_user_notifications(
+        self, user: User, limit: int = 20, offset: int = 0
+    ) -> list[dict[str, Any]]:
         """
         Get notifications for a user (paginated) with grouping.
 
@@ -30,8 +31,8 @@ class NotificationService(BaseService):
             List of notification dictionaries (possibly grouped)
         """
         logger.debug(
-            f"Fetching notifications for user",
-            extra={"user_id": str(user.id), "limit": limit, "offset": offset}
+            'Fetching notifications for user',
+            extra={'user_id': str(user.id), 'limit': limit, 'offset': offset},
         )
 
         notifications = self.repo.get_user_notifications(user.id, limit, offset)
@@ -51,10 +52,7 @@ class NotificationService(BaseService):
         Returns:
             List of notification dictionaries
         """
-        logger.debug(
-            f"Fetching unread notifications for user",
-            extra={"user_id": str(user.id)}
-        )
+        logger.debug('Fetching unread notifications for user', extra={'user_id': str(user.id)})
 
         notifications = self.repo.get_unread_notifications(user.id)
         return [self._notification_to_dict(n) for n in notifications]
@@ -87,30 +85,30 @@ class NotificationService(BaseService):
             NotFoundError: If notification doesn't exist
             ForbiddenError: If user doesn't own the notification
         """
-        notification_uuid = validate_uuid(notification_id, "Notification")
+        notification_uuid = validate_uuid(notification_id, 'Notification')
 
         # Get notification and check ownership
         notification = self.repo.get_notification_by_id(notification_uuid)
         if not notification:
-            raise NotFoundError("Notification", notification_id)
+            raise NotFoundError('Notification', notification_id)
 
         if notification.user_id != user.id:
             logger.warning(
-                f"User attempted to mark notification they don't own",
-                extra={"user_id": str(user.id), "notification_id": notification_id}
+                "User attempted to mark notification they don't own",
+                extra={'user_id': str(user.id), 'notification_id': notification_id},
             )
-            raise ForbiddenError("Not authorized to modify this notification")
+            raise ForbiddenError('Not authorized to modify this notification')
 
         success = self.repo.mark_notification_as_read(notification_uuid)
         if not success:
-            raise BadRequestError("Failed to mark notification as read")
+            raise BadRequestError('Failed to mark notification as read')
 
         logger.info(
-            f"Notification marked as read",
-            extra={"user_id": str(user.id), "notification_id": notification_id}
+            'Notification marked as read',
+            extra={'user_id': str(user.id), 'notification_id': notification_id},
         )
 
-        return {"message": "Notification marked as read"}
+        return {'message': 'Notification marked as read'}
 
     def mark_all_as_read(self, user: User) -> dict[str, Any]:
         """
@@ -125,20 +123,19 @@ class NotificationService(BaseService):
         count = self.repo.mark_all_notifications_as_read(user.id)
 
         logger.info(
-            f"Marked all notifications as read",
-            extra={"user_id": str(user.id), "count": count}
+            'Marked all notifications as read', extra={'user_id': str(user.id), 'count': count}
         )
 
-        return {"message": "All notifications marked as read", "count": count}
+        return {'message': 'All notifications marked as read', 'count': count}
 
     def _notification_to_dict(self, notification) -> dict[str, Any]:
         """Convert notification model to dictionary."""
         return {
-            "id": str(notification.id),
-            "type": notification.type,
-            "data": notification.data,
-            "read": notification.read,
-            "created_at": notification.created_at.isoformat() + 'Z'
+            'id': str(notification.id),
+            'type': notification.type,
+            'data': notification.data,
+            'read': notification.read,
+            'created_at': notification.created_at.isoformat() + 'Z',
         }
 
     def _group_notifications(self, notifications: list) -> list[dict[str, Any]]:
@@ -163,9 +160,9 @@ class NotificationService(BaseService):
         for notif in notifications:
             # Create grouping key
             key = None
-            if notif.type == "run_state_changed" and "run_id" in notif.data:
+            if notif.type == 'run_state_changed' and 'run_id' in notif.data:
                 # Group run state changes for the same run
-                key = (notif.type, notif.data.get("run_id"))
+                key = (notif.type, notif.data.get('run_id'))
 
             if key:
                 groups[key].append(notif)
@@ -175,7 +172,7 @@ class NotificationService(BaseService):
 
         # Build result list
         result = []
-        for key, group_notifs in groups.items():
+        for _key, group_notifs in groups.items():
             if len(group_notifs) == 1:
                 # Single notification, return as is
                 result.append(self._notification_to_dict(group_notifs[0]))
@@ -191,22 +188,24 @@ class NotificationService(BaseService):
 
                 if first_time - last_time <= time_window:
                     # Group them
-                    result.append({
-                        "id": str(group_notifs[0].id),  # Use first notification's ID
-                        "type": group_notifs[0].type,
-                        "data": group_notifs[0].data,
-                        "read": all(n.read for n in group_notifs),
-                        "created_at": group_notifs[0].created_at.isoformat() + 'Z',
-                        "grouped": True,
-                        "count": len(group_notifs),
-                        "notification_ids": [str(n.id) for n in group_notifs]
-                    })
+                    result.append(
+                        {
+                            'id': str(group_notifs[0].id),  # Use first notification's ID
+                            'type': group_notifs[0].type,
+                            'data': group_notifs[0].data,
+                            'read': all(n.read for n in group_notifs),
+                            'created_at': group_notifs[0].created_at.isoformat() + 'Z',
+                            'grouped': True,
+                            'count': len(group_notifs),
+                            'notification_ids': [str(n.id) for n in group_notifs],
+                        }
+                    )
                 else:
                     # Too far apart, don't group
                     for notif in group_notifs:
                         result.append(self._notification_to_dict(notif))
 
         # Sort result by created_at (most recent first)
-        result.sort(key=lambda n: n["created_at"], reverse=True)
+        result.sort(key=lambda n: n['created_at'], reverse=True)
 
         return result

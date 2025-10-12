@@ -1,13 +1,13 @@
 """Validation helper functions for common validation patterns."""
 
 from uuid import UUID
-from typing import Optional
+
 from .exceptions import BadRequestError
 from .models import Run
 from .run_state import RunState
 
 
-def validate_uuid(id_str: str, resource_name: str = "ID") -> UUID:
+def validate_uuid(id_str: str, resource_name: str = 'ID') -> UUID:
     """
     Validate and convert a string to UUID.
 
@@ -23,14 +23,12 @@ def validate_uuid(id_str: str, resource_name: str = "ID") -> UUID:
     """
     try:
         return UUID(id_str)
-    except ValueError:
-        raise BadRequestError(f"Invalid {resource_name} ID format")
+    except ValueError as e:
+        raise BadRequestError(f'Invalid {resource_name} ID format') from e
 
 
 def validate_run_state_for_action(
-    run: Run,
-    allowed_states: list[RunState],
-    action_name: str
+    run: Run, allowed_states: list[RunState], action_name: str
 ) -> None:
     """
     Validate that a run is in one of the allowed states for a specific action.
@@ -44,9 +42,9 @@ def validate_run_state_for_action(
         BadRequestError: If the run is not in an allowed state
     """
     if run.state not in allowed_states:
-        allowed_states_str = ", ".join([s.value for s in allowed_states])
+        allowed_states_str = ', '.join([s.value for s in allowed_states])
         raise BadRequestError(
-            f"{action_name.capitalize()} not allowed in current run state. "
+            f'{action_name.capitalize()} not allowed in current run state. '
             f"Run is in '{run.state}' state, but must be in one of: {allowed_states_str}"
         )
 
@@ -54,7 +52,7 @@ def validate_run_state_for_action(
 def validate_state_transition(
     current_state: RunState,
     target_state: RunState,
-    allowed_transitions: Optional[dict[RunState, list[RunState]]] = None
+    allowed_transitions: dict[RunState, list[RunState]] | None = None,
 ) -> None:
     """
     Validate that a state transition is allowed.
@@ -78,13 +76,13 @@ def validate_state_transition(
             RunState.ADJUSTING: [RunState.DISTRIBUTING, RunState.CANCELLED],
             RunState.DISTRIBUTING: [RunState.COMPLETED],
             RunState.COMPLETED: [],
-            RunState.CANCELLED: []
+            RunState.CANCELLED: [],
         }
 
     allowed = allowed_transitions.get(current_state, [])
     if target_state not in allowed:
-        allowed_str = ", ".join([s.value for s in allowed]) if allowed else "none"
+        allowed_str = ', '.join([s.value for s in allowed]) if allowed else 'none'
         raise BadRequestError(
             f"Cannot transition from '{current_state}' to '{target_state}'. "
-            f"Allowed transitions: {allowed_str}"
+            f'Allowed transitions: {allowed_str}'
         )

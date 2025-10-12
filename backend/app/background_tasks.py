@@ -1,13 +1,17 @@
 """Utilities for managing background tasks with proper error handling."""
 
 import asyncio
-from typing import Coroutine, Any
+from collections.abc import Coroutine
+from typing import Any
+
 from .request_context import get_logger
 
 logger = get_logger(__name__)
 
 
-def create_background_task(coro: Coroutine[Any, Any, Any], task_name: str = "background_task") -> asyncio.Task:
+def create_background_task(
+    coro: Coroutine[Any, Any, Any], task_name: str = 'background_task'
+) -> asyncio.Task:
     """
     Create a background task with proper error handling and logging.
 
@@ -39,20 +43,13 @@ async def _wrap_task_with_error_handling(coro: Coroutine[Any, Any, Any], task_na
     try:
         return await coro
     except asyncio.CancelledError:
-        logger.warning(
-            "Background task cancelled",
-            extra={"task_name": task_name}
-        )
+        logger.warning('Background task cancelled', extra={'task_name': task_name})
         raise
     except Exception as e:
         logger.error(
-            "Background task failed with exception",
-            extra={
-                "task_name": task_name,
-                "error_type": type(e).__name__,
-                "error_message": str(e)
-            },
-            exc_info=True
+            'Background task failed with exception',
+            extra={'task_name': task_name, 'error_type': type(e).__name__, 'error_message': str(e)},
+            exc_info=True,
         )
         # Don't re-raise - this is a background task
         return None

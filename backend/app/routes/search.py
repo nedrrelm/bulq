@@ -2,23 +2,23 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..routes.auth import require_auth
 from ..models import User
-from ..services import ProductService
+from ..routes.auth import require_auth
 from ..schemas import (
-    ProductSearchResult,
-    StoreSearchResult,
     GroupSearchResult,
     SearchResponse,
+    StoreSearchResult,
 )
+from ..services import ProductService
 
-router = APIRouter(prefix="/search", tags=["search"])
+router = APIRouter(prefix='/search', tags=['search'])
 
-@router.get("", response_model=SearchResponse)
+
+@router.get('', response_model=SearchResponse)
 async def search_all(
-    q: str = Query(..., min_length=1, description="Search query"),
+    q: str = Query(..., min_length=1, description='Search query'),
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Consolidated search across products, stores, and groups.
@@ -33,11 +33,7 @@ async def search_all(
     # Search stores
     all_stores = repo.search_stores(q)
     stores = [
-        StoreSearchResult(
-            id=str(store.id),
-            name=store.name,
-            address=store.address
-        )
+        StoreSearchResult(id=str(store.id), name=store.name, address=store.address)
         for store in all_stores[:3]  # Limit to 3
     ]
 
@@ -48,16 +44,10 @@ async def search_all(
         if q.lower() in group.name.lower():
             # Group object has members relationship set up by repository
             member_count = len(group.members)
-            matching_groups.append(GroupSearchResult(
-                id=str(group.id),
-                name=group.name,
-                member_count=member_count
-            ))
+            matching_groups.append(
+                GroupSearchResult(id=str(group.id), name=group.name, member_count=member_count)
+            )
             if len(matching_groups) >= 3:
                 break
 
-    return SearchResponse(
-        products=products,
-        stores=stores,
-        groups=matching_groups
-    )
+    return SearchResponse(products=products, stores=stores, groups=matching_groups)

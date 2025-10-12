@@ -1,9 +1,23 @@
-from sqlalchemy import Column, String, Integer, Boolean, DECIMAL, DateTime, ForeignKey, Table, JSON, Text, Index
+import uuid
+
+from sqlalchemy import (
+    DECIMAL,
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Table,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-import uuid
+
 from .run_state import RunState
 
 Base = declarative_base()
@@ -13,47 +27,64 @@ group_membership = Table(
     Base.metadata,
     Column('user_id', UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True),
     Column('group_id', UUID(as_uuid=True), ForeignKey('groups.id'), primary_key=True),
-    Column('is_group_admin', Boolean, nullable=False, default=False)
+    Column('is_group_admin', Boolean, nullable=False, default=False),
 )
 
+
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = 'users'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
-    username = Column(String, unique=True, nullable=True, index=True)  # Will eventually replace email
+    username = Column(
+        String, unique=True, nullable=True, index=True
+    )  # Will eventually replace email
     is_admin = Column(Boolean, nullable=False, default=False)
     verified = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    groups = relationship("Group", secondary=group_membership, back_populates="members")
-    created_groups = relationship("Group", back_populates="creator")
-    run_participations = relationship("RunParticipation", back_populates="user")
-    created_products = relationship("Product", foreign_keys="[Product.created_by]", back_populates="creator")
-    verified_products = relationship("Product", foreign_keys="[Product.verified_by]", back_populates="verifier")
-    created_stores = relationship("Store", foreign_keys="[Store.created_by]", back_populates="creator")
-    verified_stores = relationship("Store", foreign_keys="[Store.verified_by]", back_populates="verifier")
-    product_availabilities = relationship("ProductAvailability", back_populates="user")
-    notifications = relationship("Notification", back_populates="user", order_by="desc(Notification.created_at)")
+    groups = relationship('Group', secondary=group_membership, back_populates='members')
+    created_groups = relationship('Group', back_populates='creator')
+    run_participations = relationship('RunParticipation', back_populates='user')
+    created_products = relationship(
+        'Product', foreign_keys='[Product.created_by]', back_populates='creator'
+    )
+    verified_products = relationship(
+        'Product', foreign_keys='[Product.verified_by]', back_populates='verifier'
+    )
+    created_stores = relationship(
+        'Store', foreign_keys='[Store.created_by]', back_populates='creator'
+    )
+    verified_stores = relationship(
+        'Store', foreign_keys='[Store.verified_by]', back_populates='verifier'
+    )
+    product_availabilities = relationship('ProductAvailability', back_populates='user')
+    notifications = relationship(
+        'Notification', back_populates='user', order_by='desc(Notification.created_at)'
+    )
+
 
 class Group(Base):
-    __tablename__ = "groups"
+    __tablename__ = 'groups'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
-    invite_token = Column(String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()), index=True)
+    invite_token = Column(
+        String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()), index=True
+    )
     is_joining_allowed = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    creator = relationship("User", back_populates="created_groups")
-    members = relationship("User", secondary=group_membership, back_populates="groups")
-    runs = relationship("Run", back_populates="group")
+    creator = relationship('User', back_populates='created_groups')
+    members = relationship('User', secondary=group_membership, back_populates='groups')
+    runs = relationship('Run', back_populates='group')
+
 
 class Store(Base):
-    __tablename__ = "stores"
+    __tablename__ = 'stores'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
@@ -66,19 +97,22 @@ class Store(Base):
     verified_at = Column(DateTime(timezone=True), nullable=True)
     verified_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
 
-    runs = relationship("Run", back_populates="store")
-    creator = relationship("User", foreign_keys=[created_by], back_populates="created_stores")
-    verifier = relationship("User", foreign_keys=[verified_by], back_populates="verified_stores")
-    product_availabilities = relationship("ProductAvailability", back_populates="store")
+    runs = relationship('Run', back_populates='store')
+    creator = relationship('User', foreign_keys=[created_by], back_populates='created_stores')
+    verifier = relationship('User', foreign_keys=[verified_by], back_populates='verified_stores')
+    product_availabilities = relationship('ProductAvailability', back_populates='store')
+
 
 class Run(Base):
-    __tablename__ = "runs"
+    __tablename__ = 'runs'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     group_id = Column(UUID(as_uuid=True), ForeignKey('groups.id'), nullable=False, index=True)
     store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
     state = Column(String, nullable=False, default=RunState.PLANNING, index=True)
-    planned_on = Column(DateTime(timezone=True), nullable=True)  # Day the leader wants to go shopping
+    planned_on = Column(
+        DateTime(timezone=True), nullable=True
+    )  # Day the leader wants to go shopping
 
     # State transition timestamps
     planning_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -90,17 +124,18 @@ class Run(Base):
     completed_at = Column(DateTime(timezone=True), nullable=True)
     cancelled_at = Column(DateTime(timezone=True), nullable=True)
 
-    group = relationship("Group", back_populates="runs")
-    store = relationship("Store", back_populates="runs")
-    participations = relationship("RunParticipation", back_populates="run")
+    group = relationship('Group', back_populates='runs')
+    store = relationship('Store', back_populates='runs')
+    participations = relationship('RunParticipation', back_populates='run')
 
     __table_args__ = (
         # Composite index for filtering runs by group and state
         Index('ix_runs_group_state', 'group_id', 'state'),
     )
 
+
 class Product(Base):
-    __tablename__ = "products"
+    __tablename__ = 'products'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False, index=True)
@@ -113,36 +148,42 @@ class Product(Base):
     verified_at = Column(DateTime(timezone=True), nullable=True)
     verified_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
 
-    product_bids = relationship("ProductBid", back_populates="product")
-    creator = relationship("User", foreign_keys=[created_by], back_populates="created_products")
-    verifier = relationship("User", foreign_keys=[verified_by], back_populates="verified_products")
-    availabilities = relationship("ProductAvailability", back_populates="product")
+    product_bids = relationship('ProductBid', back_populates='product')
+    creator = relationship('User', foreign_keys=[created_by], back_populates='created_products')
+    verifier = relationship('User', foreign_keys=[verified_by], back_populates='verified_products')
+    availabilities = relationship('ProductAvailability', back_populates='product')
+
 
 class RunParticipation(Base):
-    __tablename__ = "run_participations"
+    __tablename__ = 'run_participations'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
     is_leader = Column(Boolean, nullable=False, default=False)
     is_ready = Column(Boolean, nullable=False, default=False)
-    is_removed = Column(Boolean, nullable=False, default=False)  # True if user was removed from group
+    is_removed = Column(
+        Boolean, nullable=False, default=False
+    )  # True if user was removed from group
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship("User", back_populates="run_participations")
-    run = relationship("Run", back_populates="participations")
-    product_bids = relationship("ProductBid", back_populates="participation")
+    user = relationship('User', back_populates='run_participations')
+    run = relationship('Run', back_populates='participations')
+    product_bids = relationship('ProductBid', back_populates='participation')
 
     __table_args__ = (
         # Composite index for finding user's participation in a run (common query)
         Index('ix_run_participations_user_run', 'user_id', 'run_id'),
     )
 
+
 class ProductBid(Base):
-    __tablename__ = "product_bids"
+    __tablename__ = 'product_bids'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    participation_id = Column(UUID(as_uuid=True), ForeignKey('run_participations.id'), nullable=False, index=True)
+    participation_id = Column(
+        UUID(as_uuid=True), ForeignKey('run_participations.id'), nullable=False, index=True
+    )
     product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
     quantity = Column(Integer, nullable=False, default=0)
     interested_only = Column(Boolean, nullable=False, default=False)
@@ -150,23 +191,26 @@ class ProductBid(Base):
     # Distribution fields
     distributed_quantity = Column(Integer, nullable=True)  # Actual quantity allocated to user
     distributed_price_per_unit = Column(DECIMAL(10, 2), nullable=True)  # Price we paid per unit
-    is_picked_up = Column(Boolean, nullable=False, default=False)  # Whether user collected their items
+    is_picked_up = Column(
+        Boolean, nullable=False, default=False
+    )  # Whether user collected their items
     picked_up_at = Column(DateTime(timezone=True), nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    participation = relationship("RunParticipation", back_populates="product_bids")
-    product = relationship("Product", back_populates="product_bids")
+    participation = relationship('RunParticipation', back_populates='product_bids')
+    product = relationship('Product', back_populates='product_bids')
 
     __table_args__ = (
         # Composite index for finding a user's bid on a product (get_bid query)
         Index('ix_product_bids_participation_product', 'participation_id', 'product_id'),
     )
 
+
 class ProductAvailability(Base):
-    __tablename__ = "product_availabilities"
+    __tablename__ = 'product_availabilities'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
@@ -178,9 +222,9 @@ class ProductAvailability(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
 
-    product = relationship("Product", back_populates="availabilities")
-    store = relationship("Store", back_populates="product_availabilities")
-    user = relationship("User", back_populates="product_availabilities")
+    product = relationship('Product', back_populates='availabilities')
+    store = relationship('Store', back_populates='product_availabilities')
+    user = relationship('User', back_populates='product_availabilities')
 
     __table_args__ = (
         # Composite index for finding product availability at a store
@@ -189,8 +233,9 @@ class ProductAvailability(Base):
         Index('ix_product_availabilities_store_created', 'store_id', 'created_at'),
     )
 
+
 class ShoppingListItem(Base):
-    __tablename__ = "shopping_list_items"
+    __tablename__ = 'shopping_list_items'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
@@ -207,25 +252,28 @@ class ShoppingListItem(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    run = relationship("Run")
-    product = relationship("Product")
+    run = relationship('Run')
+    product = relationship('Product')
 
     __table_args__ = (
         # Index for finding shopping list items by product (cross-run queries)
         Index('ix_shopping_list_items_product', 'product_id'),
     )
 
+
 class Notification(Base):
-    __tablename__ = "notifications"
+    __tablename__ = 'notifications'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     type = Column(String, nullable=False)  # e.g., "run_state_changed"
-    data = Column(JSON, nullable=False)    # Flexible JSON data: {run_id, store_name, old_state, new_state, etc.}
+    data = Column(
+        JSON, nullable=False
+    )  # Flexible JSON data: {run_id, store_name, old_state, new_state, etc.}
     read = Column(Boolean, nullable=False, default=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship("User", back_populates="notifications")
+    user = relationship('User', back_populates='notifications')
 
     __table_args__ = (
         # Composite index for filtering unread notifications by user (common query)
@@ -234,19 +282,21 @@ class Notification(Base):
 
 
 class LeaderReassignmentRequest(Base):
-    __tablename__ = "leader_reassignment_requests"
+    __tablename__ = 'leader_reassignment_requests'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
     from_user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     to_user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
-    status = Column(String, nullable=False, default="pending", index=True)  # pending, accepted, declined
+    status = Column(
+        String, nullable=False, default='pending', index=True
+    )  # pending, accepted, declined
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
-    run = relationship("Run")
-    from_user = relationship("User", foreign_keys=[from_user_id])
-    to_user = relationship("User", foreign_keys=[to_user_id])
+    run = relationship('Run')
+    from_user = relationship('User', foreign_keys=[from_user_id])
+    to_user = relationship('User', foreign_keys=[to_user_id])
 
     __table_args__ = (
         # Composite index for finding pending requests for a user
