@@ -109,21 +109,6 @@ await manager.broadcast(f"run:{result.run_id}", {
 
 ---
 
-### 10. Replace Magic Numbers with Constants
-**Status**: Medium Priority (readability)
-**Affected files**: `app/routes/auth.py:74, 115`
-
-**Problem:** Hardcoded `3600` for seconds-to-hours conversion.
-```python
-max_age=SESSION_EXPIRY_HOURS * 3600,  # Magic number
-```
-
-**Impact:** Unclear what 3600 represents, could cause errors if changed wrong.
-
-**Fix:** Create constant `SECONDS_PER_HOUR = 3600` or use helper function.
-
----
-
 ### 11. Split RunService God Object
 **Status**: Medium Priority (architecture)
 **Affected files**: `app/services/run_service.py` (1129 lines)
@@ -136,39 +121,6 @@ max_age=SESSION_EXPIRY_HOURS * 3600,  # Magic number
 - `BidService` - bid placement, retraction, validation
 - `RunStateService` - state transitions, state machine
 - `RunNotificationService` - creating/broadcasting notifications
-
----
-
-### 12. Implement Redis Session Store
-**Status**: Medium Priority (production readiness)
-**Affected files**: `app/auth.py:10`
-
-**Problem:** In-memory dict for sessions with comment "use Redis in production".
-```python
-sessions: dict[str, dict] = {}  # Not production-ready
-```
-
-**Impact:** Sessions lost on restart, won't work with multiple instances.
-
-**Fix:**
-- Implement Redis session store
-- Create abstract SessionStore interface
-- Keep in-memory for development
-
----
-
-### 13. Add Connection Pool Monitoring
-**Status**: Low Priority (observability)
-**Affected files**: `app/database.py`
-
-**Problem:** Database connection pool configured but no metrics/logging for pool exhaustion.
-
-**Impact:** Can't diagnose connection pool issues in production.
-
-**Fix:**
-- Log pool statistics periodically
-- Add metrics for pool size, overflow, timeouts
-- Alert on pool exhaustion
 
 ---
 
@@ -193,42 +145,6 @@ sessions: dict[str, dict] = {}  # Not production-ready
 **Impact:** Could leave database in inconsistent state on partial failures.
 
 **Fix:** Wrap multi-step operations in database transactions.
-
----
-
-### 16. Standardize Docstring Format
-**Status**: Low Priority (documentation)
-**Affected files**: Multiple service methods
-
-**Problem:** Inconsistent docstring format - some have `Raises:`, others don't.
-
-**Impact:** Harder to understand what exceptions methods can raise.
-
-**Fix:** Use consistent Google or NumPy docstring format throughout.
-
----
-
-### 17. Remove Unused Imports
-**Status**: Low Priority (cleanup)
-**Affected files**: `app/routes/auth.py:1`, others
-
-**Problem:** Importing modules that aren't used.
-
-**Impact:** Minor - clutters imports, could cause confusion.
-
-**Fix:** Run linter to remove unused imports.
-
----
-
-### 18. Organize Imports Consistently
-**Status**: Low Priority (style)
-**Affected files**: Multiple files
-
-**Problem:** Mixed import ordering (alphabetical vs grouped by type).
-
-**Impact:** Minor - harder to scan imports.
-
-**Fix:** Use isort or similar tool to standardize import order.
 
 ---
 

@@ -88,6 +88,7 @@ async def startup_event():
 
     # Start background task for session cleanup
     from .auth import cleanup_expired_sessions
+    from .database import log_pool_status
 
     async def session_cleanup_loop():
         """Periodically clean up expired sessions to prevent memory leak."""
@@ -95,7 +96,14 @@ async def startup_event():
             await asyncio.sleep(3600)  # Run every hour
             cleanup_expired_sessions()
 
+    async def pool_monitoring_loop():
+        """Periodically log connection pool statistics."""
+        while True:
+            await asyncio.sleep(300)  # Log every 5 minutes
+            log_pool_status()
+
     create_background_task(session_cleanup_loop(), task_name='session_cleanup_loop')
+    create_background_task(pool_monitoring_loop(), task_name='pool_monitoring_loop')
 
 
 @app.get('/')
@@ -112,14 +120,20 @@ async def health_check():
 
 @app.get('/db-health')
 async def db_health_check():
-    """Check database connectivity."""
+    """Check database connectivity and connection pool status."""
     try:
         from sqlalchemy import text
 
-        from .database import engine
+        from .database import engine, get_pool_status
 
         with engine.connect() as conn:
             conn.execute(text('SELECT 1'))
-        return {'status': 'healthy', 'database': 'connected'}
+
+        pool_status = get_pool_status()
+        return {
+            'status': 'healthy',
+            'database': 'connected',
+            'pool': pool_status,
+        }
     except Exception as e:
         return {'status': 'unhealthy', 'database': 'disconnected', 'error': str(e)}

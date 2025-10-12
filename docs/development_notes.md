@@ -278,6 +278,13 @@ logger.info(
 - **Mock external dependencies** (DB, WebSocket)
 - **Run tests before committing**: `pytest tests/ -v`
 
+#### Code Quality
+- **Run ruff before committing**: `ruff check app/ && ruff format app/`
+- **Fix all linting errors** - aim for zero errors
+- **Use ruff format** for consistent code style
+- **Docker command**: `docker compose run --rm backend uv run ruff check app/`
+- **Auto-fix**: `docker compose run --rm backend uv run ruff check app/ --fix`
+
 #### Git Workflow
 - **Feature branches** for new work
 - **Descriptive branch names**: `feature/leader-reassignment`
