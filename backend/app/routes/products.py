@@ -1,25 +1,28 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from uuid import UUID
+
 from ..database import get_db
-from ..routes.auth import require_auth
 from ..models import User
-from ..services import ProductService
+from ..routes.auth import require_auth
 from ..schemas import (
+    AvailabilityInfo,
     CreateProductRequest,
     CreateProductResponse,
-    ProductSearchResult,
     ProductDetailResponse,
-    AvailabilityInfo,
+    ProductSearchResult,
 )
+from ..services import ProductService
 
-router = APIRouter(prefix="/products", tags=["products"])
+router = APIRouter(prefix='/products', tags=['products'])
 
-@router.get("/search", response_model=list[ProductSearchResult])
+
+@router.get('/search', response_model=list[ProductSearchResult])
 async def search_products(
-    q: str = Query(..., min_length=1, description="Search query"),
+    q: str = Query(..., min_length=1, description='Search query'),
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Search for products by name across all stores.
@@ -28,11 +31,12 @@ async def search_products(
     service = ProductService(db)
     return service.search_products(q)
 
-@router.post("/create", response_model=CreateProductResponse)
+
+@router.post('/create', response_model=CreateProductResponse)
 async def create_product(
     request: CreateProductRequest,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Create a new product. Optionally link to a store with price.
@@ -48,7 +52,7 @@ async def create_product(
             unit=request.unit,
             store_id=store_uuid,
             price=request.price,
-            user_id=current_user.id
+            user_id=current_user.id,
         )
 
         availability_info = None
@@ -56,7 +60,7 @@ async def create_product(
             availability_info = AvailabilityInfo(
                 store_id=str(availability.store_id),
                 price=float(availability.price) if availability.price else None,
-                notes=availability.notes
+                notes=availability.notes,
             )
 
         return CreateProductResponse(
@@ -64,16 +68,15 @@ async def create_product(
             name=product.name,
             brand=product.brand,
             unit=product.unit,
-            availability=availability_info
+            availability=availability_info,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
-@router.get("/{product_id}", response_model=ProductDetailResponse)
+
+@router.get('/{product_id}', response_model=ProductDetailResponse)
 async def get_product_details(
-    product_id: str,
-    current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db)
+    product_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
 ):
     """
     Get detailed product information including price history from shopping list items.
@@ -83,6 +86,6 @@ async def get_product_details(
 
     result = service.get_product_details(UUID(product_id))
     if not result:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail='Product not found')
 
     return result

@@ -1,25 +1,24 @@
 """Shopping service for handling shopping list operations."""
 
-from typing import Any
-from decimal import Decimal
 from datetime import datetime, timedelta
+from typing import Any
 from uuid import UUID
 
-from .base_service import BaseService
 from ..background_tasks import create_background_task
-from ..exceptions import NotFoundError, ForbiddenError, BadRequestError
-from ..validation import validate_run_state_for_action
+from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import User
-from ..run_state import RunState, state_machine
-from ..websocket_manager import manager
 from ..request_context import get_logger
+from ..run_state import RunState
 from ..schemas import (
-    ShoppingListItemResponse,
-    PriceObservation,
-    MessageResponse,
-    MarkPurchasedResponse,
     CompleteShoppingResponse,
+    MarkPurchasedResponse,
+    MessageResponse,
+    PriceObservation,
+    ShoppingListItemResponse,
 )
+from ..validation import validate_run_state_for_action
+from ..websocket_manager import manager
+from .base_service import BaseService
 
 logger = get_logger(__name__)
 
@@ -28,11 +27,7 @@ class ShoppingService(BaseService):
     """Service for managing shopping list operations."""
 
     async def _update_product_availability_if_needed(
-        self,
-        product_id: UUID,
-        store_id: UUID,
-        price: float,
-        user_id: UUID
+        self, product_id: UUID, store_id: UUID, price: float, user_id: UUID
     ) -> None:
         """
         Update ProductAvailability if the price differs from prices seen today.
@@ -50,7 +45,8 @@ class ShoppingService(BaseService):
             # Check if we have any prices from today
             today = datetime.now().date()
             today_prices = [
-                float(avail.price) for avail in availabilities
+                float(avail.price)
+                for avail in availabilities
                 if avail.price is not None and avail.created_at.date() == today
             ]
 
@@ -60,35 +56,31 @@ class ShoppingService(BaseService):
                     product_id=product_id,
                     store_id=store_id,
                     price=price,
-                    notes="Purchased during shopping",
-                    user_id=user_id
+                    notes='Purchased during shopping',
+                    user_id=user_id,
                 )
                 logger.info(
-                    f"Created product availability for different price",
+                    'Created product availability for different price',
                     extra={
-                        "product_id": str(product_id),
-                        "store_id": str(store_id),
-                        "price": price,
-                        "user_id": str(user_id)
-                    }
+                        'product_id': str(product_id),
+                        'store_id': str(store_id),
+                        'price': price,
+                        'user_id': str(user_id),
+                    },
                 )
         except Exception as e:
             # Don't fail the purchase if availability update fails
             logger.error(
-                f"Failed to update product availability",
+                'Failed to update product availability',
                 extra={
-                    "product_id": str(product_id),
-                    "store_id": str(store_id),
-                    "price": price,
-                    "error": str(e)
-                }
+                    'product_id': str(product_id),
+                    'store_id': str(store_id),
+                    'price': price,
+                    'error': str(e),
+                },
             )
 
-    async def get_shopping_list(
-        self,
-        run_id: str,
-        user: User
-    ) -> list[ShoppingListItemResponse]:
+    async def get_shopping_list(self, run_id: str, user: User) -> list[ShoppingListItemResponse]:
         """
         Get shopping list for a run with auth check.
 
@@ -108,30 +100,26 @@ class ShoppingService(BaseService):
         # Validate run ID
         try:
             run_uuid = UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        except ValueError as e:
+            raise BadRequestError('Invalid run ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError("Run", run_id)
+            raise NotFoundError('Run', run_id)
 
         # Verify user has access to this run
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError("Not authorized to view this run")
+            raise ForbiddenError('Not authorized to view this run')
 
         # Only allow viewing shopping list in shopping or later states
         validate_run_state_for_action(
-            run,
-            [RunState.SHOPPING, RunState.DISTRIBUTING, RunState.COMPLETED],
-            "shopping list"
+            run, [RunState.SHOPPING, RunState.DISTRIBUTING, RunState.COMPLETED], 'shopping list'
         )
 
         # Get shopping list items
         items = self.repo.get_shopping_list_items(run_uuid)
-
-        from datetime import datetime, timedelta
 
         # Convert to response format
         response_items = []
@@ -141,64 +129,78 @@ class ShoppingService(BaseService):
 
             # Get all product availabilities for this product at this store
             all_availabilities = self.repo.get_product_availabilities(
-                product_id=item.product_id,
-                store_id=run.store_id
+                product_id=item.product_id, store_id=run.store_id
             )
 
             # Find the most recent price observation
             most_recent = None
             for avail in all_availabilities:
-                if avail.price and avail.created_at:
-                    if most_recent is None or avail.created_at > most_recent.created_at:
-                        most_recent = avail
+                if (
+                    avail.price
+                    and avail.created_at
+                    and (most_recent is None or avail.created_at > most_recent.created_at)
+                ):
+                    most_recent = avail
 
             # Get all prices from the same day as the most recent observation
             recent_day_prices = []
             if most_recent:
                 # Get the day boundaries for the most recent price
-                recent_date = most_recent.created_at.replace(hour=0, minute=0, second=0, microsecond=0)
+                recent_date = most_recent.created_at.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
                 recent_date_end = recent_date + timedelta(days=1)
 
                 # Filter to only prices from that day
                 for avail in all_availabilities:
-                    if avail.price and avail.created_at:
-                        if recent_date <= avail.created_at < recent_date_end:
-                            recent_day_prices.append({
-                                "price": float(avail.price),
-                                "notes": avail.notes or "",
-                                "created_at": avail.created_at.isoformat() if avail.created_at else None
-                            })
+                    if (
+                        avail.price
+                        and avail.created_at
+                        and recent_date <= avail.created_at < recent_date_end
+                    ):
+                        recent_day_prices.append(
+                            {
+                                'price': float(avail.price),
+                                'notes': avail.notes or '',
+                                'created_at': avail.created_at.isoformat()
+                                if avail.created_at
+                                else None,
+                            }
+                        )
 
                 # Sort by created_at descending (newest first)
-                recent_day_prices.sort(key=lambda x: x["created_at"] if x["created_at"] else "", reverse=True)
+                recent_day_prices.sort(
+                    key=lambda x: x['created_at'] if x['created_at'] else '', reverse=True
+                )
 
             recent_prices_models = [PriceObservation(**p) for p in recent_day_prices]
 
-            response_items.append(ShoppingListItemResponse(
-                id=str(item.id),
-                product_id=str(item.product_id),
-                product_name=product.name if product else "Unknown Product",
-                requested_quantity=item.requested_quantity,
-                recent_prices=recent_prices_models,
-                purchased_quantity=item.purchased_quantity,
-                purchased_price_per_unit=str(item.purchased_price_per_unit) if item.purchased_price_per_unit else None,
-                purchased_total=str(item.purchased_total) if item.purchased_total else None,
-                is_purchased=item.is_purchased,
-                purchase_order=item.purchase_order
-            ))
+            response_items.append(
+                ShoppingListItemResponse(
+                    id=str(item.id),
+                    product_id=str(item.product_id),
+                    product_name=product.name if product else 'Unknown Product',
+                    requested_quantity=item.requested_quantity,
+                    recent_prices=recent_prices_models,
+                    purchased_quantity=item.purchased_quantity,
+                    purchased_price_per_unit=str(item.purchased_price_per_unit)
+                    if item.purchased_price_per_unit
+                    else None,
+                    purchased_total=str(item.purchased_total) if item.purchased_total else None,
+                    is_purchased=item.is_purchased,
+                    purchase_order=item.purchase_order,
+                )
+            )
 
         # Sort: unpurchased first, then purchased by purchase order
-        response_items.sort(key=lambda x: (x.is_purchased, x.purchase_order if x.purchase_order else 999))
+        response_items.sort(
+            key=lambda x: (x.is_purchased, x.purchase_order if x.purchase_order else 999)
+        )
 
         return response_items
 
     async def add_availability_price(
-        self,
-        run_id: str,
-        item_id: str,
-        price: float,
-        notes: str,
-        user: User
+        self, run_id: str, item_id: str, price: float, notes: str, user: User
     ) -> MessageResponse:
         """
         Update product availability price for a shopping list item.
@@ -222,34 +224,34 @@ class ShoppingService(BaseService):
         try:
             run_uuid = UUID(run_id)
             item_uuid = UUID(item_id)
-        except ValueError:
-            raise BadRequestError("Invalid ID format")
+        except ValueError as e:
+            raise BadRequestError('Invalid ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError("Run", run_id)
+            raise NotFoundError('Run', run_id)
 
         # Verify user is the run leader
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError("Only the run leader can add prices")
+            raise ForbiddenError('Only the run leader can add prices')
 
         # Get the shopping list item to find the product
         item = self.repo.get_shopping_list_item(item_uuid)
         if not item:
-            raise NotFoundError("Shopping list item", item_id)
+            raise NotFoundError('Shopping list item', item_id)
 
         # Create or update product availability
-        availability = self.repo.create_product_availability(
+        self.repo.create_product_availability(
             product_id=item.product_id,
             store_id=run.store_id,
             price=price,
             notes=notes,
-            user_id=user.id
+            user_id=user.id,
         )
 
-        return MessageResponse(message="Price updated successfully")
+        return MessageResponse(message='Price updated successfully')
 
     async def mark_purchased(
         self,
@@ -258,7 +260,7 @@ class ShoppingService(BaseService):
         quantity: float,
         price_per_unit: float,
         total: float,
-        user: User
+        user: User,
     ) -> MarkPurchasedResponse:
         """
         Mark a shopping list item as purchased.
@@ -283,50 +285,41 @@ class ShoppingService(BaseService):
         try:
             run_uuid = UUID(run_id)
             item_uuid = UUID(item_id)
-        except ValueError:
-            raise BadRequestError("Invalid ID format")
+        except ValueError as e:
+            raise BadRequestError('Invalid ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError("Run", run_id)
+            raise NotFoundError('Run', run_id)
 
         # Verify user is the run leader
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError("Only the run leader can mark items as purchased")
+            raise ForbiddenError('Only the run leader can mark items as purchased')
 
         # Get next purchase order number
         existing_items = self.repo.get_shopping_list_items(run_uuid)
-        max_order = max([item.purchase_order for item in existing_items if item.purchase_order is not None], default=0)
+        max_order = max(
+            [item.purchase_order for item in existing_items if item.purchase_order is not None],
+            default=0,
+        )
         next_order = max_order + 1
 
         # Mark as purchased
-        item = self.repo.mark_item_purchased(
-            item_uuid,
-            quantity,
-            price_per_unit,
-            total,
-            next_order
-        )
+        item = self.repo.mark_item_purchased(item_uuid, quantity, price_per_unit, total, next_order)
         if not item:
-            raise NotFoundError("Shopping list item", item_id)
+            raise NotFoundError('Shopping list item', item_id)
 
         # Update ProductAvailability if the price differs from today's prices
         await self._update_product_availability_if_needed(
-            item.product_id,
-            run.store_id,
-            price_per_unit,
-            user.id
+            item.product_id, run.store_id, price_per_unit, user.id
         )
 
-        return MarkPurchasedResponse(message="Item marked as purchased", purchase_order=next_order)
+        return MarkPurchasedResponse(message='Item marked as purchased', purchase_order=next_order)
 
     async def complete_shopping(
-        self,
-        run_id: str,
-        user: User,
-        db: Any = None
+        self, run_id: str, user: User, db: Any = None
     ) -> CompleteShoppingResponse:
         """
         Complete shopping and handle shortages/transitions.
@@ -352,29 +345,28 @@ class ShoppingService(BaseService):
             ForbiddenError: If user is not the run leader
         """
         logger.info(
-            f"Completing shopping for run",
-            extra={"user_id": str(user.id), "run_id": run_id}
+            'Completing shopping for run', extra={'user_id': str(user.id), 'run_id': run_id}
         )
 
         # Validate run ID
         try:
             run_uuid = UUID(run_id)
-        except ValueError:
-            raise BadRequestError("Invalid run ID format")
+        except ValueError as e:
+            raise BadRequestError('Invalid run ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError("Run", run_id)
+            raise NotFoundError('Run', run_id)
 
         # Verify user is the run leader
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError("Only the run leader can complete shopping")
+            raise ForbiddenError('Only the run leader can complete shopping')
 
         # Only allow completing from shopping state
         if run.state != RunState.SHOPPING:
-            raise BadRequestError("Can only complete shopping from shopping state")
+            raise BadRequestError('Can only complete shopping from shopping state')
 
         # Check if any items have insufficient quantities
         shopping_items = self.repo.get_shopping_list_items(run_uuid)
@@ -399,24 +391,24 @@ class ShoppingService(BaseService):
             self._notify_run_state_change(run, old_state, RunState.ADJUSTING)
 
             # Broadcast state change to both run and group
-            await manager.broadcast(f"run:{run_uuid}", {
-                "type": "state_changed",
-                "data": {
-                    "run_id": str(run_uuid),
-                    "new_state": RunState.ADJUSTING
-                }
-            })
-            await manager.broadcast(f"group:{run.group_id}", {
-                "type": "run_state_changed",
-                "data": {
-                    "run_id": str(run_uuid),
-                    "new_state": RunState.ADJUSTING
-                }
-            })
+            await manager.broadcast(
+                f'run:{run_uuid}',
+                {
+                    'type': 'state_changed',
+                    'data': {'run_id': str(run_uuid), 'new_state': RunState.ADJUSTING},
+                },
+            )
+            await manager.broadcast(
+                f'group:{run.group_id}',
+                {
+                    'type': 'run_state_changed',
+                    'data': {'run_id': str(run_uuid), 'new_state': RunState.ADJUSTING},
+                },
+            )
 
             return CompleteShoppingResponse(
-                message="Some items have insufficient quantities. Participants need to adjust their bids.",
-                state=RunState.ADJUSTING
+                message='Some items have insufficient quantities. Participants need to adjust their bids.',
+                state=RunState.ADJUSTING,
             )
 
         # Otherwise, proceed with distribution
@@ -426,14 +418,16 @@ class ShoppingService(BaseService):
                 continue
 
             # Get all bids for this product
-            product_bids = [bid for bid in all_bids if bid.product_id == shopping_item.product_id and not bid.interested_only]
+            product_bids = [
+                bid
+                for bid in all_bids
+                if bid.product_id == shopping_item.product_id and not bid.interested_only
+            ]
 
             # Distribute the purchased items to bidders (all quantities match)
             for bid in product_bids:
                 self.repo.update_bid_distributed_quantities(
-                    bid.id,
-                    bid.quantity,
-                    shopping_item.purchased_price_per_unit
+                    bid.id, bid.quantity, shopping_item.purchased_price_per_unit
                 )
 
         self.repo.commit_changes()
@@ -446,22 +440,24 @@ class ShoppingService(BaseService):
         self._notify_run_state_change(run, old_state, RunState.DISTRIBUTING)
 
         # Broadcast state change to both run and group
-        await manager.broadcast(f"run:{run_uuid}", {
-            "type": "state_changed",
-            "data": {
-                "run_id": str(run_uuid),
-                "new_state": RunState.DISTRIBUTING
-            }
-        })
-        await manager.broadcast(f"group:{run.group_id}", {
-            "type": "run_state_changed",
-            "data": {
-                "run_id": str(run_uuid),
-                "new_state": RunState.DISTRIBUTING
-            }
-        })
+        await manager.broadcast(
+            f'run:{run_uuid}',
+            {
+                'type': 'state_changed',
+                'data': {'run_id': str(run_uuid), 'new_state': RunState.DISTRIBUTING},
+            },
+        )
+        await manager.broadcast(
+            f'group:{run.group_id}',
+            {
+                'type': 'run_state_changed',
+                'data': {'run_id': str(run_uuid), 'new_state': RunState.DISTRIBUTING},
+            },
+        )
 
-        return CompleteShoppingResponse(message="Shopping completed! Moving to distribution.", state=RunState.DISTRIBUTING)
+        return CompleteShoppingResponse(
+            message='Shopping completed! Moving to distribution.', state=RunState.DISTRIBUTING
+        )
 
     def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
         """
@@ -475,51 +471,53 @@ class ShoppingService(BaseService):
         # Get store name for notification
         all_stores = self.repo.get_all_stores()
         store = next((s for s in all_stores if s.id == run.store_id), None)
-        store_name = store.name if store else "Unknown Store"
+        store_name = store.name if store else 'Unknown Store'
 
         # Get all participants of this run
         participations = self.repo.get_run_participations(run.id)
 
         # Create notification data
         notification_data = {
-            "run_id": str(run.id),
-            "store_name": store_name,
-            "old_state": old_state,
-            "new_state": new_state,
-            "group_id": str(run.group_id)
+            'run_id': str(run.id),
+            'store_name': store_name,
+            'old_state': old_state,
+            'new_state': new_state,
+            'group_id': str(run.group_id),
         }
 
         # Create notification for each participant and broadcast via WebSocket
-        import asyncio
 
         for participation in participations:
             notification = self.repo.create_notification(
-                user_id=participation.user_id,
-                type="run_state_changed",
-                data=notification_data
+                user_id=participation.user_id, type='run_state_changed', data=notification_data
             )
 
             # Broadcast to user's WebSocket connection
             create_background_task(
-                manager.broadcast(f"user:{participation.user_id}", {
-                    "type": "new_notification",
-                    "data": {
-                        "id": str(notification.id),
-                        "type": notification.type,
-                        "data": notification.data,
-                        "read": notification.read,
-                        "created_at": notification.created_at.isoformat() + 'Z' if notification.created_at else None
-                    }
-                }),
-                task_name=f"broadcast_shopping_notification_{participation.user_id}"
+                manager.broadcast(
+                    f'user:{participation.user_id}',
+                    {
+                        'type': 'new_notification',
+                        'data': {
+                            'id': str(notification.id),
+                            'type': notification.type,
+                            'data': notification.data,
+                            'read': notification.read,
+                            'created_at': notification.created_at.isoformat() + 'Z'
+                            if notification.created_at
+                            else None,
+                        },
+                    },
+                ),
+                task_name=f'broadcast_shopping_notification_{participation.user_id}',
             )
 
         logger.debug(
-            f"Created notifications for run state change",
+            'Created notifications for run state change',
             extra={
-                "run_id": str(run.id),
-                "old_state": old_state,
-                "new_state": new_state,
-                "participant_count": len(participations)
-            }
+                'run_id': str(run.id),
+                'old_state': old_state,
+                'new_state': new_state,
+                'participant_count': len(participations),
+            },
         )

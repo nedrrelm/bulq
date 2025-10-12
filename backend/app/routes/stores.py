@@ -1,28 +1,29 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from uuid import UUID
 
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..services import StoreService
-from ..exceptions import NotFoundError
 from ..schemas import (
-    StoreResponse,
     CreateStoreRequest,
-    StoreProductResponse,
-    StoreRunResponse,
     StorePageResponse,
+    StoreProductResponse,
+    StoreResponse,
+    StoreRunResponse,
 )
+from ..services import StoreService
 
-router = APIRouter(prefix="/stores", tags=["stores"])
+router = APIRouter(prefix='/stores', tags=['stores'])
 
-@router.get("", response_model=list[StoreResponse])
+
+@router.get('', response_model=list[StoreResponse])
 async def get_stores(
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get all available stores (paginated, max 100 per page)."""
     service = StoreService(db)
@@ -30,17 +31,16 @@ async def get_stores(
 
     return [StoreResponse(id=str(store.id), name=store.name) for store in stores]
 
-@router.get("/{store_id}", response_model=StorePageResponse)
+
+@router.get('/{store_id}', response_model=StorePageResponse)
 async def get_store_page(
-    store_id: str,
-    current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db)
+    store_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
 ):
     """Get store page data including store info, products, and active runs."""
     try:
         store_uuid = UUID(store_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid store ID format")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail='Invalid store ID format') from e
 
     service = StoreService(db)
 
@@ -48,16 +48,17 @@ async def get_store_page(
 
     # Service now returns fully formatted data
     return StorePageResponse(
-        store=StoreResponse(**data["store"]),
-        products=[StoreProductResponse(**p) for p in data["products"]],
-        active_runs=[StoreRunResponse(**r) for r in data["active_runs"]]
+        store=StoreResponse(**data['store']),
+        products=[StoreProductResponse(**p) for p in data['products']],
+        active_runs=[StoreRunResponse(**r) for r in data['active_runs']],
     )
 
-@router.post("/create", response_model=StoreResponse)
+
+@router.post('/create', response_model=StoreResponse)
 async def create_store(
     request: CreateStoreRequest,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Create a new store."""
     service = StoreService(db)

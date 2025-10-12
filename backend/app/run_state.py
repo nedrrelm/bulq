@@ -10,14 +10,14 @@ logger = get_logger(__name__)
 class RunState(str, Enum):
     """Run state enum that can be used as both string and enum."""
 
-    PLANNING = "planning"
-    ACTIVE = "active"
-    CONFIRMED = "confirmed"
-    SHOPPING = "shopping"
-    ADJUSTING = "adjusting"
-    DISTRIBUTING = "distributing"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+    PLANNING = 'planning'
+    ACTIVE = 'active'
+    CONFIRMED = 'confirmed'
+    SHOPPING = 'shopping'
+    ADJUSTING = 'adjusting'
+    DISTRIBUTING = 'distributing'
+    COMPLETED = 'completed'
+    CANCELLED = 'cancelled'
 
     def __str__(self) -> str:
         """Return the string value."""
@@ -41,14 +41,14 @@ class RunStateMachine:
 
     # Human-readable state descriptions
     STATE_DESCRIPTIONS = {
-        RunState.PLANNING: "Leader is planning the run",
-        RunState.ACTIVE: "Users are actively placing bids",
-        RunState.CONFIRMED: "All users ready, awaiting shopping trip",
-        RunState.SHOPPING: "Shopping trip in progress",
-        RunState.ADJUSTING: "Adjusting bids due to insufficient quantities",
-        RunState.DISTRIBUTING: "Items being distributed to members",
-        RunState.COMPLETED: "Run completed successfully",
-        RunState.CANCELLED: "Run was cancelled",
+        RunState.PLANNING: 'Leader is planning the run',
+        RunState.ACTIVE: 'Users are actively placing bids',
+        RunState.CONFIRMED: 'All users ready, awaiting shopping trip',
+        RunState.SHOPPING: 'Shopping trip in progress',
+        RunState.ADJUSTING: 'Adjusting bids due to insufficient quantities',
+        RunState.DISTRIBUTING: 'Items being distributed to members',
+        RunState.COMPLETED: 'Run completed successfully',
+        RunState.CANCELLED: 'Run was cancelled',
     }
 
     def can_transition(self, from_state: RunState, to_state: RunState) -> bool:
@@ -87,13 +87,10 @@ class RunStateMachine:
         Returns:
             Description string
         """
-        return self.STATE_DESCRIPTIONS.get(state, "Unknown state")
+        return self.STATE_DESCRIPTIONS.get(state, 'Unknown state')
 
     def validate_transition(
-        self,
-        from_state: RunState,
-        to_state: RunState,
-        run_id: str | None = None
+        self, from_state: RunState, to_state: RunState, run_id: str | None = None
     ) -> None:
         """
         Validate a state transition and raise exception if invalid.
@@ -108,21 +105,23 @@ class RunStateMachine:
         """
         if not self.can_transition(from_state, to_state):
             valid_states = self.get_valid_transitions(from_state)
-            valid_states_str = ", ".join([s.value for s in valid_states]) if valid_states else "none"
+            valid_states_str = (
+                ', '.join([s.value for s in valid_states]) if valid_states else 'none'
+            )
 
             error_msg = (
-                f"Invalid state transition from {from_state.value} to {to_state.value}. "
-                f"Valid transitions: {valid_states_str}"
+                f'Invalid state transition from {from_state.value} to {to_state.value}. '
+                f'Valid transitions: {valid_states_str}'
             )
 
             logger.warning(
-                f"Invalid state transition attempted",
+                'Invalid state transition attempted',
                 extra={
-                    "run_id": run_id,
-                    "from_state": from_state.value,
-                    "to_state": to_state.value,
-                    "valid_transitions": valid_states_str,
-                }
+                    'run_id': run_id,
+                    'from_state': from_state.value,
+                    'to_state': to_state.value,
+                    'valid_transitions': valid_states_str,
+                },
             )
 
             raise ValueError(error_msg)

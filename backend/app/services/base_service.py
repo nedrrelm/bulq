@@ -1,6 +1,7 @@
 """Base service class for all services."""
 
 from sqlalchemy.orm import Session
+
 from ..repository import AbstractRepository, get_repository
 
 

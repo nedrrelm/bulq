@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class DistributionProduct(BaseModel):
     """Product information for distribution."""
+
     bid_id: str
     product_id: str
     product_name: str
@@ -17,8 +18,9 @@ class DistributionProduct(BaseModel):
 
 class DistributionUser(BaseModel):
     """User's distribution information."""
+
     user_id: str
     user_name: str
     products: list[DistributionProduct]
-    total_cost: str = "0.00"
+    total_cost: str = '0.00'
     all_picked_up: bool = False

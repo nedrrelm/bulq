@@ -5,15 +5,17 @@ from pydantic import BaseModel
 
 class CreateProductRequest(BaseModel):
     """Request model for creating a new product."""
+
     name: str
     brand: str | None = None
     unit: str | None = None
     store_id: str | None = None  # Optional: add availability if provided
-    price: float | None = None    # Optional: price for availability
+    price: float | None = None  # Optional: price for availability
 
 
 class StoreInfo(BaseModel):
     """Store information for product."""
+
     store_id: str
     store_name: str
     price: float | None
@@ -21,6 +23,7 @@ class StoreInfo(BaseModel):
 
 class ProductSearchResult(BaseModel):
     """Response model for product search results."""
+
     id: str
     name: str
     brand: str | None
@@ -29,6 +32,7 @@ class ProductSearchResult(BaseModel):
 
 class AvailabilityInfo(BaseModel):
     """Product availability information."""
+
     store_id: str
     price: float | None
     notes: str | None
@@ -36,6 +40,7 @@ class AvailabilityInfo(BaseModel):
 
 class CreateProductResponse(BaseModel):
     """Response model for creating a product."""
+
     id: str
     name: str
     brand: str | None
@@ -45,6 +50,7 @@ class CreateProductResponse(BaseModel):
 
 class PricePoint(BaseModel):
     """Price point in product price history."""
+
     price: float
     notes: str
     timestamp: str | None
@@ -53,6 +59,7 @@ class PricePoint(BaseModel):
 
 class StoreDetail(BaseModel):
     """Store detail with price history."""
+
     store_id: str
     store_name: str
     current_price: float | None
@@ -62,6 +69,7 @@ class StoreDetail(BaseModel):
 
 class ProductDetailResponse(BaseModel):
     """Response model for product details."""
+
     id: str
     name: str
     brand: str | None

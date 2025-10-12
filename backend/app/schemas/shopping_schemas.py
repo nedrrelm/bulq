@@ -1,10 +1,11 @@
 """Schemas for shopping-related requests and responses."""
 
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class PriceObservation(BaseModel):
     """Price observation for a product at a store."""
+
     price: float
     notes: str
     created_at: str | None
@@ -12,6 +13,7 @@ class PriceObservation(BaseModel):
 
 class ShoppingListItemResponse(BaseModel):
     """Response model for a shopping list item."""
+
     id: str
     product_id: str
     product_name: str
@@ -26,8 +28,9 @@ class ShoppingListItemResponse(BaseModel):
 
 class UpdateAvailabilityPriceRequest(BaseModel):
     """Request model for updating product availability price."""
+
     price: float = Field(gt=0, le=99999.99)
-    notes: str = Field(default="", max_length=200)
+    notes: str = Field(default='', max_length=200)
 
     @field_validator('price')
     @classmethod
@@ -47,6 +50,7 @@ class UpdateAvailabilityPriceRequest(BaseModel):
 
 class MarkPurchasedRequest(BaseModel):
     """Request model for marking an item as purchased."""
+
     quantity: float = Field(gt=0, le=9999)
     price_per_unit: float = Field(gt=0, le=99999.99)
     total: float = Field(gt=0, le=999999.99)
@@ -84,11 +88,13 @@ class MarkPurchasedRequest(BaseModel):
 
 class MarkPurchasedResponse(BaseModel):
     """Response model for marking an item as purchased."""
+
     message: str
     purchase_order: int
 
 
 class CompleteShoppingResponse(BaseModel):
     """Response model for completing shopping."""
+
     message: str
     state: str

@@ -2,6 +2,7 @@
 
 import logging
 import time
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
@@ -19,7 +20,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Skip WebSocket connections (middleware doesn't support them)
-        if request.url.path.startswith("/ws"):
+        if request.url.path.startswith('/ws'):
             return await call_next(request)
 
         # Start timer
@@ -34,13 +35,13 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         # Log incoming request
         logger.info(
-            f"{request.method} {request.url.path}",
+            f'{request.method} {request.url.path}',
             extra={
-                "request_id": request_id,
-                "method": request.method,
-                "path": request.url.path,
-                "client_host": request.client.host if request.client else None,
-            }
+                'request_id': request_id,
+                'method': request.method,
+                'path': request.url.path,
+                'client_host': request.client.host if request.client else None,
+            },
         )
 
         # Process request
@@ -52,18 +53,18 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             # Log response
             logger.info(
-                f"{request.method} {request.url.path} - {response.status_code}",
+                f'{request.method} {request.url.path} - {response.status_code}',
                 extra={
-                    "request_id": request_id,
-                    "method": request.method,
-                    "path": request.url.path,
-                    "status_code": response.status_code,
-                    "duration_ms": duration_ms,
-                }
+                    'request_id': request_id,
+                    'method': request.method,
+                    'path': request.url.path,
+                    'status_code': response.status_code,
+                    'duration_ms': duration_ms,
+                },
             )
 
             # Add request ID to response headers for tracing
-            response.headers["X-Request-ID"] = request_id
+            response.headers['X-Request-ID'] = request_id
 
             return response
 
@@ -73,13 +74,13 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             # Log error
             logger.error(
-                f"{request.method} {request.url.path} - Error: {str(e)}",
+                f'{request.method} {request.url.path} - Error: {str(e)}',
                 extra={
-                    "request_id": request_id,
-                    "method": request.method,
-                    "path": request.url.path,
-                    "duration_ms": duration_ms,
-                    "error": str(e),
+                    'request_id': request_id,
+                    'method': request.method,
+                    'path': request.url.path,
+                    'duration_ms': duration_ms,
+                    'error': str(e),
                 },
                 exc_info=True,
             )

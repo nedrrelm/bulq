@@ -39,6 +39,8 @@ select = [
 ]
 ignore = [
     "E501", # line too long (handled by formatter)
+    "B008", # function call in argument defaults (FastAPI pattern)
+    "N818", # exception naming (AppException is intentional base class)
 ]
 
 [tool.ruff.lint.isort]

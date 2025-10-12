@@ -2,9 +2,10 @@
 
 from typing import Any
 from uuid import UUID
-from ..models import Store, Product, Run
+
+from ..exceptions import NotFoundError, ValidationError
+from ..models import Store
 from .base_service import BaseService
-from ..exceptions import ValidationError, NotFoundError
 
 
 class StoreService(BaseService):
@@ -17,14 +18,14 @@ class StoreService(BaseService):
     def create_store(self, name: str) -> Store:
         """Create a new store."""
         if not name or not name.strip():
-            raise ValidationError("Store name cannot be empty")
+            raise ValidationError('Store name cannot be empty')
         return self.repo.create_store(name.strip())
 
     def get_store_by_id(self, store_id: UUID) -> Store:
         """Get store by ID."""
         store = self.repo.get_store_by_id(store_id)
         if not store:
-            raise NotFoundError("Store", store_id)
+            raise NotFoundError('Store', store_id)
         return store
 
     def get_store_page_data(self, store_id: UUID, user_id: UUID) -> dict[str, Any]:
@@ -44,13 +45,15 @@ class StoreService(BaseService):
             availability = self.repo.get_availability_by_product_and_store(p.id, store_id)
             current_price = str(availability.price) if availability and availability.price else None
 
-            products_response.append({
-                "id": str(p.id),
-                "name": p.name,
-                "brand": p.brand,
-                "unit": p.unit,
-                "current_price": current_price
-            })
+            products_response.append(
+                {
+                    'id': str(p.id),
+                    'name': p.name,
+                    'brand': p.brand,
+                    'unit': p.unit,
+                    'current_price': current_price,
+                }
+            )
 
         # Format active runs with complete details
         runs_response = []
@@ -61,23 +64,22 @@ class StoreService(BaseService):
             # Get leader from participations
             participations = self.repo.get_run_participations(r.id)
             leader = next((p for p in participations if p.is_leader), None)
-            leader_name = leader.user.name if leader and leader.user else "Unknown"
+            leader_name = leader.user.name if leader and leader.user else 'Unknown'
 
-            runs_response.append({
-                "id": str(r.id),
-                "state": r.state,
-                "group_id": str(r.group_id),
-                "group_name": group.name if group else "Unknown",
-                "store_name": store_obj.name if store_obj else "Unknown",
-                "leader_name": leader_name,
-                "planned_on": r.planned_on.isoformat() if r.planned_on else None
-            })
+            runs_response.append(
+                {
+                    'id': str(r.id),
+                    'state': r.state,
+                    'group_id': str(r.group_id),
+                    'group_name': group.name if group else 'Unknown',
+                    'store_name': store_obj.name if store_obj else 'Unknown',
+                    'leader_name': leader_name,
+                    'planned_on': r.planned_on.isoformat() if r.planned_on else None,
+                }
+            )
 
         return {
-            "store": {
-                "id": str(store.id),
-                "name": store.name
-            },
-            "products": products_response,
-            "active_runs": runs_response
+            'store': {'id': str(store.id), 'name': store.name},
+            'products': products_response,
+            'active_runs': runs_response,
         }

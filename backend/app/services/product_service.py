@@ -2,18 +2,17 @@
 
 from typing import Any
 from uuid import UUID
-from ..models import Product, Store, ProductAvailability
-from .base_service import BaseService
-from ..exceptions import ValidationError, NotFoundError
+
+from ..exceptions import NotFoundError, ValidationError
+from ..models import Product
 from ..schemas import (
-    ProductSearchResult,
-    ProductDetailResponse,
-    CreateProductResponse,
-    StoreInfo,
-    StoreDetail,
     PricePoint,
-    AvailabilityInfo,
+    ProductDetailResponse,
+    ProductSearchResult,
+    StoreDetail,
+    StoreInfo,
 )
+from .base_service import BaseService
 
 
 class ProductService(BaseService):
@@ -31,18 +30,19 @@ class ProductService(BaseService):
             for avail in availabilities:
                 store = self.repo.get_store_by_id(avail.store_id)
                 if store:
-                    stores_info.append(StoreInfo(
-                        store_id=str(store.id),
-                        store_name=store.name,
-                        price=float(avail.price) if avail.price else None
-                    ))
+                    stores_info.append(
+                        StoreInfo(
+                            store_id=str(store.id),
+                            store_name=store.name,
+                            price=float(avail.price) if avail.price else None,
+                        )
+                    )
 
-            result.append(ProductSearchResult(
-                id=str(product.id),
-                name=product.name,
-                brand=product.brand,
-                stores=stores_info
-            ))
+            result.append(
+                ProductSearchResult(
+                    id=str(product.id), name=product.name, brand=product.brand, stores=stores_info
+                )
+            )
 
         return result
 
@@ -60,6 +60,7 @@ class ProductService(BaseService):
 
         # Group availabilities by store
         from collections import defaultdict
+
         stores_map = defaultdict(list)
         for avail in availabilities:
             stores_map[avail.store_id].append(avail)
@@ -82,12 +83,14 @@ class ProductService(BaseService):
             # Add all availability prices (multiple observations over time)
             for avail in store_availabilities:
                 if avail.price:
-                    all_prices.append(PricePoint(
-                        price=float(avail.price),
-                        notes=avail.notes or "",
-                        timestamp=avail.created_at.isoformat() if avail.created_at else None,
-                        run_id=None
-                    ))
+                    all_prices.append(
+                        PricePoint(
+                            price=float(avail.price),
+                            notes=avail.notes or '',
+                            timestamp=avail.created_at.isoformat() if avail.created_at else None,
+                            run_id=None,
+                        )
+                    )
 
             # Add purchased prices from shopping items
             for item in shopping_items:
@@ -95,32 +98,40 @@ class ProductService(BaseService):
                     # Check if this item's run was for this store
                     run = self.repo.get_run_by_id(item.run_id)
                     if run and run.store_id == store_id:
-                        all_prices.append(PricePoint(
-                            price=float(item.purchased_price_per_unit),
-                            notes="Purchased",
-                            timestamp=item.updated_at.isoformat() if item.updated_at else None,
-                            run_id=str(item.run_id)
-                        ))
+                        all_prices.append(
+                            PricePoint(
+                                price=float(item.purchased_price_per_unit),
+                                notes='Purchased',
+                                timestamp=item.updated_at.isoformat() if item.updated_at else None,
+                                run_id=str(item.run_id),
+                            )
+                        )
 
             # Get most recent availability for current price
-            most_recent = max(store_availabilities, key=lambda a: a.created_at if a.created_at else "", default=None)
+            most_recent = max(
+                store_availabilities,
+                key=lambda a: a.created_at if a.created_at else '',
+                default=None,
+            )
             current_price = float(most_recent.price) if most_recent and most_recent.price else None
-            notes = most_recent.notes if most_recent and most_recent.notes else ""
+            notes = most_recent.notes if most_recent and most_recent.notes else ''
 
-            stores_data.append(StoreDetail(
-                store_id=str(store_id),
-                store_name=store.name,
-                current_price=current_price,
-                price_history=all_prices,
-                notes=notes
-            ))
+            stores_data.append(
+                StoreDetail(
+                    store_id=str(store_id),
+                    store_name=store.name,
+                    current_price=current_price,
+                    price_history=all_prices,
+                    notes=notes,
+                )
+            )
 
         return ProductDetailResponse(
             id=str(product.id),
             name=product.name,
             brand=product.brand,
             unit=product.unit,
-            stores=stores_data
+            stores=stores_data,
         )
 
     def create_product(
@@ -130,7 +141,7 @@ class ProductService(BaseService):
         unit: str | None = None,
         store_id: UUID | None = None,
         price: float | None = None,
-        user_id: UUID | None = None
+        user_id: UUID | None = None,
     ) -> tuple[Product, Any | None]:
         """
         Create a new product (store-agnostic).
@@ -139,19 +150,19 @@ class ProductService(BaseService):
         """
         # Validate inputs
         if not name or not name.strip():
-            raise ValidationError("Product name cannot be empty")
+            raise ValidationError('Product name cannot be empty')
 
         if price is not None:
             if price < 0:
-                raise ValidationError("Product price cannot be negative")
+                raise ValidationError('Product price cannot be negative')
             if price == 0:
-                raise ValidationError("Product price cannot be zero")
+                raise ValidationError('Product price cannot be zero')
 
         # Verify store exists if provided
         if store_id:
             store = self.repo.get_store_by_id(store_id)
             if not store:
-                raise NotFoundError("Store not found")
+                raise NotFoundError('Store not found')
 
         # Create the product
         product = self.repo.create_product(name.strip(), brand, unit)
@@ -160,10 +171,7 @@ class ProductService(BaseService):
         availability = None
         if store_id:
             availability = self.repo.create_product_availability(
-                product.id,
-                store_id,
-                price=price,
-                user_id=user_id
+                product.id, store_id, price=price, user_id=user_id
             )
 
         return product, availability
