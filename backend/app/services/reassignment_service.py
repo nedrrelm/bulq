@@ -31,6 +31,8 @@ class ReassignmentService:
     ) -> dict[str, Any]:
         """Create a leader reassignment request.
 
+        Creates request and notification atomically.
+
         Args:
             run_id: Run to reassign
             from_user: Current leader requesting reassignment
@@ -47,11 +49,21 @@ class ReassignmentService:
         """
         run, to_user = self._validate_reassignment_eligibility(run_id, from_user, to_user_id)
         self._check_reassignment_permissions(from_user, to_user_id, run_id)
-        request = self._create_reassignment_record(run_id, from_user.id, to_user_id)
         store_name = self._get_store_name(run.store_id)
-        await self._notify_reassignment_participants(
-            run_id, from_user, to_user_id, request.id, store_name
-        )
+
+        # Wrap request creation and notification in transaction
+        if self.db:
+            with transaction(self.db, "create reassignment request"):
+                request = self._create_reassignment_record(run_id, from_user.id, to_user_id)
+                await self._notify_reassignment_participants(
+                    run_id, from_user, to_user_id, request.id, store_name
+                )
+        else:
+            # Fallback for when db session not available
+            request = self._create_reassignment_record(run_id, from_user.id, to_user_id)
+            await self._notify_reassignment_participants(
+                run_id, from_user, to_user_id, request.id, store_name
+            )
 
         logger.info(
             'Leader reassignment requested',
@@ -355,9 +367,16 @@ class ReassignmentService:
         """
         request = self._validate_decline_request(request_id, declining_user)
         run = self._get_run(request.run_id)
-        self.repo.update_reassignment_status(request_id, 'declined')
         store_name = self._get_store_name(run.store_id)
-        await self._notify_decline(request, declining_user, store_name, request_id)
+
+        # Wrap status update and notification in transaction
+        if self.db:
+            with transaction(self.db, "decline reassignment request"):
+                self.repo.update_reassignment_status(request_id, 'declined')
+                await self._notify_decline(request, declining_user, store_name, request_id)
+        else:
+            self.repo.update_reassignment_status(request_id, 'declined')
+            await self._notify_decline(request, declining_user, store_name, request_id)
 
         logger.info(
             'Leader reassignment declined',
