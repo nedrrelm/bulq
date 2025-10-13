@@ -7,7 +7,7 @@ from ..config import MAX_ACTIVE_RUNS_PER_GROUP
 from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import Product, ProductBid, Run, User
 from ..request_context import get_logger
-from ..run_state import RunState
+from ..run_state import RunState, state_machine
 from ..schemas import (
     AvailableProductResponse,
     CancelRunResponse,
@@ -88,11 +88,9 @@ class RunService(BaseService):
         if not store:
             raise NotFoundError('Store', store_id)
 
-        # Check active runs limit for the group
+        # Check active runs limit for the group - use state machine
         group_runs = self.repo.get_runs_by_group(group_uuid)
-        active_runs = [
-            r for r in group_runs if r.state not in (RunState.COMPLETED, RunState.CANCELLED)
-        ]
+        active_runs = [r for r in group_runs if state_machine.is_active_run(RunState(r.state))]
         if len(active_runs) >= MAX_ACTIVE_RUNS_PER_GROUP:
             logger.warning(
                 'Group has reached maximum active runs limit',

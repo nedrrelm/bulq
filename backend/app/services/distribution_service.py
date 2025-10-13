@@ -11,14 +11,13 @@ from ..exceptions import (
 )
 from ..models import Product, ProductBid, User
 from ..request_context import get_logger
-from ..run_state import RunState
+from ..run_state import RunState, state_machine
 from ..schemas import (
     DistributionProduct,
     DistributionUser,
     MessageResponse,
     StateChangeResponse,
 )
-from ..validation import validate_run_state_for_action
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -60,9 +59,14 @@ class DistributionService(BaseService):
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError('Not authorized to view this run')
 
-        validate_run_state_for_action(
-            run, [RunState.DISTRIBUTING, RunState.COMPLETED], 'distribution'
-        )
+        # Check if viewing distribution is allowed using state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_view_distribution(run_state):
+            raise BadRequestError(
+                state_machine.get_action_error_message(
+                    'distribution', run_state, [RunState.DISTRIBUTING, RunState.COMPLETED]
+                )
+            )
 
     def _aggregate_bids_by_user(self, all_bids: list[ProductBid]) -> dict[str, dict[str, Any]]:
         """Group bids by user and aggregate totals."""
@@ -199,8 +203,9 @@ class DistributionService(BaseService):
         if not participation or not participation.is_leader:
             raise ForbiddenError('Only the run leader can complete distribution')
 
-        # Only allow completing from distributing state
-        if run.state != RunState.DISTRIBUTING:
+        # Only allow completing from distributing state - use state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_complete_distribution(run_state):
             raise BadRequestError('Can only complete distribution from distributing state')
 
         # Verify all items are picked up

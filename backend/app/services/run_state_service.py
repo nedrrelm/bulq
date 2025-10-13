@@ -111,8 +111,9 @@ class RunStateService(BaseService):
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError('Not authorized to modify this run')
 
-        # Only allow starting shopping from confirmed state
-        if run.state != RunState.CONFIRMED:
+        # Only allow starting shopping from confirmed state - use state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_start_shopping(run_state):
             raise BadRequestError('Can only start shopping from confirmed state')
 
         # Check if user is the run leader
@@ -185,10 +186,11 @@ class RunStateService(BaseService):
         if not run:
             raise NotFoundError('Run', run_id)
 
-        # Check if run is already in a terminal state
-        if run.state == RunState.COMPLETED:
-            raise BadRequestError('Cannot cancel a completed run')
-        if run.state == RunState.CANCELLED:
+        # Check if run is already in a terminal state using state machine
+        run_state = RunState(run.state)
+        if state_machine.is_terminal_state(run_state):
+            if run_state == RunState.COMPLETED:
+                raise BadRequestError('Cannot cancel a completed run')
             raise BadRequestError('Run is already cancelled')
 
         # Verify user has access to this run (member of the group)
@@ -262,7 +264,9 @@ class RunStateService(BaseService):
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError('Not authorized to modify this run')
 
-        if run.state != RunState.ACTIVE:
+        # Check if toggling ready is allowed using state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_toggle_ready(run_state):
             raise BadRequestError('Can only mark ready in active state')
 
         return run_uuid, run
@@ -318,7 +322,9 @@ class RunStateService(BaseService):
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError('Not authorized to modify this run')
 
-        if run.state != RunState.ADJUSTING:
+        # Check if finishing adjusting is allowed using state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_finish_adjusting(run_state):
             raise BadRequestError('Can only finish adjusting from adjusting state')
 
         participation = self.repo.get_participation(user.id, run_uuid)

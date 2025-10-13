@@ -144,6 +144,146 @@ class RunStateMachine:
         """
         return RunState.CANCELLED in self.VALID_TRANSITIONS.get(state, [])
 
+    # Action-based validation methods
+
+    def can_place_bid(self, state: RunState) -> bool:
+        """Check if bidding is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if bidding is allowed, False otherwise
+        """
+        return state in [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]
+
+    def can_retract_bid(self, state: RunState) -> bool:
+        """Check if bid retraction is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if bid retraction is allowed, False otherwise
+        """
+        return state in [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]
+
+    def can_toggle_ready(self, state: RunState) -> bool:
+        """Check if toggling ready status is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if toggling ready is allowed, False otherwise
+        """
+        return state == RunState.ACTIVE
+
+    def can_start_shopping(self, state: RunState) -> bool:
+        """Check if starting shopping is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if starting shopping is allowed, False otherwise
+        """
+        return state == RunState.CONFIRMED
+
+    def can_finish_adjusting(self, state: RunState) -> bool:
+        """Check if finishing adjusting is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if finishing adjusting is allowed, False otherwise
+        """
+        return state == RunState.ADJUSTING
+
+    def can_view_shopping_list(self, state: RunState) -> bool:
+        """Check if viewing shopping list is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if viewing shopping list is allowed, False otherwise
+        """
+        return state in [RunState.SHOPPING, RunState.ADJUSTING, RunState.DISTRIBUTING, RunState.COMPLETED]
+
+    def can_complete_shopping(self, state: RunState) -> bool:
+        """Check if completing shopping is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if completing shopping is allowed, False otherwise
+        """
+        return state == RunState.SHOPPING
+
+    def can_view_distribution(self, state: RunState) -> bool:
+        """Check if viewing distribution is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if viewing distribution is allowed, False otherwise
+        """
+        return state in [RunState.DISTRIBUTING, RunState.COMPLETED]
+
+    def can_complete_distribution(self, state: RunState) -> bool:
+        """Check if completing distribution is allowed in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if completing distribution is allowed, False otherwise
+        """
+        return state == RunState.DISTRIBUTING
+
+    def is_active_run(self, state: RunState) -> bool:
+        """Check if a run is in an active (non-terminal) state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if run is active, False if completed or cancelled
+        """
+        return state not in [RunState.COMPLETED, RunState.CANCELLED]
+
+    def can_join_run(self, state: RunState) -> bool:
+        """Check if new participants can join in the given state.
+
+        Args:
+            state: Current run state
+
+        Returns:
+            True if joining is allowed, False otherwise
+        """
+        return state in [RunState.PLANNING, RunState.ACTIVE]
+
+    def get_action_error_message(self, action: str, current_state: RunState, allowed_states: list[RunState]) -> str:
+        """Generate a consistent error message for invalid actions.
+
+        Args:
+            action: Name of the action being attempted
+            current_state: Current run state
+            allowed_states: List of states where the action is allowed
+
+        Returns:
+            Formatted error message
+        """
+        allowed_states_str = ', '.join([s.value for s in allowed_states])
+        return (
+            f'{action.capitalize()} not allowed in current run state. '
+            f"Run is in '{current_state.value}' state, but must be in one of: {allowed_states_str}"
+        )
+
 
 # Create a singleton instance for convenience
 state_machine = RunStateMachine()
