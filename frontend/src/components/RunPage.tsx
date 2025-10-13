@@ -234,7 +234,6 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   const fetchReassignmentRequest = useCallback(async () => {
     try {
       const response = await reassignmentApi.getRunRequest(runId)
-      console.log('Fetched reassignment request:', response.request)
       setReassignmentRequest(response.request)
     } catch (err) {
       // Silently fail - not critical
@@ -281,7 +280,6 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
     } else if (message.type === 'reassignment_requested') {
       // Reassignment request created - fetch request for all participants
-      console.log('WS: reassignment_requested', message.data)
       fetchReassignmentRequest()
       if (message.data.to_user_id === userId) {
         showToast('You have a new leadership transfer request', 'info')
@@ -289,14 +287,12 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       }
     } else if (message.type === 'reassignment_accepted') {
       // Reassignment accepted - clear request and refresh run
-      console.log('WS: reassignment_accepted', message.data)
       setReassignmentRequest(null)
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
       showToast('Leadership has been transferred', 'success')
       refreshUnreadCount()
     } else if (message.type === 'reassignment_declined') {
       // Reassignment declined - clear request
-      console.log('WS: reassignment_declined', message.data)
       setReassignmentRequest(null)
       if (message.data.from_user_id === userId) {
         showToast('Leadership transfer request was declined', 'info')
