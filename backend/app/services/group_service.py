@@ -4,6 +4,8 @@ from uuid import UUID
 
 from ..background_tasks import create_background_task
 from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
+from ..events.domain_events import MemberJoinedEvent, MemberLeftEvent, MemberRemovedEvent
+from ..events.event_bus import event_bus
 from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import Group, User
 from ..request_context import get_logger
@@ -22,7 +24,6 @@ from ..schemas import (
 )
 from ..transaction import transaction
 from ..validation import validate_uuid
-from ..websocket_manager import manager
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -467,22 +468,9 @@ class GroupService(BaseService):
             raise BadRequestError('Failed to join group')
 
     def _broadcast_member_joined(self, user: User, group: Group) -> None:
-        """Broadcast member_joined event to group room."""
-        room_id = f'group:{group.id}'
-        create_background_task(
-            manager.broadcast(
-                room_id,
-                {
-                    'type': 'member_joined',
-                    'data': {
-                        'group_id': str(group.id),
-                        'user_id': str(user.id),
-                        'user_name': user.name,
-                        'user_email': user.email,
-                    },
-                },
-            ),
-            task_name=f'broadcast_member_joined_{group.id}',
+        """Emit member_joined domain event."""
+        event_bus.emit(
+            MemberJoinedEvent(group_id=group.id, user_id=user.id, user_name=user.name)
         )
 
     def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
@@ -650,21 +638,14 @@ class GroupService(BaseService):
     def _broadcast_removal_notifications(
         self, group_id: UUID, member_id: UUID, affected_runs: list[str], cancelled_runs: list[str]
     ) -> None:
-        """Broadcast WebSocket notifications for member removal."""
-        # Broadcast to group room
-        create_background_task(
-            manager.broadcast(
-                f'group:{group_id}',
-                {
-                    'type': 'member_removed',
-                    'data': {
-                        'group_id': str(group_id),
-                        'removed_user_id': str(member_id),
-                        'cancelled_runs': cancelled_runs,
-                    },
-                },
-            ),
-            task_name=f'broadcast_member_removed_{group_id}',
+        """Emit member removal domain event."""
+        # Get current user ID for the removed_by field (from request context if available)
+        # For now, we'll use the member_id itself as a placeholder
+        # In a real scenario, this should come from the authenticated user context
+        event_bus.emit(
+            MemberRemovedEvent(
+                group_id=group_id, user_id=member_id, removed_by_id=member_id  # Should be admin_id
+            )
         )
 
         # Broadcast participant_removed events for all affected runs

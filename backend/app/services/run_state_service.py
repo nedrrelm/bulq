@@ -3,6 +3,8 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from ..events.domain_events import ReadyToggledEvent, RunCancelledEvent, RunStateChangedEvent
+from ..events.event_bus import event_bus
 from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import Run, User
 from ..request_context import get_logger
@@ -59,6 +61,16 @@ class RunStateService(BaseService):
         run_uuid, run = self._validate_toggle_ready_request(run_id, user)
         participation = self._get_user_participation(user.id, run_uuid, run_id)
         new_ready_status = self._toggle_user_ready_status(participation)
+
+        # Emit ready toggled event
+        event_bus.emit(
+            ReadyToggledEvent(
+                run_id=run_uuid,
+                user_id=user.id,
+                is_ready=new_ready_status,
+                group_id=run.group_id,
+            )
+        )
 
         if self._check_all_participants_ready(run_uuid):
             self._transition_run_state(run, RunState.CONFIRMED)
@@ -214,6 +226,16 @@ class RunStateService(BaseService):
         old_state = run.state
         self._transition_run_state(run, RunState.CANCELLED)
 
+        # Get store name for event
+        all_stores = self.repo.get_all_stores()
+        store = next((s for s in all_stores if s.id == run.store_id), None)
+        store_name = store.name if store else 'Unknown Store'
+
+        # Emit run cancelled event
+        event_bus.emit(
+            RunCancelledEvent(run_id=run.id, group_id=run.group_id, store_name=store_name)
+        )
+
         logger.info(
             'Run cancelled by leader',
             extra={'run_id': str(run_uuid), 'user_id': str(user.id), 'previous_state': old_state},
@@ -230,12 +252,12 @@ class RunStateService(BaseService):
         """Safely transition run to new state with validation and notifications.
 
         Uses the state machine to validate transitions before applying them.
-        Optionally creates notifications for all participants.
+        Optionally emits events for all participants.
 
         Args:
             run: The run to transition
             new_state: Target state
-            notify: Whether to create notifications (default True)
+            notify: Whether to emit state change events (default True)
 
         Returns:
             old_state string for caller use
@@ -249,8 +271,22 @@ class RunStateService(BaseService):
         old_state = run.state
         self.repo.update_run_state(run.id, new_state)
 
-        if notify and self._notification_service:
-            self._notification_service.notify_run_state_change(run, old_state, new_state)
+        if notify:
+            # Get store name for event
+            all_stores = self.repo.get_all_stores()
+            store = next((s for s in all_stores if s.id == run.store_id), None)
+            store_name = store.name if store else 'Unknown Store'
+
+            # Emit domain event for state change
+            event_bus.emit(
+                RunStateChangedEvent(
+                    run_id=run.id,
+                    group_id=run.group_id,
+                    old_state=old_state,
+                    new_state=new_state,
+                    store_name=store_name,
+                )
+            )
 
         logger.info(
             'Run state transitioned',
