@@ -111,6 +111,10 @@ export default function ManageGroupPage() {
     }
   )
 
+  const onBack = () => {
+    navigate(`/groups/${groupId}`)
+  }
+
   const handleCopyInviteLink = () => {
     if (!group) return
     const inviteUrl = `${window.location.origin}/invite/${group.invite_token}`
