@@ -121,18 +121,6 @@ await manager.broadcast(f"run:{result.run_id}", {
 
 ---
 
-### 15. Add Transaction Management
-**Status**: Low Priority (data integrity)
-**Affected files**: `app/services/group_service.py` (member removal)
-
-**Problem:** Multi-step operations not wrapped in transactions.
-
-**Impact:** Could leave database in inconsistent state on partial failures.
-
-**Fix:** Wrap multi-step operations in database transactions.
-
----
-
 ### 19. Inconsistent Return Types in Services
 **Status**: Medium Priority (consistency)
 **Affected files**: `app/services/group_service.py:91`
@@ -146,18 +134,6 @@ created_at=datetime.now().isoformat()  # Not in actual model
 **Impact:** Confusing API contract, may return data that doesn't match actual model.
 
 **Fix:** Always return proper Pydantic response models, don't fabricate fields.
-
----
-
-### 20. Verbose Exception Construction
-**Status**: Low Priority (style)
-**Affected files**: `app/exceptions.py`
-
-**Problem:** Exception classes have verbose `__init__` methods that could be simplified.
-
-**Impact:** Minor - slightly more code to maintain.
-
-**Fix:** Consider using dataclasses or attrs to reduce boilerplate.
 
 ---
 
@@ -217,46 +193,6 @@ except Exception as e:
 - Implement circuit breaker pattern
 - Add metrics for broadcast failures
 - Alert on high failure rates
-
----
-
-### 24. Duplicate State Validation Logic
-**Status**: Medium Priority (DRY)
-**Affected files**: `app/services/run_service.py`, multiple methods
-
-**Problem:** State checking logic duplicated instead of using state machine consistently.
-```python
-# Checking states manually instead of using state machine:
-if run.state not in [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]:
-    raise BadRequestError("Bidding not allowed in current run state")
-```
-
-**Impact:** State transition rules spread across codebase, hard to maintain.
-
-**Fix:** Centralize state validation in state machine, services should ask state machine "can I do X?"
-
----
-
-### 25. Missing Database Transaction Context
-**Status**: Medium Priority (data integrity)
-**Affected files**: `app/services/group_service.py:599-626`, `app/services/run_service.py`
-
-**Problem:** Multi-step database operations not wrapped in explicit transactions.
-```python
-# Multiple DB operations without transaction:
-self.repo.remove_group_member(...)
-for run in runs:
-    # Cancel runs
-    # Update participations
-# If one fails, partial state changes persist
-```
-
-**Impact:** Database could be left in inconsistent state if operation fails halfway.
-
-**Fix:**
-- Wrap multi-step operations in `db.begin()` / `db.commit()` blocks
-- Add explicit transaction management to repository
-- Use SQLAlchemy session properly
 
 ---
 
