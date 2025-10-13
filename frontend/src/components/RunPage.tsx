@@ -535,7 +535,7 @@ export default function RunPage() {
               })
               .map((product) => (
                 <ErrorBoundary key={product.id}>
-                  <ProductItem
+                  <RunProductItem
                     product={product}
                     runState={run.state}
                     canBid={canBid}

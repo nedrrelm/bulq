@@ -67,51 +67,6 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 5. **Database Backups** - Automated daily backups with pg_dump, S3 storage, retention policy
 
-## ⚡ Frontend: Performance Issues
-
----
-
-### 39. WebSocket Reconnection Storms
-**Status**: Medium (reliability)
-**Affected files**: `useWebSocket.ts`
-
-**Problem:** If multiple WebSocket connections fail, they all retry simultaneously, potentially overwhelming server.
-
-**Impact:** Server load spikes, connection issues.
-
-**Fix:** Implement exponential backoff and jitter for reconnection attempts.
-
----
-
-## 🔒 Frontend: Security Issues
-
----
-
-### 40. No CSRF Token Handling
-**Status**: Medium (security)
-**Affected files**: API client
-
-**Problem:** No visible CSRF token handling in requests.
-
-**Impact:** Depends on backend implementation, potential CSRF vulnerability.
-
-**Fix:** Verify backend handles CSRF, add token handling if needed.
-
----
-
-### 41. SessionStorage for Auth Flags
-**Status**: Low (security)
-**Affected files**: `AuthContext.tsx:30`
-
-**Problem:** Using sessionStorage for auth-related flags:
-```typescript
-sessionStorage.setItem('just_logged_out', 'true')
-```
-
-**Impact:** Limited risk but could be exploited.
-
-**Fix:** Consider using memory-only state or evaluate if flag is necessary.
-
 ---
 
 ## 🧪 Frontend: Testing
@@ -138,53 +93,6 @@ sessionStorage.setItem('just_logged_out', 'true')
 
 ---
 
-### 44. Enhanced Linting Configuration Needed
-**Status**: Medium (code quality)
-**Affected files**: `eslint.config.js`, `package.json`
-
-**Current state:** Basic ESLint config with react-hooks and typescript plugins.
-
-**Recommended additions:**
-
-**Option 1: Stay with ESLint (add plugins)**
-```bash
-npm install --save-dev \
-  eslint-plugin-jsx-a11y \
-  eslint-plugin-import \
-  eslint-plugin-react \
-  eslint-plugin-unused-imports \
-  @tanstack/eslint-plugin-query \
-  prettier \
-  eslint-config-prettier
-```
-
-Plugins provide:
-- `jsx-a11y`: Accessibility linting (catch issues #23)
-- `import`: Import order, unused imports (fix issues #27, #25)
-- `react`: Additional React rules
-- `unused-imports`: Find dead code (fix issue #25)
-- `@tanstack/eslint-plugin-query`: React Query best practices
-- `prettier`: Code formatting (like Black for Python)
-
-**Option 2: Switch to Biome (Modern all-in-one tool)**
-```bash
-npm install --save-dev @biomejs/biome
-```
-
-Benefits of Biome:
-- 100x faster than ESLint + Prettier
-- Linter + Formatter in one tool (like Ruff for Python)
-- Drop-in ESLint/Prettier replacement
-- Better error messages
-- Zero config for most cases
-
-**Option 3: Hybrid (ESLint + Biome formatter)**
-Use Biome for formatting, ESLint for linting.
-
-**Recommendation:** Try Biome first (closest to Ruff experience), fall back to enhanced ESLint if needed.
-
----
-
 ### 45. Enable TypeScript Strict Mode
 **Status**: Medium (type safety)
 **Affected files**: `tsconfig.json`, `tsconfig.app.json`
@@ -206,66 +114,6 @@ Use Biome for formatting, ESLint for linting.
   }
 }
 ```
-
----
-
-### 46. Add Pre-commit Hooks
-**Status**: Medium (code quality)
-**Affected files**: New `.husky/` directory, `package.json`
-
-**Problem:** No pre-commit hooks to enforce linting/formatting before commits.
-
-**Impact:** Inconsistent code style, linting errors in commits.
-
-**Fix:** Add Husky + lint-staged:
-```bash
-npm install --save-dev husky lint-staged
-npx husky init
-```
-
-Configure to run linting and formatting on staged files before commit.
-
----
-
-### 47. Bundle Size Analysis
-**Status**: Low (monitoring)
-**Affected files**: Build configuration
-
-**Problem:** No bundle size monitoring or analysis.
-
-**Impact:** Can't track bundle size growth, potential performance issues.
-
-**Fix:** Add bundle analyzer:
-```bash
-npm install --save-dev rollup-plugin-visualizer
-```
-
----
-
-## 📊 Frontend Code Review Summary
-
-**Total Issues Identified:** 47
-
-### By Priority:
-- 🔴 **Critical:** 6 issues (must fix before production)
-- 🟠 **High Priority:** 8 issues (architectural, significant refactoring)
-- 🟡 **Medium Priority:** 18 issues (code quality, maintainability)
-- 🟢 **Low Priority:** 10 issues (polish, style)
-- ⚡ **Performance:** 3 issues
-- 🔒 **Security:** 3 issues (including critical #1)
-- 🧪 **Testing:** 2 issues
-- 🛠️ **Tooling:** 4 issues
-
-### Positive Aspects:
-- ✅ Good use of React Query for most data fetching
-- ✅ TypeScript throughout for type safety
-- ✅ Centralized API client with error handling (mostly)
-- ✅ Zod validation on API responses
-- ✅ Custom hooks for reusable logic
-- ✅ Code splitting at route level
-- ✅ WebSocket integration for real-time updates
-- ✅ Error boundaries implemented
-- ✅ Modern React patterns (hooks, functional components)
 
 ---
 
