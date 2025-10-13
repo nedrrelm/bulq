@@ -1253,12 +1253,10 @@ class MemoryRepository(AbstractRepository):
         self._notifications: dict[UUID, Notification] = {}
         self._reassignment_requests: dict[UUID, LeaderReassignmentRequest] = {}
 
-        # Create test data
-        self._create_test_data()
         MemoryRepository._initialized = True
 
-    def _create_test_data(self):
-        """Create test data for memory mode."""
+    def _create_test_data_DEPRECATED(self):
+        """DEPRECATED: Test data creation moved to seed_memory_data.py."""
         # Create test users
         alice = self.create_user('Alice Johnson', 'alice@test.com', 'hashed_password')
         bob = self.create_user('Bob Smith', 'bob@test.com', 'hashed_password')

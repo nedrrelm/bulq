@@ -103,7 +103,7 @@ class GroupService(BaseService):
         return group_responses
 
     def create_group(self, name: str, user: User) -> CreateGroupResponse:
-        """Create a new group and add the creator as a member.
+        """Create a new group and add the creator as an admin member.
 
         Args:
             name: The name of the group
@@ -117,8 +117,8 @@ class GroupService(BaseService):
         # Create the group
         group = self.repo.create_group(name, user.id)
 
-        # Add the creator as a member
-        self.repo.add_group_member(group.id, user)
+        # Add the creator as an admin member
+        self.repo.add_group_member(group.id, user, is_group_admin=True)
 
         logger.info(
             'Group created successfully', extra={'user_id': str(user.id), 'group_id': str(group.id)}

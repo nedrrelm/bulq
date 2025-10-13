@@ -23,6 +23,7 @@ export default function Login({ onLogin }: LoginProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const emailInputRef = useRef<HTMLInputElement>(null)
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   const [loginData, setLoginData] = useState<LoginFormData>({
     email: 'test@example.com',
@@ -36,7 +37,9 @@ export default function Login({ onLogin }: LoginProps) {
   })
 
   useEffect(() => {
-    if (!isRegister && emailInputRef.current) {
+    if (isRegister && nameInputRef.current) {
+      nameInputRef.current.focus()
+    } else if (!isRegister && emailInputRef.current) {
       emailInputRef.current.focus()
     }
   }, [isRegister])
@@ -94,6 +97,7 @@ export default function Login({ onLogin }: LoginProps) {
                 onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
                 required
                 disabled={loading}
+                ref={nameInputRef}
               />
             </div>
 
