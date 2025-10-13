@@ -43,15 +43,7 @@ async def get_store_page(
         raise HTTPException(status_code=400, detail='Invalid store ID format') from e
 
     service = StoreService(db)
-
-    data = service.get_store_page_data(store_uuid, current_user.id)
-
-    # Service now returns fully formatted data
-    return StorePageResponse(
-        store=StoreResponse(**data['store']),
-        products=[StoreProductResponse(**p) for p in data['products']],
-        active_runs=[StoreRunResponse(**r) for r in data['active_runs']],
-    )
+    return service.get_store_page_data(store_uuid, current_user.id)
 
 
 @router.post('/create', response_model=StoreResponse)

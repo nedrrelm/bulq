@@ -26,9 +26,7 @@ async def get_notifications(
 ):
     """Get notifications for current user (paginated, max 100 per page)."""
     service = NotificationService(db)
-
-    notifications = service.get_user_notifications(current_user, limit, offset)
-    return [NotificationResponse(**n) for n in notifications]
+    return service.get_user_notifications(current_user, limit, offset)
 
 
 @router.get('/unread', response_model=list[NotificationResponse])
@@ -37,9 +35,7 @@ async def get_unread_notifications(
 ):
     """Get all unread notifications for current user."""
     service = NotificationService(db)
-
-    notifications = service.get_unread_notifications(current_user)
-    return [NotificationResponse(**n) for n in notifications]
+    return service.get_unread_notifications(current_user)
 
 
 @router.get('/count', response_model=UnreadCountResponse)
@@ -59,9 +55,7 @@ async def mark_notification_read(
 ):
     """Mark a notification as read."""
     service = NotificationService(db)
-
-    result = service.mark_as_read(notification_id, current_user)
-    return MessageResponse(**result)
+    return service.mark_as_read(notification_id, current_user)
 
 
 @router.post('/mark-all-read', response_model=MarkAllReadResponse)
@@ -70,6 +64,4 @@ async def mark_all_notifications_read(
 ):
     """Mark all notifications as read for current user."""
     service = NotificationService(db)
-
-    result = service.mark_all_as_read(current_user)
-    return MarkAllReadResponse(**result)
+    return service.mark_all_as_read(current_user)
