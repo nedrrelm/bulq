@@ -8,7 +8,7 @@ from ..background_tasks import create_background_task
 from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import User
 from ..request_context import get_logger
-from ..run_state import RunState
+from ..run_state import RunState, state_machine
 from ..schemas import (
     CompleteShoppingResponse,
     MarkPurchasedResponse,
@@ -16,7 +16,6 @@ from ..schemas import (
     PriceObservation,
     ShoppingListItemResponse,
 )
-from ..validation import validate_run_state_for_action
 from ..websocket_manager import manager
 from .base_service import BaseService
 
@@ -111,10 +110,16 @@ class ShoppingService(BaseService):
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError('Not authorized to view this run')
 
-        # Only allow viewing shopping list in shopping or later states
-        validate_run_state_for_action(
-            run, [RunState.SHOPPING, RunState.DISTRIBUTING, RunState.COMPLETED], 'shopping list'
-        )
+        # Only allow viewing shopping list in shopping or later states - use state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_view_shopping_list(run_state):
+            raise BadRequestError(
+                state_machine.get_action_error_message(
+                    'shopping list',
+                    run_state,
+                    [RunState.SHOPPING, RunState.ADJUSTING, RunState.DISTRIBUTING, RunState.COMPLETED],
+                )
+            )
 
         # Get shopping list items
         items = self.repo.get_shopping_list_items(run_uuid)
@@ -359,8 +364,9 @@ class ShoppingService(BaseService):
         if not participation or not participation.is_leader:
             raise ForbiddenError('Only the run leader can complete shopping')
 
-        # Only allow completing from shopping state
-        if run.state != RunState.SHOPPING:
+        # Only allow completing from shopping state - use state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_complete_shopping(run_state):
             raise BadRequestError('Can only complete shopping from shopping state')
 
         # Check if any items have insufficient quantities

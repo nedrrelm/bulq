@@ -7,9 +7,9 @@ from ..config import MAX_PRODUCTS_PER_RUN
 from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import Product, ProductBid, Run, RunParticipation, User
 from ..request_context import get_logger
-from ..run_state import RunState
+from ..run_state import RunState, state_machine
 from ..schemas import PlaceBidResponse, RetractBidResponse
-from ..validation import validate_run_state_for_action, validate_uuid
+from ..validation import validate_uuid
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -158,10 +158,14 @@ class BidService(BaseService):
         # Verify run exists and user has access
         run = self._get_run_with_auth_check(run_uuid, user)
 
-        # Check if run allows bidding
-        validate_run_state_for_action(
-            run, [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING], 'bidding'
-        )
+        # Check if run allows bidding using state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_place_bid(run_state):
+            raise BadRequestError(
+                state_machine.get_action_error_message(
+                    'bidding', run_state, [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]
+                )
+            )
 
         # Verify product exists in store
         store_products = self.repo.get_products_by_store(run.store_id)
@@ -192,8 +196,9 @@ class BidService(BaseService):
         is_new_participant = False
 
         if not participation:
-            # Don't allow new participants in adjusting state
-            if run.state == RunState.ADJUSTING:
+            # Don't allow new participants in adjusting state - check using state machine
+            run_state = RunState(run.state)
+            if not state_machine.can_join_run(run_state):
                 raise BadRequestError('Cannot join run in adjusting state')
             # Create participation (not as leader)
             participation = self.repo.create_participation(user.id, run_uuid, is_leader=False)
@@ -296,9 +301,14 @@ class BidService(BaseService):
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError('Not authorized to modify bids on this run')
 
-        validate_run_state_for_action(
-            run, [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING], 'bid modification'
-        )
+        # Check if run allows bid retraction using state machine
+        run_state = RunState(run.state)
+        if not state_machine.can_retract_bid(run_state):
+            raise BadRequestError(
+                state_machine.get_action_error_message(
+                    'bid modification', run_state, [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]
+                )
+            )
 
         return run_uuid, product_uuid, run
 

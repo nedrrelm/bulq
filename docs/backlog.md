@@ -109,21 +109,6 @@ await manager.broadcast(f"run:{result.run_id}", {
 
 ---
 
-### 11. Split RunService God Object
-**Status**: Medium Priority (architecture)
-**Affected files**: `app/services/run_service.py` (1129 lines)
-
-**Problem:** RunService handles bidding, state transitions, notifications, shopping lists - too many responsibilities.
-
-**Impact:** Hard to navigate, test, reason about.
-
-**Fix:** Split into:
-- `BidService` - bid placement, retraction, validation
-- `RunStateService` - state transitions, state machine
-- `RunNotificationService` - creating/broadcasting notifications
-
----
-
 ### 14. Decouple WebSocket Manager
 **Status**: Low Priority (testability)
 **Affected files**: Services importing `websocket_manager.manager`
