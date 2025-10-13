@@ -16,7 +16,21 @@ export const authKeys = {
 export function useCurrentUser() {
   return useQuery({
     queryKey: authKeys.currentUser(),
-    queryFn: () => authApi.getCurrentUser(),
+    queryFn: async () => {
+      // Check if we just logged out to avoid unnecessary 401 errors
+      const justLoggedOut = sessionStorage.getItem('just_logged_out')
+      if (justLoggedOut) {
+        sessionStorage.removeItem('just_logged_out')
+        return null
+      }
+
+      try {
+        return await authApi.getCurrentUser()
+      } catch (error) {
+        // Return null for auth errors to show login page
+        return null
+      }
+    },
     staleTime: Infinity, // User data rarely changes, keep fresh until manually invalidated
     retry: false, // Don't retry if not authenticated
   })
