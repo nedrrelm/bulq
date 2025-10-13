@@ -5,6 +5,35 @@ import { useAuth } from './AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import Toast from '../components/Toast'
 
+/**
+ * NotificationContext - Real-time notification management
+ *
+ * WHY THIS USES CONTEXT INSTEAD OF REACT QUERY:
+ *
+ * 1. **Real-time WebSocket Integration**: Notifications arrive via WebSocket and need to be
+ *    displayed immediately as toasts. Context provides a centralized place to handle WebSocket
+ *    messages and trigger toast notifications across the entire app.
+ *
+ * 2. **Global UI State**: The unread count badge needs to be accessible from any component
+ *    (navbar, notification icon, etc.) without prop drilling. Context makes this trivial.
+ *
+ * 3. **Toast Management**: The NotificationProvider renders toast notifications at the root level,
+ *    ensuring they appear on top of all other UI elements. This wouldn't work as well with
+ *    React Query since we need to manage both data AND UI state together.
+ *
+ * 4. **Immediate Local Updates**: When marking notifications as read, we need instant optimistic
+ *    updates to both the notification list AND the unread count. While React Query can do this,
+ *    Context is simpler for this tightly coupled state.
+ *
+ * 5. **Single Source of Truth**: Notifications need to be consistent across all pages - when you
+ *    mark one as read in the notification page, the badge count should update everywhere immediately.
+ *    Context ensures a single source of truth.
+ *
+ * WHEN TO USE REACT QUERY VS CONTEXT:
+ * - React Query: Server state (API data) that's cached and refetched (runs, groups, products)
+ * - Context: UI state, real-time data with WebSockets, and cross-cutting concerns (auth, notifications)
+ */
+
 interface NotificationContextType {
   notifications: Notification[]
   unreadCount: number

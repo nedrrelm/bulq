@@ -67,10 +67,6 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 5. **Database Backups** - Automated daily backups with pg_dump, S3 storage, retention policy
 
-## 🔴 Frontend: Critical Issues
-
-**All critical issues have been resolved! ✅**
-
 ---
 
 ## 🟠 Frontend: High Priority (Architecture)
@@ -80,124 +76,10 @@ Major architectural issues and code smells requiring significant refactoring.
 ---
 
 
-### 8. Large Component Files
-**Status**: High Priority (maintainability)
-**Affected files**:
-- `RunPage.tsx` (839 lines)
-- `ShoppingPage.tsx` (609 lines)
-- `Groups.tsx` (278 lines)
-
-**Problem:** Components doing too much - managing state, WebSocket connections, UI rendering, and business logic all in one file. Violates single responsibility principle.
-
-**Impact:** Hard to test, hard to maintain, hard to understand.
-
-**Fix:** Break down into smaller components:
-- Extract `ProductItem` components
-- Extract form popups into separate files
-- Extract business logic into custom hooks
-- Create smaller, focused components
-
----
-
-### 9. Inconsistent State Management Patterns
-**Status**: Medium-High (architecture)
-**Affected files**: `NotificationContext.tsx` (Context) vs React Query hooks (everywhere else)
-
-**Problem:** Notifications use Context Provider with manual state management, while everything else uses React Query. Two different patterns in same app.
-
-**Impact:** Inconsistent patterns, increased complexity, confusion for developers.
-
-**Fix:** Either migrate notifications to React Query OR document why Context is needed for notifications specifically.
-
----
 
 ## 🟡 Frontend: Medium Priority (Code Quality)
 
 Refactoring opportunities and maintainability improvements.
-
----
-
-### 15. No Loading States During Mutations
-**Status**: Medium (UX)
-**Affected files**: Multiple components using mutations
-
-**Problem:** When users perform actions (place bid, mark purchased, etc.), no loading indicator shows action is in progress.
-
-**Impact:** Poor UX, users may click multiple times causing duplicate requests.
-
-**Fix:** Show loading state during mutations using React Query's `isLoading` state.
-
----
-
-### 16. Inconsistent Error Display
-**Status**: Medium (UX consistency)
-**Affected files**: Throughout codebase
-
-**Problem:** Some components show errors with `<Toast>`, others with `<ErrorAlert>`, others with inline messages.
-
-**Impact:** Inconsistent UX, confusing for users.
-
-**Fix:** Standardize on one pattern (Toast for transient errors, inline for form validation).
-
----
-
-### 17. Manual Query Invalidation Pattern
-**Status**: Medium (consistency)
-**Affected files**: `Groups.tsx`, `ShoppingPage.tsx`, others
-
-**Problem:** Manual API calls followed by manual invalidation instead of using mutation hooks:
-```typescript
-await shoppingApi.updateAvailabilityPrice(runId, selectedItem.id, { price, notes })
-queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
-```
-
-**Impact:** Bypasses React Query benefits, inconsistent patterns.
-
-**Fix:** Use mutation hooks consistently (some components already do this correctly).
-
----
-
-### 18. Duplicate Toast/Confirm Hook Patterns
-**Status**: Medium (DRY violation)
-**Affected files**: Nearly every page component
-
-**Problem:** Every page declares:
-```typescript
-const { toast, showToast, hideToast } = useToast()
-const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
-```
-And renders same JSX at bottom.
-
-**Impact:** Code duplication, maintenance burden (~50+ duplicate lines).
-
-**Fix:** Create `<PageLayout>` wrapper component that includes Toast and ConfirmDialog, or use global toast manager.
-
----
-
-### 19. Hard-coded String Values and Magic Numbers
-**Status**: Medium (maintainability)
-**Affected files**: Throughout codebase
-
-**Examples:**
-- `ShoppingPage.tsx` line 324: `MAX_NOTES_LENGTH = 200`
-- `RunPage.tsx` line 81: State ordering object
-- Various component class names as strings
-
-**Impact:** Hard to maintain, no single source of truth, difficult to change values globally.
-
-**Fix:** Extract to constants file: `src/constants/index.ts`
-
----
-
-### 20. Missing Optimistic Updates
-**Status**: Medium (UX)
-**Affected files**: Most mutation hooks
-
-**Problem:** Only `useToggleReady` implements optimistic updates. Other user actions don't provide instant feedback.
-
-**Impact:** Slower feeling UX, perceived lag.
-
-**Fix:** Implement optimistic updates for frequent user actions (placing bids, marking items).
 
 ---
 

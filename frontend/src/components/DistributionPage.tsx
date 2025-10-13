@@ -115,8 +115,9 @@ export default function DistributionPage() {
                         handleMarkAllPickedUp(user)
                       }}
                       className="mark-all-button"
+                      disabled={markPickedUpMutation.isPending}
                     >
-                      Mark All Picked Up
+                      {markPickedUpMutation.isPending ? '⏳ Updating...' : 'Mark All Picked Up'}
                     </button>
                   )}
                 </div>
@@ -133,10 +134,10 @@ export default function DistributionPage() {
                     </div>
                     <button
                       onClick={() => handlePickup(product.bid_id)}
-                      disabled={product.is_picked_up}
+                      disabled={product.is_picked_up || markPickedUpMutation.isPending}
                       className={`pickup-button ${product.is_picked_up ? 'picked-up' : ''}`}
                     >
-                      {product.is_picked_up ? '✓ Picked up' : 'Mark Picked Up'}
+                      {markPickedUpMutation.isPending ? '⏳ Updating...' : product.is_picked_up ? '✓ Picked up' : 'Mark Picked Up'}
                     </button>
                   </div>
                 ))}
@@ -152,8 +153,12 @@ export default function DistributionPage() {
 
       {allPickedUp && (
         <div className="complete-section">
-          <button onClick={handleCompleteRun} className="complete-button">
-            Complete Run
+          <button
+            onClick={handleCompleteRun}
+            className="complete-button"
+            disabled={completeDistributionMutation.isPending}
+          >
+            {completeDistributionMutation.isPending ? '⏳ Completing...' : 'Complete Run'}
           </button>
         </div>
       )}
