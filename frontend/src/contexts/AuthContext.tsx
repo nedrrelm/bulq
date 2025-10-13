@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCurrentUser, useLogout as useLogoutMutation, authKeys } from '../hooks/queries'
+import { useCurrentUser, useLogout, authKeys } from '../hooks/queries'
 import type { User } from '../types/user'
 
 interface AuthContextType {
@@ -17,17 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Use React Query to manage current user state
   const { data: user, isLoading: loading, isError } = useCurrentUser()
-  const logoutMutation = useLogoutMutation()
-
-  // Handle logout flag from sessionStorage
-  useEffect(() => {
-    const justLoggedOut = sessionStorage.getItem('just_logged_out')
-    if (justLoggedOut) {
-      sessionStorage.removeItem('just_logged_out')
-      // Clear React Query cache if just logged out
-      queryClient.clear()
-    }
-  }, [queryClient])
+  const logoutMutation = useLogout()
 
   const login = (userData: User) => {
     // Set current user data in React Query cache
@@ -36,12 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await logoutMutation.mutateAsync()
-      // Set flag to skip auth check after redirect (prevents 401 error)
+      // Set flag before logout to prevent immediate re-fetch
       sessionStorage.setItem('just_logged_out', 'true')
+      await logoutMutation.mutateAsync()
+      // Force a hard reload to clear all state
       window.location.href = '/'
     } catch (err) {
       console.error('Logout failed:', err)
+      sessionStorage.removeItem('just_logged_out')
     }
   }
 

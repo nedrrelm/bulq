@@ -10,22 +10,13 @@ from ..request_context import get_logger
 from ..schemas import MyRequestsResponse, ReassignmentDetailResponse, ReassignmentResponse
 from ..transaction import transaction
 from ..websocket_manager import manager as ws_manager
+from .base_service import BaseService
 
 logger = get_logger(__name__)
 
 
-class ReassignmentService:
+class ReassignmentService(BaseService):
     """Service for handling leader reassignment requests."""
-
-    def __init__(self, repo: AbstractRepository, db=None):
-        """Initialize reassignment service.
-
-        Args:
-            repo: Repository instance
-            db: Optional database session (required for transactions)
-        """
-        self.repo = repo
-        self.db = db if db is not None else getattr(repo, 'db', None)
 
     async def request_reassignment(
         self, run_id: UUID, from_user: User, to_user_id: UUID

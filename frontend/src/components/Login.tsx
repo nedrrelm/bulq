@@ -47,7 +47,7 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const user = await authApi.login(loginData)
+      const user = await authApi.login(loginData.email, loginData.password)
       onLogin(user)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed')
@@ -62,7 +62,7 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const user = await authApi.register(registerData)
+      const user = await authApi.register(registerData.name, registerData.email, registerData.password)
       onLogin(user)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed')

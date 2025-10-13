@@ -13,11 +13,11 @@ export interface RegisterRequest {
 }
 
 export const authApi = {
-  login: (data: LoginRequest) =>
-    api.post<User>('/auth/login', data, userSchema),
+  login: (email: string, password: string) =>
+    api.post<User>('/auth/login', { email, password }, userSchema),
 
-  register: (data: RegisterRequest) =>
-    api.post<User>('/auth/register', data, userSchema),
+  register: (name: string, email: string, password: string) =>
+    api.post<User>('/auth/register', { name, email, password }, userSchema),
 
   logout: () =>
     api.post<void>('/auth/logout'),
