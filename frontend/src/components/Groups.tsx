@@ -1,18 +1,19 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/Groups.css'
 import { WS_BASE_URL } from '../config'
-import { reassignmentApi, ApiError } from '../api'
+import { reassignmentApi } from '../api'
 import type { Group, Store } from '../api'
-import type { ProductSearchResult, PendingReassignments } from '../types'
+import type { PendingReassignments } from '../types'
 import type { WebSocketMessage } from '../types/websocket'
-import NewGroupPopup from './NewGroupPopup'
-import NewStorePopup from './NewStorePopup'
-import NewProductPopup from './NewProductPopup'
-import ErrorBoundary from './ErrorBoundary'
+import GroupItem from './GroupItem'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { getStateLabel } from '../utils/runStates'
 import { useGroups, groupKeys } from '../hooks/queries'
+
+// Lazy load popup components for better code splitting
+const NewGroupPopup = lazy(() => import('./NewGroupPopup'))
+const NewStorePopup = lazy(() => import('./NewStorePopup'))
+const NewProductPopup = lazy(() => import('./NewProductPopup'))
 
 // Using Group type from API layer
 
@@ -101,26 +102,28 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
 
   return (
     <>
-      {showNewGroupPopup && (
-        <NewGroupPopup
-          onClose={() => setShowNewGroupPopup(false)}
-          onSuccess={handleNewGroupSuccess}
-        />
-      )}
+      <Suspense fallback={null}>
+        {showNewGroupPopup && (
+          <NewGroupPopup
+            onClose={() => setShowNewGroupPopup(false)}
+            onSuccess={handleNewGroupSuccess}
+          />
+        )}
 
-      {showNewStorePopup && (
-        <NewStorePopup
-          onClose={() => setShowNewStorePopup(false)}
-          onSuccess={handleNewStoreSuccess}
-        />
-      )}
+        {showNewStorePopup && (
+          <NewStorePopup
+            onClose={() => setShowNewStorePopup(false)}
+            onSuccess={handleNewStoreSuccess}
+          />
+        )}
 
-      {showNewProductPopup && (
-        <NewProductPopup
-          onClose={() => setShowNewProductPopup(false)}
-          onSuccess={handleNewProductSuccess}
-        />
-      )}
+        {showNewProductPopup && (
+          <NewProductPopup
+            onClose={() => setShowNewProductPopup(false)}
+            onSuccess={handleNewProductSuccess}
+          />
+        )}
+      </Suspense>
 
       <div className="groups-container">
         {/* Pending reassignment requests banner */}
@@ -168,44 +171,12 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       {!loading && !error && groups.length > 0 && (
         <div className="groups-list">
           {groups.map((group) => (
-            <ErrorBoundary key={group.id}>
-              <div
-                className="group-item"
-                onClick={() => handleGroupClick(group.id)}
-              >
-              <div className="group-header">
-                <h4>{group.name}</h4>
-              </div>
-              <div className="group-stats">
-                <span className="stat">
-                  <span className="stat-icon">👥</span>
-                  {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
-                </span>
-                <span className="stat">
-                  <span className="stat-icon">✅</span>
-                  {group.completed_runs_count} completed {group.completed_runs_count === 1 ? 'run' : 'runs'}
-                </span>
-              </div>
-
-              {group.active_runs.length > 0 && (
-                <div className="active-runs">
-                  {group.active_runs.map((run) => (
-                    <div
-                      key={run.id}
-                      className="run-summary"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onRunSelect(run.id)
-                      }}
-                    >
-                      <span className="run-store">{run.store_name}</span>
-                      <span className={`run-state state-${run.state}`}>{getStateLabel(run.state)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            </ErrorBoundary>
+            <GroupItem
+              key={group.id}
+              group={group}
+              onGroupClick={handleGroupClick}
+              onRunSelect={onRunSelect}
+            />
           ))}
         </div>
       )}

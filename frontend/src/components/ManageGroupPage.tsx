@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { WS_BASE_URL } from '../config'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
+import { NAVIGATION_DELAY_AFTER_ACTION_MS } from '../constants'
 
 export default function ManageGroupPage() {
   const { groupId } = useParams<{ groupId: string }>()
@@ -58,7 +59,7 @@ export default function ManageGroupPage() {
         showToast(`You have ${action} this group`, 'error')
         setTimeout(() => {
           navigate(`/groups/${groupId}`)
-        }, 1500)
+        }, NAVIGATION_DELAY_AFTER_ACTION_MS)
         return
       }
 
@@ -190,7 +191,7 @@ export default function ManageGroupPage() {
         showToast('You have left the group', 'success')
         setTimeout(() => {
           navigate(`/groups/${groupId}`)
-        }, 1500)
+        }, NAVIGATION_DELAY_AFTER_ACTION_MS)
       } catch (err) {
         showToast(err instanceof ApiError ? err.message : 'Failed to leave group', 'error')
       }

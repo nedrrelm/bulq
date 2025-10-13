@@ -69,26 +69,11 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 ---
 
-## ✅ Frontend: Completed Work
+## 🟢 Frontend: Low Priority (Optional Polish)
 
-**All critical, high-priority, and medium-priority issues have been resolved!**
+**Note: These are optional cosmetic improvements that do NOT block production.**
 
-### Summary of Completed Work
-- ✅ **5/5 Critical Issues** - Memory leaks, API validation, navigation, error handling, sanitization
-- ✅ **8/8 High Priority Issues** - WebSocket logic, API patterns, React Query, prop drilling, type safety, component architecture, documentation
-- ✅ **8/8 Medium Priority Issues** - Constants, error standardization, loading states, optimistic updates, accessibility, unused code removal
-- ✅ **3 Bonus Improvements** - Deprecated properties, ARIA attributes, component extraction
-
-**Total Issues Resolved**: 24
-**Files Modified**: 30
-**New Files Created**: 6
-**Production Ready**: YES ✅
-
----
-
-## 🟢 Frontend: Low Priority (Polish)
-
-Minor improvements and style issues.
+The frontend is fully production-ready. The items below are nice-to-have polish for future iterations.
 
 ---
 
@@ -210,26 +195,45 @@ const WEBSOCKET_RECONNECT_DELAY_MS = 1500 // Wait before reconnecting after disc
 ---
 
 ### 37. Unnecessary Re-renders
-**Status**: Medium (performance)
-**Affected files**: `Groups.tsx`, other list components
+**Status**: ✅ RESOLVED
+**Affected files**: `Groups.tsx`, `RunCard.tsx`, `GroupItem.tsx`
 
 **Problem:** Lists re-render entirely when only one item changes.
 
 **Impact:** Performance degradation with large lists.
 
-**Fix:** Use `React.memo` on list item components, ensure key props are stable.
+**Solution Implemented:**
+- Created memoized `GroupItem` component extracted from inline rendering in `Groups.tsx`
+- Added `React.memo` to `RunCard` component to prevent unnecessary re-renders
+- Stable key props (using `group.id` and `run.id`) ensure proper memoization
+
+**Benefits:**
+- Group list items only re-render when their specific data changes
+- Run cards only re-render when run data changes
+- Reduced rendering overhead for large lists
 
 ---
 
-### 38. No Code Splitting Beyond Route Level
-**Status**: Low-Medium (bundle size)
-**Affected files**: `App.tsx`
+### 38. Code Splitting Beyond Route Level
+**Status**: ✅ RESOLVED
+**Affected files**: `Groups.tsx`, `GroupPage.tsx`, `RunPage.tsx`
 
-**Problem:** Only route-level code splitting via `lazy()`. Large components and modals aren't split.
+**Problem:** Only route-level code splitting via `lazy()`. Large components and modals weren't split.
 
-**Impact:** Larger initial bundle size.
+**Impact:** Larger initial bundle size (~1098 lines of popup code loaded eagerly).
 
-**Fix:** Consider splitting large modals/popups with lazy loading.
+**Solution Implemented:**
+- Lazy loaded all popup components with `React.lazy()`:
+  - `Groups.tsx`: `NewGroupPopup`, `NewStorePopup`, `NewProductPopup`
+  - `GroupPage.tsx`: `NewRunPopup`
+  - `RunPage.tsx`: `BidPopup`, `AddProductPopup`, `ReassignLeaderPopup`
+- Wrapped popup rendering in `<Suspense fallback={null}>` boundaries
+- Popups now loaded on-demand when user opens them
+
+**Benefits:**
+- Reduced initial bundle size
+- Faster page load times
+- Popup code only loaded when needed
 
 ---
 

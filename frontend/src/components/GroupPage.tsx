@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/GroupPage.css'
 import { WS_BASE_URL } from '../config'
 import { ApiError } from '../api'
 import type { GroupDetails } from '../api'
-import NewRunPopup from './NewRunPopup'
 import ErrorBoundary from './ErrorBoundary'
+
+// Lazy load popup components for better code splitting
+const NewRunPopup = lazy(() => import('./NewRunPopup'))
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useAuth } from '../contexts/AuthContext'
 import { getStateLabel } from '../utils/runStates'
@@ -115,13 +117,15 @@ export default function GroupPage() {
 
   return (
     <div className="group-page">
-      {newRunModal.isOpen && (
-        <NewRunPopup
-          groupId={groupId}
-          onClose={newRunModal.close}
-          onSuccess={handleNewRunSuccess}
-        />
-      )}
+      <Suspense fallback={null}>
+        {newRunModal.isOpen && (
+          <NewRunPopup
+            groupId={groupId}
+            onClose={newRunModal.close}
+            onSuccess={handleNewRunSuccess}
+          />
+        )}
+      </Suspense>
 
       <div className="breadcrumb">
         <span className="breadcrumb-link" onClick={() => navigate('/')}>
