@@ -126,7 +126,7 @@ async def startup_event():
 
     from .request_context import get_logger
     logger = get_logger(__name__)
-    logger.info('Event handlers registered successfully')
+    logger.info('✅ Event handlers registered successfully')
 
     # Create seed data if in development
     import os
@@ -138,7 +138,7 @@ async def startup_event():
                 from .scripts.seed_data import create_seed_data
 
                 create_seed_data()
-                logger.info('Database seed data initialization completed')
+                logger.info('🌱 Database seed data initialization completed')
             except ImportError:
                 logger.warning('Could not import seed data. Skipping seed data creation.')
                 raise
@@ -152,7 +152,7 @@ async def startup_event():
 
                 repo = get_repository()
                 seed_memory_repository(repo)
-                logger.info('Memory repository seed data initialization completed')
+                logger.info('🌱 Memory repository seed data initialization completed')
             except Exception as e:
                 logger.error(f'Failed to create memory seed data: {e}', exc_info=True)
                 raise

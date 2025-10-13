@@ -49,7 +49,14 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
       }
 
       const data = await response.json()
-      setUsers(data)
+      // Filter out users who have no purchased products, and filter out unpurchased products from users
+      const filteredUsers = data
+        .map((user: DistributionUser) => ({
+          ...user,
+          products: user.products.filter(p => p.distributed_quantity > 0)
+        }))
+        .filter((user: DistributionUser) => user.products.length > 0)
+      setUsers(filteredUsers)
     } catch (err) {
       console.error('Distribution page error:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')

@@ -82,6 +82,11 @@
   text-transform: uppercase;
 }
 
+.member-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
 .btn-small {
   padding: 6px 12px;
   font-size: 1.2rem;

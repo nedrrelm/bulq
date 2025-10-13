@@ -141,6 +141,24 @@
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
 }
 
+.product-item.not-purchased {
+  opacity: 0.5;
+  background: var(--color-gray-100);
+  border-color: var(--color-gray-300);
+}
+
+.product-item.not-purchased:hover {
+  opacity: 0.6;
+  border-color: var(--color-gray-400);
+  box-shadow: none;
+}
+
+.product-item.not-purchased .product-header h4,
+.product-item.not-purchased .product-stats,
+.product-item.not-purchased .product-price {
+  color: var(--color-gray-500);
+}
+
 .product-header {
   display: flex;
   justify-content: space-between;
@@ -432,6 +450,11 @@
   background-color: #f0fdf4;
 }
 
+.product-item.not-purchased-adjusting {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
 .adjustment-info {
   padding: 8px 12px;
   border-radius: 6px;
@@ -455,6 +478,16 @@
 
 .adjustment-ok-badge {
   color: #059669;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.adjustment-info.not-purchased-info {
+  background-color: #fecaca;
+}
+
+.not-purchased-badge {
+  color: #dc2626;
   font-weight: bold;
   margin-left: 8px;
 }
