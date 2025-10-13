@@ -25,7 +25,7 @@ export function useDistribution(runId: string | undefined) {
 // ==================== Mutations ====================
 
 /**
- * Mark a bid as picked up
+ * Mark a bid as picked up with optimistic updates
  */
 export function useMarkPickedUp(runId: string) {
   const queryClient = useQueryClient()
@@ -33,8 +33,41 @@ export function useMarkPickedUp(runId: string) {
   return useMutation({
     mutationFn: (bidId: string) =>
       distributionApi.markPickedUp(runId, bidId),
-    onSuccess: () => {
-      // Invalidate distribution data to refetch
+    // Optimistic update for instant feedback
+    onMutate: async (bidId: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: distributionKeys.list(runId) })
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(distributionKeys.list(runId))
+
+      // Optimistically update
+      queryClient.setQueryData(distributionKeys.list(runId), (old: any) => {
+        if (!old) return old
+        return old.map((user: any) => ({
+          ...user,
+          products: user.products.map((product: any) =>
+            product.bid_id === bidId
+              ? { ...product, is_picked_up: true }
+              : product
+          ),
+          // Update all_picked_up flag
+          all_picked_up: user.products.every((p: any) =>
+            p.bid_id === bidId ? true : p.is_picked_up
+          )
+        }))
+      })
+
+      return { previousData }
+    },
+    // Rollback on error
+    onError: (_err, _variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(distributionKeys.list(runId), context.previousData)
+      }
+    },
+    // Always refetch after success or error
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: distributionKeys.list(runId) })
     },
   })

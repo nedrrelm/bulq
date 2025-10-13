@@ -14,6 +14,7 @@ import { useConfirm } from '../hooks/useConfirm'
 import { validateDecimal, parseDecimal, sanitizeString } from '../utils/validation'
 import { useShoppingList, shoppingKeys, useMarkPurchased, useCompleteShopping } from '../hooks/queries'
 import { formatErrorForDisplay } from '../utils/errorHandling'
+import { MAX_NOTES_LENGTH, DECIMAL_PLACES_PRICE } from '../constants'
 
 // Using ShoppingListItem type from API layer
 
@@ -324,7 +325,7 @@ function ShoppingItem({
   )
 }
 
-const MAX_NOTES_LENGTH = 200
+// MAX_NOTES_LENGTH imported from constants
 
 function PricePopup({
   item,
