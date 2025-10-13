@@ -7,6 +7,7 @@ from ..exceptions import ConflictError, ForbiddenError, NotFoundError, Validatio
 from ..models import LeaderReassignmentRequest, Run, User
 from ..repository import AbstractRepository
 from ..request_context import get_logger
+from ..transaction import transaction
 from ..websocket_manager import manager as ws_manager
 
 logger = get_logger(__name__)
@@ -15,8 +16,15 @@ logger = get_logger(__name__)
 class ReassignmentService:
     """Service for handling leader reassignment requests."""
 
-    def __init__(self, repo: AbstractRepository):
+    def __init__(self, repo: AbstractRepository, db=None):
+        """Initialize reassignment service.
+
+        Args:
+            repo: Repository instance
+            db: Optional database session (required for transactions)
+        """
         self.repo = repo
+        self.db = db if db is not None else getattr(repo, 'db', None)
 
     async def request_reassignment(
         self, run_id: UUID, from_user: User, to_user_id: UUID
@@ -175,6 +183,8 @@ class ReassignmentService:
     async def accept_reassignment(self, request_id: UUID, accepting_user: User) -> dict[str, Any]:
         """Accept a leader reassignment request.
 
+        Transfers leadership and updates request status atomically.
+
         Args:
             request_id: Request to accept
             accepting_user: User accepting the request
@@ -189,9 +199,19 @@ class ReassignmentService:
         """
         request = self._validate_accept_request(request_id, accepting_user)
         run = self._get_run(request.run_id)
-        self._transfer_leadership(request.run_id, request.from_user_id, request.to_user_id)
-        self.repo.update_reassignment_status(request_id, 'accepted')
         store_name = self._get_store_name(run.store_id)
+
+        # Wrap leadership transfer and status update in transaction
+        if self.db:
+            with transaction(self.db, "accept leader reassignment"):
+                self._transfer_leadership(request.run_id, request.from_user_id, request.to_user_id)
+                self.repo.update_reassignment_status(request_id, 'accepted')
+        else:
+            # Fallback for when db session not available (shouldn't happen in production)
+            self._transfer_leadership(request.run_id, request.from_user_id, request.to_user_id)
+            self.repo.update_reassignment_status(request_id, 'accepted')
+
+        # Notify after successful transaction
         await self._notify_acceptance(request, accepting_user, store_name, request_id)
 
         logger.info(
