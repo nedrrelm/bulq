@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30000, // Data stays fresh for 30 seconds
-      cacheTime: 300000, // Cache kept for 5 minutes
+      gcTime: 300000, // Garbage collection time (formerly cacheTime in React Query v4)
       refetchOnWindowFocus: false, // Don't refetch on window focus (can enable in production)
       retry: 1, // Retry failed requests once
       refetchOnReconnect: true, // Refetch on network reconnection
