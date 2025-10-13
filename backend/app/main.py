@@ -130,14 +130,32 @@ async def startup_event():
 
     # Create seed data if in development
     import os
+    from .config import REPO_MODE
 
     if os.getenv('ENV') == 'development':
-        try:
-            from .scripts.seed_data import create_seed_data
+        if REPO_MODE == 'database':
+            try:
+                from .scripts.seed_data import create_seed_data
 
-            create_seed_data()
-        except ImportError:
-            print('Warning: Could not import seed data. Skipping seed data creation.')
+                create_seed_data()
+                logger.info('Database seed data initialization completed')
+            except ImportError:
+                logger.warning('Could not import seed data. Skipping seed data creation.')
+                raise
+            except Exception as e:
+                logger.error(f'Failed to create seed data: {e}', exc_info=True)
+                raise
+        elif REPO_MODE == 'memory':
+            try:
+                from .repository import get_repository
+                from .scripts.seed_memory_data import seed_memory_repository
+
+                repo = get_repository()
+                seed_memory_repository(repo)
+                logger.info('Memory repository seed data initialization completed')
+            except Exception as e:
+                logger.error(f'Failed to create memory seed data: {e}', exc_info=True)
+                raise
 
     # Start background task for session cleanup
     from .auth import cleanup_expired_sessions

@@ -5,6 +5,7 @@ import LoadingSpinner from './LoadingSpinner'
 import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
 import RunCard from './RunCard'
+import NewProductPopup from './NewProductPopup'
 
 interface Product {
   id: string
@@ -42,6 +43,7 @@ function StorePage({ storeId, onBack }: StorePageProps) {
   const [data, setData] = useState<StorePageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showNewProductPopup, setShowNewProductPopup] = useState(false)
 
   useEffect(() => {
     fetchStoreData()
@@ -113,7 +115,15 @@ function StorePage({ storeId, onBack }: StorePageProps) {
       )}
 
       <section className="products-section">
-        <h2>Products</h2>
+        <div className="section-header">
+          <h2>Products</h2>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowNewProductPopup(true)}
+          >
+            + New Product
+          </button>
+        </div>
         {data.products.length === 0 ? (
           <div className="empty-state">
             <p>No products with recorded prices yet</p>
@@ -146,6 +156,17 @@ function StorePage({ storeId, onBack }: StorePageProps) {
           </div>
         )}
       </section>
+
+      {showNewProductPopup && (
+        <NewProductPopup
+          initialStoreId={storeId}
+          onClose={() => setShowNewProductPopup(false)}
+          onSuccess={() => {
+            setShowNewProductPopup(false)
+            fetchStoreData()
+          }}
+        />
+      )}
     </div>
   )
 }

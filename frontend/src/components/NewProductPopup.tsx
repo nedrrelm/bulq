@@ -9,16 +9,17 @@ import ConfirmDialog from './ConfirmDialog'
 interface NewProductPopupProps {
   onClose: () => void
   onSuccess: () => void
+  initialStoreId?: string
 }
 
 const MAX_NAME_LENGTH = 100
 const MIN_NAME_LENGTH = 2
 
-export default function NewProductPopup({ onClose, onSuccess }: NewProductPopupProps) {
+export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: NewProductPopupProps) {
   const [productName, setProductName] = useState('')
   const [brand, setBrand] = useState('')
   const [unit, setUnit] = useState('')
-  const [storeId, setStoreId] = useState('')
+  const [storeId, setStoreId] = useState(initialStoreId || '')
   const [price, setPrice] = useState('')
   const [stores, setStores] = useState<Store[]>([])
   const [error, setError] = useState('')
