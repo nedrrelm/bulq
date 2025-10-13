@@ -7,6 +7,7 @@ from ..exceptions import ConflictError, ForbiddenError, NotFoundError, Validatio
 from ..models import LeaderReassignmentRequest, Run, User
 from ..repository import AbstractRepository
 from ..request_context import get_logger
+from ..schemas import MyRequestsResponse, ReassignmentDetailResponse, ReassignmentResponse
 from ..transaction import transaction
 from ..websocket_manager import manager as ws_manager
 
@@ -28,7 +29,7 @@ class ReassignmentService:
 
     async def request_reassignment(
         self, run_id: UUID, from_user: User, to_user_id: UUID
-    ) -> dict[str, Any]:
+    ) -> ReassignmentResponse:
         """Create a leader reassignment request.
 
         Creates request and notification atomically.
@@ -39,7 +40,7 @@ class ReassignmentService:
             to_user_id: User to become new leader
 
         Returns:
-            Dict with request details
+            ReassignmentResponse with request details
 
         Raises:
             NotFoundError: Run or target user not found
@@ -75,14 +76,15 @@ class ReassignmentService:
             },
         )
 
-        return {
-            'id': str(request.id),
-            'run_id': str(request.run_id),
-            'from_user_id': str(request.from_user_id),
-            'to_user_id': str(request.to_user_id),
-            'status': request.status,
-            'created_at': request.created_at.isoformat(),
-        }
+        return ReassignmentResponse(
+            id=str(request.id),
+            run_id=str(request.run_id),
+            from_user_id=str(request.from_user_id),
+            to_user_id=str(request.to_user_id),
+            status=request.status,
+            created_at=request.created_at.isoformat(),
+            resolved_at=None,
+        )
 
     def _validate_reassignment_eligibility(
         self, run_id: UUID, from_user: User, to_user_id: UUID
@@ -192,7 +194,7 @@ class ReassignmentService:
                 },
             )
 
-    async def accept_reassignment(self, request_id: UUID, accepting_user: User) -> dict[str, Any]:
+    async def accept_reassignment(self, request_id: UUID, accepting_user: User) -> ReassignmentResponse:
         """Accept a leader reassignment request.
 
         Transfers leadership and updates request status atomically.
@@ -202,7 +204,7 @@ class ReassignmentService:
             accepting_user: User accepting the request
 
         Returns:
-            Dict with updated request details
+            ReassignmentResponse with updated request details
 
         Raises:
             NotFoundError: Request not found
@@ -236,15 +238,15 @@ class ReassignmentService:
             },
         )
 
-        return {
-            'id': str(request.id),
-            'run_id': str(request.run_id),
-            'from_user_id': str(request.from_user_id),
-            'to_user_id': str(request.to_user_id),
-            'status': 'accepted',
-            'created_at': request.created_at.isoformat(),
-            'resolved_at': request.resolved_at.isoformat() if request.resolved_at else None,
-        }
+        return ReassignmentResponse(
+            id=str(request.id),
+            run_id=str(request.run_id),
+            from_user_id=str(request.from_user_id),
+            to_user_id=str(request.to_user_id),
+            status='accepted',
+            created_at=request.created_at.isoformat(),
+            resolved_at=request.resolved_at.isoformat() if request.resolved_at else None,
+        )
 
     def _validate_accept_request(
         self, request_id: UUID, accepting_user: User
@@ -350,7 +352,7 @@ class ReassignmentService:
                 },
             )
 
-    async def decline_reassignment(self, request_id: UUID, declining_user: User) -> dict[str, Any]:
+    async def decline_reassignment(self, request_id: UUID, declining_user: User) -> ReassignmentResponse:
         """Decline a leader reassignment request.
 
         Args:
@@ -358,7 +360,7 @@ class ReassignmentService:
             declining_user: User declining the request
 
         Returns:
-            Dict with updated request details
+            ReassignmentResponse with updated request details
 
         Raises:
             NotFoundError: Request not found
@@ -388,15 +390,15 @@ class ReassignmentService:
             },
         )
 
-        return {
-            'id': str(request.id),
-            'run_id': str(request.run_id),
-            'from_user_id': str(request.from_user_id),
-            'to_user_id': str(request.to_user_id),
-            'status': 'declined',
-            'created_at': request.created_at.isoformat(),
-            'resolved_at': request.resolved_at.isoformat() if request.resolved_at else None,
-        }
+        return ReassignmentResponse(
+            id=str(request.id),
+            run_id=str(request.run_id),
+            from_user_id=str(request.from_user_id),
+            to_user_id=str(request.to_user_id),
+            status='declined',
+            created_at=request.created_at.isoformat(),
+            resolved_at=request.resolved_at.isoformat() if request.resolved_at else None,
+        )
 
     def _validate_decline_request(
         self, request_id: UUID, declining_user: User
@@ -484,7 +486,7 @@ class ReassignmentService:
                 },
             )
 
-    def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> dict[str, Any]:
+    def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> ReassignmentResponse:
         """Cancel a pending reassignment request.
 
         Args:
@@ -492,7 +494,7 @@ class ReassignmentService:
             cancelling_user: User cancelling the request
 
         Returns:
-            Dict with updated request details
+            ReassignmentResponse with updated request details
 
         Raises:
             NotFoundError: Request not found
@@ -524,46 +526,46 @@ class ReassignmentService:
             },
         )
 
-        return {
-            'id': str(request.id),
-            'run_id': str(request.run_id),
-            'from_user_id': str(request.from_user_id),
-            'to_user_id': str(request.to_user_id),
-            'status': 'cancelled',
-            'created_at': request.created_at.isoformat(),
-            'resolved_at': request.resolved_at.isoformat() if request.resolved_at else None,
-        }
+        return ReassignmentResponse(
+            id=str(request.id),
+            run_id=str(request.run_id),
+            from_user_id=str(request.from_user_id),
+            to_user_id=str(request.to_user_id),
+            status='cancelled',
+            created_at=request.created_at.isoformat(),
+            resolved_at=request.resolved_at.isoformat() if request.resolved_at else None,
+        )
 
-    def get_pending_requests_for_user(self, user_id: UUID) -> dict[str, list[dict[str, Any]]]:
+    def get_pending_requests_for_user(self, user_id: UUID) -> MyRequestsResponse:
         """Get all pending reassignment requests involving a user.
 
         Args:
             user_id: User to check
 
         Returns:
-            Dict with 'sent' and 'received' lists of requests
+            MyRequestsResponse with 'sent' and 'received' lists of requests
         """
         sent_requests = self.repo.get_pending_reassignments_from_user(user_id)
         received_requests = self.repo.get_pending_reassignments_to_user(user_id)
 
-        return {
-            'sent': [self._format_request(r) for r in sent_requests],
-            'received': [self._format_request(r) for r in received_requests],
-        }
+        return MyRequestsResponse(
+            sent=[self._format_request(r) for r in sent_requests],
+            received=[self._format_request(r) for r in received_requests],
+        )
 
-    def get_pending_request_for_run(self, run_id: UUID) -> dict[str, Any | None]:
+    def get_pending_request_for_run(self, run_id: UUID) -> ReassignmentDetailResponse | None:
         """Get pending reassignment request for a run (if any).
 
         Args:
             run_id: Run to check
 
         Returns:
-            Request details or None
+            ReassignmentDetailResponse or None
         """
         request = self.repo.get_pending_reassignment_for_run(run_id)
         return self._format_request(request) if request else None
 
-    def _format_request(self, request: LeaderReassignmentRequest) -> dict[str, Any]:
+    def _format_request(self, request: LeaderReassignmentRequest) -> ReassignmentDetailResponse:
         """Format a reassignment request for API response."""
         # Get user names
         from_user = self.repo.get_user_by_id(request.from_user_id)
@@ -578,14 +580,14 @@ class ReassignmentService:
             store = self.repo.get_store_by_id(run.store_id)
             store_name = store.name if store else 'Unknown Store'
 
-        return {
-            'id': str(request.id),
-            'run_id': str(request.run_id),
-            'from_user_id': str(request.from_user_id),
-            'from_user_name': from_user.name if from_user else 'Unknown',
-            'to_user_id': str(request.to_user_id),
-            'to_user_name': to_user.name if to_user else 'Unknown',
-            'store_name': store_name,
-            'status': request.status,
-            'created_at': request.created_at.isoformat(),
-        }
+        return ReassignmentDetailResponse(
+            id=str(request.id),
+            run_id=str(request.run_id),
+            from_user_id=str(request.from_user_id),
+            from_user_name=from_user.name if from_user else 'Unknown',
+            to_user_id=str(request.to_user_id),
+            to_user_name=to_user.name if to_user else 'Unknown',
+            store_name=store_name,
+            status=request.status,
+            created_at=request.created_at.isoformat(),
+        )

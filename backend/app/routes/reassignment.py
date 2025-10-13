@@ -32,8 +32,7 @@ async def request_reassignment(
     run_id = UUID(data.run_id)
     to_user_id = UUID(data.to_user_id)
 
-    result = await service.request_reassignment(run_id, current_user, to_user_id)
-    return ReassignmentResponse(**result)
+    return await service.request_reassignment(run_id, current_user, to_user_id)
 
 
 @router.post('/{request_id}/accept', response_model=ReassignmentResponse)
@@ -42,9 +41,7 @@ async def accept_reassignment(
 ):
     """Accept a leader reassignment request."""
     service = ReassignmentService(db)
-
-    result = await service.accept_reassignment(UUID(request_id), current_user)
-    return ReassignmentResponse(**result)
+    return await service.accept_reassignment(UUID(request_id), current_user)
 
 
 @router.post('/{request_id}/decline', response_model=ReassignmentResponse)
@@ -53,9 +50,7 @@ async def decline_reassignment(
 ):
     """Decline a leader reassignment request."""
     service = ReassignmentService(db)
-
-    result = await service.decline_reassignment(UUID(request_id), current_user)
-    return ReassignmentResponse(**result)
+    return await service.decline_reassignment(UUID(request_id), current_user)
 
 
 @router.post('/{request_id}/cancel', response_model=ReassignmentResponse)
@@ -64,9 +59,7 @@ async def cancel_reassignment(
 ):
     """Cancel a pending reassignment request."""
     service = ReassignmentService(db)
-
-    result = service.cancel_reassignment(UUID(request_id), current_user)
-    return ReassignmentResponse(**result)
+    return service.cancel_reassignment(UUID(request_id), current_user)
 
 
 @router.get('/my-requests', response_model=MyRequestsResponse)
@@ -75,12 +68,7 @@ async def get_my_requests(
 ):
     """Get all pending reassignment requests for the current user."""
     service = ReassignmentService(db)
-
-    result = service.get_pending_requests_for_user(current_user.id)
-    return MyRequestsResponse(
-        sent=[ReassignmentDetailResponse(**r) for r in result['sent']],
-        received=[ReassignmentDetailResponse(**r) for r in result['received']],
-    )
+    return service.get_pending_requests_for_user(current_user.id)
 
 
 @router.get('/run/{run_id}', response_model=RunRequestResponse)
@@ -89,6 +77,5 @@ async def get_run_request(
 ):
     """Get pending reassignment request for a specific run."""
     service = ReassignmentService(db)
-
     request = service.get_pending_request_for_run(UUID(run_id))
-    return RunRequestResponse(request=ReassignmentDetailResponse(**request) if request else None)
+    return RunRequestResponse(request=request)

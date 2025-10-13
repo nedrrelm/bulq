@@ -5,6 +5,7 @@ from uuid import UUID
 
 from ..exceptions import NotFoundError, ValidationError
 from ..models import Store
+from ..schemas import StorePageResponse, StoreProductResponse, StoreResponse, StoreRunResponse
 from .base_service import BaseService
 
 
@@ -28,11 +29,11 @@ class StoreService(BaseService):
             raise NotFoundError('Store', store_id)
         return store
 
-    def get_store_page_data(self, store_id: UUID, user_id: UUID) -> dict[str, Any]:
+    def get_store_page_data(self, store_id: UUID, user_id: UUID) -> StorePageResponse:
         """Get all data needed for the store page with fully formatted response.
 
         Returns:
-            Dict with store info, products with prices, and active runs with full details
+            StorePageResponse with store info, products with prices, and active runs with full details
         """
         store = self.get_store_by_id(store_id)
         products = self.repo.get_products_by_store_from_availabilities(store_id)
@@ -45,13 +46,13 @@ class StoreService(BaseService):
             current_price = str(availability.price) if availability and availability.price else None
 
             products_response.append(
-                {
-                    'id': str(p.id),
-                    'name': p.name,
-                    'brand': p.brand,
-                    'unit': p.unit,
-                    'current_price': current_price,
-                }
+                StoreProductResponse(
+                    id=str(p.id),
+                    name=p.name,
+                    brand=p.brand,
+                    unit=p.unit,
+                    current_price=current_price,
+                )
             )
 
         # Format active runs with complete details
@@ -66,19 +67,19 @@ class StoreService(BaseService):
             leader_name = leader.user.name if leader and leader.user else 'Unknown'
 
             runs_response.append(
-                {
-                    'id': str(r.id),
-                    'state': r.state,
-                    'group_id': str(r.group_id),
-                    'group_name': group.name if group else 'Unknown',
-                    'store_name': store_obj.name if store_obj else 'Unknown',
-                    'leader_name': leader_name,
-                    'planned_on': r.planned_on.isoformat() if r.planned_on else None,
-                }
+                StoreRunResponse(
+                    id=str(r.id),
+                    state=r.state,
+                    group_id=str(r.group_id),
+                    group_name=group.name if group else 'Unknown',
+                    store_name=store_obj.name if store_obj else 'Unknown',
+                    leader_name=leader_name,
+                    planned_on=r.planned_on.isoformat() if r.planned_on else None,
+                )
             )
 
-        return {
-            'store': {'id': str(store.id), 'name': store.name},
-            'products': products_response,
-            'active_runs': runs_response,
-        }
+        return StorePageResponse(
+            store=StoreResponse(id=str(store.id), name=store.name),
+            products=products_response,
+            active_runs=runs_response,
+        )

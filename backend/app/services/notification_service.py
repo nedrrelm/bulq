@@ -7,6 +7,7 @@ from typing import Any
 from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import User
 from ..request_context import get_logger
+from ..schemas import MarkAllReadResponse, MessageResponse, NotificationResponse
 from ..validation import validate_uuid
 from .base_service import BaseService
 
@@ -18,7 +19,7 @@ class NotificationService(BaseService):
 
     def get_user_notifications(
         self, user: User, limit: int = 20, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    ) -> list[NotificationResponse]:
         """Get notifications for a user (paginated) with grouping.
 
         Args:
@@ -27,7 +28,7 @@ class NotificationService(BaseService):
             offset: Offset for pagination
 
         Returns:
-            List of notification dictionaries (possibly grouped)
+            List of NotificationResponse objects (possibly grouped)
         """
         logger.debug(
             'Fetching notifications for user',
@@ -41,19 +42,19 @@ class NotificationService(BaseService):
 
         return grouped
 
-    def get_unread_notifications(self, user: User) -> list[dict[str, Any]]:
+    def get_unread_notifications(self, user: User) -> list[NotificationResponse]:
         """Get all unread notifications for a user.
 
         Args:
             user: The user to get unread notifications for
 
         Returns:
-            List of notification dictionaries
+            List of NotificationResponse objects
         """
         logger.debug('Fetching unread notifications for user', extra={'user_id': str(user.id)})
 
         notifications = self.repo.get_unread_notifications(user.id)
-        return [self._notification_to_dict(n) for n in notifications]
+        return [self._notification_to_pydantic(n) for n in notifications]
 
     def get_unread_count(self, user: User) -> int:
         """Get count of unread notifications for a user.
@@ -66,7 +67,7 @@ class NotificationService(BaseService):
         """
         return self.repo.get_unread_count(user.id)
 
-    def mark_as_read(self, notification_id: str, user: User) -> dict[str, str]:
+    def mark_as_read(self, notification_id: str, user: User) -> MessageResponse:
         """Mark a notification as read (with authorization check).
 
         Args:
@@ -74,7 +75,7 @@ class NotificationService(BaseService):
             user: The user marking as read (must own the notification)
 
         Returns:
-            Success message
+            MessageResponse with success message
 
         Raises:
             BadRequestError: If notification ID is invalid
@@ -104,16 +105,16 @@ class NotificationService(BaseService):
             extra={'user_id': str(user.id), 'notification_id': notification_id},
         )
 
-        return {'message': 'Notification marked as read'}
+        return MessageResponse(message='Notification marked as read')
 
-    def mark_all_as_read(self, user: User) -> dict[str, Any]:
+    def mark_all_as_read(self, user: User) -> MarkAllReadResponse:
         """Mark all notifications as read for a user.
 
         Args:
             user: The user to mark all notifications for
 
         Returns:
-            Dict with count of marked notifications
+            MarkAllReadResponse with count of marked notifications
         """
         count = self.repo.mark_all_notifications_as_read(user.id)
 
@@ -121,19 +122,19 @@ class NotificationService(BaseService):
             'Marked all notifications as read', extra={'user_id': str(user.id), 'count': count}
         )
 
-        return {'message': 'All notifications marked as read', 'count': count}
+        return MarkAllReadResponse(message='All notifications marked as read', count=count)
 
-    def _notification_to_dict(self, notification) -> dict[str, Any]:
-        """Convert notification model to dictionary."""
-        return {
-            'id': str(notification.id),
-            'type': notification.type,
-            'data': notification.data,
-            'read': notification.read,
-            'created_at': notification.created_at.isoformat() + 'Z',
-        }
+    def _notification_to_pydantic(self, notification) -> NotificationResponse:
+        """Convert notification model to Pydantic response."""
+        return NotificationResponse(
+            id=str(notification.id),
+            type=notification.type,
+            data=notification.data,
+            read=notification.read,
+            created_at=notification.created_at.isoformat() + 'Z',
+        )
 
-    def _group_notifications(self, notifications: list) -> list[dict[str, Any]]:
+    def _group_notifications(self, notifications: list) -> list[NotificationResponse]:
         """Group similar notifications that occurred close together.
 
         Groups notifications of the same type with the same run_id
@@ -143,7 +144,7 @@ class NotificationService(BaseService):
             notifications: List of notification objects
 
         Returns:
-            List of notification dicts (some may be grouped)
+            List of NotificationResponse objects (some may be grouped with extra fields)
         """
         if not notifications:
             return []
@@ -169,7 +170,7 @@ class NotificationService(BaseService):
         for _key, group_notifs in groups.items():
             if len(group_notifs) == 1:
                 # Single notification, return as is
-                result.append(self._notification_to_dict(group_notifs[0]))
+                result.append(self._notification_to_pydantic(group_notifs[0]))
             else:
                 # Multiple notifications, check if they should be grouped by time
                 # Sort by created_at
@@ -181,25 +182,28 @@ class NotificationService(BaseService):
                 last_time = group_notifs[-1].created_at
 
                 if first_time - last_time <= time_window:
-                    # Group them
+                    # Group them - use Pydantic model with extra fields
                     result.append(
-                        {
-                            'id': str(group_notifs[0].id),  # Use first notification's ID
-                            'type': group_notifs[0].type,
-                            'data': group_notifs[0].data,
-                            'read': all(n.read for n in group_notifs),
-                            'created_at': group_notifs[0].created_at.isoformat() + 'Z',
-                            'grouped': True,
-                            'count': len(group_notifs),
-                            'notification_ids': [str(n.id) for n in group_notifs],
-                        }
+                        NotificationResponse(
+                            id=str(group_notifs[0].id),  # Use first notification's ID
+                            type=group_notifs[0].type,
+                            data=group_notifs[0].data,
+                            read=all(n.read for n in group_notifs),
+                            created_at=group_notifs[0].created_at.isoformat() + 'Z',
+                            # Pydantic will accept these extra fields
+                            **{
+                                'grouped': True,
+                                'count': len(group_notifs),
+                                'notification_ids': [str(n.id) for n in group_notifs],
+                            }
+                        )
                     )
                 else:
                     # Too far apart, don't group
                     for notif in group_notifs:
-                        result.append(self._notification_to_dict(notif))
+                        result.append(self._notification_to_pydantic(notif))
 
         # Sort result by created_at (most recent first)
-        result.sort(key=lambda n: n['created_at'], reverse=True)
+        result.sort(key=lambda n: n.created_at, reverse=True)
 
         return result
