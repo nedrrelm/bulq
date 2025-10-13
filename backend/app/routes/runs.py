@@ -31,22 +31,19 @@ async def create_run(
 ):
     """Create a new run for a group."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.create_run(request.group_id, request.store_id, current_user)
 
-    # Broadcast to group room
-    await manager.broadcast(
-        f'group:{result.group_id}',
-        {
-            'type': 'run_created',
-            'data': {
-                'run_id': result.id,
-                'store_id': result.store_id,
-                'store_name': result.store_name,
-                'state': result.state,
-                'leader_name': result.leader_name,
-            },
-        },
+    # Broadcast to group room using notification service
+    await service.notification_service.broadcast_run_created(
+        result.group_id,
+        result.id,
+        result.store_id,
+        result.store_name,
+        result.state,
+        result.leader_name,
     )
 
     return result
@@ -71,6 +68,8 @@ async def place_bid(
 ):
     """Place or update a bid on a product in a run."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.place_bid(
         run_id,
@@ -80,37 +79,21 @@ async def place_bid(
         current_user,
     )
 
-    # Broadcast to run room
-    await manager.broadcast(
-        f'run:{result.run_id}',
-        {
-            'type': 'bid_updated',
-            'data': {
-                'product_id': result.product_id,
-                'user_id': result.user_id,
-                'user_name': result.user_name,
-                'quantity': result.quantity,
-                'interested_only': result.interested_only,
-                'new_total': result.new_total,
-            },
-        },
+    # Broadcast bid update using notification service
+    await service.notification_service.broadcast_bid_update(
+        result.run_id,
+        result.product_id,
+        result.user_id,
+        result.user_name,
+        result.quantity,
+        result.interested_only,
+        result.new_total,
     )
 
-    # If state changed, broadcast to both run and group
+    # If state changed, broadcast state change
     if result.state_changed:
-        await manager.broadcast(
-            f'run:{result.run_id}',
-            {
-                'type': 'state_changed',
-                'data': {'run_id': result.run_id, 'new_state': result.new_state},
-            },
-        )
-        await manager.broadcast(
-            f'group:{result.group_id}',
-            {
-                'type': 'run_state_changed',
-                'data': {'run_id': result.run_id, 'new_state': result.new_state},
-            },
+        await service.notification_service.broadcast_state_change(
+            result.run_id, result.group_id, result.new_state
         )
 
     return MessageResponse(message=result.message)
@@ -125,20 +108,14 @@ async def retract_bid(
 ):
     """Retract a bid on a product in a run."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.retract_bid(run_id, product_id, current_user)
 
-    # Broadcast to run room
-    await manager.broadcast(
-        f'run:{result.run_id}',
-        {
-            'type': 'bid_retracted',
-            'data': {
-                'product_id': result.product_id,
-                'user_id': result.user_id,
-                'new_total': result.new_total,
-            },
-        },
+    # Broadcast retraction using notification service
+    await service.notification_service.broadcast_bid_retraction(
+        result.run_id, result.product_id, result.user_id, result.new_total
     )
 
     return MessageResponse(message=result.message)
@@ -150,30 +127,20 @@ async def toggle_ready(
 ):
     """Toggle the current user's ready status for a run."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.toggle_ready(run_id, current_user)
 
-    # Broadcast ready toggle to run room
-    await manager.broadcast(
-        f'run:{result.run_id}',
-        {'type': 'ready_toggled', 'data': {'user_id': result.user_id, 'is_ready': result.is_ready}},
+    # Broadcast ready toggle using notification service
+    await service.notification_service.broadcast_ready_toggle(
+        result.run_id, result.user_id, result.is_ready
     )
 
-    # If state changed, broadcast state change to both run and group
+    # If state changed, broadcast state change
     if result.state_changed:
-        await manager.broadcast(
-            f'run:{result.run_id}',
-            {
-                'type': 'state_changed',
-                'data': {'run_id': result.run_id, 'new_state': result.new_state},
-            },
-        )
-        await manager.broadcast(
-            f'group:{result.group_id}',
-            {
-                'type': 'run_state_changed',
-                'data': {'run_id': result.run_id, 'new_state': result.new_state},
-            },
+        await service.notification_service.broadcast_state_change(
+            result.run_id, result.group_id, result.new_state
         )
 
     return result
@@ -185,17 +152,14 @@ async def start_shopping(
 ):
     """Start shopping - transition from confirmed to shopping state (leader only)."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.start_run(run_id, current_user)
 
-    # Broadcast state change to both run and group
-    await manager.broadcast(
-        f'run:{result.run_id}',
-        {'type': 'state_changed', 'data': {'run_id': result.run_id, 'new_state': result.state}},
-    )
-    await manager.broadcast(
-        f'group:{result.group_id}',
-        {'type': 'run_state_changed', 'data': {'run_id': result.run_id, 'new_state': result.state}},
+    # Broadcast state change using notification service
+    await service.notification_service.broadcast_state_change(
+        result.run_id, result.group_id, result.state
     )
 
     return result
@@ -207,17 +171,14 @@ async def finish_adjusting(
 ):
     """Finish adjusting bids - transition from adjusting to distributing state (leader only)."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.finish_adjusting(run_id, current_user)
 
-    # Broadcast state change to both run and group
-    await manager.broadcast(
-        f'run:{result.run_id}',
-        {'type': 'state_changed', 'data': {'run_id': result.run_id, 'new_state': result.state}},
-    )
-    await manager.broadcast(
-        f'group:{result.group_id}',
-        {'type': 'run_state_changed', 'data': {'run_id': result.run_id, 'new_state': result.state}},
+    # Broadcast state change using notification service
+    await service.notification_service.broadcast_state_change(
+        result.run_id, result.group_id, result.state
     )
 
     return result
@@ -239,17 +200,14 @@ async def transition_to_shopping(
 ):
     """Transition to shopping state (alias for start-shopping)."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.transition_to_shopping(run_id, current_user)
 
-    # Broadcast state change to both run and group
-    await manager.broadcast(
-        f'run:{result.run_id}',
-        {'type': 'state_changed', 'data': {'run_id': result.run_id, 'new_state': result.state}},
-    )
-    await manager.broadcast(
-        f'group:{result.group_id}',
-        {'type': 'run_state_changed', 'data': {'run_id': result.run_id, 'new_state': result.state}},
+    # Broadcast state change using notification service
+    await service.notification_service.broadcast_state_change(
+        result.run_id, result.group_id, result.state
     )
 
     return result
@@ -261,14 +219,12 @@ async def cancel_run(
 ):
     """Cancel a run. Leader only. Can be done from any state except completed/cancelled."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting (state service handles state change notifications)
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.cancel_run(run_id, current_user)
 
-    # Broadcast to group room
-    await manager.broadcast(
-        f'group:{result.group_id}',
-        {'type': 'run_cancelled', 'data': {'run_id': result.run_id, 'state': result.state}},
-    )
+    # No additional broadcast needed - state service handles notifications
 
     return result
 
@@ -279,12 +235,11 @@ async def delete_run(
 ):
     """Delete a run (cancels it). Alias for cancel_run for backward compatibility."""
     service = RunService(db)
+    # Set WebSocket manager for broadcasting (state service handles state change notifications)
+    service.notification_service.set_websocket_manager(manager)
 
     result = service.delete_run(run_id, current_user)
 
-    # Broadcast to group room
-    await manager.broadcast(
-        f'group:{result.group_id}', {'type': 'run_cancelled', 'data': {'run_id': result.run_id}}
-    )
+    # No additional broadcast needed - state service handles notifications
 
     return MessageResponse(message=result.message)
