@@ -121,22 +121,6 @@ await manager.broadcast(f"run:{result.run_id}", {
 
 ---
 
-### 19. Inconsistent Return Types in Services
-**Status**: Medium Priority (consistency)
-**Affected files**: `app/services/group_service.py:91`
-
-**Problem:** Some service methods return Pydantic models, others construct data inline.
-```python
-# Inconsistent - creating datetime.now() but not in model:
-created_at=datetime.now().isoformat()  # Not in actual model
-```
-
-**Impact:** Confusing API contract, may return data that doesn't match actual model.
-
-**Fix:** Always return proper Pydantic response models, don't fabricate fields.
-
----
-
 ### 21. Mixed Responsibilities in Route Handlers
 **Status**: High Priority (architecture)
 **Affected files**: `app/routes/runs.py`, `app/routes/groups.py`

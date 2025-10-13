@@ -6,6 +6,7 @@ from uuid import UUID
 
 from ..exceptions import NotFoundError
 from ..models import User
+from ..schemas import AdminProductResponse, AdminStoreResponse, AdminUserResponse, VerificationToggleResponse
 from .base_service import BaseService
 
 
@@ -18,7 +19,7 @@ class AdminService(BaseService):
         verified: bool | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> list[dict[str, Any]]:
+    ) -> list[AdminUserResponse]:
         """Get all users with optional search and filtering (paginated).
 
         Args:
@@ -56,18 +57,18 @@ class AdminService(BaseService):
         paginated_users = users[offset : offset + limit]
 
         return [
-            {
-                'id': str(u.id),
-                'name': u.name,
-                'email': u.email,
-                'verified': u.verified,
-                'is_admin': u.is_admin,
-                'created_at': u.created_at.isoformat() if u.created_at else None,
-            }
+            AdminUserResponse(
+                id=str(u.id),
+                name=u.name,
+                email=u.email,
+                verified=u.verified,
+                is_admin=u.is_admin,
+                created_at=u.created_at.isoformat() if u.created_at else None,
+            )
             for u in paginated_users
         ]
 
-    def toggle_user_verification(self, user_id: UUID, admin_user: User) -> dict[str, Any]:
+    def toggle_user_verification(self, user_id: UUID, admin_user: User) -> VerificationToggleResponse:
         """Toggle user verification status.
 
         Args:
@@ -75,7 +76,7 @@ class AdminService(BaseService):
             admin_user: Admin user performing the action
 
         Returns:
-            Dict with updated user info
+            VerificationToggleResponse with updated user info
 
         Raises:
             NotFoundError: If user not found
@@ -87,11 +88,11 @@ class AdminService(BaseService):
         # Toggle verification
         user.verified = not user.verified
 
-        return {
-            'id': str(user.id),
-            'verified': user.verified,
-            'message': f'User verification {"enabled" if user.verified else "disabled"}',
-        }
+        return VerificationToggleResponse(
+            id=str(user.id),
+            verified=user.verified,
+            message=f'User verification {"enabled" if user.verified else "disabled"}',
+        )
 
     def get_products(
         self,
@@ -99,7 +100,7 @@ class AdminService(BaseService):
         verified: bool | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> list[dict[str, Any]]:
+    ) -> list[AdminProductResponse]:
         """Get all products with optional search and filtering (paginated).
 
         Args:
@@ -109,7 +110,7 @@ class AdminService(BaseService):
             offset: Number of results to skip
 
         Returns:
-            List of product dictionaries with formatted data
+            List of AdminProductResponse with formatted data
         """
         products = self.repo.get_all_products()
 
@@ -137,18 +138,18 @@ class AdminService(BaseService):
         paginated_products = products[offset : offset + limit]
 
         return [
-            {
-                'id': str(p.id),
-                'name': p.name,
-                'brand': p.brand,
-                'store_name': p.store.name if p.store else None,
-                'verified': p.verified,
-                'created_at': p.created_at.isoformat() if p.created_at else None,
-            }
+            AdminProductResponse(
+                id=str(p.id),
+                name=p.name,
+                brand=p.brand,
+                unit=p.unit,
+                verified=p.verified,
+                created_at=p.created_at.isoformat() if p.created_at else None,
+            )
             for p in paginated_products
         ]
 
-    def toggle_product_verification(self, product_id: UUID, admin_user: User) -> dict[str, Any]:
+    def toggle_product_verification(self, product_id: UUID, admin_user: User) -> VerificationToggleResponse:
         """Toggle product verification status.
 
         Args:
@@ -156,7 +157,7 @@ class AdminService(BaseService):
             admin_user: Admin user performing the action
 
         Returns:
-            Dict with updated product info
+            VerificationToggleResponse with updated product info
 
         Raises:
             NotFoundError: If product not found
@@ -174,11 +175,11 @@ class AdminService(BaseService):
             product.verified_by = None
             product.verified_at = None
 
-        return {
-            'id': str(product.id),
-            'verified': product.verified,
-            'message': f'Product verification {"enabled" if product.verified else "disabled"}',
-        }
+        return VerificationToggleResponse(
+            id=str(product.id),
+            verified=product.verified,
+            message=f'Product verification {"enabled" if product.verified else "disabled"}',
+        )
 
     def get_stores(
         self,
@@ -186,7 +187,7 @@ class AdminService(BaseService):
         verified: bool | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> list[dict[str, Any]]:
+    ) -> list[AdminStoreResponse]:
         """Get all stores with optional search and filtering (paginated).
 
         Args:
@@ -196,7 +197,7 @@ class AdminService(BaseService):
             offset: Number of results to skip
 
         Returns:
-            List of store dictionaries with formatted data
+            List of AdminStoreResponse with formatted data
         """
         stores = self.repo.get_all_stores()
 
@@ -225,18 +226,17 @@ class AdminService(BaseService):
         paginated_stores = stores[offset : offset + limit]
 
         return [
-            {
-                'id': str(s.id),
-                'name': s.name,
-                'address': s.address,
-                'chain': s.chain,
-                'verified': s.verified,
-                'created_at': s.created_at.isoformat() if s.created_at else None,
-            }
+            AdminStoreResponse(
+                id=str(s.id),
+                name=s.name,
+                address=s.address,
+                verified=s.verified,
+                created_at=s.created_at.isoformat() if s.created_at else None,
+            )
             for s in paginated_stores
         ]
 
-    def toggle_store_verification(self, store_id: UUID, admin_user: User) -> dict[str, Any]:
+    def toggle_store_verification(self, store_id: UUID, admin_user: User) -> VerificationToggleResponse:
         """Toggle store verification status.
 
         Args:
@@ -244,7 +244,7 @@ class AdminService(BaseService):
             admin_user: Admin user performing the action
 
         Returns:
-            Dict with updated store info
+            VerificationToggleResponse with updated store info
 
         Raises:
             NotFoundError: If store not found
@@ -262,8 +262,8 @@ class AdminService(BaseService):
             store.verified_by = None
             store.verified_at = None
 
-        return {
-            'id': str(store.id),
-            'verified': store.verified,
-            'message': f'Store verification {"enabled" if store.verified else "disabled"}',
-        }
+        return VerificationToggleResponse(
+            id=str(store.id),
+            verified=store.verified,
+            message=f'Store verification {"enabled" if store.verified else "disabled"}',
+        )

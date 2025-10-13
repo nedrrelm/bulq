@@ -183,16 +183,16 @@ class TestGroupService:
         groups = service.get_user_groups(user)
 
         assert len(groups) >= 1
-        assert any(g["id"] == str(group.id) for g in groups)
+        assert any(g.id == str(group.id) for g in groups)
 
     def test_get_group_details(self, repo, user, group):
         """Test getting group details"""
         service = GroupService(repo)
         details = service.get_group_details(str(group.id), user)
 
-        assert details["id"] == str(group.id)
-        assert details["name"] == group.name
-        assert "invite_token" in details
+        assert details.id == str(group.id)
+        assert details.name == group.name
+        assert details.invite_token is not None
 
     def test_get_group_details_not_member(self, repo, user):
         """Test getting group details when not a member"""
@@ -294,9 +294,9 @@ class TestProductService:
         service = ProductService(repo)
         details = service.get_product_details(product.id)
 
-        # get_product_details returns dict, that's fine
-        assert details["id"] == str(product.id)
-        assert details["name"] == product.name
+        # get_product_details returns ProductDetailResponse (Pydantic model)
+        assert details.id == str(product.id)
+        assert details.name == product.name
 
 
 class TestStoreService:
