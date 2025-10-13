@@ -84,8 +84,6 @@ class GroupService(BaseService):
                 for run in sorted_active_runs
             ]
 
-            from datetime import datetime
-
             group_responses.append(
                 GroupResponse(
                     id=str(group.id),
@@ -97,7 +95,7 @@ class GroupService(BaseService):
                     active_runs_count=len(active_runs),
                     completed_runs_count=len(completed_runs),
                     active_runs=active_runs_summary,
-                    created_at=datetime.now().isoformat(),  # Not available in model yet
+                    created_at=group.created_at.isoformat() if group.created_at else '',
                 )
             )
 

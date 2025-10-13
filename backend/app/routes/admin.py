@@ -38,8 +38,7 @@ async def get_users(
 ):
     """Get all users with optional search and filtering (paginated, max 100 per page)."""
     service = AdminService(db)
-    results = service.get_users(search, verified, limit, offset)
-    return [AdminUserResponse(**r) for r in results]
+    return service.get_users(search, verified, limit, offset)
 
 
 @router.post('/users/{user_id}/verify', response_model=VerificationToggleResponse)
@@ -48,8 +47,7 @@ async def toggle_user_verification(
 ):
     """Toggle user verification status."""
     service = AdminService(db)
-    result = service.toggle_user_verification(UUID(user_id), admin_user)
-    return VerificationToggleResponse(**result)
+    return service.toggle_user_verification(UUID(user_id), admin_user)
 
 
 @router.get('/products', response_model=list[AdminProductResponse])
@@ -63,8 +61,7 @@ async def get_products(
 ):
     """Get all products with optional search and filtering (paginated, max 100 per page)."""
     service = AdminService(db)
-    results = service.get_products(search, verified, limit, offset)
-    return [AdminProductResponse(**r) for r in results]
+    return service.get_products(search, verified, limit, offset)
 
 
 @router.post('/products/{product_id}/verify', response_model=VerificationToggleResponse)
@@ -73,8 +70,7 @@ async def toggle_product_verification(
 ):
     """Toggle product verification status."""
     service = AdminService(db)
-    result = service.toggle_product_verification(UUID(product_id), admin_user)
-    return VerificationToggleResponse(**result)
+    return service.toggle_product_verification(UUID(product_id), admin_user)
 
 
 @router.get('/stores', response_model=list[AdminStoreResponse])
@@ -88,8 +84,7 @@ async def get_stores(
 ):
     """Get all stores with optional search and filtering (paginated, max 100 per page)."""
     service = AdminService(db)
-    results = service.get_stores(search, verified, limit, offset)
-    return [AdminStoreResponse(**r) for r in results]
+    return service.get_stores(search, verified, limit, offset)
 
 
 @router.post('/stores/{store_id}/verify', response_model=VerificationToggleResponse)
@@ -98,5 +93,4 @@ async def toggle_store_verification(
 ):
     """Toggle store verification status."""
     service = AdminService(db)
-    result = service.toggle_store_verification(UUID(store_id), admin_user)
-    return VerificationToggleResponse(**result)
+    return service.toggle_store_verification(UUID(store_id), admin_user)
