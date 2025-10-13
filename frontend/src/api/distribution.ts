@@ -1,16 +1,23 @@
 import { api } from './client'
-import { distributionItemSchema, type DistributionItem } from '../schemas/distribution'
+import { distributionUserSchema, type DistributionUser } from '../schemas/distribution'
 import { z } from 'zod'
 
-export interface TogglePickupRequest {
-  user_id: string
-  product_id: string
-}
-
 export const distributionApi = {
+  /**
+   * Get distribution data for a run (user-centric view)
+   */
   getDistribution: (runId: string) =>
-    api.get<DistributionItem[]>(`/distribution/${runId}`, z.array(distributionItemSchema)),
+    api.get<DistributionUser[]>(`/distribution/${runId}`, z.array(distributionUserSchema)),
 
-  togglePickup: (runId: string, data: TogglePickupRequest) =>
-    api.post(`/distribution/${runId}/toggle-pickup`, data)
+  /**
+   * Mark a specific bid as picked up
+   */
+  markPickedUp: (runId: string, bidId: string) =>
+    api.post(`/distribution/${runId}/pickup/${bidId}`, {}),
+
+  /**
+   * Complete distribution and transition run to completed state
+   */
+  completeDistribution: (runId: string) =>
+    api.post(`/distribution/${runId}/complete`, {})
 }

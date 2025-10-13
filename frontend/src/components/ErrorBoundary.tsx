@@ -30,8 +30,12 @@ class ErrorBoundary extends Component<Props, State> {
     console.error('Error caught by boundary:', error, errorInfo)
   }
 
-  handleReload = () => {
-    window.location.href = '/'
+  handleReset = () => {
+    // Reset error state to try rendering again
+    this.setState({
+      hasError: false,
+      error: null
+    })
   }
 
   render() {
@@ -49,8 +53,8 @@ class ErrorBoundary extends Component<Props, State> {
                 <pre>{this.state.error.toString()}</pre>
               </details>
             )}
-            <button onClick={this.handleReload} className="btn btn-primary">
-              Return to Home
+            <button onClick={this.handleReset} className="btn btn-primary">
+              Try Again
             </button>
           </div>
         </div>

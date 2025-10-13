@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import '../styles/components/Login.css'
 import { authApi, ApiError } from '../api'
 import type { User } from '../types/user'
+import { sanitizeString } from '../utils/validation'
 
 interface LoginProps {
   onLogin: (user: User) => void
@@ -50,7 +51,8 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const user = await authApi.login(loginData.email, loginData.password)
+      const sanitizedEmail = sanitizeString(loginData.email.trim(), 255)
+      const user = await authApi.login(sanitizedEmail, loginData.password)
       onLogin(user)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed')
@@ -65,7 +67,9 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const user = await authApi.register(registerData.name, registerData.email, registerData.password)
+      const sanitizedName = sanitizeString(registerData.name, 100)
+      const sanitizedEmail = sanitizeString(registerData.email.trim(), 255)
+      const user = await authApi.register(sanitizedName, sanitizedEmail, registerData.password)
       onLogin(user)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed')

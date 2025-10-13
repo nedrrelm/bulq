@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { distributionApi } from '../../api'
-import type { DistributionData } from '../../types'
 import { runKeys } from './useRuns'
 
 // Query Keys
@@ -13,7 +12,7 @@ export const distributionKeys = {
 // ==================== Queries ====================
 
 /**
- * Get distribution data for a run
+ * Get distribution data for a run (user-centric view)
  */
 export function useDistribution(runId: string | undefined) {
   return useQuery({
@@ -26,16 +25,16 @@ export function useDistribution(runId: string | undefined) {
 // ==================== Mutations ====================
 
 /**
- * Toggle picked up status for a user's item
+ * Mark a bid as picked up
  */
-export function useTogglePickup(runId: string) {
+export function useMarkPickedUp(runId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { userId: string, productId: string }) =>
-      distributionApi.togglePickup(runId, data.userId, data.productId),
+    mutationFn: (bidId: string) =>
+      distributionApi.markPickedUp(runId, bidId),
     onSuccess: () => {
-      // Invalidate distribution data
+      // Invalidate distribution data to refetch
       queryClient.invalidateQueries({ queryKey: distributionKeys.list(runId) })
     },
   })

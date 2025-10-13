@@ -23,85 +23,35 @@ const StorePage = lazy(() => import('./components/StorePage'))
 const NotificationPage = lazy(() => import('./pages/NotificationPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 
-// Wrapper components that use params and navigation
+// Wrapper components for lazy loading
 function GroupPageWrapper() {
-  const { groupId } = useParams<{ groupId: string }>()
-  const navigate = useNavigate()
-
-  if (!groupId) {
-    navigate('/')
-    return null
-  }
-
   return (
     <AppLayout>
-      <GroupPage
-        groupId={groupId}
-        onBack={() => navigate('/')}
-        onRunSelect={(runId) => navigate(`/runs/${runId}`)}
-        onManageSelect={(groupId) => navigate(`/groups/${groupId}/manage`)}
-      />
+      <GroupPage />
     </AppLayout>
   )
 }
 
 function RunPageWrapper() {
-  const { runId } = useParams<{ runId: string }>()
-  const navigate = useNavigate()
-  const { user } = useAuth()
-
-  if (!runId || !user) {
-    navigate('/')
-    return null
-  }
-
   return (
     <AppLayout>
-      <RunPage
-        runId={runId}
-        userId={user.id}
-        onBack={(groupId) => groupId ? navigate(`/groups/${groupId}`) : navigate('/')}
-        onShoppingSelect={(id) => navigate(`/shopping/${id}`)}
-        onDistributionSelect={(id) => navigate(`/distribution/${id}`)}
-      />
+      <RunPage />
     </AppLayout>
   )
 }
 
 function ShoppingPageWrapper() {
-  const { runId } = useParams<{ runId: string }>()
-  const navigate = useNavigate()
-
-  if (!runId) {
-    navigate('/')
-    return null
-  }
-
   return (
     <AppLayout>
-      <ShoppingPage
-        runId={runId}
-        onBack={() => navigate(`/runs/${runId}`)}
-      />
+      <ShoppingPage />
     </AppLayout>
   )
 }
 
 function DistributionPageWrapper() {
-  const { runId } = useParams<{ runId: string }>()
-  const navigate = useNavigate()
-
-  if (!runId) {
-    navigate('/')
-    return null
-  }
-
   return (
     <AppLayout>
-      <DistributionPage
-        runId={runId}
-        onBack={() => navigate(`/runs/${runId}`)}
-      />
+      <DistributionPage />
     </AppLayout>
   )
 }
@@ -145,20 +95,9 @@ function StorePageWrapper() {
 }
 
 function ManageGroupPageWrapper() {
-  const { groupId } = useParams<{ groupId: string }>()
-  const navigate = useNavigate()
-
-  if (!groupId) {
-    navigate('/')
-    return null
-  }
-
   return (
     <AppLayout>
-      <ManageGroupPage
-        groupId={groupId}
-        onBack={() => navigate(`/groups/${groupId}`)}
-      />
+      <ManageGroupPage />
     </AppLayout>
   )
 }

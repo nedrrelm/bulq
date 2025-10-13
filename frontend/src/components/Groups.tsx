@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/Groups.css'
 import { WS_BASE_URL } from '../config'
 import { reassignmentApi, ApiError } from '../api'
 import type { Group, Store } from '../api'
 import type { ProductSearchResult, PendingReassignments } from '../types'
+import type { WebSocketMessage } from '../types/websocket'
 import NewGroupPopup from './NewGroupPopup'
 import NewStorePopup from './NewStorePopup'
 import NewProductPopup from './NewProductPopup'
@@ -46,99 +47,35 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     fetchReassignments()
   }, [])
 
-  // Track current group IDs to avoid reconnecting when group data changes
-  const groupIdsRef = useRef<string>('')
-  const wsConnectionsRef = useRef<WebSocket[]>([])
-
-  // WebSocket connections for real-time updates - one per group
-  // Memoize group IDs to avoid unnecessary reconnections
-  const groupIds = useMemo(() => groups.map(g => g.id).join(','), [groups])
-
-  useEffect(() => {
-    if (groups.length === 0) {
-      // Clean up any existing connections
-      wsConnectionsRef.current.forEach(ws => {
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close()
-        }
-      })
-      wsConnectionsRef.current = []
-      return
+  // WebSocket connection for real-time updates - single user connection
+  // This replaces the previous multiple group-specific connections
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
+    if (message.type === 'run_created') {
+      // Invalidate groups query to refetch with new run
+      queryClient.invalidateQueries({ queryKey: groupKeys.list() })
+      // Also invalidate the specific group's runs if group_id is provided
+      const data = message.data as { group_id?: string }
+      if (data.group_id) {
+        queryClient.invalidateQueries({ queryKey: groupKeys.runs(data.group_id) })
+      }
+    } else if (message.type === 'run_state_changed') {
+      // Invalidate groups query to update run states
+      queryClient.invalidateQueries({ queryKey: groupKeys.list() })
+      // Also invalidate the specific group's runs and the run itself
+      const data = message.data as { group_id?: string; run_id?: string }
+      if (data.group_id) {
+        queryClient.invalidateQueries({ queryKey: groupKeys.runs(data.group_id) })
+      }
+      if (data.run_id) {
+        queryClient.invalidateQueries({ queryKey: ['runs', 'detail', data.run_id] })
+      }
     }
+  }, [queryClient])
 
-    // Only recreate connections if group IDs actually changed
-    if (groupIdsRef.current === groupIds) {
-      return
-    }
-
-    // Clean up old connections before creating new ones
-    wsConnectionsRef.current.forEach(ws => {
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        ws.close()
-      }
-    })
-    wsConnectionsRef.current = []
-
-    groupIdsRef.current = groupIds
-
-    // Add a small delay before connecting to avoid React strict mode race conditions
-    const connectionTimeout = setTimeout(() => {
-      groups.forEach((group) => {
-      const ws = new WebSocket(`${WS_BASE_URL}/ws/groups/${group.id}`)
-
-      ws.onopen = () => {
-        // Connection established
-      }
-
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data)
-
-          if (message.type === 'run_created') {
-            // Invalidate groups query to refetch with new run
-            queryClient.invalidateQueries({ queryKey: groupKeys.list() })
-            // Also invalidate the specific group's runs
-            queryClient.invalidateQueries({ queryKey: groupKeys.runs(group.id) })
-          } else if (message.type === 'run_state_changed') {
-            // Invalidate groups query to update run states
-            queryClient.invalidateQueries({ queryKey: groupKeys.list() })
-            // Also invalidate the specific group's runs and the run itself
-            queryClient.invalidateQueries({ queryKey: groupKeys.runs(group.id) })
-            if (message.data.run_id) {
-              queryClient.invalidateQueries({ queryKey: ['runs', 'detail', message.data.run_id] })
-            }
-          }
-        } catch (err) {
-          console.error('Failed to parse WebSocket message:', err)
-        }
-      }
-
-      ws.onerror = (error) => {
-        // Only log errors if the connection isn't intentionally closing
-        if (ws.readyState !== WebSocket.CLOSING && ws.readyState !== WebSocket.CLOSED) {
-          console.error(`WebSocket error for group ${group.id}:`, error)
-        }
-      }
-
-      ws.onclose = () => {
-        // Connection closed
-      }
-
-      wsConnectionsRef.current.push(ws)
-      })
-    }, 100) // 100ms delay to let React strict mode settle
-
-    // Cleanup on unmount
-    return () => {
-      clearTimeout(connectionTimeout)
-      wsConnectionsRef.current.forEach(ws => {
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close()
-        }
-      })
-      wsConnectionsRef.current = []
-    }
-  }, [groupIds, groups]) // Only run when group IDs change, not when group data changes
+  // Use centralized WebSocket hook with user endpoint
+  useWebSocket(`${WS_BASE_URL}/ws/user`, {
+    onMessage: handleWebSocketMessage,
+  })
 
   const handleGroupClick = (groupId: string) => {
     onGroupSelect(groupId)

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import '../styles/components/ManageGroupPage.css'
 import { groupsApi, ApiError } from '../api'
 import type { GroupManageDetails, GroupMember } from '../api'
@@ -10,12 +11,15 @@ import { WS_BASE_URL } from '../config'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 
-interface ManageGroupPageProps {
-  groupId: string
-  onBack: () => void
-}
+export default function ManageGroupPage() {
+  const { groupId } = useParams<{ groupId: string }>()
+  const navigate = useNavigate()
 
-export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProps) {
+  // Redirect if no groupId
+  if (!groupId) {
+    navigate('/')
+    return null
+  }
   const [group, setGroup] = useState<GroupManageDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -53,7 +57,7 @@ export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProp
         const action = message.type === 'member_removed' ? 'removed from' : 'left'
         showToast(`You have ${action} this group`, 'error')
         setTimeout(() => {
-          window.location.href = '/'
+          navigate(`/groups/${groupId}`)
         }, 1500)
         return
       }
@@ -185,7 +189,7 @@ export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProp
         await groupsApi.leaveGroup(groupId)
         showToast('You have left the group', 'success')
         setTimeout(() => {
-          window.location.href = '/'
+          navigate(`/groups/${groupId}`)
         }, 1500)
       } catch (err) {
         showToast(err instanceof ApiError ? err.message : 'Failed to leave group', 'error')
