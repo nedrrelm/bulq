@@ -45,33 +45,52 @@ interface ProductItemProps {
 const ProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid, getUserInitials }: ProductItemProps) => {
   const needsAdjustment = runState === 'adjusting' &&
                           product.purchased_quantity !== null &&
+                          product.purchased_quantity > 0 &&
                           product.total_quantity > product.purchased_quantity
   const adjustmentOk = runState === 'adjusting' &&
                        product.purchased_quantity !== null &&
+                       product.purchased_quantity > 0 &&
                        product.total_quantity === product.purchased_quantity
+  const notPurchasedAdjusting = runState === 'adjusting' &&
+                                (product.purchased_quantity === null || product.purchased_quantity === 0)
+
+  // Check if product was not purchased (for distributing state)
+  const notPurchased = (runState === 'distributing' || runState === 'completed') &&
+                       (product.purchased_quantity === null || product.purchased_quantity === 0)
 
   const shortage = product.purchased_quantity !== null ? product.total_quantity - product.purchased_quantity : 0
   const canRetract = !adjustmentOk && !(runState === 'adjusting' && product.current_user_bid && !product.current_user_bid.interested_only && product.current_user_bid.quantity > shortage)
 
   return (
-    <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : ''}`}>
+    <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : notPurchasedAdjusting ? 'not-purchased-adjusting' : ''} ${notPurchased ? 'not-purchased' : ''}`}>
       <div className="product-header">
         <h4>{product.name}</h4>
         {product.current_price && <span className="product-price">${product.current_price}</span>}
       </div>
 
-      {runState === 'adjusting' && product.purchased_quantity !== null && (
-        <div className={`adjustment-info ${needsAdjustment ? 'needs-adjustment' : 'adjustment-ok'}`}>
-          <strong>Purchased:</strong> {product.purchased_quantity} | <strong>Requested:</strong> {product.total_quantity}
-          {needsAdjustment && (
-            <span className="adjustment-warning">
-              ⚠ Reduce by {product.total_quantity - product.purchased_quantity}
-            </span>
-          )}
-          {adjustmentOk && (
-            <span className="adjustment-ok-badge">
-              ✓ OK
-            </span>
+      {runState === 'adjusting' && (
+        <div>
+          {product.purchased_quantity !== null && product.purchased_quantity > 0 ? (
+            <div className={`adjustment-info ${needsAdjustment ? 'needs-adjustment' : 'adjustment-ok'}`}>
+              <strong>Purchased:</strong> {product.purchased_quantity} | <strong>Requested:</strong> {product.total_quantity}
+              {needsAdjustment && (
+                <span className="adjustment-warning">
+                  ⚠ Reduce by {product.total_quantity - product.purchased_quantity}
+                </span>
+              )}
+              {adjustmentOk && (
+                <span className="adjustment-ok-badge">
+                  ✓ OK
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="adjustment-info not-purchased-info">
+              <strong>Not Purchased</strong>
+              <span className="not-purchased-badge">
+                ❌ Not Purchased
+              </span>
+            </div>
           )}
         </div>
       )}
@@ -103,40 +122,76 @@ const ProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid,
 
       {canBid && (
         <div className="bid-actions">
-          {product.current_user_bid ? (
-            <div className="user-bid-status">
-              <span className="current-bid">
-                Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
-              </span>
-              <div className="bid-buttons">
+          {runState === 'adjusting' ? (
+            // Adjustment state button rules
+            <>
+              {needsAdjustment && product.current_user_bid ? (
+                <div className="user-bid-status">
+                  <span className="current-bid">
+                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
+                  </span>
+                  <div className="bid-buttons">
+                    <button
+                      onClick={() => onPlaceBid(product)}
+                      className="edit-bid-button"
+                      title="Edit bid"
+                    >
+                      ✏️
+                    </button>
+                    {canRetract && (
+                      <button
+                        onClick={() => onRetractBid(product)}
+                        className="retract-bid-button"
+                        title="Retract bid"
+                      >
+                        −
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : product.current_user_bid && (adjustmentOk || notPurchasedAdjusting) ? (
+                <div className="user-bid-status">
+                  <span className="current-bid">
+                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
+                  </span>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            // Non-adjustment states (active, etc.)
+            <>
+              {product.current_user_bid ? (
+                <div className="user-bid-status">
+                  <span className="current-bid">
+                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
+                  </span>
+                  <div className="bid-buttons">
+                    <button
+                      onClick={() => onPlaceBid(product)}
+                      className="edit-bid-button"
+                      title="Edit bid"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => onRetractBid(product)}
+                      className="retract-bid-button"
+                      title="Retract bid"
+                    >
+                      −
+                    </button>
+                  </div>
+                </div>
+              ) : (
                 <button
                   onClick={() => onPlaceBid(product)}
-                  className="edit-bid-button"
-                  title={adjustmentOk ? "No adjustment needed" : "Edit bid"}
-                  disabled={adjustmentOk}
-                  style={adjustmentOk ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                  className="place-bid-button"
+                  title="Place bid"
                 >
-                  ✏️
+                  +
                 </button>
-                <button
-                  onClick={() => onRetractBid(product)}
-                  className="retract-bid-button"
-                  title={!canRetract ? "Cannot fully retract - would remove more than needed" : adjustmentOk ? "No adjustment needed" : "Retract bid"}
-                  disabled={!canRetract}
-                  style={!canRetract ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                >
-                  −
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => onPlaceBid(product)}
-              className="place-bid-button"
-              title="Place bid"
-            >
-              +
-            </button>
+              )}
+            </>
           )}
         </div>
       )}
@@ -620,7 +675,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       <div className="products-section">
         <div className="products-header">
           <h3>Products ({run.products.length})</h3>
-          {canBid && (
+          {canBid && run.state !== 'adjusting' && (
             <button onClick={handleAddProduct} className="add-product-button">
               + Add Product
             </button>

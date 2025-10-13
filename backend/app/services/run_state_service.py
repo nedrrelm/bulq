@@ -392,6 +392,15 @@ class RunStateService(BaseService):
             ]
             total_requested = sum(bid.quantity for bid in product_bids)
 
+            # Skip items that were not purchased (purchased_quantity is None or 0)
+            if shopping_item.purchased_quantity is None or shopping_item.purchased_quantity == 0:
+                # If there are still bids for unpurchased items, they should have been retracted
+                if total_requested > 0:
+                    raise BadRequestError(
+                        f"Product '{shopping_item.product.name}' was not purchased but still has {total_requested} requested. All bids for unpurchased items must be retracted."
+                    )
+                continue
+
             if total_requested != shopping_item.purchased_quantity:
                 shortage = total_requested - shopping_item.purchased_quantity
                 raise BadRequestError(

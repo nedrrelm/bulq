@@ -47,5 +47,11 @@ export const groupsApi = {
     api.delete(`/groups/${groupId}/members/${memberId}`),
 
   toggleJoiningAllowed: (groupId: string) =>
-    api.post<{ is_joining_allowed: boolean }>(`/groups/${groupId}/toggle-joining`, undefined, toggleJoiningResponseSchema)
+    api.post<{ is_joining_allowed: boolean }>(`/groups/${groupId}/toggle-joining`, undefined, toggleJoiningResponseSchema),
+
+  leaveGroup: (groupId: string) =>
+    api.post(`/groups/${groupId}/leave`),
+
+  promoteMemberToAdmin: (groupId: string, memberId: string) =>
+    api.post(`/groups/${groupId}/members/${memberId}/promote`)
 }

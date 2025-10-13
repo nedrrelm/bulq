@@ -107,6 +107,11 @@ class AbstractRepository(ABC):
         """Update whether a group allows joining via invite link."""
         raise NotImplementedError('Subclass must implement update_group_joining_allowed')
 
+    @abstractmethod
+    def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
+        """Set the admin status of a group member."""
+        raise NotImplementedError('Subclass must implement set_group_member_admin')
+
     # ==================== Store Methods ====================
 
     @abstractmethod
@@ -222,6 +227,11 @@ class AbstractRepository(ABC):
     def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
         """Get a bid by its ID."""
         raise NotImplementedError('Subclass must implement get_bid_by_id')
+
+    @abstractmethod
+    def get_bids_by_participation(self, participation_id: UUID) -> list[ProductBid]:
+        """Get all bids for a participation."""
+        raise NotImplementedError('Subclass must implement get_bids_by_participation')
 
     @abstractmethod
     def update_bid_distributed_quantities(
@@ -609,6 +619,23 @@ class DatabaseRepository(AbstractRepository):
             return group
         return None
 
+    def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
+        """Set the admin status of a group member."""
+        from sqlalchemy import update
+
+        from .models import group_membership
+
+        result = self.db.execute(
+            update(group_membership)
+            .where(
+                group_membership.c.group_id == group_id,
+                group_membership.c.user_id == user_id
+            )
+            .values(is_group_admin=is_admin)
+        )
+        self.db.commit()
+        return result.rowcount > 0
+
     # ==================== Store Methods ====================
 
     def search_stores(self, query: str) -> list[Store]:
@@ -819,6 +846,14 @@ class DatabaseRepository(AbstractRepository):
     def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
         """Get a bid by its ID."""
         return self.db.query(ProductBid).filter(ProductBid.id == bid_id).first()
+
+    def get_bids_by_participation(self, participation_id: UUID) -> list[ProductBid]:
+        """Get all bids for a participation."""
+        return (
+            self.db.query(ProductBid)
+            .filter(ProductBid.participation_id == participation_id)
+            .all()
+        )
 
     def update_bid_distributed_quantities(
         self, bid_id: UUID, quantity: int, price_per_unit: Decimal
@@ -2014,6 +2049,13 @@ class MemoryRepository(AbstractRepository):
             return group
         return None
 
+    def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
+        """Set the admin status of a group member."""
+        if group_id in self._group_memberships and user_id in self._group_memberships[group_id]:
+            self._group_admin_status[(group_id, user_id)] = is_admin
+            return True
+        return False
+
     def search_stores(self, query: str) -> list[Store]:
         query_lower = query.lower()
         return [store for store in self._stores.values() if query_lower in store.name.lower()]
@@ -2218,6 +2260,17 @@ class MemoryRepository(AbstractRepository):
         """Get a bid by its ID."""
         return self._bids.get(bid_id)
 
+    def get_bids_by_participation(self, participation_id: UUID) -> list[ProductBid]:
+        """Get all bids for a participation."""
+        bids = []
+        for bid in self._bids.values():
+            if bid.participation_id == participation_id:
+                # Set up relationships
+                bid.participation = self._participations.get(participation_id)
+                bid.product = self._products.get(bid.product_id)
+                bids.append(bid)
+        return bids
+
     def update_bid_distributed_quantities(
         self, bid_id: UUID, quantity: int, price_per_unit: Decimal
     ) -> None:
@@ -2233,7 +2286,7 @@ class MemoryRepository(AbstractRepository):
 
     # Helper methods for test data creation
     def _create_store(self, name: str) -> Store:
-        store = Store(id=uuid4(), name=name)
+        store = Store(id=uuid4(), name=name, verified=False)
         self._stores[store.id] = store
         return store
 
@@ -2248,6 +2301,7 @@ class MemoryRepository(AbstractRepository):
             name=name,
             brand=brand,
             unit=unit,
+            verified=False,
             created_at=datetime.now(),
             updated_at=datetime.now(),
         )

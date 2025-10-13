@@ -42,10 +42,16 @@ export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProp
 
   // WebSocket handler for real-time updates
   const handleWebSocketMessage = useCallback((message: any) => {
-    if (message.type === 'member_removed') {
-      // If current user was removed, redirect to main page
-      if (user && message.data.removed_user_id === user.id) {
-        showToast('You have been removed from this group', 'error')
+    if (message.type === 'member_removed' || message.type === 'member_left') {
+      // Use the appropriate user_id field based on message type
+      const userId = message.type === 'member_removed'
+        ? message.data.removed_user_id
+        : message.data.user_id
+
+      // If current user was removed or left, redirect to main page
+      if (user && userId === user.id) {
+        const action = message.type === 'member_removed' ? 'removed from' : 'left'
+        showToast(`You have ${action} this group`, 'error')
         setTimeout(() => {
           window.location.href = '/'
         }, 1500)
@@ -56,8 +62,13 @@ export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProp
       if (group) {
         setGroup({
           ...group,
-          members: group.members.filter(m => m.id !== message.data.removed_user_id)
+          members: group.members.filter(m => m.id !== userId)
         })
+
+        // Show toast for other members leaving
+        if (message.type === 'member_left') {
+          showToast(`${message.data.user_name} left the group`, 'info')
+        }
       }
     } else if (message.type === 'member_joined') {
       // Add new member to the list
@@ -73,6 +84,17 @@ export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProp
           members: [...group.members, newMember]
         })
         showToast(`${message.data.user_name} joined the group`, 'success')
+      }
+    } else if (message.type === 'member_promoted') {
+      // Update member admin status
+      if (group) {
+        setGroup({
+          ...group,
+          members: group.members.map(m =>
+            m.id === message.data.promoted_user_id ? { ...m, is_group_admin: true } : m
+          )
+        })
+        showToast(`${message.data.promoted_user_name} promoted to admin`, 'success')
       }
     }
   }, [group, user, showToast])
@@ -152,6 +174,53 @@ export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProp
       `Are you sure you want to remove ${member.name} from the group?`,
       removeAction,
       { danger: true }
+    )
+  }
+
+  const handleLeaveGroup = () => {
+    if (!group) return
+
+    const leaveAction = async () => {
+      try {
+        await groupsApi.leaveGroup(groupId)
+        showToast('You have left the group', 'success')
+        setTimeout(() => {
+          window.location.href = '/'
+        }, 1500)
+      } catch (err) {
+        showToast(err instanceof ApiError ? err.message : 'Failed to leave group', 'error')
+      }
+    }
+
+    showConfirm(
+      'Are you sure you want to leave this group?',
+      leaveAction,
+      { danger: true }
+    )
+  }
+
+  const handlePromoteMember = (member: GroupMember) => {
+    if (!group || !group.is_current_user_admin) return
+
+    const promoteAction = async () => {
+      try {
+        await groupsApi.promoteMemberToAdmin(groupId, member.id)
+        // Update local state to reflect the promotion
+        setGroup({
+          ...group,
+          members: group.members.map(m =>
+            m.id === member.id ? { ...m, is_group_admin: true } : m
+          )
+        })
+        showToast(`${member.name} promoted to admin`, 'success')
+      } catch (err) {
+        showToast(err instanceof ApiError ? err.message : 'Failed to promote member', 'error')
+      }
+    }
+
+    showConfirm(
+      `Promote ${member.name} to admin?`,
+      promoteAction
     )
   }
 
@@ -240,17 +309,34 @@ export default function ManageGroupPage({ groupId, onBack }: ManageGroupPageProp
                 <div className="member-email">{member.email}</div>
               </div>
               {group.is_current_user_admin && !member.is_group_admin && (
-                <button
-                  onClick={() => handleRemoveMember(member)}
-                  className="btn btn-danger btn-small"
-                  title="Remove member"
-                >
-                  −
-                </button>
+                <div className="member-actions">
+                  <button
+                    onClick={() => handlePromoteMember(member)}
+                    className="btn btn-secondary btn-small"
+                    title="Promote to admin"
+                  >
+                    ⬆
+                  </button>
+                  <button
+                    onClick={() => handleRemoveMember(member)}
+                    className="btn btn-danger btn-small"
+                    title="Remove member"
+                  >
+                    −
+                  </button>
+                </div>
               )}
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Leave Group Section */}
+      <section className="manage-section">
+        <h3>Leave Group</h3>
+        <button onClick={handleLeaveGroup} className="btn btn-danger">
+          🚪 Leave Group
+        </button>
       </section>
 
       {toast && (

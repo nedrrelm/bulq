@@ -17,6 +17,7 @@ from ..schemas import (
     StateChangeResponse,
 )
 from ..services import RunService
+from ..websocket_manager import manager
 
 router = APIRouter(prefix='/runs', tags=['runs'])
 logger = get_logger(__name__)

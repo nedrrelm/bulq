@@ -136,3 +136,26 @@ async def toggle_group_joining(
     service = GroupService(db)
 
     return service.toggle_joining_allowed(group_id, current_user)
+
+
+@router.post('/{group_id}/leave', response_model=MessageResponse)
+async def leave_group(
+    group_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+):
+    """Leave a group."""
+    service = GroupService(db)
+
+    return service.leave_group(group_id, current_user)
+
+
+@router.post('/{group_id}/members/{member_id}/promote', response_model=MessageResponse)
+async def promote_member_to_admin(
+    group_id: str,
+    member_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Promote a member to group admin (admin only)."""
+    service = GroupService(db)
+
+    return service.promote_member_to_admin(group_id, member_id, current_user)

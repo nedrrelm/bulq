@@ -50,9 +50,7 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     setLoadingUsers(true)
     try {
-      console.log('Fetching users with:', { search, verifiedFilter })
       const data = await adminApi.getUsers(search || undefined, verifiedFilter, LIMIT, usersOffset)
-      console.log('Fetched users:', data)
       setUsers(data)
     } catch (err) {
       console.error('Failed to fetch users:', err)

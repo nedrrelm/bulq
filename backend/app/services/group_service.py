@@ -24,6 +24,7 @@ from ..schemas import (
 )
 from ..transaction import transaction
 from ..validation import validate_uuid
+from ..websocket_manager import manager
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -549,7 +550,7 @@ class GroupService(BaseService):
 
         # Broadcast notifications after successful transaction
         self._broadcast_removal_notifications(
-            group_uuid, member_uuid, affected_runs, cancelled_runs
+            group_uuid, member_uuid, affected_runs, cancelled_runs, is_self_removal=False
         )
 
         logger.info(
@@ -590,8 +591,8 @@ class GroupService(BaseService):
             raise ForbiddenError('Cannot remove group admins')
 
         # Verify member exists in group
-        memberships = self.repo.get_group_memberships(group_uuid)
-        if not any(m.user_id == member_uuid for m in memberships):
+        members = self.repo.get_group_members_with_admin_status(group_uuid)
+        if not any(m['id'] == str(member_uuid) for m in members):
             raise BadRequestError('User is not a member of this group')
 
         return group_uuid, member_uuid
@@ -617,15 +618,32 @@ class GroupService(BaseService):
         for run in runs:
             participations = self.repo.get_run_participations(run.id)
 
-            # Mark removed user's participation as removed
+            # Mark removed user's participation as removed and delete their bids from active runs
             user_participated = False
+            user_participation_id = None
             for participation in participations:
                 if participation.user_id == member_id:
                     participation.is_removed = True
                     user_participated = True
+                    user_participation_id = participation.id
 
             if user_participated:
                 affected_runs.append(str(run.id))
+
+                # Delete all bids for this user in active runs (not completed/cancelled)
+                if run.state not in [RunState.COMPLETED, RunState.CANCELLED] and user_participation_id:
+                    bids = self.repo.get_bids_by_participation(user_participation_id)
+                    for bid in bids:
+                        self.repo.delete_bid(user_participation_id, bid.product_id)
+
+                    logger.info(
+                        f'Deleted {len(bids)} bids from active run',
+                        extra={
+                            'run_id': str(run.id),
+                            'user_id': str(member_id),
+                            'run_state': run.state,
+                        },
+                    )
 
             # Cancel run if removed user is leader and run is not completed
             leader = next((p for p in participations if p.is_leader), None)
@@ -636,16 +654,37 @@ class GroupService(BaseService):
         return affected_runs, cancelled_runs
 
     def _broadcast_removal_notifications(
-        self, group_id: UUID, member_id: UUID, affected_runs: list[str], cancelled_runs: list[str]
+        self, group_id: UUID, member_id: UUID, affected_runs: list[str], cancelled_runs: list[str], is_self_removal: bool = False
     ) -> None:
-        """Emit member removal domain event."""
-        # Get current user ID for the removed_by field (from request context if available)
-        # For now, we'll use the member_id itself as a placeholder
-        # In a real scenario, this should come from the authenticated user context
+        """Emit member removal domain event and broadcast to group WebSocket."""
+        # Get member info for the notification
+        member = self.repo.get_user_by_id(member_id)
+        member_name = member.name if member else 'Unknown'
+
+        # Emit domain event
         event_bus.emit(
             MemberRemovedEvent(
                 group_id=group_id, user_id=member_id, removed_by_id=member_id  # Should be admin_id
             )
+        )
+
+        # Broadcast to group WebSocket channel
+        message_type = 'member_left' if is_self_removal else 'member_removed'
+        user_id_field = 'user_id' if is_self_removal else 'removed_user_id'
+
+        create_background_task(
+            manager.broadcast(
+                f'group:{group_id}',
+                {
+                    'type': message_type,
+                    'data': {
+                        'group_id': str(group_id),
+                        user_id_field: str(member_id),
+                        'user_name': member_name,
+                    },
+                },
+            ),
+            task_name=f'broadcast_{message_type}_{group_id}_{member_id}',
         )
 
         # Broadcast participant_removed events for all affected runs
@@ -673,6 +712,146 @@ class GroupService(BaseService):
                 ),
                 task_name=f'broadcast_run_cancelled_{run_id}',
             )
+
+    def leave_group(self, group_id: str, user: User) -> MessageResponse:
+        """Leave a group.
+
+        This operation is similar to remove_member but initiated by the user themselves:
+        - Remove user from group
+        - Mark participations as removed
+        - Cancel runs led by the user
+        All operations succeed together or all fail together.
+
+        Args:
+            group_id: The UUID string of the group
+            user: The user leaving the group
+
+        Returns:
+            Dictionary with success message
+
+        Raises:
+            BadRequestError: If ID format is invalid or user is group admin
+            NotFoundError: If group doesn't exist
+        """
+        group_uuid = validate_uuid(group_id, 'Group')
+
+        group = self.repo.get_group_by_id(group_uuid)
+        if not group:
+            raise NotFoundError('Group', group_uuid)
+
+        # Check if user is a member
+        members = self.repo.get_group_members_with_admin_status(group_uuid)
+        if not any(m['id'] == str(user.id) for m in members):
+            raise BadRequestError('You are not a member of this group')
+
+        # Count how many admins there are
+        admin_count = sum(1 for m in members if m['is_group_admin'])
+
+        # Prevent the last admin from leaving
+        if self.repo.is_user_group_admin(group_uuid, user.id):
+            if admin_count <= 1:
+                raise ForbiddenError('You are the only admin. Please promote another member to admin before leaving.')
+
+        # Wrap all database modifications in a transaction
+        with transaction(self.db, "leave group and cancel runs"):
+            affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(
+                group_uuid, user.id
+            )
+
+        # Broadcast notifications after successful transaction
+        self._broadcast_removal_notifications(
+            group_uuid, user.id, affected_runs, cancelled_runs, is_self_removal=True
+        )
+
+        logger.info(
+            f'User left group, cancelled {len(cancelled_runs)} runs',
+            extra={
+                'user_id': str(user.id),
+                'group_id': str(group_uuid),
+                'cancelled_runs': cancelled_runs,
+            },
+        )
+
+        return MessageResponse(message='You have left the group successfully')
+
+    def promote_member_to_admin(self, group_id: str, member_id: str, user: User) -> MessageResponse:
+        """Promote a member to group admin (admin only).
+
+        Args:
+            group_id: The UUID string of the group
+            member_id: The UUID string of the member to promote
+            user: The requesting user (must be group admin)
+
+        Returns:
+            Dictionary with success message
+
+        Raises:
+            BadRequestError: If ID formats are invalid or member doesn't exist
+            NotFoundError: If group doesn't exist
+            ForbiddenError: If user is not a group admin
+        """
+        group_uuid = validate_uuid(group_id, 'Group')
+        member_uuid = validate_uuid(member_id, 'Member')
+
+        group = self.repo.get_group_by_id(group_uuid)
+        if not group:
+            raise NotFoundError('Group', group_uuid)
+
+        # Check if requester is admin
+        if not self.repo.is_user_group_admin(group_uuid, user.id):
+            logger.warning(
+                'Non-admin user attempted to promote member',
+                extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
+            )
+            raise ForbiddenError('Only group admins can promote members')
+
+        # Check if member exists in group
+        members = self.repo.get_group_members_with_admin_status(group_uuid)
+        member_exists = any(m['id'] == str(member_uuid) for m in members)
+
+        if not member_exists:
+            raise BadRequestError('User is not a member of this group')
+
+        # Check if member is already an admin
+        if self.repo.is_user_group_admin(group_uuid, member_uuid):
+            raise BadRequestError('User is already a group admin')
+
+        # Promote the member
+        success = self.repo.set_group_member_admin(group_uuid, member_uuid, True)
+
+        if not success:
+            raise BadRequestError('Failed to promote member')
+
+        # Get member info for logging
+        member_info = next((m for m in members if m['id'] == str(member_uuid)), None)
+        member_name = member_info['name'] if member_info else 'Unknown'
+
+        logger.info(
+            'Member promoted to admin',
+            extra={
+                'user_id': str(user.id),
+                'group_id': str(group_uuid),
+                'promoted_user_id': str(member_uuid),
+            },
+        )
+
+        # Broadcast member_promoted event via WebSocket
+        create_background_task(
+            manager.broadcast(
+                f'group:{group_uuid}',
+                {
+                    'type': 'member_promoted',
+                    'data': {
+                        'group_id': str(group_uuid),
+                        'promoted_user_id': str(member_uuid),
+                        'promoted_user_name': member_name,
+                    },
+                },
+            ),
+            task_name=f'broadcast_member_promoted_{group_uuid}_{member_uuid}',
+        )
+
+        return MessageResponse(message=f'{member_name} promoted to admin successfully')
 
     def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
         """Toggle whether a group allows joining via invite link (admin only).
