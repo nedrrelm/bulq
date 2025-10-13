@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/RunPage.css'
@@ -7,10 +7,12 @@ import { WS_BASE_URL } from '../config'
 import { runsApi, reassignmentApi, ApiError } from '../api'
 import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
-import BidPopup from './BidPopup'
-import AddProductPopup from './AddProductPopup'
-import ReassignLeaderPopup from './ReassignLeaderPopup'
 import ErrorBoundary from './ErrorBoundary'
+
+// Lazy load popup components for better code splitting
+const BidPopup = lazy(() => import('./BidPopup'))
+const AddProductPopup = lazy(() => import('./AddProductPopup'))
+const ReassignLeaderPopup = lazy(() => import('./ReassignLeaderPopup'))
 import RunProductItem from './RunProductItem'
 import RunParticipants from './RunParticipants'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -595,59 +597,61 @@ export default function RunPage() {
         </div>
       )}
 
-      {showBidPopup && selectedProduct && (() => {
-        const isAdjustingMode = run?.state === 'adjusting'
-        const currentBid = selectedProduct.current_user_bid
-        const hasPurchasedQuantity = selectedProduct.purchased_quantity !== null
+      <Suspense fallback={null}>
+        {showBidPopup && selectedProduct && (() => {
+          const isAdjustingMode = run?.state === 'adjusting'
+          const currentBid = selectedProduct.current_user_bid
+          const hasPurchasedQuantity = selectedProduct.purchased_quantity !== null
 
-        const shortage = hasPurchasedQuantity
-          ? selectedProduct.total_quantity - selectedProduct.purchased_quantity
-          : 0
+          const shortage = hasPurchasedQuantity
+            ? selectedProduct.total_quantity - selectedProduct.purchased_quantity
+            : 0
 
-        const minAllowed = isAdjustingMode && currentBid && hasPurchasedQuantity
-          ? Math.max(0, currentBid.quantity - shortage)
-          : undefined
+          const minAllowed = isAdjustingMode && currentBid && hasPurchasedQuantity
+            ? Math.max(0, currentBid.quantity - shortage)
+            : undefined
 
-        const maxAllowed = isAdjustingMode && currentBid
-          ? currentBid.quantity
-          : undefined
+          const maxAllowed = isAdjustingMode && currentBid
+            ? currentBid.quantity
+            : undefined
 
-        return (
-          <BidPopup
-            productName={selectedProduct.name}
-            currentQuantity={currentBid?.quantity}
-            onSubmit={handleSubmitBid}
-            onCancel={handleCancelBid}
-            adjustingMode={isAdjustingMode}
-            minAllowed={minAllowed}
-            maxAllowed={maxAllowed}
+          return (
+            <BidPopup
+              productName={selectedProduct.name}
+              currentQuantity={currentBid?.quantity}
+              onSubmit={handleSubmitBid}
+              onCancel={handleCancelBid}
+              adjustingMode={isAdjustingMode}
+              minAllowed={minAllowed}
+              maxAllowed={maxAllowed}
+            />
+          )
+        })()}
+
+        {showAddProductPopup && (
+          <AddProductPopup
+            runId={runId}
+            onProductSelected={handleProductSelected}
+            onCancel={handleCancelAddProduct}
           />
-        )
-      })()}
+        )}
 
-      {showAddProductPopup && (
-        <AddProductPopup
-          runId={runId}
-          onProductSelected={handleProductSelected}
-          onCancel={handleCancelAddProduct}
-        />
-      )}
-
-      {showReassignPopup && run && (
-        <ReassignLeaderPopup
-          runId={runId}
-          participants={run.participants.map(p => ({
-            user_id: p.user_id,
-            user_name: p.user_name,
-            is_leader: p.is_leader,
-          }))}
-          onClose={() => setShowReassignPopup(false)}
-          onSuccess={() => {
-            showToast('Reassignment request sent!', 'success')
-            fetchReassignmentRequest()
-          }}
-        />
-      )}
+        {showReassignPopup && run && (
+          <ReassignLeaderPopup
+            runId={runId}
+            participants={run.participants.map(p => ({
+              user_id: p.user_id,
+              user_name: p.user_name,
+              is_leader: p.is_leader,
+            }))}
+            onClose={() => setShowReassignPopup(false)}
+            onSuccess={() => {
+              showToast('Reassignment request sent!', 'success')
+              fetchReassignmentRequest()
+            }}
+          />
+        )}
+      </Suspense>
 
       {toast && (
         <Toast

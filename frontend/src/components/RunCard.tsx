@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import '../styles/components/RunCard.css'
 import '../styles/run-states.css'
@@ -20,7 +21,7 @@ interface RunCardProps {
   showGroupName?: boolean
 }
 
-function RunCard({ run, onClick, showAsLink = true, showGroupName = false }: RunCardProps) {
+const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGroupName = false }: RunCardProps) {
   const content = (
     <div className="run-card-content">
       <div className="run-card-header">
@@ -70,6 +71,6 @@ function RunCard({ run, onClick, showAsLink = true, showGroupName = false }: Run
       {content}
     </div>
   )
-}
+})
 
 export default RunCard

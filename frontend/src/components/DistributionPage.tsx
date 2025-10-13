@@ -6,6 +6,7 @@ import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
 import { useDistribution, useMarkPickedUp, useCompleteDistribution } from '../hooks/queries/useDistribution'
 import type { DistributionUser } from '../schemas/distribution'
+import { logger } from '../utils/logger'
 
 export default function DistributionPage() {
   const { runId } = useParams<{ runId: string }>()
@@ -40,7 +41,7 @@ export default function DistributionPage() {
     try {
       await markPickedUpMutation.mutateAsync(bidId)
     } catch (err) {
-      console.error('Failed to mark as picked up:', err)
+      logger.error('Failed to mark as picked up:', err)
     }
   }
 
@@ -53,7 +54,7 @@ export default function DistributionPage() {
         await markPickedUpMutation.mutateAsync(product.bid_id)
       }
     } catch (err) {
-      console.error('Failed to mark all as picked up:', err)
+      logger.error('Failed to mark all as picked up:', err)
     }
   }
 
@@ -63,7 +64,7 @@ export default function DistributionPage() {
       // Go back to run page after completion
       navigate(`/runs/${runId}`)
     } catch (err) {
-      console.error('Failed to complete run:', err)
+      logger.error('Failed to complete run:', err)
     }
   }
 

@@ -34,8 +34,9 @@ export const RUN_STATE_ORDER: Record<string, number> = {
 
 // UI timeouts and delays
 export const TOAST_AUTO_HIDE_DELAY_MS = 3000
-export const NAVIGATION_DELAY_AFTER_ACTION_MS = 1500
+export const NAVIGATION_DELAY_AFTER_ACTION_MS = 1500 // Delay before navigating to let user see toast message
 export const DEBOUNCE_SEARCH_MS = 300
+export const FOCUS_DELAY_MS = 0 // Delay to ensure DOM is ready for focus
 
 // Numeric constraints
 export const MIN_BID_QUANTITY = 0
