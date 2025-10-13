@@ -20,6 +20,7 @@ from ..schemas import (
     RunSummary,
     ToggleJoiningResponse,
 )
+from ..transaction import transaction
 from ..validation import validate_uuid
 from ..websocket_manager import manager
 from .base_service import BaseService
@@ -532,6 +533,12 @@ class GroupService(BaseService):
     def remove_member(self, group_id: str, member_id: str, user: User) -> MessageResponse:
         """Remove a member from a group (admin only).
 
+        This operation is wrapped in a transaction to ensure atomicity:
+        - Remove member from group
+        - Mark participations as removed
+        - Cancel runs led by removed member
+        All operations succeed together or all fail together.
+
         Args:
             group_id: The UUID string of the group
             member_id: The UUID string of the member to remove
@@ -545,8 +552,16 @@ class GroupService(BaseService):
             NotFoundError: If group doesn't exist
             ForbiddenError: If user is not a group admin or trying to remove admin
         """
+        # Validate outside transaction to fail fast on bad input
         group_uuid, member_uuid = self._validate_member_removal_request(group_id, member_id, user)
-        affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(group_uuid, member_uuid)
+
+        # Wrap all database modifications in a transaction
+        with transaction(self.db, "remove group member and cancel runs"):
+            affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(
+                group_uuid, member_uuid
+            )
+
+        # Broadcast notifications after successful transaction
         self._broadcast_removal_notifications(
             group_uuid, member_uuid, affected_runs, cancelled_runs
         )
@@ -566,7 +581,11 @@ class GroupService(BaseService):
     def _validate_member_removal_request(
         self, group_id: str, member_id: str, user: User
     ) -> tuple[UUID, UUID]:
-        """Validate member removal request and return UUIDs."""
+        """Validate member removal request and return UUIDs.
+
+        NOTE: This only validates permissions. The actual removal happens
+        within a transaction in the calling method.
+        """
         group_uuid = validate_uuid(group_id, 'Group')
         member_uuid = validate_uuid(member_id, 'Member')
 
@@ -584,16 +603,27 @@ class GroupService(BaseService):
         if self.repo.is_user_group_admin(group_uuid, member_uuid):
             raise ForbiddenError('Cannot remove group admins')
 
-        success = self.repo.remove_group_member(group_uuid, member_uuid)
-        if not success:
-            raise BadRequestError('Failed to remove member')
+        # Verify member exists in group
+        memberships = self.repo.get_group_memberships(group_uuid)
+        if not any(m.user_id == member_uuid for m in memberships):
+            raise BadRequestError('User is not a member of this group')
 
         return group_uuid, member_uuid
 
     def _find_and_cancel_affected_runs(
         self, group_id: UUID, member_id: UUID
     ) -> tuple[list[str], list[str]]:
-        """Find affected runs and cancel runs led by removed member."""
+        """Remove member from group and find/cancel affected runs.
+
+        NOTE: This method MUST be called within a transaction context.
+        It performs multiple database modifications that need to be atomic.
+        """
+        # First, remove the member from the group
+        success = self.repo.remove_group_member(group_id, member_id)
+        if not success:
+            raise BadRequestError('Failed to remove member from group')
+
+        # Now handle run participations and cancellations
         runs = self.repo.get_runs_by_group(group_id)
         cancelled_runs = []
         affected_runs = []
