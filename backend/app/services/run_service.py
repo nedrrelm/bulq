@@ -4,6 +4,8 @@ from typing import Any
 from uuid import UUID
 
 from ..config import MAX_ACTIVE_RUNS_PER_GROUP
+from ..events.domain_events import RunCreatedEvent
+from ..events.event_bus import event_bus
 from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import Product, ProductBid, Run, User
 from ..request_context import get_logger
@@ -110,6 +112,18 @@ class RunService(BaseService):
         logger.info(
             'Run created successfully',
             extra={'user_id': str(user.id), 'run_id': str(run.id), 'group_id': str(group_uuid)},
+        )
+
+        # Emit domain event for run creation
+        event_bus.emit(
+            RunCreatedEvent(
+                run_id=run.id,
+                group_id=run.group_id,
+                store_id=run.store_id,
+                store_name=store.name,
+                state=run.state,
+                leader_name=user.name,
+            )
         )
 
         return CreateRunResponse(

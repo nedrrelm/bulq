@@ -72,8 +72,61 @@ app.add_middleware(
 
 @app.on_event('startup')
 async def startup_event():
-    """Create database tables and seed data on startup."""
+    """Create database tables, seed data, and setup event handlers on startup."""
     create_tables()
+
+    # Register event handlers for domain events
+    from .events.domain_events import (
+        BidPlacedEvent,
+        BidRetractedEvent,
+        MemberJoinedEvent,
+        MemberLeftEvent,
+        MemberRemovedEvent,
+        ReadyToggledEvent,
+        RunCancelledEvent,
+        RunCreatedEvent,
+        RunStateChangedEvent,
+    )
+    from .events.event_bus import event_bus
+    from .events.handlers.notification_handler import NotificationEventHandler
+    from .events.handlers.websocket_handler import WebSocketEventHandler
+    from .repository import get_repository
+    from .websocket_manager import manager
+
+    # Create event handlers
+    ws_handler = WebSocketEventHandler(manager)
+
+    # Subscribe WebSocket handler to events
+    event_bus.subscribe(BidPlacedEvent, ws_handler.handle_bid_placed)
+    event_bus.subscribe(BidRetractedEvent, ws_handler.handle_bid_retracted)
+    event_bus.subscribe(ReadyToggledEvent, ws_handler.handle_ready_toggled)
+    event_bus.subscribe(RunStateChangedEvent, ws_handler.handle_run_state_changed)
+    event_bus.subscribe(RunCreatedEvent, ws_handler.handle_run_created)
+    event_bus.subscribe(RunCancelledEvent, ws_handler.handle_run_cancelled)
+    event_bus.subscribe(MemberJoinedEvent, ws_handler.handle_member_joined)
+    event_bus.subscribe(MemberRemovedEvent, ws_handler.handle_member_removed)
+    event_bus.subscribe(MemberLeftEvent, ws_handler.handle_member_left)
+
+    # Note: NotificationEventHandler needs repository which is per-request
+    # We'll create a handler factory that gets repo from database session
+    # For now, we subscribe a lambda that creates handler on-demand
+    async def handle_run_state_changed_notification(event: RunStateChangedEvent):
+        """Handle run state changed event for notifications."""
+        from .database import SessionLocal
+        db = SessionLocal()
+        try:
+            repo = get_repository(db)
+            notification_handler = NotificationEventHandler(repo)
+            await notification_handler.handle_run_state_changed(event)
+            db.commit()
+        finally:
+            db.close()
+
+    event_bus.subscribe(RunStateChangedEvent, handle_run_state_changed_notification)
+
+    from .request_context import get_logger
+    logger = get_logger(__name__)
+    logger.info('Event handlers registered successfully')
 
     # Create seed data if in development
     import os

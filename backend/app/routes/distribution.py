@@ -6,14 +6,12 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
 from ..routes.auth import require_auth
-from ..run_state import RunState
 from ..schemas import (
     DistributionUser,
     MessageResponse,
     StateChangeResponse,
 )
 from ..services import DistributionService
-from ..websocket_manager import manager
 
 router = APIRouter(prefix='/distribution', tags=['distribution'])
 
@@ -67,23 +65,5 @@ async def complete_distribution(
     except ValueError as e:
         raise HTTPException(status_code=400, detail='Invalid run ID format') from e
 
-    # Complete distribution via service
-    result = service.complete_distribution(run_uuid, current_user)
-
-    # Broadcast state change to both run and group (using data from service)
-    await manager.broadcast(
-        f'run:{result.run_id}',
-        {
-            'type': 'state_changed',
-            'data': {'run_id': result.run_id, 'new_state': RunState.COMPLETED},
-        },
-    )
-    await manager.broadcast(
-        f'group:{result.group_id}',
-        {
-            'type': 'run_state_changed',
-            'data': {'run_id': result.run_id, 'new_state': RunState.COMPLETED},
-        },
-    )
-
-    return result
+    # Complete distribution via service (events are emitted by service)
+    return service.complete_distribution(run_uuid, current_user)

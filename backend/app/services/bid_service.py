@@ -4,6 +4,8 @@ from typing import Any
 from uuid import UUID
 
 from ..config import MAX_PRODUCTS_PER_RUN
+from ..events.domain_events import BidPlacedEvent, BidRetractedEvent
+from ..events.event_bus import event_bus
 from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
 from ..models import Product, ProductBid, Run, RunParticipation, User
 from ..request_context import get_logger
@@ -74,6 +76,20 @@ class BidService(BaseService):
         # Calculate new totals for response
         new_total = self.calculate_product_total(run_uuid, product_uuid)
 
+        # Emit domain event for bid placement
+        event_bus.emit(
+            BidPlacedEvent(
+                run_id=run_uuid,
+                product_id=product_uuid,
+                user_id=user.id,
+                user_name=user.name,
+                quantity=quantity,
+                interested_only=interested_only,
+                new_total=new_total,
+                group_id=run.group_id,
+            )
+        )
+
         return PlaceBidResponse(
             message='Bid placed successfully',
             product_id=str(product_uuid),
@@ -123,6 +139,17 @@ class BidService(BaseService):
                 'product_id': str(product_uuid),
                 'new_total': new_total,
             },
+        )
+
+        # Emit domain event for bid retraction
+        event_bus.emit(
+            BidRetractedEvent(
+                run_id=run_uuid,
+                product_id=product_uuid,
+                user_id=user.id,
+                new_total=new_total,
+                group_id=run.group_id,
+            )
         )
 
         return RetractBidResponse(

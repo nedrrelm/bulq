@@ -17,7 +17,6 @@ from ..schemas import (
     StateChangeResponse,
 )
 from ..services import RunService
-from ..websocket_manager import manager
 
 router = APIRouter(prefix='/runs', tags=['runs'])
 logger = get_logger(__name__)
@@ -31,22 +30,7 @@ async def create_run(
 ):
     """Create a new run for a group."""
     service = RunService(db)
-    # Set WebSocket manager for broadcasting
-    service.notification_service.set_websocket_manager(manager)
-
-    result = service.create_run(request.group_id, request.store_id, current_user)
-
-    # Broadcast to group room using notification service
-    await service.notification_service.broadcast_run_created(
-        result.group_id,
-        result.id,
-        result.store_id,
-        result.store_name,
-        result.state,
-        result.leader_name,
-    )
-
-    return result
+    return service.create_run(request.group_id, request.store_id, current_user)
 
 
 @router.get('/{run_id}', response_model=RunDetailResponse)
@@ -68,9 +52,6 @@ async def place_bid(
 ):
     """Place or update a bid on a product in a run."""
     service = RunService(db)
-    # Set WebSocket manager for broadcasting
-    service.notification_service.set_websocket_manager(manager)
-
     result = service.place_bid(
         run_id,
         bid_request.product_id,
@@ -78,24 +59,6 @@ async def place_bid(
         bid_request.interested_only,
         current_user,
     )
-
-    # Broadcast bid update using notification service
-    await service.notification_service.broadcast_bid_update(
-        result.run_id,
-        result.product_id,
-        result.user_id,
-        result.user_name,
-        result.quantity,
-        result.interested_only,
-        result.new_total,
-    )
-
-    # If state changed, broadcast state change
-    if result.state_changed:
-        await service.notification_service.broadcast_state_change(
-            result.run_id, result.group_id, result.new_state
-        )
-
     return MessageResponse(message=result.message)
 
 
@@ -108,16 +71,7 @@ async def retract_bid(
 ):
     """Retract a bid on a product in a run."""
     service = RunService(db)
-    # Set WebSocket manager for broadcasting
-    service.notification_service.set_websocket_manager(manager)
-
     result = service.retract_bid(run_id, product_id, current_user)
-
-    # Broadcast retraction using notification service
-    await service.notification_service.broadcast_bid_retraction(
-        result.run_id, result.product_id, result.user_id, result.new_total
-    )
-
     return MessageResponse(message=result.message)
 
 
@@ -127,23 +81,7 @@ async def toggle_ready(
 ):
     """Toggle the current user's ready status for a run."""
     service = RunService(db)
-    # Set WebSocket manager for broadcasting
-    service.notification_service.set_websocket_manager(manager)
-
-    result = service.toggle_ready(run_id, current_user)
-
-    # Broadcast ready toggle using notification service
-    await service.notification_service.broadcast_ready_toggle(
-        result.run_id, result.user_id, result.is_ready
-    )
-
-    # If state changed, broadcast state change
-    if result.state_changed:
-        await service.notification_service.broadcast_state_change(
-            result.run_id, result.group_id, result.new_state
-        )
-
-    return result
+    return service.toggle_ready(run_id, current_user)
 
 
 @router.post('/{run_id}/start-shopping', response_model=StateChangeResponse)
