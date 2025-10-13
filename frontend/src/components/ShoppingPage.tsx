@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/ShoppingPage.css'
 import { WS_BASE_URL } from '../config'
@@ -12,6 +13,7 @@ import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { validateDecimal, parseDecimal, sanitizeString } from '../utils/validation'
 import { useShoppingList, shoppingKeys, useMarkPurchased, useCompleteShopping } from '../hooks/queries'
+import { formatErrorForDisplay } from '../utils/errorHandling'
 
 // Using ShoppingListItem type from API layer
 
@@ -43,12 +45,16 @@ function formatPriceDate(dateStr: string | null): string {
   }
 }
 
-interface ShoppingPageProps {
-  runId: string
-  onBack: () => void
-}
+export default function ShoppingPage() {
+  const { runId } = useParams<{ runId: string }>()
+  const navigate = useNavigate()
 
-export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
+  // Redirect if no runId
+  if (!runId) {
+    navigate('/')
+    return null
+  }
+
   const { data: items = [], isLoading: loading, error: queryError } = useShoppingList(runId)
   const queryClient = useQueryClient()
   const markPurchasedMutation = useMarkPurchased(runId)
@@ -97,8 +103,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
       setShowPricePopup(false)
       setSelectedItem(null)
     } catch (err) {
-      console.error('Error adding price:', err)
-      showToast('Failed to add price. Please try again.', 'error')
+      showToast(formatErrorForDisplay(err, 'add price'), 'error')
     }
   }
 
@@ -116,8 +121,7 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
       setShowPurchasePopup(false)
       setSelectedItem(null)
     } catch (err) {
-      console.error('Error marking purchased:', err)
-      showToast('Failed to mark as purchased. Please try again.', 'error')
+      showToast(formatErrorForDisplay(err, 'mark as purchased'), 'error')
     }
   }
 
@@ -126,10 +130,9 @@ export default function ShoppingPage({ runId, onBack }: ShoppingPageProps) {
       try {
         await shoppingApi.completeShopping(runId)
         // Navigate back to run page
-        onBack()
+        navigate(`/runs/${runId}`)
       } catch (err) {
-        console.error('Error completing shopping:', err)
-        showToast('Failed to complete shopping. Please try again.', 'error')
+        showToast(formatErrorForDisplay(err, 'complete shopping'), 'error')
       }
     }
 

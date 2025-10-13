@@ -1,16 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import type { WebSocketMessage } from '../types/websocket'
 
 // WebSocket configuration constants
 const WEBSOCKET_RECONNECT_INTERVAL_MS = 3000 // 3 seconds between reconnection attempts
 const WEBSOCKET_MAX_RECONNECT_ATTEMPTS = 5 // Maximum number of reconnection attempts
 const WEBSOCKET_HEARTBEAT_INTERVAL_MS = 30000 // 30 seconds between heartbeat pings
 const WEBSOCKET_INITIAL_DELAY_MS = 100 // Small delay before initial connection to avoid React strict mode conflicts
-
-interface WebSocketMessage {
-  type: string
-  data: any
-  timestamp: string
-}
 
 interface UseWebSocketOptions {
   onMessage?: (message: WebSocketMessage) => void

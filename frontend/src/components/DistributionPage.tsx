@@ -1,89 +1,46 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import '../styles/components/DistributionPage.css'
-import { API_BASE_URL } from '../config'
 import LoadingSpinner from './LoadingSpinner'
 import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
+import { useDistribution, useMarkPickedUp, useCompleteDistribution } from '../hooks/queries/useDistribution'
+import type { DistributionUser } from '../schemas/distribution'
 
-interface DistributionProduct {
-  bid_id: string
-  product_id: string
-  product_name: string
-  requested_quantity: number
-  distributed_quantity: number
-  price_per_unit: string
-  subtotal: string
-  is_picked_up: boolean
-}
+export default function DistributionPage() {
+  const { runId } = useParams<{ runId: string }>()
+  const navigate = useNavigate()
 
-interface DistributionUser {
-  user_id: string
-  user_name: string
-  products: DistributionProduct[]
-  total_cost: string
-  all_picked_up: boolean
-}
-
-interface DistributionPageProps {
-  runId: string
-  onBack: () => void
-}
-
-export default function DistributionPage({ runId, onBack }: DistributionPageProps) {
-  const [users, setUsers] = useState<DistributionUser[]>([])
-  const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const loadDistributionData = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await fetch(`${API_BASE_URL}/distribution/${runId}`, {
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Failed to load distribution data: ${response.status} - ${errorText}`)
-      }
-
-      const data = await response.json()
-      // Filter out users who have no purchased products, and filter out unpurchased products from users
-      const filteredUsers = data
-        .map((user: DistributionUser) => ({
-          ...user,
-          products: user.products.filter(p => p.distributed_quantity > 0)
-        }))
-        .filter((user: DistributionUser) => user.products.length > 0)
-      setUsers(filteredUsers)
-    } catch (err) {
-      console.error('Distribution page error:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
+  // Redirect if no runId
+  if (!runId) {
+    navigate('/')
+    return null
   }
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadDistributionData()
-  }, [runId])
+  // Use React Query hooks
+  const { data: allUsers = [], isLoading, error: queryError, refetch } = useDistribution(runId)
+  const markPickedUpMutation = useMarkPickedUp(runId)
+  const completeDistributionMutation = useCompleteDistribution(runId)
+
+  // Filter out users who have no purchased products
+  const users = useMemo(() => {
+    return allUsers
+      .map((user) => ({
+        ...user,
+        products: user.products.filter(p => p.distributed_quantity > 0)
+      }))
+      .filter((user) => user.products.length > 0)
+  }, [allUsers])
+
+  // Convert React Query error to string
+  const error = queryError instanceof Error ? queryError.message : null
 
   const handlePickup = async (bidId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/distribution/${runId}/pickup/${bidId}`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to mark as picked up')
-      }
-
-      // Reload data after successful pickup
-      await loadDistributionData()
+      await markPickedUpMutation.mutateAsync(bidId)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Failed to mark as picked up:', err)
     }
   }
 
@@ -93,38 +50,20 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
       const unpickedProducts = user.products.filter(p => !p.is_picked_up)
 
       for (const product of unpickedProducts) {
-        const response = await fetch(`${API_BASE_URL}/distribution/${runId}/pickup/${product.bid_id}`, {
-          method: 'POST',
-          credentials: 'include'
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to mark as picked up')
-        }
+        await markPickedUpMutation.mutateAsync(product.bid_id)
       }
-
-      // Reload data after successful pickup
-      await loadDistributionData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Failed to mark all as picked up:', err)
     }
   }
 
   const handleCompleteRun = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/distribution/${runId}/complete`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to complete run')
-      }
-
+      await completeDistributionMutation.mutateAsync()
       // Go back to run page after completion
-      onBack()
+      navigate(`/runs/${runId}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Failed to complete run:', err)
     }
   }
 
@@ -134,12 +73,12 @@ export default function DistributionPage({ runId, onBack }: DistributionPageProp
 
   const allPickedUp = users.length > 0 && users.every(user => user.all_picked_up)
 
-  if (loading) {
+  if (isLoading) {
     return <LoadingSpinner />
   }
 
   if (error) {
-    return <ErrorAlert message={error} onRetry={loadDistributionData} />
+    return <ErrorAlert message={error} onRetry={() => refetch()} />
   }
 
   return (

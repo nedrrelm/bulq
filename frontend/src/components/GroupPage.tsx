@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/GroupPage.css'
 import { WS_BASE_URL } from '../config'
@@ -20,14 +21,15 @@ import { useGroup, useGroupRuns, groupKeys } from '../hooks/queries'
 // Using GroupDetails type from API layer
 type Run = GroupDetails['runs'][0]
 
-interface GroupPageProps {
-  groupId: string
-  onBack: () => void
-  onRunSelect: (runId: string) => void
-  onManageSelect?: (groupId: string) => void
-}
+export default function GroupPage() {
+  const { groupId } = useParams<{ groupId: string }>()
+  const navigate = useNavigate()
 
-export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect }: GroupPageProps) {
+  // Redirect if no groupId
+  if (!groupId) {
+    navigate('/')
+    return null
+  }
   // Use React Query for data fetching
   const { data: group, isLoading: groupLoading, error: groupError } = useGroup(groupId)
   const { data: runs = [], isLoading: runsLoading, error: runsError } = useGroupRuns(groupId)
@@ -58,7 +60,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect
       if (user && message.data.removed_user_id === user.id) {
         showToast('You have been removed from this group', 'error')
         setTimeout(() => {
-          window.location.href = '/'
+          navigate('/')
         }, 1500)
         return
       }
@@ -104,13 +106,11 @@ export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect
   }
 
   const handleRunClick = (runId: string) => {
-    onRunSelect(runId)
+    navigate(`/runs/${runId}`)
   }
 
   const handleManageClick = () => {
-    if (onManageSelect) {
-      onManageSelect(groupId)
-    }
+    navigate(`/groups/${groupId}/manage`)
   }
 
   return (
@@ -124,7 +124,7 @@ export default function GroupPage({ groupId, onBack, onRunSelect, onManageSelect
       )}
 
       <div className="breadcrumb">
-        <span className="breadcrumb-link" onClick={onBack}>
+        <span className="breadcrumb-link" onClick={() => navigate('/')}>
           {group?.name || 'Loading...'}
         </span>
       </div>

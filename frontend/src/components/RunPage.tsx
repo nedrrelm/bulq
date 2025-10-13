@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/RunPage.css'
 import '../styles/run-states.css'
@@ -19,19 +19,13 @@ import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useNotifications } from '../contexts/NotificationContext'
 import { useRun, runKeys, useToggleReady, useStartShopping, useFinishAdjusting } from '../hooks/queries'
+import { useAuth } from '../contexts/AuthContext'
+import { handleError, formatErrorForDisplay } from '../utils/errorHandling'
 
 // Using RunDetail type from API layer
 type Product = RunDetail['products'][0]
 type UserBid = Product['user_bids'][0]
 type Participant = RunDetail['participants'][0]
-
-interface RunPageProps {
-  runId: string
-  userId: string
-  onBack: (groupId?: string) => void
-  onShoppingSelect?: (runId: string) => void
-  onDistributionSelect?: (runId: string) => void
-}
 
 interface ProductItemProps {
   product: Product
@@ -212,7 +206,19 @@ const ProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid,
   )
 })
 
-export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDistributionSelect }: RunPageProps) {
+export default function RunPage() {
+  const { runId } = useParams<{ runId: string }>()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+
+  // Redirect if no runId or user
+  if (!runId || !user) {
+    navigate('/')
+    return null
+  }
+
+  const userId = user.id
+
   // Use React Query for run data
   const { data: run, isLoading: loading, error: queryError } = useRun(runId)
   const queryClient = useQueryClient()
@@ -237,7 +243,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       setReassignmentRequest(response.request)
     } catch (err) {
       // Silently fail - not critical
-      console.error('Failed to fetch reassignment request:', err)
+      handleError('Fetch reassignment request', err)
     }
   }, [runId])
 
@@ -252,8 +258,8 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       showToast('Leadership accepted!', 'success')
       setReassignmentRequest(null)
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
-    } catch (err: any) {
-      showToast(err.message || 'Failed to accept reassignment', 'error')
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'accept reassignment'), 'error')
     }
   }
 
@@ -263,8 +269,8 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       await reassignmentApi.declineReassignment(reassignmentRequest.id)
       showToast('Request declined', 'success')
       setReassignmentRequest(null)
-    } catch (err: any) {
-      showToast(err.message || 'Failed to decline reassignment', 'error')
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'decline reassignment'), 'error')
     }
   }
 
@@ -320,8 +326,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       await runsApi.retractBid(runId, product.id)
       // WebSocket will update the run data automatically
     } catch (err) {
-      console.error('Error retracting bid:', err)
-      showToast(err instanceof ApiError ? err.message : 'Failed to retract bid. Please try again.', 'error')
+      showToast(formatErrorForDisplay(err, 'retract bid'), 'error')
     }
   }
 
@@ -339,8 +344,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
       setShowBidPopup(false)
       setSelectedProduct(null)
     } catch (err) {
-      console.error('Error placing bid:', err)
-      showToast('Failed to place bid. Please try again.', 'error')
+      showToast(formatErrorForDisplay(err, 'place bid'), 'error')
     }
   }
 
@@ -383,8 +387,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     try {
       await toggleReadyMutation.mutateAsync()
     } catch (err) {
-      console.error('Error toggling ready:', err)
-      showToast('Failed to update ready status. Please try again.', 'error')
+      showToast(formatErrorForDisplay(err, 'update ready status'), 'error')
     }
   }
 
@@ -392,8 +395,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     try {
       await startShoppingMutation.mutateAsync()
     } catch (err) {
-      console.error('Error starting shopping:', err)
-      showToast('Failed to start shopping. Please try again.', 'error')
+      showToast(formatErrorForDisplay(err, 'start shopping'), 'error')
     }
   }
 
@@ -401,8 +403,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     try {
       await finishAdjustingMutation.mutateAsync()
     } catch (err) {
-      console.error('Error finishing adjusting:', err)
-      showToast(err instanceof ApiError ? err.message : 'Failed to finish adjusting. Please try again.', 'error')
+      showToast(formatErrorForDisplay(err, 'finish adjusting'), 'error')
     }
   }
 
@@ -414,8 +415,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
         // Refresh the run data to show updated state
         queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
       } catch (err) {
-        console.error('Error cancelling run:', err)
-        showToast(err instanceof ApiError ? err.message : 'Failed to cancel run. Please try again.', 'error')
+        showToast(formatErrorForDisplay(err, 'cancel run'), 'error')
       }
     }
 
@@ -430,7 +430,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={() => onBack(run?.group_id)} className="back-button">
+          <button onClick={() => navigate(run?.group_id ? `/groups/${run.group_id}` : '/')} className="back-button">
             ← Back to Group
           </button>
           <h2>Loading run...</h2>
@@ -443,7 +443,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={() => onBack(run?.group_id)} className="back-button">
+          <button onClick={() => navigate(run?.group_id ? `/groups/${run.group_id}` : '/')} className="back-button">
             ← Back to Group
           </button>
           <h2>Error</h2>
@@ -459,7 +459,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={() => onBack(run?.group_id)} className="back-button">
+          <button onClick={() => navigate(run?.group_id ? `/groups/${run.group_id}` : '/')} className="back-button">
             ← Back to Group
           </button>
           <h2>Run not found</h2>
@@ -473,7 +473,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
   return (
     <div className="run-page">
       <div className="breadcrumb">
-        <span className="breadcrumb-link" onClick={() => onBack(run.group_id)}>
+        <span className="breadcrumb-link" onClick={() => navigate(`/groups/${run.group_id}`)}>
           {run.group_name}
         </span>
         {' > '}
@@ -624,7 +624,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             <h3>Shopping in Progress</h3>
             <p>You are currently shopping for this run.</p>
             <button
-              onClick={() => onShoppingSelect(runId)}
+              onClick={() => navigate(`/shopping/${runId}`)}
               className="btn btn-success btn-lg"
             >
               📝 Open Shopping List
@@ -656,7 +656,7 @@ export default function RunPage({ runId, userId, onBack, onShoppingSelect, onDis
             <h3>Distribution in Progress</h3>
             <p>Shopping is complete. Time to distribute items to participants.</p>
             <button
-              onClick={() => onDistributionSelect(runId)}
+              onClick={() => navigate(`/distribution/${runId}`)}
               className="btn btn-success btn-lg"
             >
               📦 Open Distribution
