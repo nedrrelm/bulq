@@ -18,6 +18,7 @@ from ..schemas import (
     MessageResponse,
     StateChangeResponse,
 )
+from ..transaction import transaction
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -219,12 +220,14 @@ class DistributionService(BaseService):
         if unpicked_bids:
             raise BadRequestError('Cannot complete distribution - some items not picked up')
 
-        # Transition to completed state
-        old_state = run.state
-        self.repo.update_run_state(run_id, RunState.COMPLETED)
+        # Wrap state change and notifications in transaction
+        with transaction(self.db, "complete distribution and transition to completed state"):
+            # Transition to completed state
+            old_state = run.state
+            self.repo.update_run_state(run_id, RunState.COMPLETED)
 
-        # Create notifications for all participants
-        self._notify_run_state_change(run, old_state, RunState.COMPLETED)
+            # Create notifications for all participants
+            self._notify_run_state_change(run, old_state, RunState.COMPLETED)
 
         logger.info(
             'Distribution completed', extra={'run_id': str(run_id), 'user_id': str(current_user.id)}
