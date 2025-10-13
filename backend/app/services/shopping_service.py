@@ -16,6 +16,7 @@ from ..schemas import (
     PriceObservation,
     ShoppingListItemResponse,
 )
+from ..transaction import transaction
 from ..websocket_manager import manager
 from .base_service import BaseService
 
@@ -385,11 +386,13 @@ class ShoppingService(BaseService):
 
         # If we have insufficient quantities, transition to adjusting state
         if has_insufficient:
-            old_state = run.state
-            self.repo.update_run_state(run_uuid, RunState.ADJUSTING)
+            # Wrap state change and notifications in transaction
+            with transaction(self.db, "transition to adjusting state"):
+                old_state = run.state
+                self.repo.update_run_state(run_uuid, RunState.ADJUSTING)
 
-            # Create notifications for all participants
-            self._notify_run_state_change(run, old_state, RunState.ADJUSTING)
+                # Create notifications for all participants
+                self._notify_run_state_change(run, old_state, RunState.ADJUSTING)
 
             # Broadcast state change to both run and group
             await manager.broadcast(
@@ -413,32 +416,32 @@ class ShoppingService(BaseService):
             )
 
         # Otherwise, proceed with distribution
-        # For each shopping item (purchased product), distribute to users who bid
-        for shopping_item in shopping_items:
-            if not shopping_item.is_purchased:
-                continue
+        # Wrap distribution and state change in transaction
+        with transaction(self.db, "distribute items and transition to distributing state"):
+            # For each shopping item (purchased product), distribute to users who bid
+            for shopping_item in shopping_items:
+                if not shopping_item.is_purchased:
+                    continue
 
-            # Get all bids for this product
-            product_bids = [
-                bid
-                for bid in all_bids
-                if bid.product_id == shopping_item.product_id and not bid.interested_only
-            ]
+                # Get all bids for this product
+                product_bids = [
+                    bid
+                    for bid in all_bids
+                    if bid.product_id == shopping_item.product_id and not bid.interested_only
+                ]
 
-            # Distribute the purchased items to bidders (all quantities match)
-            for bid in product_bids:
-                self.repo.update_bid_distributed_quantities(
-                    bid.id, bid.quantity, shopping_item.purchased_price_per_unit
-                )
+                # Distribute the purchased items to bidders (all quantities match)
+                for bid in product_bids:
+                    self.repo.update_bid_distributed_quantities(
+                        bid.id, bid.quantity, shopping_item.purchased_price_per_unit
+                    )
 
-        self.repo.commit_changes()
+            # Transition to distributing state
+            old_state = run.state
+            self.repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
 
-        # Transition to distributing state
-        old_state = run.state
-        self.repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
-
-        # Create notifications for all participants
-        self._notify_run_state_change(run, old_state, RunState.DISTRIBUTING)
+            # Create notifications for all participants
+            self._notify_run_state_change(run, old_state, RunState.DISTRIBUTING)
 
         # Broadcast state change to both run and group
         await manager.broadcast(

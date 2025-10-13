@@ -8,6 +8,7 @@ from ..models import Run, User
 from ..request_context import get_logger
 from ..run_state import RunState, state_machine
 from ..schemas import CancelRunResponse, ReadyToggleResponse, StateChangeResponse
+from ..transaction import transaction
 from ..validation import validate_uuid
 from .base_service import BaseService
 
@@ -121,11 +122,13 @@ class RunStateService(BaseService):
         if not participation or not participation.is_leader:
             raise ForbiddenError('Only the run leader can start shopping')
 
-        # Generate shopping list items from bids
-        self._generate_shopping_list(run_uuid)
+        # Wrap shopping list generation and state change in transaction
+        with transaction(self.db, "generate shopping list and start shopping"):
+            # Generate shopping list items from bids
+            self._generate_shopping_list(run_uuid)
 
-        # Transition to shopping state
-        self._transition_run_state(run, RunState.SHOPPING)
+            # Transition to shopping state
+            self._transition_run_state(run, RunState.SHOPPING)
 
         return StateChangeResponse(
             message='Shopping started!',
@@ -138,6 +141,7 @@ class RunStateService(BaseService):
         """Finish adjusting bids - transition from adjusting to distributing state (leader only).
 
         Validates that quantities match purchased quantities and distributes items to bidders.
+        All operations are wrapped in a transaction for atomicity.
 
         Args:
             run_id: Run ID as string
@@ -152,9 +156,12 @@ class RunStateService(BaseService):
             ForbiddenError: If user is not the leader
         """
         run_uuid, run = self._validate_finish_adjusting_request(run_id, user)
-        self._verify_quantities_match(run_uuid)
-        self._distribute_items_to_bidders(run_uuid)
-        self._transition_run_state(run, RunState.DISTRIBUTING)
+
+        # Wrap verification, distribution, and state change in transaction
+        with transaction(self.db, "finish adjusting and distribute items"):
+            self._verify_quantities_match(run_uuid)
+            self._distribute_items_to_bidders(run_uuid)
+            self._transition_run_state(run, RunState.DISTRIBUTING)
 
         return StateChangeResponse(
             message='Adjustments complete! Moving to distribution.',
