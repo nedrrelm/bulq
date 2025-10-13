@@ -19,9 +19,9 @@ export default function Toast({ message, type = 'info', onClose, duration = 3000
   }, [duration, onClose])
 
   return (
-    <div className={`toast toast-${type}`}>
+    <div className={`toast toast-${type}`} role="alert" aria-live="polite" aria-atomic="true">
       <span className="toast-message">{message}</span>
-      <button onClick={onClose} className="toast-close" aria-label="Close">
+      <button onClick={onClose} className="toast-close" aria-label="Close notification">
         ×
       </button>
     </div>
