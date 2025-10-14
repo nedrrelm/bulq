@@ -9,7 +9,7 @@ from app.services.store_service import StoreService
 from app.services.shopping_service import ShoppingService
 from app.services.distribution_service import DistributionService
 from app.core.exceptions import NotFoundError, ForbiddenError, ValidationError, BadRequestError
-from app.core.repository import MemoryRepository
+from app.repositories import MemoryRepository
 
 
 @pytest.fixture

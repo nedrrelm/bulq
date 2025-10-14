@@ -28,9 +28,17 @@ Python FastAPI application with three-layer architecture (Routes â†’ Services â†
 ### Core Domain (`/backend/app/core`)
 
 - **models.py** - SQLAlchemy ORM models for all entities (User, Group, Run, Product, etc.)
-- **repository.py** - Repository pattern with DatabaseRepository (PostgreSQL) and InMemoryRepository (testing/dev with seed data)
 - **run_state.py** - Run state machine defining valid transitions between states
 - **exceptions.py** - Custom exception classes with status codes
+
+### Repository Layer (`/backend/app/repositories`)
+
+Data access abstraction with dual implementations:
+
+- **abstract.py** - AbstractRepository interface defining all data access methods
+- **database.py** - DatabaseRepository implementation using PostgreSQL with SQLAlchemy
+- **memory.py** - MemoryRepository implementation with in-memory data and rich seed data for development/testing
+- **__init__.py** - Repository exports and factory function for getting the appropriate implementation
 
 ### API Layer (`/backend/app/api`)
 

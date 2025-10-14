@@ -5,7 +5,7 @@ from uuid import UUID
 
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.core.models import LeaderReassignmentRequest, Run, User
-from app.core.repository import AbstractRepository
+from app.repositories import AbstractRepository
 from app.infrastructure.request_context import get_logger
 from app.api.schemas import MyRequestsResponse, ReassignmentDetailResponse, ReassignmentResponse
 from app.infrastructure.transaction import transaction
