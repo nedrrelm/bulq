@@ -181,25 +181,63 @@ def seed_memory_repository(repo):
     carol_adjusting_p = repo._create_participation(carol.id, run_adjusting.id, is_leader=False, is_ready=True)
 
     # Bids for adjusting run
-    bid1 = repo._create_bid(test_adjusting_p.id, almond_butter.id, 2, False)
-    bid2 = repo._create_bid(alice_adjusting_p.id, almond_butter.id, 1, False)
-    bid3 = repo._create_bid(bob_adjusting_p.id, almond_butter.id, 1, False)
+    # Olive Oil - fully purchased (3 requested, 3 bought)
+    repo._create_bid(test_adjusting_p.id, olive_oil.id, 1, False)
+    repo._create_bid(alice_adjusting_p.id, olive_oil.id, 2, False)
 
-    bid4 = repo._create_bid(test_adjusting_p.id, frozen_berries.id, 1, False)
-    bid5 = repo._create_bid(carol_adjusting_p.id, frozen_berries.id, 2, False)
+    # Quinoa - fully purchased (4 requested, 4 bought)
+    repo._create_bid(bob_adjusting_p.id, quinoa.id, 2, False)
+    repo._create_bid(alice_adjusting_p.id, quinoa.id, 2, False)
+
+    # Paper Towels - SHORTAGE (6 requested, 3 bought)
+    repo._create_bid(test_adjusting_p.id, paper_towels.id, 2, False)
+    repo._create_bid(alice_adjusting_p.id, paper_towels.id, 2, False)
+    repo._create_bid(bob_adjusting_p.id, paper_towels.id, 2, False)
+
+    # Almond Butter - NOT PURCHASED (2 requested, 0 bought)
+    bid1 = repo._create_bid(test_adjusting_p.id, almond_butter.id, 1, False)
+    bid2 = repo._create_bid(alice_adjusting_p.id, almond_butter.id, 1, False)
+
+    # Frozen Berries - NOT PURCHASED (3 requested, 0 bought)
+    bid3 = repo._create_bid(bob_adjusting_p.id, frozen_berries.id, 3, False)
 
     # Shopping list items for adjusting run
-    shopping_item4 = repo._create_shopping_list_item(run_adjusting.id, almond_butter.id, 4)  # 2 + 1 + 1
-    shopping_item4.is_purchased = True
-    shopping_item4.actual_price = 9.99
-    shopping_item4.actual_quantity = 3
-    shopping_item4.purchase_order = 1
+    from decimal import Decimal
 
-    shopping_item5 = repo._create_shopping_list_item(run_adjusting.id, frozen_berries.id, 3)  # 1 + 2
-    shopping_item5.is_purchased = True
-    shopping_item5.actual_price = 12.99
-    shopping_item5.actual_quantity = 2
-    shopping_item5.purchase_order = 2
+    adj_item1 = repo._create_shopping_list_item(run_adjusting.id, olive_oil.id, 3)
+    adj_item1.purchased_quantity = 3  # Fully purchased
+    adj_item1.purchased_price_per_unit = Decimal('24.99')
+    adj_item1.purchased_total = Decimal('74.97')
+    adj_item1.is_purchased = True
+    adj_item1.purchase_order = 1
+
+    adj_item2 = repo._create_shopping_list_item(run_adjusting.id, quinoa.id, 4)
+    adj_item2.purchased_quantity = 4  # Fully purchased
+    adj_item2.purchased_price_per_unit = Decimal('18.99')
+    adj_item2.purchased_total = Decimal('75.96')
+    adj_item2.is_purchased = True
+    adj_item2.purchase_order = 2
+
+    adj_item3 = repo._create_shopping_list_item(run_adjusting.id, paper_towels.id, 6)
+    adj_item3.purchased_quantity = 3  # SHORTAGE: only 3 out of 6 bought
+    adj_item3.purchased_price_per_unit = Decimal('19.99')
+    adj_item3.purchased_total = Decimal('59.97')
+    adj_item3.is_purchased = True
+    adj_item3.purchase_order = 3
+
+    adj_item4 = repo._create_shopping_list_item(run_adjusting.id, almond_butter.id, 2)
+    adj_item4.purchased_quantity = 0  # NOT PURCHASED
+    adj_item4.purchased_price_per_unit = None
+    adj_item4.purchased_total = None
+    adj_item4.is_purchased = True
+    adj_item4.purchase_order = None
+
+    adj_item5 = repo._create_shopping_list_item(run_adjusting.id, frozen_berries.id, 3)
+    adj_item5.purchased_quantity = 0  # NOT PURCHASED
+    adj_item5.purchased_price_per_unit = None
+    adj_item5.purchased_total = None
+    adj_item5.is_purchased = True
+    adj_item5.purchase_order = None
 
     # Distributing run - items purchased, being distributed
     test_distributing_p = next(
