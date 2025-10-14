@@ -2,15 +2,15 @@
 
 from uuid import UUID
 
-from ..background_tasks import create_background_task
-from ..config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
-from ..events.domain_events import MemberJoinedEvent, MemberLeftEvent, MemberRemovedEvent
-from ..events.event_bus import event_bus
-from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
-from ..models import Group, User
-from ..request_context import get_logger
-from ..run_state import RunState
-from ..schemas import (
+from app.utils.background_tasks import create_background_task
+from app.infrastructure.config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
+from app.events.domain_events import MemberJoinedEvent, MemberLeftEvent, MemberRemovedEvent
+from app.events.event_bus import event_bus
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from app.core.models import Group, User
+from app.infrastructure.request_context import get_logger
+from app.core.run_state import RunState
+from app.api.schemas import (
     CreateGroupResponse,
     GroupDetailResponse,
     GroupResponse,
@@ -22,9 +22,9 @@ from ..schemas import (
     RunSummary,
     ToggleJoiningResponse,
 )
-from ..transaction import transaction
-from ..validation import validate_uuid
-from ..websocket_manager import manager
+from app.infrastructure.transaction import transaction
+from app.utils.validation import validate_uuid
+from app.api.websocket_manager import manager
 from .base_service import BaseService
 
 logger = get_logger(__name__)

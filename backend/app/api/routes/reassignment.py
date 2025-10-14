@@ -5,17 +5,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import User
-from ..routes.auth import require_auth
-from ..schemas import (
+from app.infrastructure.database import get_db
+from app.core.models import User
+from app.api.routes.auth import require_auth
+from app.api.schemas import (
     MyRequestsResponse,
     ReassignmentDetailResponse,
     ReassignmentRequestModel,
     ReassignmentResponse,
     RunRequestResponse,
 )
-from ..services import ReassignmentService
+from app.services import ReassignmentService
 
 router = APIRouter(prefix='/reassignment', tags=['reassignment'])
 

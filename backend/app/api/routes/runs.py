@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import User
-from ..request_context import get_logger
-from ..routes.auth import require_auth
-from ..schemas import (
+from app.infrastructure.database import get_db
+from app.core.models import User
+from app.infrastructure.request_context import get_logger
+from app.api.routes.auth import require_auth
+from app.api.schemas import (
     AvailableProductResponse,
     CancelRunResponse,
     CreateRunRequest,
@@ -16,8 +16,8 @@ from ..schemas import (
     RunDetailResponse,
     StateChangeResponse,
 )
-from ..services import RunService
-from ..websocket_manager import manager
+from app.services import RunService
+from app.api.websocket_manager import manager
 
 router = APIRouter(prefix='/runs', tags=['runs'])
 logger = get_logger(__name__)

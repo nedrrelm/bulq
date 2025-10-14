@@ -3,16 +3,16 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import User
-from ..routes.auth import require_auth
-from ..schemas import (
+from app.infrastructure.database import get_db
+from app.core.models import User
+from app.api.routes.auth import require_auth
+from app.api.schemas import (
     MarkAllReadResponse,
     MessageResponse,
     NotificationResponse,
     UnreadCountResponse,
 )
-from ..services import NotificationService
+from app.services import NotificationService
 
 router = APIRouter(prefix='/notifications', tags=['notifications'])
 

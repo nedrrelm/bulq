@@ -5,8 +5,8 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
-from .models import Base
-from .request_context import get_logger
+from app.core.models import Base
+from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
 

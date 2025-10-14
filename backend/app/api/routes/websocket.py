@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Cookie, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
-from ..auth import get_session
-from ..database import get_db
-from ..repository import get_repository
-from ..websocket_manager import manager
+from app.infrastructure.auth import get_session
+from app.infrastructure.database import get_db
+from app.core.repository import get_repository
+from app.api.websocket_manager import manager
 
 router = APIRouter()
 
@@ -36,7 +36,7 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
 
     try:
         # Get database session manually
-        from ..database import SessionLocal
+        from app.infrastructure.database import SessionLocal
 
         db = SessionLocal()
 
@@ -151,7 +151,7 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
     try:
         # Get database session manually
-        from ..database import SessionLocal
+        from app.infrastructure.database import SessionLocal
 
         db = SessionLocal()
 
@@ -245,7 +245,7 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
 
     try:
         # Get database session manually
-        from ..database import SessionLocal
+        from app.infrastructure.database import SessionLocal
 
         db = SessionLocal()
 

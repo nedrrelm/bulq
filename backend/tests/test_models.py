@@ -1,11 +1,11 @@
 import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from app.models import User, Group, Store, Product, Run, ProductBid, Base
+from app.core.models import User, Group, Store, Product, Run, ProductBid, Base
 
 
 def test_user_creation(db):
-    from app.database import engine
+    from app.infrastructure.database import engine
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = SessionLocal()
 
@@ -21,7 +21,7 @@ def test_user_creation(db):
 
 
 def test_group_creation(db):
-    from app.database import engine
+    from app.infrastructure.database import engine
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = SessionLocal()
 
@@ -41,7 +41,7 @@ def test_group_creation(db):
 
 
 def test_store_and_product_creation(db):
-    from app.database import engine
+    from app.infrastructure.database import engine
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = SessionLocal()
 
@@ -65,8 +65,8 @@ def test_store_and_product_creation(db):
 
 
 def test_product_bid_creation(db):
-    from app.database import engine
-    from app.models import RunParticipation
+    from app.infrastructure.database import engine
+    from app.core.models import RunParticipation
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = SessionLocal()
 

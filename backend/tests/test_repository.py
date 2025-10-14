@@ -4,8 +4,8 @@ Tests both DatabaseRepository and MemoryRepository.
 """
 import pytest
 from sqlalchemy.orm import Session
-from app.repository import AbstractRepository, DatabaseRepository, MemoryRepository, get_repository
-from app.models import User, Group, Store, Product, Run, ProductBid, RunParticipation, ShoppingListItem
+from app.core.repository import AbstractRepository, DatabaseRepository, MemoryRepository, get_repository
+from app.core.models import User, Group, Store, Product, Run, ProductBid, RunParticipation, ShoppingListItem
 
 
 class TestMemoryRepository:

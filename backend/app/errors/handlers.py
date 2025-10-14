@@ -8,9 +8,9 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.error_models import ErrorDetail, ErrorResponse, ValidationErrorResponse
-from app.exceptions import AppException
-from app.request_context import get_logger
+from app.errors.models import ErrorDetail, ErrorResponse, ValidationErrorResponse
+from app.core.exceptions import AppException
+from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
 

@@ -2,11 +2,11 @@
 
 from typing import Any
 
-from ..background_tasks import create_background_task
-from ..models import Run
-from ..request_context import get_logger
-from ..run_state import RunState
-from ..websocket_manager import ConnectionManager
+from app.utils.background_tasks import create_background_task
+from app.core.models import Run
+from app.infrastructure.request_context import get_logger
+from app.core.run_state import RunState
+from app.api.websocket_manager import ConnectionManager
 from .base_service import BaseService
 
 logger = get_logger(__name__)

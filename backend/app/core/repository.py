@@ -8,8 +8,8 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
-from .config import REPO_MODE
-from .models import (
+from app.infrastructure.config import REPO_MODE
+from app.core.models import (
     Group,
     LeaderReassignmentRequest,
     Notification,
@@ -22,8 +22,8 @@ from .models import (
     Store,
     User,
 )
-from .request_context import get_logger
-from .run_state import RunState, state_machine
+from app.infrastructure.request_context import get_logger
+from app.core.run_state import RunState, state_machine
 
 logger = get_logger(__name__)
 
@@ -541,7 +541,7 @@ class DatabaseRepository(AbstractRepository):
         """Add a user to a group."""
         from sqlalchemy import insert, select
 
-        from .models import group_membership
+        from app.core.models import group_membership
 
         # Check if already a member
         existing = self.db.execute(
@@ -566,7 +566,7 @@ class DatabaseRepository(AbstractRepository):
         """Remove a user from a group."""
         from sqlalchemy import delete
 
-        from .models import group_membership
+        from app.core.models import group_membership
 
         result = self.db.execute(
             delete(group_membership).where(
@@ -580,7 +580,7 @@ class DatabaseRepository(AbstractRepository):
         """Check if a user is an admin of a group."""
         from sqlalchemy import select
 
-        from .models import group_membership
+        from app.core.models import group_membership
 
         result = self.db.execute(
             select(group_membership.c.is_group_admin).where(
@@ -594,7 +594,7 @@ class DatabaseRepository(AbstractRepository):
         """Get all members of a group with their admin status."""
         from sqlalchemy import select
 
-        from .models import group_membership
+        from app.core.models import group_membership
 
         results = self.db.execute(
             select(User, group_membership.c.is_group_admin)
@@ -623,7 +623,7 @@ class DatabaseRepository(AbstractRepository):
         """Set the admin status of a group member."""
         from sqlalchemy import update
 
-        from .models import group_membership
+        from app.core.models import group_membership
 
         result = self.db.execute(
             update(group_membership)
@@ -677,7 +677,7 @@ class DatabaseRepository(AbstractRepository):
         """Get all active runs for a store across all user's groups."""
         from sqlalchemy import and_, select
 
-        from .models import group_membership
+        from app.core.models import group_membership
 
         active_states = ['planning', 'active', 'confirmed', 'shopping', 'adjusting', 'distributing']
 

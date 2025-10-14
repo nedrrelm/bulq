@@ -3,17 +3,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import User
-from ..routes.auth import require_auth
-from ..schemas import (
+from app.infrastructure.database import get_db
+from app.core.models import User
+from app.api.routes.auth import require_auth
+from app.api.schemas import (
     CreateStoreRequest,
     StorePageResponse,
     StoreProductResponse,
     StoreResponse,
     StoreRunResponse,
 )
-from ..services import StoreService
+from app.services import StoreService
 
 router = APIRouter(prefix='/stores', tags=['stores'])
 

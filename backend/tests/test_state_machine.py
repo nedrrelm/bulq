@@ -2,7 +2,7 @@
 Tests for run state machine logic and business rules.
 """
 import pytest
-from app.run_state import RunState, RunStateMachine, state_machine
+from app.core.run_state import RunState, RunStateMachine, state_machine
 
 
 class TestRunStateMachine:

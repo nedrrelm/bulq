@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import User
-from ..request_context import get_logger
-from ..routes.auth import require_auth
-from ..schemas import (
+from app.infrastructure.database import get_db
+from app.core.models import User
+from app.infrastructure.request_context import get_logger
+from app.api.routes.auth import require_auth
+from app.api.schemas import (
     CompleteShoppingResponse,
     MarkPurchasedRequest,
     MarkPurchasedResponse,
@@ -13,7 +13,7 @@ from ..schemas import (
     ShoppingListItemResponse,
     UpdateAvailabilityPriceRequest,
 )
-from ..services import ShoppingService
+from app.services import ShoppingService
 
 router = APIRouter(prefix='/shopping', tags=['shopping'])
 logger = get_logger(__name__)

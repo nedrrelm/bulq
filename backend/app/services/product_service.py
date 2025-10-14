@@ -3,9 +3,9 @@
 from typing import Any
 from uuid import UUID
 
-from ..exceptions import NotFoundError, ValidationError
-from ..models import Product
-from ..schemas import (
+from app.core.exceptions import NotFoundError, ValidationError
+from app.core.models import Product
+from app.api.schemas import (
     PricePoint,
     ProductDetailResponse,
     ProductSearchResult,

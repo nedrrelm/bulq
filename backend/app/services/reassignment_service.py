@@ -3,13 +3,13 @@
 from typing import Any
 from uuid import UUID
 
-from ..exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
-from ..models import LeaderReassignmentRequest, Run, User
-from ..repository import AbstractRepository
-from ..request_context import get_logger
-from ..schemas import MyRequestsResponse, ReassignmentDetailResponse, ReassignmentResponse
-from ..transaction import transaction
-from ..websocket_manager import manager as ws_manager
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.models import LeaderReassignmentRequest, Run, User
+from app.core.repository import AbstractRepository
+from app.infrastructure.request_context import get_logger
+from app.api.schemas import MyRequestsResponse, ReassignmentDetailResponse, ReassignmentResponse
+from app.infrastructure.transaction import transaction
+from app.api.websocket_manager import manager as ws_manager
 from .base_service import BaseService
 
 logger = get_logger(__name__)

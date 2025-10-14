@@ -6,9 +6,9 @@ for consistent state validation across the application.
 
 from uuid import UUID
 
-from .exceptions import BadRequestError
-from .models import Run
-from .run_state import RunState, state_machine
+from app.core.exceptions import BadRequestError
+from app.core.models import Run
+from app.core.run_state import RunState, state_machine
 
 
 def validate_uuid(id_str: str, resource_name: str = 'ID') -> UUID:

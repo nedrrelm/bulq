@@ -3,8 +3,8 @@
 WARNING: This will DROP all existing tables and recreate them.
 """
 
-from app.database import engine
-from app.models import Base
+from app.infrastructure.database import engine
+from app.core.models import Base
 
 
 def reset_database():

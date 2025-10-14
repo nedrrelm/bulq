@@ -8,9 +8,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.database import get_db
-from app.models import Base
-from app.auth import sessions  # Import sessions dict to clear between tests
+from app.infrastructure.database import get_db
+from app.core.models import Base
+from app.infrastructure.auth import sessions  # Import sessions dict to clear between tests
 
 # Use in-memory SQLite for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -106,8 +106,8 @@ def sample_user(db_session):
     Create a sample user for testing.
     Returns the user object.
     """
-    from app.models import User
-    from app.auth import hash_password
+    from app.core.models import User
+    from app.infrastructure.auth import hash_password
 
     user = User(
         name="Sample User",
@@ -127,7 +127,7 @@ def sample_group(db_session, sample_user):
     Create a sample group with the sample user as creator and member.
     Returns the group object.
     """
-    from app.models import Group, GroupMembership
+    from app.core.models import Group, GroupMembership
 
     group = Group(
         name="Sample Group",
@@ -152,7 +152,7 @@ def sample_store(db_session):
     Create a sample store for testing.
     Returns the store object.
     """
-    from app.models import Store
+    from app.core.models import Store
 
     store = Store(name="Sample Store")
     db_session.add(store)
@@ -168,7 +168,7 @@ def sample_product(db_session, sample_store):
     Create a sample product for testing.
     Returns the product object.
     """
-    from app.models import Product
+    from app.core.models import Product
     from decimal import Decimal
 
     product = Product(
@@ -189,7 +189,7 @@ def sample_run(db_session, sample_group, sample_store, sample_user):
     Create a sample run with participation for testing.
     Returns tuple of (run, participation).
     """
-    from app.models import Run, RunParticipation
+    from app.core.models import Run, RunParticipation
 
     run = Run(
         group_id=sample_group.id,

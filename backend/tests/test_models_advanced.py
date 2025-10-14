@@ -6,7 +6,7 @@ from decimal import Decimal
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.models import (
+from app.core.models import (
     User, Group, Store, Product, Run,
     RunParticipation, ProductBid, ShoppingListItem, ProductAvailability, group_membership
 )
