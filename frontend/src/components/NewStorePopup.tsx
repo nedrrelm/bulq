@@ -95,7 +95,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
           )}
 
           <div className="form-group">
-            <label htmlFor="store-name" className="form-label">Store Name</label>
+            <label htmlFor="store-name" className="form-label">Store Name *</label>
             <input
               id="store-name"
               type="text"
@@ -107,12 +107,6 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
               autoFocus
               disabled={submitting}
             />
-            <div className="input-footer">
-              {error && <span className="error-message">{error}</span>}
-              <span className={`char-counter ${isOverLimit ? 'over-limit' : ''}`}>
-                {charCount}/{MAX_LENGTH}
-              </span>
-            </div>
             <small className="input-hint">
               Use letters, numbers, spaces, and - _ & '
             </small>

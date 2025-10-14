@@ -95,7 +95,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
           )}
 
           <div className="form-group">
-            <label htmlFor="group-name" className="form-label">Group Name</label>
+            <label htmlFor="group-name" className="form-label">Group Name *</label>
             <input
               id="group-name"
               type="text"
@@ -107,12 +107,6 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
               autoFocus
               disabled={submitting}
             />
-            <div className="input-footer">
-              {error && <span className="error-message">{error}</span>}
-              <span className={`char-counter ${isOverLimit ? 'over-limit' : ''}`}>
-                {charCount}/{MAX_LENGTH}
-              </span>
-            </div>
             <small className="input-hint">
               Use letters, numbers, spaces, and - _ & '
             </small>

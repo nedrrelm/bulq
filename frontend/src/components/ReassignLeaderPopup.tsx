@@ -13,6 +13,7 @@ interface ReassignLeaderPopupProps {
   participants: Participant[]
   onClose: () => void
   onSuccess: () => void
+  onCancelRun?: () => void
 }
 
 export default function ReassignLeaderPopup({
@@ -20,6 +21,7 @@ export default function ReassignLeaderPopup({
   participants,
   onClose,
   onSuccess,
+  onCancelRun,
 }: ReassignLeaderPopupProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
@@ -117,8 +119,20 @@ export default function ReassignLeaderPopup({
               className="btn btn-primary"
               disabled={submitting || eligibleParticipants.length === 0}
             >
-              {submitting ? 'Requesting...' : 'Request Reassignment'}
+              {submitting ? 'Reassigning...' : 'Reassign'}
             </button>
+            {onCancelRun && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  onCancelRun()
+                }}
+                className="btn btn-danger"
+              >
+                ✕ Cancel Run
+              </button>
+            )}
           </div>
         </form>
       </div>

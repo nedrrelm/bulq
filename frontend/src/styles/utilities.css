@@ -305,6 +305,12 @@
   }
 }
 
+@media (min-width: 769px) {
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -326,6 +332,8 @@
   color: var(--color-text);
   background: white;
   transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-input:focus {
