@@ -34,9 +34,10 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
     const fetchStores = async () => {
       try {
         const storesData = await storesApi.getStores()
-        setStores(storesData)
+        setStores(Array.isArray(storesData) ? storesData : [])
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'Failed to load stores')
+        setStores([])
       } finally {
         setLoadingStores(false)
       }
@@ -240,7 +241,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
               disabled={submitting || loadingStores}
             >
               <option value="">Select a store...</option>
-              {stores.map((store) => (
+              {Array.isArray(stores) && stores.map((store) => (
                 <option key={store.id} value={store.id}>
                   {store.name}
                 </option>

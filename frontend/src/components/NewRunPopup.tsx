@@ -27,11 +27,12 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     const fetchStores = async () => {
       try {
         const data = await storesApi.getStores()
-        setStores(data)
+        const storesArray = Array.isArray(data) ? data : []
+        setStores(storesArray)
 
         // Auto-select first store if available
-        if (data.length > 0 && data[0]) {
-          setSelectedStoreId(data[0].id)
+        if (storesArray.length > 0 && storesArray[0]) {
+          setSelectedStoreId(storesArray[0].id)
         }
 
         // Focus the select after stores are loaded
@@ -39,6 +40,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
       } catch (err) {
         console.error('Error fetching stores:', err)
         setError(err instanceof ApiError ? err.message : 'Failed to load stores')
+        setStores([])
       }
     }
 
@@ -103,7 +105,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
               ref={selectRef}
             >
               {stores.length === 0 && <option value="">No stores available</option>}
-              {stores.map(store => (
+              {Array.isArray(stores) && stores.map(store => (
                 <option key={store.id} value={store.id}>
                   {store.name}
                 </option>

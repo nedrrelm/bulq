@@ -89,7 +89,7 @@ async def startup_event():
     )
     from .events.event_bus import event_bus
     from .api.websocket_manager import manager
-    from .core.repository import get_repository
+    from .repositories import get_repository
     from .events.handlers.notification_handler import NotificationEventHandler
     from .events.handlers.websocket_handler import WebSocketEventHandler
 
