@@ -186,14 +186,29 @@ logger.info(
 - **Descriptive names**: `reassignment_service.py` not `rs.py`
 
 #### Logging
+- **Always use context-aware logger** with `get_logger(__name__)`
+  ```python
+  from app.request_context import get_logger
+
+  logger = get_logger(__name__)  # At module level
+  ```
+- **Request IDs are automatic**: Every log entry within a request includes the same `request_id` for tracing
 - **Always use structured logging** with `extra` dict
 - **Message format**: Describe the event, not the data
   ```python
   # Good
   logger.info("User registered", extra={"user_id": str(user.id)})
-  
+  # Automatically includes: request_id, timestamp, level
+
   # Bad
   logger.info(f"User {user.id} registered")
+  ```
+- **Background tasks**: Set context manually
+  ```python
+  from app.request_context import set_request_id, generate_request_id
+
+  set_request_id(generate_request_id())
+  logger.info("Background task started")  # Now includes request_id
   ```
 
 #### Type Hints
