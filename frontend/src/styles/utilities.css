@@ -180,6 +180,8 @@
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .modal {
@@ -217,11 +219,13 @@
   .modal {
     padding: 16px;
     border-radius: 8px;
-    width: calc(100% - 1rem);
+    width: 100%;
+    max-width: calc(100vw - 2rem);
+    margin: 0 auto;
   }
 
   .modal-overlay {
-    padding: 0.5rem;
+    padding: 1rem;
   }
 
   .modal-actions {
@@ -230,6 +234,16 @@
 
   .modal-actions button {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    max-width: calc(100vw - 1rem);
+  }
+
+  .modal-overlay {
+    padding: 0.5rem;
   }
 }
 
