@@ -233,33 +233,72 @@ For detailed testing documentation, see [`backend/tests/README.md`](backend/test
 
 ## Project Status
 
-🚧 Project in initial development phase
-- ✅ Backend: FastAPI app with CORS, health checks, and Docker support
-- ✅ Frontend: React + TypeScript app with backend connectivity test and Caddy serving
-- ✅ Integration: Frontend-backend communication working via CORS
-- ⏳ Database: To be containerized
+✅ **Production-ready architecture implemented:**
+- ✅ Backend: FastAPI app with comprehensive API, WebSockets, and service layer
+- ✅ Frontend: React + TypeScript SPA with Caddy reverse proxy
+- ✅ Database: PostgreSQL with Docker containerization
+- ✅ HTTPS/SSL: Automatic certificate provisioning via Let's Encrypt (Caddy)
+- ✅ Security: Production environment validation, secure cookies, CORS
+- ✅ Testing: Comprehensive test suite with 100+ tests
+
+📋 **Before production deployment:**
+- ⏳ Database migrations with Alembic (critical)
+- ⏳ Rate limiting implementation
+- ⏳ Monitoring and log aggregation
+- ⏳ Automated backups to cloud storage
+
+See [docs/production_deployment.md](docs/production_deployment.md) for deployment guide.
+
+## Production Deployment
+
+See the comprehensive [Production Deployment Guide](docs/production_deployment.md) for:
+- Server prerequisites and DNS configuration
+- Environment variable setup
+- SSL certificate provisioning
+- Database backups and migrations
+- Monitoring and logging
+- Security checklist
+- Troubleshooting
+
+**Quick Start:**
+```bash
+# 1. Configure environment
+cp .env.example .env
+# Edit .env with production values (see deployment guide)
+
+# 2. Deploy
+docker compose up -d
+
+# 3. Verify
+curl https://yourdomain.com
+```
 
 ## Troubleshooting
 
-### Frontend shows "Backend connection failed"
+### Development Mode
+
+**Frontend shows "Backend connection failed"**
 1. Ensure both services are running: `docker compose ps`
-2. Check backend is responding: `curl http://localhost:8000/health`
-3. If using local development, make sure CORS is configured in the backend
+2. Check backend logs: `docker compose logs backend`
+3. Verify CORS configuration in backend
 
-### Port conflicts
-- Backend uses port 8000
-- Frontend uses port 3000
-- Stop existing services: `docker compose down`
-- Check for conflicting processes: `lsof -i :8000` or `lsof -i :3000`
+**Port conflicts**
+- Backend: 8000 (internal only with reverse proxy)
+- Frontend: 3000 (development), 80/443 (production)
+- Stop services: `docker compose down`
+- Check processes: `lsof -i :3000` or `lsof -i :8000`
 
-### Container build issues
+**Container build issues**
 - Clean rebuild: `docker compose build --no-cache`
 - Remove old images: `docker system prune`
 
-### Development vs Production
-- Frontend in development mode (`npm run dev`) runs on Vite dev server
-- Frontend in Docker runs on Caddy serving built static files
-- CORS is configured for both `localhost:3000` and `127.0.0.1:3000`
+### Production Mode
+
+See [Production Deployment Guide - Troubleshooting](docs/production_deployment.md#troubleshooting) for:
+- SSL certificate issues
+- CORS errors
+- WebSocket connection failures
+- Database connection problems
 
 ## Development Guidelines
 
@@ -277,5 +316,6 @@ For detailed testing documentation, see [`backend/tests/README.md`](backend/test
 - Chat if coordination becomes complex
 - BulkPricingTier entity for threshold logic
 - Multiple delivery coordination options
-- Database containerization and persistence
-- Production deployment configuration
+- Alembic database migrations (critical before schema changes)
+- Rate limiting and API throttling
+- Advanced monitoring and alerting

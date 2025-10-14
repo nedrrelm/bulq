@@ -3,8 +3,10 @@ services:
     image: postgres:15
     env_file:
       - .env
-    ports:
-      - "5433:5432"
+    # Only expose to internal network, not to host
+    # For local database access, use: docker compose exec db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -13,29 +15,54 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - bulq-network
 
   backend:
     build: ./backend
-    ports:
-      - "8000:8000"
+    # Only expose to internal network - Caddy will proxy
+    expose:
+      - "8000"
     env_file:
       - .env
     volumes:
+      # Development: mount source for hot-reload
       - ./backend:/app
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - bulq-network
 
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      # Development: expose on 3000
+      - "${FRONTEND_PORT:-3000}:3000"
+      # Production: expose on 80 and 443 for Let's Encrypt
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    env_file:
+      - .env
+    environment:
+      # Pass domain to Caddy for SSL certificate provisioning
+      DOMAIN: ${DOMAIN:-}
     volumes:
-      - ./frontend:/app
+      # Production: Caddy data for SSL certificates
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - bulq-network
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  bulq-network:
+    driver: bridge

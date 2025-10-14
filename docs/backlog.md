@@ -38,54 +38,43 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 ---
 
 ### Security & Infrastructure
-**Status**: Critical (before production)
+**Status**: Partially Complete
 **Affected files**: `app/main.py`, `app/routes/auth.py`, `Caddyfile`, `docker-compose.yml`
 
-**Items:**
+**Completed:**
+
+✅ **HTTPS/SSL with Caddy** - Reverse proxy configured with automatic Let's Encrypt certificates
+   - Development: Serves on port 3000
+   - Production: Automatic HTTPS when `DOMAIN` environment variable is set
+   - Security headers included (HSTS, X-Frame-Options, etc.)
+
+✅ **Production CORS** - Environment-based configuration with validation
+   - `ALLOWED_ORIGINS` required in production mode
+   - Development defaults provided
+   - Runtime validation prevents insecure configuration
+
+✅ **Static Frontend Build** - Caddy serves optimized Vite build
+   - Multi-stage Docker build (build + serve)
+   - Gzip compression enabled
+   - SPA routing with try_files
+
+✅ **Production Environment Validation** - Strict checks for production mode
+   - Secure cookies required with HTTPS
+   - Database URL validation
+   - Strong secret key enforcement
+
+**Still TODO:**
 
 1. **Rate Limiting** - Use `slowapi` middleware:
+
    - Login/registration: 5 requests/minute
    - Bid placement: 20 requests/minute
    - General API: 100 requests/minute
 
-2. **HTTPS/SSL with Caddy** - Set up reverse proxy:
-   ```
-   yourdomain.com {
-       reverse_proxy backend:8000
-   }
-   ```
-   Configure automatic Let's Encrypt certificates.
-
-3. **Production CORS** - Configure allowed origins:
-   ```python
-   origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
-   if not origins:
-       raise RuntimeError("ALLOWED_ORIGINS must be set in production!")
-   ```
-
-4. **Static Frontend Build** - Build and serve optimized frontend files with Caddy
-
-5. **Database Backups** - Automated daily backups with pg_dump, S3 storage, retention policy
-
----
-
-## 🧪 Frontend: Testing
-
----
-
-### 42. No Test Files
-**Status**: HIGH (quality assurance)
-**Affected files**: Entire frontend
-
-**Problem:** No `.test.tsx` or `.spec.tsx` files found in codebase.
-
-**Impact:** No automated testing, higher risk of regressions, harder to refactor confidently.
-
-**Fix:** Add comprehensive test suite:
-- Unit tests for hooks (`@testing-library/react-hooks`)
-- Component tests (`@testing-library/react`)
-- Integration tests for key flows
-- E2E tests for critical paths (Playwright/Cypress)
+2. **Database Backups** - Automated daily backups with pg_dump, S3 storage, retention policy
+   - Manual backup script documented
+   - Need automated backup to cloud storage
+   - Need monitoring/alerting for backup failures
 
 ---
 
