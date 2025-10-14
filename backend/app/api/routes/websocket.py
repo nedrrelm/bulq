@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.infrastructure.auth import get_session
 from app.infrastructure.database import get_db
-from app.core.repository import get_repository
+from app.repositories import get_repository
 from app.api.websocket_manager import manager
 
 router = APIRouter()

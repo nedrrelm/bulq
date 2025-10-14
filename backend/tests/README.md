@@ -100,7 +100,7 @@ Tests for data access layer (both implementations):
 - Shopping list items
 
 **Key Coverage:**
-- `app/repository.py` - Complete
+- `app/repositories/` - Complete (abstract.py, database.py, memory.py)
 - Both repository implementations tested
 
 ### 3. Service Layer Tests (`test_services.py`)
@@ -220,7 +220,7 @@ Current test coverage by module:
 | Module | Target Coverage | Status |
 |--------|----------------|---------|
 | `auth.py` | 100% | ✅ |
-| `repository.py` | 100% | ✅ |
+| `repositories/*` | 100% | ✅ |
 | `services/*` | 95%+ | ✅ |
 | `routes/*` | 95%+ | ✅ |
 | `run_state.py` | 100% | ✅ |

@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import Session
 
-from app.core.repository import AbstractRepository, get_repository
+from app.repositories import AbstractRepository, get_repository
 
 
 class BaseService:

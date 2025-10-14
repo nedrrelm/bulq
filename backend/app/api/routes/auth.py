@@ -6,7 +6,7 @@ from app.infrastructure.config import SECURE_COOKIES, SESSION_EXPIRY_HOURS
 from app.infrastructure.database import get_db
 from app.core.exceptions import BadRequestError, UnauthorizedError
 from app.core.models import User
-from app.core.repository import get_repository
+from app.repositories import get_repository
 from app.infrastructure.request_context import get_logger
 from app.api.schemas import MessageResponse, UserLogin, UserRegister, UserResponse
 

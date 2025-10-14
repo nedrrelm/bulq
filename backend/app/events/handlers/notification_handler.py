@@ -1,6 +1,6 @@
 """Notification event handler for creating database notifications from domain events."""
 
-from app.core.repository import AbstractRepository
+from app.repositories import AbstractRepository
 from app.infrastructure.request_context import get_logger
 from ..domain_events import RunStateChangedEvent
 
