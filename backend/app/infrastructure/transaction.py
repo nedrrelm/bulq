@@ -10,7 +10,7 @@ from typing import Any, Callable, Generator
 
 from sqlalchemy.orm import Session
 
-from .request_context import get_logger
+from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
 

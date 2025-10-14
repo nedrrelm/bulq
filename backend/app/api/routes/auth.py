@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from ..auth import create_session, delete_session, get_session, hash_password
-from ..config import SECURE_COOKIES, SESSION_EXPIRY_HOURS
-from ..database import get_db
-from ..exceptions import BadRequestError, UnauthorizedError
-from ..models import User
-from ..repository import get_repository
-from ..request_context import get_logger
-from ..schemas import MessageResponse, UserLogin, UserRegister, UserResponse
+from app.infrastructure.auth import create_session, delete_session, get_session, hash_password
+from app.infrastructure.config import SECURE_COOKIES, SESSION_EXPIRY_HOURS
+from app.infrastructure.database import get_db
+from app.core.exceptions import BadRequestError, UnauthorizedError
+from app.core.models import User
+from app.core.repository import get_repository
+from app.infrastructure.request_context import get_logger
+from app.api.schemas import MessageResponse, UserLogin, UserRegister, UserResponse
 
 router = APIRouter(prefix='/auth', tags=['authentication'])
 logger = get_logger(__name__)

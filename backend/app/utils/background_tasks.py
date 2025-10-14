@@ -4,7 +4,7 @@ import asyncio
 from collections.abc import Coroutine
 from typing import Any
 
-from .request_context import get_logger
+from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
 

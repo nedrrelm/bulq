@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from .request_context import get_logger
+from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
 

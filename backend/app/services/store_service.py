@@ -3,9 +3,9 @@
 from typing import Any
 from uuid import UUID
 
-from ..exceptions import NotFoundError, ValidationError
-from ..models import Store
-from ..schemas import StorePageResponse, StoreProductResponse, StoreResponse, StoreRunResponse
+from app.core.exceptions import NotFoundError, ValidationError
+from app.core.models import Store
+from app.api.schemas import StorePageResponse, StoreProductResponse, StoreResponse, StoreRunResponse
 from .base_service import BaseService
 
 

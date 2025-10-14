@@ -6,30 +6,30 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 
-from .background_tasks import create_background_task
-from .config import ALLOWED_ORIGINS
-from .database import create_tables
-from .error_handlers import (
+from .api.middleware import RequestLoggingMiddleware
+from .api.routes.admin import router as admin_router
+from .api.routes.auth import router as auth_router
+from .api.routes.distribution import router as distribution_router
+from .api.routes.groups import router as groups_router
+from .api.routes.notifications import router as notifications_router
+from .api.routes.products import router as products_router
+from .api.routes.reassignment import router as reassignment_router
+from .api.routes.runs import router as runs_router
+from .api.routes.search import router as search_router
+from .api.routes.shopping import router as shopping_router
+from .api.routes.stores import router as stores_router
+from .api.routes.websocket import router as websocket_router
+from .core.exceptions import AppException
+from .errors.handlers import (
     app_exception_handler,
     generic_exception_handler,
     sqlalchemy_exception_handler,
     validation_exception_handler,
 )
-from .exceptions import AppException
-from .logging_config import setup_logging
-from .middleware import RequestLoggingMiddleware
-from .routes.admin import router as admin_router
-from .routes.auth import router as auth_router
-from .routes.distribution import router as distribution_router
-from .routes.groups import router as groups_router
-from .routes.notifications import router as notifications_router
-from .routes.products import router as products_router
-from .routes.reassignment import router as reassignment_router
-from .routes.runs import router as runs_router
-from .routes.search import router as search_router
-from .routes.shopping import router as shopping_router
-from .routes.stores import router as stores_router
-from .routes.websocket import router as websocket_router
+from .infrastructure.config import ALLOWED_ORIGINS
+from .infrastructure.database import create_tables
+from .infrastructure.logging_config import setup_logging
+from .utils.background_tasks import create_background_task
 
 # Setup logging
 log_level = os.getenv('LOG_LEVEL', 'INFO')
@@ -88,10 +88,10 @@ async def startup_event():
         RunStateChangedEvent,
     )
     from .events.event_bus import event_bus
+    from .api.websocket_manager import manager
+    from .core.repository import get_repository
     from .events.handlers.notification_handler import NotificationEventHandler
     from .events.handlers.websocket_handler import WebSocketEventHandler
-    from .repository import get_repository
-    from .websocket_manager import manager
 
     # Create event handlers
     ws_handler = WebSocketEventHandler(manager)
@@ -112,7 +112,7 @@ async def startup_event():
     # For now, we subscribe a lambda that creates handler on-demand
     async def handle_run_state_changed_notification(event: RunStateChangedEvent):
         """Handle run state changed event for notifications."""
-        from .database import SessionLocal
+        from .infrastructure.database import SessionLocal
         db = SessionLocal()
         try:
             repo = get_repository(db)
@@ -124,13 +124,13 @@ async def startup_event():
 
     event_bus.subscribe(RunStateChangedEvent, handle_run_state_changed_notification)
 
-    from .request_context import get_logger
+    from .infrastructure.request_context import get_logger
     logger = get_logger(__name__)
     logger.info('✅ Event handlers registered successfully')
 
     # Create seed data if in development
     import os
-    from .config import REPO_MODE
+    from .infrastructure.config import REPO_MODE
 
     if os.getenv('ENV') == 'development':
         if REPO_MODE == 'database':
@@ -147,7 +147,7 @@ async def startup_event():
                 raise
         elif REPO_MODE == 'memory':
             try:
-                from .repository import get_repository
+                from .core.repository import get_repository
                 from .scripts.seed_memory_data import seed_memory_repository
 
                 repo = get_repository()
@@ -158,8 +158,8 @@ async def startup_event():
                 raise
 
     # Start background task for session cleanup
-    from .auth import cleanup_expired_sessions
-    from .database import log_pool_status
+    from .infrastructure.auth import cleanup_expired_sessions
+    from .infrastructure.database import log_pool_status
 
     async def session_cleanup_loop():
         """Periodically clean up expired sessions to prevent memory leak."""
@@ -195,7 +195,7 @@ async def db_health_check():
     try:
         from sqlalchemy import text
 
-        from .database import engine, get_pool_status
+        from .infrastructure.database import engine, get_pool_status
 
         with engine.connect() as conn:
             conn.execute(text('SELECT 1'))

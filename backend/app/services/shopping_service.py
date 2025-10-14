@@ -4,20 +4,20 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from ..background_tasks import create_background_task
-from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
-from ..models import User
-from ..request_context import get_logger
-from ..run_state import RunState, state_machine
-from ..schemas import (
+from app.utils.background_tasks import create_background_task
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from app.core.models import User
+from app.infrastructure.request_context import get_logger
+from app.core.run_state import RunState, state_machine
+from app.api.schemas import (
     CompleteShoppingResponse,
     MarkPurchasedResponse,
     MessageResponse,
     PriceObservation,
     ShoppingListItemResponse,
 )
-from ..transaction import transaction
-from ..websocket_manager import manager
+from app.infrastructure.transaction import transaction
+from app.api.websocket_manager import manager
 from .base_service import BaseService
 
 logger = get_logger(__name__)

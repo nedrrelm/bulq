@@ -2,8 +2,8 @@
 Tests for authentication and authorization functionality.
 """
 import pytest
-from app.auth import hash_password, verify_password, create_session, get_session, delete_session
-from app.models import User
+from app.infrastructure.auth import hash_password, verify_password, create_session, get_session, delete_session
+from app.core.models import User
 
 
 def test_hash_password():

@@ -3,14 +3,14 @@
 from typing import Any
 from uuid import UUID
 
-from ..config import MAX_ACTIVE_RUNS_PER_GROUP
-from ..events.domain_events import RunCreatedEvent
-from ..events.event_bus import event_bus
-from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
-from ..models import Product, ProductBid, Run, User
-from ..request_context import get_logger
-from ..run_state import RunState, state_machine
-from ..schemas import (
+from app.infrastructure.config import MAX_ACTIVE_RUNS_PER_GROUP
+from app.events.domain_events import RunCreatedEvent
+from app.events.event_bus import event_bus
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from app.core.models import Product, ProductBid, Run, User
+from app.infrastructure.request_context import get_logger
+from app.core.run_state import RunState, state_machine
+from app.api.schemas import (
     AvailableProductResponse,
     CancelRunResponse,
     CreateRunResponse,
@@ -23,7 +23,7 @@ from ..schemas import (
     StateChangeResponse,
     UserBidResponse,
 )
-from ..validation import validate_uuid
+from app.utils.validation import validate_uuid
 from .base_service import BaseService
 from .bid_service import BidService
 from .run_notification_service import RunNotificationService

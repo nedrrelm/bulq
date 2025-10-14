@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 
 import bcrypt
 
-from app.config import SESSION_EXPIRY_HOURS
-from app.request_context import get_logger
+from app.infrastructure.config import SESSION_EXPIRY_HOURS
+from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
 

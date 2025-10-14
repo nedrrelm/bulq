@@ -3,15 +3,15 @@
 from typing import Any
 from uuid import UUID
 
-from ..config import MAX_PRODUCTS_PER_RUN
-from ..events.domain_events import BidPlacedEvent, BidRetractedEvent
-from ..events.event_bus import event_bus
-from ..exceptions import BadRequestError, ForbiddenError, NotFoundError
-from ..models import Product, ProductBid, Run, RunParticipation, User
-from ..request_context import get_logger
-from ..run_state import RunState, state_machine
-from ..schemas import PlaceBidResponse, RetractBidResponse
-from ..validation import validate_uuid
+from app.infrastructure.config import MAX_PRODUCTS_PER_RUN
+from app.events.domain_events import BidPlacedEvent, BidRetractedEvent
+from app.events.event_bus import event_bus
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from app.core.models import Product, ProductBid, Run, RunParticipation, User
+from app.infrastructure.request_context import get_logger
+from app.core.run_state import RunState, state_machine
+from app.api.schemas import PlaceBidResponse, RetractBidResponse
+from app.utils.validation import validate_uuid
 from .base_service import BaseService
 
 logger = get_logger(__name__)

@@ -3,22 +3,22 @@
 from typing import Any
 from uuid import UUID
 
-from ..background_tasks import create_background_task
-from ..exceptions import (
+from app.utils.background_tasks import create_background_task
+from app.core.exceptions import (
     BadRequestError,
     ForbiddenError,
     NotFoundError,
 )
-from ..models import Product, ProductBid, User
-from ..request_context import get_logger
-from ..run_state import RunState, state_machine
-from ..schemas import (
+from app.core.models import Product, ProductBid, User
+from app.infrastructure.request_context import get_logger
+from app.core.run_state import RunState, state_machine
+from app.api.schemas import (
     DistributionProduct,
     DistributionUser,
     MessageResponse,
     StateChangeResponse,
 )
-from ..transaction import transaction
+from app.infrastructure.transaction import transaction
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -278,7 +278,7 @@ class DistributionService(BaseService):
 
         # Create notification for each participant and broadcast via WebSocket
 
-        from ..websocket_manager import manager
+        from app.api.websocket_manager import manager
 
         for participation in participations:
             notification = self.repo.create_notification(

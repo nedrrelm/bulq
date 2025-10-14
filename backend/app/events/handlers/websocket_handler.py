@@ -1,7 +1,7 @@
 """WebSocket event handler for broadcasting domain events via WebSocket."""
 
-from ...request_context import get_logger
-from ...websocket_manager import ConnectionManager
+from app.infrastructure.request_context import get_logger
+from app.api.websocket_manager import ConnectionManager
 from ..domain_events import (
     BidPlacedEvent,
     BidRetractedEvent,

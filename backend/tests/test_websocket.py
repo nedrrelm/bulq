@@ -3,7 +3,7 @@ Tests for WebSocket functionality and ConnectionManager.
 """
 import pytest
 from fastapi.testclient import TestClient
-from app.websocket_manager import ConnectionManager, manager
+from app.api.websocket_manager import ConnectionManager, manager
 import json
 
 
