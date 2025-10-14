@@ -95,8 +95,9 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
       setSelectedIndex(prev => prev > 0 ? prev - 1 : -1)
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      if (selectedIndex >= 0 && selectedIndex < filteredProducts.length) {
-        handleProductSelect(filteredProducts[selectedIndex])
+      const selectedProduct = filteredProducts[selectedIndex]
+      if (selectedIndex >= 0 && selectedIndex < filteredProducts.length && selectedProduct) {
+        handleProductSelect(selectedProduct)
       }
     }
   }

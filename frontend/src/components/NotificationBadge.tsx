@@ -7,7 +7,7 @@ import { useClickOutside } from '../hooks/useClickOutside'
 export function NotificationBadge() {
   const { unreadCount, fetchNotifications } = useNotifications()
   const [isOpen, setIsOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
 
   useClickOutside(dropdownRef, () => setIsOpen(false))
 

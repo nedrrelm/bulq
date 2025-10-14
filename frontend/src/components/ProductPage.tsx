@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import '../styles/components/ProductPage.css'
-import { productsApi, ApiError } from '../api'
+import { productsApi } from '../api'
 import LoadingSpinner from './LoadingSpinner'
 import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
@@ -14,7 +14,6 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts'
-import type { TooltipProps as RechartsTooltipProps } from 'recharts'
 
 interface PriceEntry {
   price: number
@@ -48,12 +47,13 @@ interface ProductPageProps {
 const STORE_COLORS = ['#667eea', '#f56565', '#48bb78', '#ed8936', '#9f7aea', '#38b2ac', '#ed64a6']
 
 // Custom tooltip component
-function CustomTooltip({ active, payload }: RechartsTooltipProps<number, string>) {
-  if (!active || !payload || !payload.length) {
+function CustomTooltip(props: any) {
+  const { active, payload } = props
+  if (!active || !payload || !payload.length || !payload[0]) {
     return null
   }
 
-  const data = payload[0].payload
+  const data = payload[0].payload as { store_name: string; price: number; timestamp: string; notes?: string }
   return (
     <div className="custom-tooltip">
       <p className="tooltip-store">{data.store_name}</p>

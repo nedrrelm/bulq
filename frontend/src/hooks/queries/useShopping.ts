@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { shoppingApi } from '../../api'
-import type { ShoppingListItem } from '../../types'
 import { runKeys } from './useRuns'
 
 // Query Keys
@@ -37,14 +36,14 @@ export function useMarkPurchased(runId: string) {
       quantity: number
       pricePerUnit: number
       total: number
-      purchaseOrder: number
-    }) => shoppingApi.markItemPurchased(
+    }) => shoppingApi.markPurchased(
       runId,
       data.itemId,
-      data.quantity,
-      data.pricePerUnit,
-      data.total,
-      data.purchaseOrder
+      {
+        quantity: data.quantity,
+        price_per_unit: data.pricePerUnit,
+        total: data.total
+      }
     ),
     onSuccess: () => {
       // Invalidate shopping list

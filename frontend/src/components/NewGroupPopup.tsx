@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { groupsApi, ApiError } from '../api'
 import type { Group } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'

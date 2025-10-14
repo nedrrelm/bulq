@@ -12,7 +12,7 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
 
   const getNotificationMessage = () => {
     if (notification.type === 'run_state_changed') {
-      const { store_name, old_state, new_state, group_id } = notification.data
+      const { store_name, new_state } = notification.data
 
       const stateMessages: Record<string, string> = {
         planning: 'is being planned',
@@ -25,7 +25,7 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
         cancelled: 'has been cancelled'
       }
 
-      const message = `Run at ${store_name} ${stateMessages[new_state] || `changed to ${new_state}`}`
+      const message = `Run at ${store_name} ${new_state ? (stateMessages[new_state] || `changed to ${new_state}`) : 'changed state'}`
 
       if (notification.grouped && notification.count) {
         return `${notification.count} state changes for ${store_name} run`

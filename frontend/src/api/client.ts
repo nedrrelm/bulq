@@ -2,27 +2,37 @@ import { API_BASE_URL } from '../config'
 import { z } from 'zod'
 
 export class ApiError extends Error {
+  status: number
+  data?: any
+
   constructor(
     message: string,
-    public status: number,
-    public data?: any
+    status: number,
+    data?: any
   ) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
+    this.data = data
   }
 }
 
 export class ValidationError extends Error {
+  zodError: z.ZodError
+  endpoint: string
+
   constructor(
     message: string,
-    public zodError: z.ZodError,
-    public endpoint: string
+    zodError: z.ZodError,
+    endpoint: string
   ) {
     super(message)
     this.name = 'ValidationError'
+    this.zodError = zodError
+    this.endpoint = endpoint
   }
 
-  toString(): string {
+  override toString(): string {
     return this.message
   }
 }

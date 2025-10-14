@@ -226,7 +226,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               {searchResults!.products.length > 0 && (
                 <>
                   <div className="search-category-label">Products</div>
-                  {searchResults!.products.map((product) => (
+                  {searchResults!.products.map((product: { id: string; name: string; brand: string | null; stores: { store_name: string; price: number | null }[] }) => (
                     <div
                       key={`product-${product.id}`}
                       className="search-result-item"
@@ -240,11 +240,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                         {product.brand && <span className="product-brand">{product.brand}</span>}
                         {product.stores.length > 0 && (
                           <span className="product-store">
-                            {product.stores.map(s => s.store_name).join(', ')}
+                            {product.stores.map((s: { store_name: string; price: number | null }) => s.store_name).join(', ')}
                           </span>
                         )}
                       </div>
-                      {product.stores.length > 0 && product.stores[0].price && (
+                      {product.stores.length > 0 && product.stores[0] && product.stores[0].price && (
                         <span className="product-price">${product.stores[0].price.toFixed(2)}</span>
                       )}
                     </div>
@@ -256,7 +256,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <>
                   {searchResults!.products.length > 0 && <div className="search-divider" />}
                   <div className="search-category-label">Stores</div>
-                  {searchResults!.stores.map((store) => (
+                  {searchResults!.stores.map((store: { id: string; name: string; address: string | null }) => (
                     <div
                       key={`store-${store.id}`}
                       className="search-result-item"
@@ -280,7 +280,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                     <div className="search-divider" />
                   )}
                   <div className="search-category-label">Groups</div>
-                  {searchResults!.groups.map((group) => (
+                  {searchResults!.groups.map((group: { id: string; name: string; member_count: number }) => (
                     <div
                       key={`group-${group.id}`}
                       className="search-result-item"

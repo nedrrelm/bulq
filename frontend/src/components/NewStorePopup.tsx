@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { storesApi, ApiError } from '../api'
 import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'

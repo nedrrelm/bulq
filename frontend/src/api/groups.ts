@@ -6,8 +6,11 @@ import {
   groupManageDetailsSchema,
   type Group,
   type GroupBasicInfo,
-  type GroupManageDetails
+  type GroupManageDetails,
+  type GroupDetails
 } from '../schemas/group'
+
+export type { Group, GroupBasicInfo, GroupManageDetails, GroupDetails }
 
 export interface CreateGroupRequest {
   name: string

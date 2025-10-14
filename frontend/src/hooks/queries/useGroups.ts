@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { groupsApi } from '../../api'
-import type { Group, GroupDetails, GroupMember } from '../../types'
+import type { CreateGroupRequest, GroupDetails } from '../../api'
 
 // Query Keys
 export const groupKeys = {
@@ -45,7 +45,7 @@ export function useGroupByInvite(inviteToken: string | undefined) {
     queryFn: () => groupsApi.getGroup(inviteToken!),
     enabled: !!inviteToken,
     staleTime: 0, // Always fetch fresh for invite links
-    cacheTime: 0, // Don't cache invite lookups
+    gcTime: 0, // Don't cache invite lookups
   })
 }
 
@@ -80,7 +80,7 @@ export function useCreateGroup() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { name: string }) => groupsApi.createGroup(data.name),
+    mutationFn: (data: CreateGroupRequest) => groupsApi.createGroup(data),
     onSuccess: () => {
       // Invalidate groups list to show new group
       queryClient.invalidateQueries({ queryKey: groupKeys.list() })

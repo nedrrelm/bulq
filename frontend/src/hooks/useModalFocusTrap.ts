@@ -1,4 +1,4 @@
-import { useEffect, RefObject } from 'react'
+import { useEffect, type RefObject } from 'react'
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
 
@@ -12,7 +12,7 @@ const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:
  * @param onClose - Optional callback to close the modal on Escape key
  */
 export function useModalFocusTrap(
-  modalRef: RefObject<HTMLElement>,
+  modalRef: RefObject<HTMLElement | null>,
   isOpen: boolean = true,
   onClose?: () => void
 ) {
@@ -51,14 +51,14 @@ export function useModalFocusTrap(
 
       // Shift + Tab (backwards)
       if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
+        if (document.activeElement === firstElement && lastElement) {
           e.preventDefault()
           lastElement.focus()
         }
       }
       // Tab (forwards)
       else {
-        if (document.activeElement === lastElement) {
+        if (document.activeElement === lastElement && firstElement) {
           e.preventDefault()
           firstElement.focus()
         }

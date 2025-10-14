@@ -2,6 +2,8 @@ import { api } from './client'
 import { storeSchema, type Store } from '../schemas/store'
 import { z } from 'zod'
 
+export type { Store }
+
 export interface CreateStoreRequest {
   name: string
 }

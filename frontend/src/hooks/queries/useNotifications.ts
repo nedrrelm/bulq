@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { notificationsApi } from '../../api'
-import type { Notification } from '../../types'
 
 // Query Keys
 export const notificationKeys = {
@@ -19,7 +18,7 @@ export const notificationKeys = {
 export function useNotifications(params?: { limit?: number; offset?: number }) {
   return useQuery({
     queryKey: notificationKeys.list(params),
-    queryFn: () => notificationsApi.getNotifications(params?.limit, params?.offset),
+    queryFn: () => notificationsApi.getNotifications(params),
     staleTime: 10000, // Refetch after 10 seconds
   })
 }

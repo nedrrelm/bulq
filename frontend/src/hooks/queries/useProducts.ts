@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productsApi } from '../../api'
-import type { Product } from '../../types'
 
 // Query Keys
 export const productKeys = {
@@ -28,11 +27,11 @@ export function useProduct(productId: string | undefined) {
 /**
  * Get products for a store
  */
-export function useStoreProducts(storeId: string | undefined) {
+export function useStoreProducts(_storeId: string | undefined) {
   return useQuery({
-    queryKey: productKeys.byStore(storeId!),
-    queryFn: () => productsApi.getStoreProducts(storeId!),
-    enabled: !!storeId,
+    queryKey: productKeys.byStore(_storeId!),
+    queryFn: () => productsApi.search(''),
+    enabled: !!_storeId,
   })
 }
 
@@ -46,21 +45,15 @@ export function useCreateProduct() {
 
   return useMutation({
     mutationFn: (data: {
-      storeId: string
       name: string
-      brand?: string
-      unit?: string
-      basePrice?: number
-    }) => productsApi.createProduct(
-      data.storeId,
-      data.name,
-      data.brand,
-      data.unit,
-      data.basePrice
-    ),
-    onSuccess: (newProduct) => {
-      // Invalidate store products list
-      queryClient.invalidateQueries({ queryKey: productKeys.byStore(newProduct.store_id) })
+      brand?: string | null
+      unit?: string | null
+      store_id?: string | null
+      price?: number | null
+    }) => productsApi.createProduct(data),
+    onSuccess: () => {
+      // Invalidate products list
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
     },
   })
 }

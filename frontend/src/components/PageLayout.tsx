@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
@@ -45,11 +45,10 @@ export default function PageLayout({ children }: PageLayoutProps) {
           message={toast.message}
           type={toast.type}
           onClose={hideToast}
-          duration={toast.duration}
         />
       )}
 
-      {confirmState.isOpen && (
+      {confirmState && (
         <ConfirmDialog
           message={confirmState.message}
           onConfirm={handleConfirm}
