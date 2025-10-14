@@ -374,9 +374,43 @@ class ShoppingService(BaseService):
         shopping_items = self.repo.get_shopping_list_items(run_uuid)
         all_bids = self.repo.get_bids_by_run(run_uuid)
 
+        # Check if nothing was actually purchased
+        anything_purchased = any(
+            item.is_purchased and item.purchased_quantity and item.purchased_quantity > 0
+            for item in shopping_items
+        )
+
+        # If nothing was purchased, skip directly to distributing then completed state
+        if not anything_purchased:
+            with transaction(self.db, "transition to completed state (nothing purchased)"):
+                old_state = run.state
+                # First transition to distributing (required by state machine)
+                self.repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
+                # Then immediately to completed
+                self.repo.update_run_state(run_uuid, RunState.COMPLETED)
+                self._notify_run_state_change(run, old_state, RunState.COMPLETED)
+
+            await manager.broadcast(
+                f'run:{run_uuid}',
+                {'type': 'state_changed', 'data': {'run_id': str(run_uuid), 'new_state': RunState.COMPLETED}},
+            )
+            await manager.broadcast(
+                f'group:{run.group_id}',
+                {'type': 'run_state_changed', 'data': {'run_id': str(run_uuid), 'new_state': RunState.COMPLETED}},
+            )
+
+            return CompleteShoppingResponse(
+                message='Shopping completed with no purchases. Run marked as completed.',
+                state=RunState.COMPLETED,
+            )
+
         has_insufficient = False
         for shopping_item in shopping_items:
             if not shopping_item.is_purchased:
+                continue
+
+            # Skip items with 0 purchased quantity
+            if not shopping_item.purchased_quantity or shopping_item.purchased_quantity == 0:
                 continue
 
             # Check if purchased quantity is less than requested
@@ -421,6 +455,10 @@ class ShoppingService(BaseService):
             # For each shopping item (purchased product), distribute to users who bid
             for shopping_item in shopping_items:
                 if not shopping_item.is_purchased:
+                    continue
+
+                # Skip items with 0 purchased quantity (not actually bought)
+                if not shopping_item.purchased_quantity or shopping_item.purchased_quantity == 0:
                     continue
 
                 # Get all bids for this product
