@@ -830,3 +830,103 @@ class DatabaseRepository(AbstractRepository):
         )
         self.db.commit()
         return count
+
+    # ==================== Test/Seed Data Helper Methods ====================
+    # These methods are for testing and seed data only, not part of public API
+
+    def _create_product_availability(
+        self,
+        product_id: UUID,
+        store_id: UUID,
+        price: float | None = None,
+        notes: str = '',
+        days_ago: float = 0,
+    ) -> ProductAvailability:
+        """Test helper to create product availability with backdated timestamp."""
+        from datetime import datetime, timedelta
+
+        created_time = datetime.now() - timedelta(days=days_ago)
+        availability = ProductAvailability(
+            product_id=product_id,
+            store_id=store_id,
+            price=Decimal(str(price)) if price is not None else None,
+            notes=notes,
+            created_at=created_time,
+            updated_at=created_time,
+        )
+        self.db.add(availability)
+        self.db.commit()
+        self.db.refresh(availability)
+        return availability
+
+    def _create_run(
+        self, group_id: UUID, store_id: UUID, state: str, leader_id: UUID, days_ago: int = 7
+    ) -> Run:
+        """Test helper to create run with backdated timestamps."""
+        from datetime import datetime, timedelta
+
+        run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state=state)
+
+        # Set timestamps for state progression
+        now = datetime.now()
+        run.planning_at = now - timedelta(days=days_ago)
+
+        if state in ['active', 'confirmed', 'shopping', 'distributing', 'completed']:
+            run.active_at = now - timedelta(days=days_ago - 2)
+        if state in ['confirmed', 'shopping', 'distributing', 'completed']:
+            run.confirmed_at = now - timedelta(days=days_ago - 4)
+        if state in ['shopping', 'distributing', 'completed']:
+            run.shopping_at = now - timedelta(days=days_ago - 5)
+        if state in ['distributing', 'completed']:
+            run.distributing_at = now - timedelta(days=days_ago - 6)
+        if state == 'completed':
+            run.completed_at = now - timedelta(days=days_ago - 7)
+
+        self.db.add(run)
+        self.db.flush()
+
+        # Create leader participation
+        participation = RunParticipation(
+            user_id=leader_id, run_id=run.id, is_leader=True, is_removed=False
+        )
+        self.db.add(participation)
+        self.db.commit()
+        self.db.refresh(run)
+        return run
+
+    def _create_participation(
+        self, user_id: UUID, run_id: UUID, is_leader: bool = False, is_ready: bool = False
+    ) -> RunParticipation:
+        """Test helper to create participation with is_ready already set."""
+        participation = RunParticipation(
+            user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=is_ready, is_removed=False
+        )
+        self.db.add(participation)
+        self.db.commit()
+        self.db.refresh(participation)
+        return participation
+
+    def _create_bid(
+        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool
+    ) -> ProductBid:
+        """Test helper to create bid (same as create_or_update_bid but always creates new)."""
+        from datetime import datetime
+
+        bid = ProductBid(
+            participation_id=participation_id,
+            product_id=product_id,
+            quantity=quantity,
+            interested_only=interested_only,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+        )
+        self.db.add(bid)
+        self.db.commit()
+        self.db.refresh(bid)
+        return bid
+
+    def _create_shopping_list_item(
+        self, run_id: UUID, product_id: UUID, requested_quantity: int
+    ) -> ShoppingListItem:
+        """Test helper to create shopping list item (same as public method)."""
+        return self.create_shopping_list_item(run_id, product_id, requested_quantity)

@@ -1,236 +1,352 @@
-"""Seed data for the Bulq application.
-
-This module contains example data to populate the database for development and testing.
-"""
-
-from decimal import Decimal
-
-from ..auth import hash_password
-from ..database import SessionLocal
-from ..models import Group, Product, ProductAvailability, Run, RunParticipation, Store, User
+"""Repository-agnostic seed data for development and testing."""
 
 
-def create_seed_data():
-    """Create example data for development and testing."""
-    db = SessionLocal()
+def create_seed_data(repo):
+    """Create test data using repository interface.
 
-    try:
-        # Check if data already exists
-        if db.query(User).first():
-            print('Seed data already exists, skipping...')
-            return
+    Works with both DatabaseRepository and MemoryRepository by using
+    private helper methods (_create_*) that support backdating for test data.
 
-        # Create Users with hashed passwords
-        password_hash = hash_password('password123')
-        users_data = [
-            {'name': 'Alice Johnson', 'email': 'alice@example.com', 'password_hash': password_hash, 'verified': True},
-            {'name': 'Bob Smith', 'email': 'bob@example.com', 'password_hash': password_hash, 'verified': True},
-            {'name': 'Carol Davis', 'email': 'carol@example.com', 'password_hash': password_hash, 'verified': False},
-            {'name': 'Dave Wilson', 'email': 'dave@example.com', 'password_hash': password_hash, 'verified': True},
-        ]
+    Args:
+        repo: Repository instance (AbstractRepository) to populate
+    """
+    # Create test users
+    alice = repo.create_user('Alice Johnson', 'alice@test.com', 'hashed_password')
+    bob = repo.create_user('Bob Smith', 'bob@test.com', 'hashed_password')
+    carol = repo.create_user('Carol Davis', 'carol@test.com', 'hashed_password')
+    test_user = repo.create_user('Test User', 'test@example.com', 'hashed_password')
+    test_user.is_admin = True
 
-        users = []
-        for user_data in users_data:
-            user = User(**user_data)
-            db.add(user)
-            users.append(user)
+    # Create test groups
+    friends_group = repo.create_group('Test Friends', alice.id)
+    work_group = repo.create_group('Work Lunch', bob.id)
 
-        db.flush()  # Get IDs without committing
+    # Add members to groups
+    repo.add_group_member(friends_group.id, alice, is_group_admin=True)
+    repo.add_group_member(friends_group.id, bob)
+    repo.add_group_member(friends_group.id, carol)
+    repo.add_group_member(friends_group.id, test_user, is_group_admin=True)
 
-        # Create Stores
-        stores_data = [
-            {'name': 'Costco Wholesale', 'address': '123 Warehouse Way', 'verified': True},
-            {'name': "Sam's Club", 'address': '456 Bulk Blvd', 'verified': True},
-            {'name': "BJ's Wholesale Club", 'address': '789 Shopping Center', 'verified': False},
-            {'name': 'Restaurant Depot', 'address': '321 Commercial St', 'verified': True},
-        ]
+    repo.add_group_member(work_group.id, bob, is_group_admin=True)
+    repo.add_group_member(work_group.id, carol)
 
-        stores = []
-        for store_data in stores_data:
-            store = Store(**store_data)
-            db.add(store)
-            stores.append(store)
+    # Create test stores
+    costco = repo._create_store('Test Costco')
+    sams = repo._create_store("Test Sam's Club")
 
-        db.flush()
+    # Create test products (store-agnostic)
+    olive_oil = repo._create_product('Test Olive Oil', brand='Kirkland')
+    quinoa = repo._create_product('Test Quinoa', brand='Organic')
+    detergent = repo._create_product('Test Detergent', brand='Tide')
+    paper_towels = repo._create_product('Kirkland Paper Towels 12-pack', brand='Kirkland')
+    rotisserie_chicken = repo._create_product('Rotisserie Chicken')
+    almond_butter = repo._create_product('Kirkland Almond Butter', brand='Kirkland')
+    frozen_berries = repo._create_product('Organic Frozen Berry Mix', brand='Organic')
+    toilet_paper = repo._create_product('Charmin Ultra Soft 24-pack', brand='Charmin')
+    coffee_beans = repo._create_product('Kirkland Colombian Coffee', brand='Kirkland')
+    laundry_pods = repo._create_product('Tide Pods 81-count', brand='Tide')
+    ground_beef = repo._create_product('93/7 Ground Beef 3lbs')
+    bananas = repo._create_product('Organic Bananas 3lbs', brand='Organic')
+    cheese_sticks = repo._create_product('String Cheese 48-pack')
 
-        # Create Groups
-        groups_data = [
-            {'name': 'College Friends', 'created_by': users[0].id, 'is_joining_allowed': True},
-            {'name': 'Neighborhood Watch', 'created_by': users[1].id, 'is_joining_allowed': True},
-            {'name': 'Office Lunch Club', 'created_by': users[2].id, 'is_joining_allowed': True},
-        ]
+    # Create product availabilities (link products to stores with prices)
+    # Olive Oil - multiple prices from 2 days ago (for confirmed run at Costco)
+    repo._create_product_availability(olive_oil.id, costco.id, 24.99, 'aisle 12', days_ago=2)
+    repo._create_product_availability(olive_oil.id, costco.id, 23.99, 'end cap display', days_ago=2)
 
-        groups = []
-        for group_data in groups_data:
-            group = Group(**group_data)
-            db.add(group)
-            groups.append(group)
+    # Quinoa - one price from yesterday (for confirmed run at Costco)
+    repo._create_product_availability(quinoa.id, costco.id, 18.99, 'organic section', days_ago=1)
 
-        db.flush()
+    # Paper Towels - prices from 5 days ago (for confirmed run at Costco)
+    repo._create_product_availability(paper_towels.id, costco.id, 19.99, 'household', days_ago=5)
+    repo._create_product_availability(paper_towels.id, costco.id, 21.49, 'regular price', days_ago=5)
 
-        # Add group memberships
-        # College Friends: Alice, Bob, Carol
-        groups[0].members.extend([users[0], users[1], users[2]])
-        # Neighborhood Watch: Bob, Carol, Dave
-        groups[1].members.extend([users[1], users[2], users[3]])
-        # Office Lunch Club: Alice, Carol, Dave
-        groups[2].members.extend([users[0], users[2], users[3]])
+    # Other Costco products
+    repo._create_product_availability(rotisserie_chicken.id, costco.id, 4.99, 'deli section', days_ago=1)
+    repo._create_product_availability(almond_butter.id, costco.id, 9.99, '', days_ago=3)
+    repo._create_product_availability(almond_butter.id, costco.id, 10.49, 'clearance', days_ago=3)
 
-        # Create Products (store-agnostic)
-        products_data = [
-            {'name': 'Kirkland Olive Oil', 'brand': 'Kirkland', 'unit': '3L', 'verified': True, 'created_by': users[0].id},
-            {'name': 'Organic Quinoa', 'brand': None, 'unit': '4.5kg', 'verified': True, 'created_by': users[0].id},
-            {'name': 'Rotisserie Chicken', 'brand': None, 'unit': 'each', 'verified': True, 'created_by': users[1].id},
-            {'name': 'Paper Towels', 'brand': None, 'unit': '12-pack', 'verified': False, 'created_by': users[1].id},
-            {'name': 'Laundry Detergent', 'brand': "Member's Mark", 'unit': '5.5kg', 'verified': True, 'created_by': users[2].id},
-            {'name': 'Fresh Salmon Fillet', 'brand': None, 'unit': '2kg', 'verified': True, 'created_by': users[2].id},
-            {'name': 'Bulk Rice', 'brand': None, 'unit': '9kg', 'verified': True, 'created_by': users[3].id},
-            {'name': 'Coffee Beans', 'brand': 'Wellsley Farms', 'unit': '1.4kg', 'verified': False, 'created_by': users[3].id},
-            {'name': 'Fresh Berries Mix', 'brand': None, 'unit': '1kg', 'verified': True, 'created_by': users[0].id},
-        ]
+    # Older observations (week ago)
+    repo._create_product_availability(frozen_berries.id, costco.id, 12.99, '', days_ago=7)
+    repo._create_product_availability(toilet_paper.id, costco.id, 22.99, '', days_ago=7)
+    repo._create_product_availability(coffee_beans.id, costco.id, 14.99, '', days_ago=7)
 
-        products = []
-        for product_data in products_data:
-            product = Product(**product_data)
-            db.add(product)
-            products.append(product)
+    # Sam's Club - varied dates
+    repo._create_product_availability(detergent.id, sams.id, 16.98, '', days_ago=0)
+    repo._create_product_availability(detergent.id, sams.id, 15.98, 'on sale', days_ago=0)
+    repo._create_product_availability(laundry_pods.id, sams.id, 18.98, '', days_ago=2)
+    repo._create_product_availability(ground_beef.id, sams.id, 16.48, '', days_ago=2)
+    repo._create_product_availability(ground_beef.id, sams.id, 17.98, 'higher price today', days_ago=2)
+    repo._create_product_availability(bananas.id, sams.id, 4.98, '', days_ago=5)
+    repo._create_product_availability(cheese_sticks.id, sams.id, 8.98, '', days_ago=5)
 
-        db.flush()
+    # Create test runs - one for each state with test user as leader
+    run_planning = repo._create_run(friends_group.id, costco.id, 'planning', test_user.id, days_ago=7)
+    run_active = repo._create_run(friends_group.id, sams.id, 'active', test_user.id, days_ago=5)
+    run_confirmed = repo._create_run(friends_group.id, costco.id, 'confirmed', test_user.id, days_ago=3)
+    run_shopping = repo._create_run(friends_group.id, sams.id, 'shopping', test_user.id, days_ago=2)
+    run_adjusting = repo._create_run(friends_group.id, costco.id, 'adjusting', test_user.id, days_ago=1.5)
+    run_distributing = repo._create_run(friends_group.id, costco.id, 'distributing', test_user.id, days_ago=1)
+    run_completed = repo._create_run(friends_group.id, sams.id, 'completed', test_user.id, days_ago=14)
 
-        # Create Product Availabilities (prices at specific stores)
-        availabilities_data = [
-            # Costco
-            {'product_id': products[0].id, 'store_id': stores[0].id, 'price': Decimal('24.99'), 'created_by': users[0].id},
-            {'product_id': products[1].id, 'store_id': stores[0].id, 'price': Decimal('18.99'), 'created_by': users[0].id},
-            {'product_id': products[2].id, 'store_id': stores[0].id, 'price': Decimal('4.99'), 'created_by': users[1].id},
-            {'product_id': products[3].id, 'store_id': stores[0].id, 'price': Decimal('19.99'), 'created_by': users[1].id},
-            # Sam's Club
-            {'product_id': products[4].id, 'store_id': stores[1].id, 'price': Decimal('16.98'), 'created_by': users[2].id},
-            {'product_id': products[5].id, 'store_id': stores[1].id, 'price': Decimal('32.98'), 'created_by': users[2].id},
-            {'product_id': products[6].id, 'store_id': stores[1].id, 'price': Decimal('14.98'), 'created_by': users[3].id},
-            # BJ's
-            {'product_id': products[7].id, 'store_id': stores[2].id, 'price': Decimal('12.99'), 'created_by': users[3].id},
-            {'product_id': products[8].id, 'store_id': stores[2].id, 'price': Decimal('8.99'), 'created_by': users[0].id},
-        ]
+    # Add more completed runs with different dates for better price history
+    run_completed_2 = repo._create_run(friends_group.id, costco.id, 'completed', test_user.id, days_ago=30)
+    run_completed_3 = repo._create_run(friends_group.id, sams.id, 'completed', alice.id, days_ago=45)
+    run_completed_4 = repo._create_run(friends_group.id, costco.id, 'completed', bob.id, days_ago=60)
+    run_completed_5 = repo._create_run(work_group.id, sams.id, 'completed', bob.id, days_ago=75)
 
-        for availability_data in availabilities_data:
-            availability = ProductAvailability(**availability_data)
-            db.add(availability)
+    # Planning run - test user is leader (no other participants yet)
+    test_planning_p = repo.get_participation(test_user.id, run_planning.id)
 
-        db.flush()
+    # Active run - test user is leader, others have bid
+    test_active_p = repo.get_participation(test_user.id, run_active.id)
+    alice_active_p = repo._create_participation(alice.id, run_active.id, is_leader=False)
+    bob_active_p = repo._create_participation(bob.id, run_active.id, is_leader=False)
+    carol_active_p = repo._create_participation(carol.id, run_active.id, is_leader=False)
 
-        # Create Runs
-        runs_data = [
-            {'group_id': groups[0].id, 'store_id': stores[0].id, 'state': 'active', 'leader_id': users[0].id},
-            {'group_id': groups[1].id, 'store_id': stores[1].id, 'state': 'planning', 'leader_id': users[1].id},
-            {'group_id': groups[2].id, 'store_id': stores[0].id, 'state': 'confirmed', 'leader_id': users[2].id},
-        ]
+    # Detergent - multiple users want it
+    repo._create_bid(test_active_p.id, detergent.id, 2, False)
+    repo._create_bid(alice_active_p.id, detergent.id, 1, False)
+    repo._create_bid(bob_active_p.id, detergent.id, 1, False)
 
-        runs = []
-        for run_data in runs_data:
-            run = Run(**run_data)
-            db.add(run)
-            runs.append(run)
+    # Laundry Pods - just bob
+    repo._create_bid(bob_active_p.id, laundry_pods.id, 2, False)
 
-        db.flush()
+    # Ground Beef - test user and carol
+    repo._create_bid(test_active_p.id, ground_beef.id, 1, False)
+    repo._create_bid(carol_active_p.id, ground_beef.id, 2, False)
 
-        # Create Run Participations
-        participations_data = [
-            # Run 1 participants
-            {'run_id': runs[0].id, 'user_id': users[0].id},
-            {'run_id': runs[0].id, 'user_id': users[1].id},
-            {'run_id': runs[0].id, 'user_id': users[2].id},
-            # Run 2 participants
-            {'run_id': runs[1].id, 'user_id': users[1].id},
-            {'run_id': runs[1].id, 'user_id': users[2].id},
-            {'run_id': runs[1].id, 'user_id': users[3].id},
-            # Run 3 participants
-            {'run_id': runs[2].id, 'user_id': users[0].id},
-            {'run_id': runs[2].id, 'user_id': users[2].id},
-            {'run_id': runs[2].id, 'user_id': users[3].id},
-        ]
+    # Bananas - interested only from alice
+    repo._create_bid(alice_active_p.id, bananas.id, 0, True)
 
-        participations = []
-        for participation_data in participations_data:
-            participation = RunParticipation(**participation_data)
-            db.add(participation)
-            participations.append(participation)
+    # Confirmed run - test user is leader, all are ready
+    test_confirmed_p = repo.get_participation(test_user.id, run_confirmed.id)
+    test_confirmed_p.is_ready = True
+    alice_confirmed_p = repo._create_participation(alice.id, run_confirmed.id, is_leader=False, is_ready=True)
+    bob_confirmed_p = repo._create_participation(bob.id, run_confirmed.id, is_leader=False, is_ready=True)
+    carol_confirmed_p = repo._create_participation(carol.id, run_confirmed.id, is_leader=False, is_ready=True)
 
-        db.flush()
+    # All users want olive oil
+    repo._create_bid(test_confirmed_p.id, olive_oil.id, 1, False)
+    repo._create_bid(alice_confirmed_p.id, olive_oil.id, 1, False)
+    repo._create_bid(bob_confirmed_p.id, olive_oil.id, 2, False)
+    repo._create_bid(carol_confirmed_p.id, olive_oil.id, 1, False)
 
-        # Create Product Bids (now using participation_id instead of user_id/run_id)
-        from models import ProductBid
-        bids_data = [
-            # Run 1 (College Friends at Costco) - Active
-            {'participation_id': participations[0].id, 'product_id': products[0].id, 'quantity': 2, 'interested_only': False},
-            {'participation_id': participations[1].id, 'product_id': products[0].id, 'quantity': 1, 'interested_only': False},
-            {'participation_id': participations[2].id, 'product_id': products[1].id, 'quantity': 1, 'interested_only': False},
-            {'participation_id': participations[0].id, 'product_id': products[2].id, 'quantity': 3, 'interested_only': False},
-            {'participation_id': participations[1].id, 'product_id': products[3].id, 'quantity': 0, 'interested_only': True},
-            # Run 2 (Neighborhood Watch at Sam's Club) - Planning
-            {'participation_id': participations[3].id, 'product_id': products[4].id, 'quantity': 0, 'interested_only': True},
-            {'participation_id': participations[4].id, 'product_id': products[5].id, 'quantity': 2, 'interested_only': False},
-            {'participation_id': participations[5].id, 'product_id': products[6].id, 'quantity': 1, 'interested_only': False},
-            # Run 3 (Office Lunch Club at Costco) - Confirmed
-            {'participation_id': participations[6].id, 'product_id': products[0].id, 'quantity': 1, 'interested_only': False},
-            {'participation_id': participations[7].id, 'product_id': products[2].id, 'quantity': 4, 'interested_only': False},
-            {'participation_id': participations[8].id, 'product_id': products[2].id, 'quantity': 2, 'interested_only': False},
-        ]
+    # Quinoa - just alice and carol
+    repo._create_bid(alice_confirmed_p.id, quinoa.id, 1, False)
+    repo._create_bid(carol_confirmed_p.id, quinoa.id, 1, False)
 
-        for bid_data in bids_data:
-            bid = ProductBid(**bid_data)
-            db.add(bid)
+    # Paper Towels - everyone interested
+    repo._create_bid(test_confirmed_p.id, paper_towels.id, 1, False)
+    repo._create_bid(alice_confirmed_p.id, paper_towels.id, 2, False)
+    repo._create_bid(bob_confirmed_p.id, paper_towels.id, 1, False)
+    repo._create_bid(carol_confirmed_p.id, paper_towels.id, 0, True)  # interested only
 
-        # Commit all changes
-        db.commit()
-        print('✅ Seed data created successfully!')
-        print(f'Created {len(users)} users, {len(groups)} groups, {len(stores)} stores')
-        print(f'Created {len(products)} products, {len(runs)} runs, {len(bids_data)} bids')
+    # Shopping run - test user is leader, has shopping list items
+    test_shopping_p = repo.get_participation(test_user.id, run_shopping.id)
+    test_shopping_p.is_ready = True
+    alice_shopping_p = repo._create_participation(alice.id, run_shopping.id, is_leader=False, is_ready=True)
+    bob_shopping_p = repo._create_participation(bob.id, run_shopping.id, is_leader=False, is_ready=True)
 
-    except Exception as e:
-        db.rollback()
-        print(f'❌ Error creating seed data: {e}')
-        raise
-    finally:
-        db.close()
+    # Create bids for shopping run
+    repo._create_bid(test_shopping_p.id, detergent.id, 1, False)
+    repo._create_bid(alice_shopping_p.id, laundry_pods.id, 1, False)
+    repo._create_bid(bob_shopping_p.id, ground_beef.id, 2, False)
 
+    # Shopping list items for shopping run
+    shopping_item1 = repo._create_shopping_list_item(run_shopping.id, detergent.id, 1)
+    shopping_item1.is_purchased = False
+    shopping_item1.purchase_order = 1
 
-def clear_seed_data():
-    """Clear all data from the database (useful for testing)."""
-    db = SessionLocal()
+    shopping_item2 = repo._create_shopping_list_item(run_shopping.id, laundry_pods.id, 1)
+    shopping_item2.is_purchased = False
+    shopping_item2.purchase_order = 2
 
-    try:
-        # Delete in reverse order of dependencies
-        from models import ProductBid
-        db.query(ProductBid).delete()
-        db.query(RunParticipation).delete()
-        db.query(ProductAvailability).delete()
-        db.query(Product).delete()
-        db.query(Run).delete()
+    shopping_item3 = repo._create_shopping_list_item(run_shopping.id, ground_beef.id, 2)
+    shopping_item3.is_purchased = False
+    shopping_item3.purchase_order = 3
 
-        # Clear many-to-many relationships
-        for group in db.query(Group).all():
-            group.members.clear()
+    # Adjusting run - quantities fell short, some users need to adjust bids
+    test_adjusting_p = repo.get_participation(test_user.id, run_adjusting.id)
+    test_adjusting_p.is_ready = True
+    alice_adjusting_p = repo._create_participation(alice.id, run_adjusting.id, is_leader=False, is_ready=True)
+    bob_adjusting_p = repo._create_participation(bob.id, run_adjusting.id, is_leader=False, is_ready=True)
+    carol_adjusting_p = repo._create_participation(carol.id, run_adjusting.id, is_leader=False, is_ready=True)
 
-        db.query(Group).delete()
-        db.query(Store).delete()
-        db.query(User).delete()
+    # Bids for adjusting run
+    bid1 = repo._create_bid(test_adjusting_p.id, almond_butter.id, 2, False)
+    bid2 = repo._create_bid(alice_adjusting_p.id, almond_butter.id, 1, False)
+    bid3 = repo._create_bid(bob_adjusting_p.id, almond_butter.id, 1, False)
 
-        db.commit()
-        print('✅ All seed data cleared!')
+    bid4 = repo._create_bid(test_adjusting_p.id, frozen_berries.id, 1, False)
+    bid5 = repo._create_bid(carol_adjusting_p.id, frozen_berries.id, 2, False)
 
-    except Exception as e:
-        db.rollback()
-        print(f'❌ Error clearing seed data: {e}')
-        raise
-    finally:
-        db.close()
+    # Shopping list items for adjusting run
+    shopping_item4 = repo._create_shopping_list_item(run_adjusting.id, almond_butter.id, 4)  # 2 + 1 + 1
+    shopping_item4.is_purchased = True
+    shopping_item4.actual_price = 9.99
+    shopping_item4.actual_quantity = 3
+    shopping_item4.purchase_order = 1
 
+    shopping_item5 = repo._create_shopping_list_item(run_adjusting.id, frozen_berries.id, 3)  # 1 + 2
+    shopping_item5.is_purchased = True
+    shopping_item5.actual_price = 12.99
+    shopping_item5.actual_quantity = 2
+    shopping_item5.purchase_order = 2
 
-if __name__ == '__main__':
-    import sys
+    # Distributing run - items purchased, being distributed
+    test_distributing_p = repo.get_participation(test_user.id, run_distributing.id)
+    test_distributing_p.is_ready = True
+    alice_distributing_p = repo._create_participation(alice.id, run_distributing.id, is_leader=False, is_ready=True)
+    bob_distributing_p = repo._create_participation(bob.id, run_distributing.id, is_leader=False, is_ready=True)
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'clear':
-        clear_seed_data()
-    else:
-        create_seed_data()
+    # Bids with distributed quantities
+    bid6 = repo._create_bid(test_distributing_p.id, rotisserie_chicken.id, 2, False)
+    bid6.distributed_quantity = 2
+    bid6.distributed_price_per_unit = 4.99
+
+    bid7 = repo._create_bid(alice_distributing_p.id, rotisserie_chicken.id, 1, False)
+    bid7.distributed_quantity = 1
+    bid7.distributed_price_per_unit = 4.99
+
+    bid8 = repo._create_bid(bob_distributing_p.id, toilet_paper.id, 1, False)
+    bid8.distributed_quantity = 1
+    bid8.distributed_price_per_unit = 22.99
+
+    bid9 = repo._create_bid(test_distributing_p.id, coffee_beans.id, 2, False)
+    bid9.distributed_quantity = 2
+    bid9.distributed_price_per_unit = 14.99
+
+    # Shopping list items
+    shopping_item6 = repo._create_shopping_list_item(run_distributing.id, rotisserie_chicken.id, 3)  # 2 + 1
+    shopping_item6.is_purchased = True
+    shopping_item6.actual_price = 4.99
+    shopping_item6.actual_quantity = 3
+    shopping_item6.purchase_order = 1
+
+    shopping_item7 = repo._create_shopping_list_item(run_distributing.id, toilet_paper.id, 1)
+    shopping_item7.is_purchased = True
+    shopping_item7.actual_price = 22.99
+    shopping_item7.actual_quantity = 1
+    shopping_item7.purchase_order = 2
+
+    shopping_item8 = repo._create_shopping_list_item(run_distributing.id, coffee_beans.id, 2)
+    shopping_item8.is_purchased = True
+    shopping_item8.actual_price = 14.99
+    shopping_item8.actual_quantity = 2
+    shopping_item8.purchase_order = 3
+
+    # Distribution records for distributing run
+    alice_distributing_p.picked_up_at = None
+    bob_distributing_p.picked_up_at = None
+
+    # Completed run - all done
+    test_completed_p = repo.get_participation(test_user.id, run_completed.id)
+    test_completed_p.is_ready = True
+    from datetime import datetime, timedelta, timezone
+    test_completed_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=13)
+
+    alice_completed_p = repo._create_participation(alice.id, run_completed.id, is_leader=False, is_ready=True)
+    alice_completed_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=13)
+
+    # Bids for completed run
+    bid10 = repo._create_bid(test_completed_p.id, detergent.id, 1, False)
+    bid10.distributed_quantity = 1
+    bid10.distributed_price_per_unit = 16.98
+
+    bid11 = repo._create_bid(alice_completed_p.id, laundry_pods.id, 1, False)
+    bid11.distributed_quantity = 1
+    bid11.distributed_price_per_unit = 18.98
+
+    # Shopping list items
+    shopping_item9 = repo._create_shopping_list_item(run_completed.id, detergent.id, 1)
+    shopping_item9.is_purchased = True
+    shopping_item9.actual_price = 16.98
+    shopping_item9.actual_quantity = 1
+    shopping_item9.purchase_order = 1
+
+    shopping_item10 = repo._create_shopping_list_item(run_completed.id, laundry_pods.id, 1)
+    shopping_item10.is_purchased = True
+    shopping_item10.actual_price = 18.98
+    shopping_item10.actual_quantity = 1
+    shopping_item10.purchase_order = 2
+
+    # Additional completed runs for price history
+    # run_completed_2 (30 days ago)
+    test_completed_2_p = repo.get_participation(test_user.id, run_completed_2.id)
+    test_completed_2_p.is_ready = True
+    test_completed_2_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=29)
+
+    bob_completed_2_p = repo._create_participation(bob.id, run_completed_2.id, is_leader=False, is_ready=True)
+    bob_completed_2_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=29)
+
+    bid12 = repo._create_bid(test_completed_2_p.id, olive_oil.id, 1, False)
+    bid12.distributed_quantity = 1
+    bid12.distributed_price_per_unit = 23.99
+
+    bid13 = repo._create_bid(bob_completed_2_p.id, paper_towels.id, 1, False)
+    bid13.distributed_quantity = 1
+    bid13.distributed_price_per_unit = 19.99
+
+    shopping_item11 = repo._create_shopping_list_item(run_completed_2.id, olive_oil.id, 1)
+    shopping_item11.is_purchased = True
+    shopping_item11.actual_price = 23.99
+    shopping_item11.actual_quantity = 1
+    shopping_item11.purchase_order = 1
+
+    shopping_item12 = repo._create_shopping_list_item(run_completed_2.id, paper_towels.id, 1)
+    shopping_item12.is_purchased = True
+    shopping_item12.actual_price = 19.99
+    shopping_item12.actual_quantity = 1
+    shopping_item12.purchase_order = 2
+
+    # run_completed_3 (45 days ago) - alice is leader
+    alice_completed_3_p = repo.get_participation(alice.id, run_completed_3.id)
+    alice_completed_3_p.is_ready = True
+    alice_completed_3_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=44)
+
+    carol_completed_3_p = repo._create_participation(carol.id, run_completed_3.id, is_leader=False, is_ready=True)
+    carol_completed_3_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=44)
+
+    bid14 = repo._create_bid(alice_completed_3_p.id, detergent.id, 2, False)
+    bid14.distributed_quantity = 2
+    bid14.distributed_price_per_unit = 15.98
+
+    shopping_item13 = repo._create_shopping_list_item(run_completed_3.id, detergent.id, 2)
+    shopping_item13.is_purchased = True
+    shopping_item13.actual_price = 15.98
+    shopping_item13.actual_quantity = 2
+    shopping_item13.purchase_order = 1
+
+    # run_completed_4 (60 days ago) - bob is leader
+    bob_completed_4_p = repo.get_participation(bob.id, run_completed_4.id)
+    bob_completed_4_p.is_ready = True
+    bob_completed_4_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=59)
+
+    shopping_item14 = repo._create_shopping_list_item(run_completed_4.id, olive_oil.id, 1)
+    shopping_item14.is_purchased = True
+    shopping_item14.actual_price = 24.99
+    shopping_item14.actual_quantity = 1
+    shopping_item14.purchase_order = 1
+
+    bid15 = repo._create_bid(bob_completed_4_p.id, olive_oil.id, 1, False)
+    bid15.distributed_quantity = 1
+    bid15.distributed_price_per_unit = 24.99
+
+    # run_completed_5 (75 days ago) - bob is leader, work group
+    bob_completed_5_p = repo.get_participation(bob.id, run_completed_5.id)
+    bob_completed_5_p.is_ready = True
+    bob_completed_5_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=74)
+
+    carol_completed_5_p = repo._create_participation(carol.id, run_completed_5.id, is_leader=False, is_ready=True)
+    carol_completed_5_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=74)
+
+    bid16 = repo._create_bid(bob_completed_5_p.id, ground_beef.id, 1, False)
+    bid16.distributed_quantity = 1
+    bid16.distributed_price_per_unit = 16.48
+
+    shopping_item15 = repo._create_shopping_list_item(run_completed_5.id, ground_beef.id, 1)
+    shopping_item15.is_purchased = True
+    shopping_item15.actual_price = 16.48
+    shopping_item15.actual_quantity = 1
+    shopping_item15.purchase_order = 1
