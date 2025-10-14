@@ -20,9 +20,10 @@ services:
 
   backend:
     build: ./backend
-    # Only expose to internal network - Caddy will proxy
-    expose:
-      - "8000"
+    # Development: expose port for local frontend development
+    # Production: only internal network (Caddy proxies)
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
     env_file:
       - .env
     volumes:
