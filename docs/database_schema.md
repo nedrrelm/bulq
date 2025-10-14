@@ -8,6 +8,7 @@ erDiagram
         uuid id PK
         string name
         string email
+        string password_hash
         string username "nullable, unique"
         boolean is_admin
         boolean verified
@@ -19,6 +20,7 @@ erDiagram
         string name
         uuid created_by FK
         string invite_token
+        boolean is_joining_allowed
         timestamp created_at
     }
 
@@ -44,6 +46,7 @@ erDiagram
         uuid run_id FK
         boolean is_leader
         boolean is_ready
+        boolean is_removed
         timestamp joined_at
     }
 
@@ -120,6 +123,25 @@ erDiagram
         boolean is_group_admin
     }
 
+    Notification {
+        uuid id PK
+        uuid user_id FK
+        string type
+        json data
+        boolean read
+        timestamp created_at
+    }
+
+    LeaderReassignmentRequest {
+        uuid id PK
+        uuid run_id FK
+        uuid from_user_id FK
+        uuid to_user_id FK
+        string status
+        timestamp created_at
+        timestamp resolved_at "nullable"
+    }
+
     User ||--o{ GroupMembership : "belongs to"
     Group ||--o{ GroupMembership : "has members"
     Group ||--o{ Run : "organizes"
@@ -138,6 +160,10 @@ erDiagram
     Store ||--o{ ProductAvailability : "has available"
     Run ||--o{ ShoppingListItem : "has items"
     Product ||--o{ ShoppingListItem : "included in"
+    User ||--o{ Notification : "receives"
+    Run ||--o{ LeaderReassignmentRequest : "has transfer requests"
+    User ||--o{ LeaderReassignmentRequest : "initiates transfer"
+    User ||--o{ LeaderReassignmentRequest : "receives transfer"
 ```
 
 ## Run States
@@ -205,10 +231,19 @@ Can transition to `cancelled` from any state before `distributing`.
   - Links Run + Product with requested quantities (sum of all bids)
   - Records actual purchased quantities and prices
   - `purchase_order` tracks the sequence items were purchased
+- **Notifications**: User notifications for run events
+  - Each user receives notifications about runs they participate in
+  - Flexible JSON data structure for different notification types
+  - Tracks read/unread status for UI badge display
+- **LeaderReassignmentRequests**: Run leader transfer mechanism
+  - Allows current leader to propose transferring leadership to another participant
+  - Tracks request status (pending, accepted, declined)
+  - Links to run and both users (from and to)
 
 ## Entity Details
 
 ### User
+- **password_hash**: Bcrypt-hashed password for authentication
 - **username**: Nullable, unique identifier that will eventually replace email for login
 - **is_admin**: Flag for admin users who can verify stores and products
 - **verified**: Whether the user account has been verified
@@ -217,6 +252,7 @@ Can transition to `cancelled` from any state before `distributing`.
 
 ### Group
 - **invite_token**: Unique token for inviting users to join the group
+- **is_joining_allowed**: Controls whether new members can join via invite link (allows group closure)
 - **created_at**: When the group was created
 
 ### GroupMembership
@@ -261,6 +297,7 @@ State transition timestamps track when the run entered each state:
 - **cancelled_at**: When run was cancelled (if applicable)
 
 ### RunParticipation
+- **is_removed**: True if user was removed from the group (soft-delete, preserves historical data)
 - **joined_at**: When the user joined this run
 
 ### ProductBid
@@ -302,3 +339,39 @@ Manages the shopping process for each product in a run:
 - **purchased_at**: When the item was purchased
 - **created_at**: When the shopping list item was created
 - **updated_at**: Last time the item was modified
+
+### Notification
+Tracks notifications for users about run events and activities:
+- **user_id**: Which user receives this notification (FK to User)
+- **type**: Notification type identifier (e.g., "run_state_changed", "bid_placed", "user_joined")
+- **data**: Flexible JSON payload containing context-specific information such as:
+  - `run_id`: The run this notification is about
+  - `run_name`: Display name for the run (e.g., "Costco Run")
+  - `group_name`: Name of the group
+  - `store_name`: Store name for context
+  - `old_state`, `new_state`: For state change notifications
+  - `user_name`: Name of user who triggered the event
+  - Additional fields depending on notification type
+- **read**: Whether the user has marked this notification as read (for UI badge display)
+- **created_at**: When the notification was created (used for sorting and display)
+
+Notifications are created by the service layer for events such as:
+- Run state transitions (planning → active → confirmed, etc.)
+- New bids placed or updated
+- Users joining or leaving runs
+- Leader actions (confirming, starting shopping, etc.)
+- Group membership changes
+
+### LeaderReassignmentRequest
+Manages the process of transferring run leadership from one user to another:
+- **run_id**: Which run this transfer request is for (FK to Run)
+- **from_user_id**: Current leader proposing the transfer (FK to User)
+- **to_user_id**: User being proposed as new leader (FK to User)
+- **status**: Current state of the request:
+  - `pending`: Request created, awaiting response from recipient
+  - `accepted`: Recipient accepted, leadership transferred
+  - `declined`: Recipient declined the transfer
+- **created_at**: When the transfer request was created
+- **resolved_at**: When the request was accepted or declined (nullable)
+
+This entity supports the leader reassignment feature, allowing run leaders to transfer their responsibilities to another participant. The requesting user must be the current leader, and the target user must be an active participant in the run.
