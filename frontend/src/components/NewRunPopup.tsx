@@ -30,7 +30,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
         setStores(data)
 
         // Auto-select first store if available
-        if (data.length > 0) {
+        if (data.length > 0 && data[0]) {
           setSelectedStoreId(data[0].id)
         }
 

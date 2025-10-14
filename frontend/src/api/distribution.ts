@@ -1,6 +1,14 @@
 import { api } from './client'
-import { distributionUserSchema, type DistributionUser } from '../schemas/distribution'
+import { distributionUserSchema, type DistributionUser, type DistributionProduct } from '../schemas/distribution'
 import { z } from 'zod'
+
+export type { DistributionUser, DistributionProduct }
+
+// For backwards compatibility with old code that may reference these names
+export type DistributionItem = DistributionProduct
+export interface TogglePickupRequest {
+  bid_id: string
+}
 
 export const distributionApi = {
   /**

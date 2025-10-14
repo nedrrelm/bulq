@@ -82,13 +82,13 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     onGroupSelect(groupId)
   }
 
-  const handleNewGroupSuccess = (newGroup: Group) => {
+  const handleNewGroupSuccess = (_newGroup: Group) => {
     setShowNewGroupPopup(false)
     // Invalidate groups query to refetch with new group
     queryClient.invalidateQueries({ queryKey: groupKeys.list() })
   }
 
-  const handleNewStoreSuccess = (newStore: Store) => {
+  const handleNewStoreSuccess = (_newStore: Store) => {
     setShowNewStorePopup(false)
     // Store has been added, no need to update state here
     // It will be available when creating new runs

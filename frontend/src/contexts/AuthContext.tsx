@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useEffect } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentUser, useLogout, authKeys } from '../hooks/queries'
 import type { User } from '../types/user'

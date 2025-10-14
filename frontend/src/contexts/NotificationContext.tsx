@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react'
 import { notificationsApi } from '../api'
 import type { Notification } from '../types/notification'
 import { useAuth } from './AuthContext'
@@ -74,7 +74,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         completed: 'has been completed',
         cancelled: 'has been cancelled'
       }
-      return `Run at ${store_name} ${stateMessages[new_state] || `changed to ${new_state}`}`
+      return `Run at ${store_name} ${new_state ? (stateMessages[new_state] || `changed to ${new_state}`) : 'changed state'}`
     }
 
     if (notification.type === 'leader_reassignment_request') {
@@ -127,7 +127,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  const fetchNotifications = useCallback(async (limit: number = 20, offset: number = 0) => {
+  const fetchNotifications = useCallback(async (limit?: number, offset?: number) => {
     if (!user) return
 
     setLoading(true)

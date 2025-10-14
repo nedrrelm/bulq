@@ -15,7 +15,7 @@ export const searchKeys = {
 export function useSearch(query: string | undefined) {
   return useQuery({
     queryKey: searchKeys.results(query || ''),
-    queryFn: () => searchApi.search(query!),
+    queryFn: () => searchApi.searchAll(query!),
     enabled: !!query && query.length >= 2, // Only search with 2+ characters
     staleTime: 30000, // Search results stay fresh for 30 seconds
   })

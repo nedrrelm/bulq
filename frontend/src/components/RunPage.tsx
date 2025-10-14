@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
-import { runsApi, reassignmentApi, ApiError } from '../api'
+import { runsApi, reassignmentApi } from '../api'
 import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
 import ErrorBoundary from './ErrorBoundary'
@@ -14,7 +14,6 @@ const BidPopup = lazy(() => import('./BidPopup'))
 const AddProductPopup = lazy(() => import('./AddProductPopup'))
 const ReassignLeaderPopup = lazy(() => import('./ReassignLeaderPopup'))
 import RunProductItem from './RunProductItem'
-import RunParticipants from './RunParticipants'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
 import Toast from './Toast'
@@ -28,8 +27,6 @@ import { handleError, formatErrorForDisplay } from '../utils/errorHandling'
 
 // Using RunDetail type from API layer
 type Product = RunDetail['products'][0]
-type UserBid = Product['user_bids'][0]
-type Participant = RunDetail['participants'][0]
 
 // ProductItem component extracted to RunProductItem.tsx
 // RunParticipants component extracted to RunParticipants.tsx
@@ -196,11 +193,13 @@ export default function RunPage() {
     const fullProduct: Product = {
       id: product.id,
       name: product.name,
+      brand: product.brand || null,
       current_price: product.current_price,
       total_quantity: 0,
       interested_count: 0,
       user_bids: [],
-      current_user_bid: null
+      current_user_bid: null,
+      purchased_quantity: null
     }
 
     setSelectedProduct(fullProduct)
@@ -258,7 +257,7 @@ export default function RunPage() {
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={() => navigate(run?.group_id ? `/groups/${run.group_id}` : '/')} className="back-button">
+          <button onClick={() => navigate('/')} className="back-button">
             ← Back to Group
           </button>
           <h2>Loading run...</h2>
@@ -271,7 +270,7 @@ export default function RunPage() {
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={() => navigate(run?.group_id ? `/groups/${run.group_id}` : '/')} className="back-button">
+          <button onClick={() => navigate('/')} className="back-button">
             ← Back to Group
           </button>
           <h2>Error</h2>
@@ -287,7 +286,7 @@ export default function RunPage() {
     return (
       <div className="run-page">
         <div className="run-header">
-          <button onClick={() => navigate(run?.group_id ? `/groups/${run.group_id}` : '/')} className="back-button">
+          <button onClick={() => navigate('/')} className="back-button">
             ← Back to Group
           </button>
           <h2>Run not found</h2>
@@ -451,7 +450,7 @@ export default function RunPage() {
           </div>
         )}
 
-        {run.state === 'shopping' && run.current_user_is_leader && onShoppingSelect && (
+        {run.state === 'shopping' && run.current_user_is_leader && (
           <div className="info-card">
             <h3>Shopping in Progress</h3>
             <p>You are currently shopping for this run.</p>
@@ -484,7 +483,7 @@ export default function RunPage() {
           </div>
         )}
 
-        {run.state === 'distributing' && onDistributionSelect && (
+        {run.state === 'distributing' && (
           <div className="info-card">
             <h3>Distribution in Progress</h3>
             <p>Shopping is complete. Time to distribute items to participants.</p>
@@ -603,7 +602,7 @@ export default function RunPage() {
           const currentBid = selectedProduct.current_user_bid
           const hasPurchasedQuantity = selectedProduct.purchased_quantity !== null
 
-          const shortage = hasPurchasedQuantity
+          const shortage = hasPurchasedQuantity && selectedProduct.purchased_quantity !== null
             ? selectedProduct.total_quantity - selectedProduct.purchased_quantity
             : 0
 

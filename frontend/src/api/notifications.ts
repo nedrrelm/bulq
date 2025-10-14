@@ -21,7 +21,7 @@ const markAllAsReadResponseSchema = z.object({
 })
 
 export const notificationsApi = {
-  getNotifications: (params?: GetNotificationsParams) =>
+  getNotifications: (_params?: GetNotificationsParams) =>
     api.get<Notification[]>('/notifications', z.array(notificationSchema)),
 
   getUnreadNotifications: () =>

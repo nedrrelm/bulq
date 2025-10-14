@@ -3,6 +3,8 @@ import { runDetailSchema, type RunDetail } from '../schemas/run'
 import { availableProductSchema } from '../schemas/product'
 import { z } from 'zod'
 
+export type { RunDetail }
+
 export interface CreateRunRequest {
   group_id: string
   store_id: string

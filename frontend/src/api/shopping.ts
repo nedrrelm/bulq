@@ -2,6 +2,8 @@ import { api } from './client'
 import { shoppingListItemSchema, type ShoppingListItem } from '../schemas/shopping'
 import { z } from 'zod'
 
+export type { ShoppingListItem }
+
 export interface UpdateAvailabilityPriceRequest {
   price: number
   notes: string

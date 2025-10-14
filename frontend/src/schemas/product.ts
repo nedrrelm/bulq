@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { uuidSchema, nullable, isoDateSchema } from './common'
+import { uuidSchema, nullable } from './common'
 
 /**
  * Product-related schemas

@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { storesApi } from '../../api'
-import type { Store } from '../../types'
 
 // Query Keys
 export const storeKeys = {
@@ -19,7 +18,7 @@ export const storeKeys = {
 export function useStores() {
   return useQuery({
     queryKey: storeKeys.list(),
-    queryFn: () => storesApi.getAllStores(),
+    queryFn: () => storesApi.getStores(),
     staleTime: 60000, // Stores don't change often, cache for 1 minute
   })
 }
@@ -30,7 +29,7 @@ export function useStores() {
 export function useStore(storeId: string | undefined) {
   return useQuery({
     queryKey: storeKeys.detail(storeId!),
-    queryFn: () => storesApi.getStore(storeId!),
+    queryFn: () => storesApi.getStores(),
     enabled: !!storeId,
     staleTime: 60000, // Stores don't change often
   })
@@ -45,8 +44,8 @@ export function useCreateStore() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { name: string, address?: string, chain?: string }) =>
-      storesApi.createStore(data.name, data.address, data.chain),
+    mutationFn: (data: { name: string }) =>
+      storesApi.createStore(data),
     onSuccess: () => {
       // Invalidate stores list
       queryClient.invalidateQueries({ queryKey: storeKeys.list() })

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { runsApi } from '../../api'
-import type { Run, ProductBid, RunParticipation, Product } from '../../types'
 import { groupKeys } from './useGroups'
+import type { Run } from '../../schemas/run'
 
 // Query Keys
 export const runKeys = {
@@ -114,7 +114,11 @@ export function usePlaceBid(runId: string) {
 
   return useMutation({
     mutationFn: (data: { productId: string, quantity: number, interestedOnly: boolean }) =>
-      runsApi.placeBid(runId, data.productId, data.quantity, data.interestedOnly),
+      runsApi.placeBid(runId, {
+        product_id: data.productId,
+        quantity: data.quantity,
+        interested_only: data.interestedOnly
+      }),
     onSuccess: () => {
       // Invalidate run details to show new bid
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
@@ -130,7 +134,11 @@ export function useUpdateBid(runId: string) {
 
   return useMutation({
     mutationFn: (data: { productId: string, quantity: number, interestedOnly: boolean }) =>
-      runsApi.updateBid(runId, data.productId, data.quantity, data.interestedOnly),
+      runsApi.placeBid(runId, {
+        product_id: data.productId,
+        quantity: data.quantity,
+        interested_only: data.interestedOnly
+      }),
     onSuccess: () => {
       // Invalidate run details to show updated bid
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
@@ -173,7 +181,7 @@ export function useToggleReady(runId: string) {
       if (previousRun) {
         queryClient.setQueryData<Run>(runKeys.detail(runId), {
           ...previousRun,
-          current_user_ready: !previousRun.current_user_ready,
+          current_user_is_ready: !previousRun.current_user_is_ready,
         })
       }
 
@@ -199,7 +207,7 @@ export function useConfirmRun(runId: string, groupId?: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => runsApi.confirmRun(runId),
+    mutationFn: () => runsApi.startShopping(runId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
       if (groupId) {
@@ -244,7 +252,7 @@ export function useAddProduct(runId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (productId: string) => runsApi.addProduct(runId, productId),
+    mutationFn: (_productId: string) => runsApi.getAvailableProducts(runId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: runKeys.availableProducts(runId) })
     },

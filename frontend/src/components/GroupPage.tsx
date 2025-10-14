@@ -1,17 +1,14 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useCallback, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/GroupPage.css'
 import { WS_BASE_URL } from '../config'
-import { ApiError } from '../api'
-import type { GroupDetails } from '../api'
 import ErrorBoundary from './ErrorBoundary'
 
 // Lazy load popup components for better code splitting
 const NewRunPopup = lazy(() => import('./NewRunPopup'))
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useAuth } from '../contexts/AuthContext'
-import { getStateLabel } from '../utils/runStates'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
@@ -20,8 +17,14 @@ import { useModal } from '../hooks/useModal'
 import RunCard from './RunCard'
 import { useGroup, useGroupRuns, groupKeys } from '../hooks/queries'
 
-// Using GroupDetails type from API layer
-type Run = GroupDetails['runs'][0]
+type RunSummary = {
+  id: string
+  store_name: string
+  state: string
+  leader_name: string
+  leader_is_removed: boolean
+  planned_on: string | null
+}
 
 export default function GroupPage() {
   const { groupId } = useParams<{ groupId: string }>()
@@ -42,11 +45,13 @@ export default function GroupPage() {
 
   const newRunModal = useModal()
   const { toast, showToast, hideToast } = useToast()
-  const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
+  const { confirmState, hideConfirm, handleConfirm } = useConfirm()
   const { user } = useAuth()
 
   // WebSocket for real-time updates
-  const handleWebSocketMessage = useCallback((message: any) => {
+  const handleWebSocketMessage = useCallback((message: { type: string; data: unknown }) => {
+    const messageData = message.data as { run_id?: string; removed_user_id?: string }
+
     if (message.type === 'run_created') {
       // Invalidate runs query to refetch with new run
       queryClient.invalidateQueries({ queryKey: groupKeys.runs(groupId) })
@@ -54,12 +59,12 @@ export default function GroupPage() {
       // Invalidate runs query to update run state
       queryClient.invalidateQueries({ queryKey: groupKeys.runs(groupId) })
       // Also invalidate the specific run
-      if (message.data.run_id) {
-        queryClient.invalidateQueries({ queryKey: ['runs', 'detail', message.data.run_id] })
+      if (messageData.run_id) {
+        queryClient.invalidateQueries({ queryKey: ['runs', 'detail', messageData.run_id] })
       }
     } else if (message.type === 'member_removed') {
       // If current user was removed, redirect to main page
-      if (user && message.data.removed_user_id === user.id) {
+      if (user && messageData.removed_user_id === user.id) {
         showToast('You have been removed from this group', 'error')
         setTimeout(() => {
           navigate('/')
@@ -71,7 +76,7 @@ export default function GroupPage() {
       queryClient.invalidateQueries({ queryKey: groupKeys.runs(groupId) })
       queryClient.invalidateQueries({ queryKey: groupKeys.detail(groupId) })
     }
-  }, [groupId, user, showToast, queryClient])
+  }, [groupId, user, showToast, queryClient, navigate])
 
   useWebSocket(
     groupId ? `${WS_BASE_URL}/ws/groups/${groupId}` : null,
@@ -92,11 +97,11 @@ export default function GroupPage() {
   }
 
   const currentRuns = runs
-    .filter(run => !['completed', 'cancelled'].includes(run.state))
-    .sort((a, b) => (stateOrder[b.state] || 0) - (stateOrder[a.state] || 0))
+    .filter((run: RunSummary) => !['completed', 'cancelled'].includes(run.state))
+    .sort((a: RunSummary, b: RunSummary) => (stateOrder[b.state] || 0) - (stateOrder[a.state] || 0))
 
-  const completedRuns = runs.filter(run => run.state === 'completed')
-  const cancelledRuns = runs.filter(run => run.state === 'cancelled')
+  const completedRuns = runs.filter((run: RunSummary) => run.state === 'completed')
+  const cancelledRuns = runs.filter((run: RunSummary) => run.state === 'cancelled')
 
   const handleNewRunClick = () => {
     newRunModal.open()
@@ -160,7 +165,7 @@ export default function GroupPage() {
               </div>
             ) : (
               <div className="runs-list">
-                {currentRuns.map((run) => (
+                {currentRuns.map((run: RunSummary) => (
                   <ErrorBoundary key={run.id}>
                     <RunCard
                       run={run}
@@ -181,7 +186,7 @@ export default function GroupPage() {
               </div>
             ) : (
               <div className="runs-list">
-                {completedRuns.map((run) => (
+                {completedRuns.map((run: RunSummary) => (
                   <ErrorBoundary key={run.id}>
                     <RunCard
                       run={run}
@@ -202,7 +207,7 @@ export default function GroupPage() {
               </div>
             ) : (
               <div className="runs-list">
-                {cancelledRuns.map((run) => (
+                {cancelledRuns.map((run: RunSummary) => (
                   <ErrorBoundary key={run.id}>
                     <RunCard
                       run={run}

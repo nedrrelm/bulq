@@ -82,10 +82,14 @@ export default function DistributionPage() {
     return <ErrorAlert message={error} onRetry={() => refetch()} />
   }
 
+  const handleBack = () => {
+    navigate(`/runs/${runId}`)
+  }
+
   return (
     <div className="distribution-page">
       <div className="page-header">
-        <button onClick={onBack} className="back-button">← Back to Run</button>
+        <button onClick={handleBack} className="back-button">← Back to Run</button>
         <h2>Distribution</h2>
       </div>
 

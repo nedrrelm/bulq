@@ -47,6 +47,7 @@ export const runDetailSchema = z.object({
 })
 
 export type RunDetail = z.infer<typeof runDetailSchema>
+export type Run = RunDetail
 export type ProductInRun = z.infer<typeof productInRunSchema>
 export type Participant = z.infer<typeof participantSchema>
 export type UserBid = z.infer<typeof userBidSchema>

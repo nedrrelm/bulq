@@ -7,6 +7,8 @@ import {
 } from '../schemas/product'
 import { z } from 'zod'
 
+export type { ProductSearchResult, ProductDetail }
+
 export interface CreateProductRequest {
   name: string
   brand?: string | null

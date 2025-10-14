@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/ShoppingPage.css'
 import { WS_BASE_URL } from '../config'
-import { shoppingApi, ApiError } from '../api'
+import { shoppingApi } from '../api'
 import type { ShoppingListItem } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -12,9 +12,9 @@ import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { validateDecimal, parseDecimal, sanitizeString } from '../utils/validation'
-import { useShoppingList, shoppingKeys, useMarkPurchased, useCompleteShopping } from '../hooks/queries'
+import { useShoppingList, shoppingKeys } from '../hooks/queries'
 import { formatErrorForDisplay } from '../utils/errorHandling'
-import { MAX_NOTES_LENGTH, DECIMAL_PLACES_PRICE } from '../constants'
+import { MAX_NOTES_LENGTH } from '../constants'
 
 // Using ShoppingListItem type from API layer
 
@@ -58,8 +58,6 @@ export default function ShoppingPage() {
 
   const { data: items = [], isLoading: loading, error: queryError } = useShoppingList(runId)
   const queryClient = useQueryClient()
-  const markPurchasedMutation = useMarkPurchased(runId)
-  const completeShoppingMutation = useCompleteShopping(runId)
 
   const error = queryError instanceof Error ? queryError.message : ''
 
@@ -156,7 +154,7 @@ export default function ShoppingPage() {
   if (loading) {
     return (
       <div className="shopping-page">
-        <button onClick={onBack} className="back-button">← Back to Run</button>
+        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">← Back to Run</button>
         <p>Loading shopping list...</p>
       </div>
     )
@@ -165,7 +163,7 @@ export default function ShoppingPage() {
   if (error) {
     return (
       <div className="shopping-page">
-        <button onClick={onBack} className="back-button">← Back to Run</button>
+        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">← Back to Run</button>
         <div className="error">
           <p>❌ {error}</p>
         </div>
@@ -176,7 +174,7 @@ export default function ShoppingPage() {
   return (
     <div className="shopping-page">
       <div className="shopping-header">
-        <button onClick={onBack} className="back-button">← Back to Run</button>
+        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">← Back to Run</button>
         <h2>🛒 Shopping Mode</h2>
         <div className="header-actions">
           <div className="total-display">
@@ -287,7 +285,7 @@ function ShoppingItem({
         </div>
       </div>
 
-      {item.recent_prices.length > 0 && (
+      {item.recent_prices.length > 0 && item.recent_prices[0] && (
         <div className="availability-info">
           <small>
             Prices seen {formatPriceDate(item.recent_prices[0].created_at)}:
