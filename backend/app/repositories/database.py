@@ -435,6 +435,7 @@ class DatabaseRepository(AbstractRepository):
         if bid:
             bid.distributed_quantity = quantity
             bid.distributed_price_per_unit = price_per_unit
+            self.db.commit()
 
     def commit_changes(self) -> None:
         """Commit any pending changes to the database."""
@@ -603,6 +604,7 @@ class DatabaseRepository(AbstractRepository):
         item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
         if item:
             item.requested_quantity = requested_quantity
+            self.db.commit()
 
     # ==================== ProductAvailability Methods ====================
 
