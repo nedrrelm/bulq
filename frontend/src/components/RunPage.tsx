@@ -320,15 +320,6 @@ export default function RunPage() {
             {stateDisplay.label}
           </span>
         </div>
-        {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
-          <button
-            onClick={handleCancelRun}
-            className="btn btn-danger cancel-run-button"
-            title="Cancel this run"
-          >
-            ✕ Cancel Run
-          </button>
-        )}
       </div>
 
       {/* Reassignment banner for target user */}
@@ -353,16 +344,6 @@ export default function RunPage() {
           <h3>Run Information</h3>
           <div className="info-grid">
             <div className="info-item">
-              <label>Group:</label>
-              <span>{run.group_name}</span>
-            </div>
-            <div className="info-item">
-              <label>Store:</label>
-              <Link to={`/stores/${run.store_id}`} className="info-link">
-                {run.store_name}
-              </Link>
-            </div>
-            <div className="info-item">
               <label>Leader:</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span className={run.participants.find(p => p.is_leader)?.is_removed ? 'removed-user' : ''}>
@@ -384,10 +365,6 @@ export default function RunPage() {
             <div className="info-item">
               <label>Status:</label>
               <span>{stateDisplay.description}</span>
-            </div>
-            <div className="info-item">
-              <label>Run ID:</label>
-              <span className="run-id">{run.id}</span>
             </div>
           </div>
         </div>
@@ -513,9 +490,6 @@ export default function RunPage() {
         {run.products.length === 0 ? (
           <div className="no-products">
             <p>No products have been added to this run yet.</p>
-            {run.state === 'planning' && (
-              <p>Users can start expressing interest in products to get this run started!</p>
-            )}
           </div>
         ) : (
           <div className="products-list">
@@ -648,6 +622,7 @@ export default function RunPage() {
               showToast('Reassignment request sent!', 'success')
               fetchReassignmentRequest()
             }}
+            onCancelRun={run.state !== 'completed' && run.state !== 'cancelled' ? handleCancelRun : undefined}
           />
         )}
       </Suspense>

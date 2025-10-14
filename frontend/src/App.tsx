@@ -313,7 +313,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               Admin
             </button>
           )}
-          <span>Welcome, {user.name}!</span>
           <button onClick={logout} className="logout-button">
             Logout
           </button>

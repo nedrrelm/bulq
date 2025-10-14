@@ -176,7 +176,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
           )}
 
           <div className="form-group">
-            <label htmlFor="product-name" className="form-label">Product Name</label>
+            <label htmlFor="product-name" className="form-label">Product Name *</label>
             <input
               id="product-name"
               type="text"
@@ -187,16 +187,11 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
               disabled={submitting}
               required
             />
-            <div className="input-footer">
-              <span className={`char-counter ${isOverLimit ? 'over-limit' : ''}`}>
-                {charCount}/{MAX_NAME_LENGTH}
-              </span>
-            </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="brand" className="form-label">Brand <span className="optional-label">(optional)</span></label>
+              <label htmlFor="brand" className="form-label">Brand</label>
               <input
                 id="brand"
                 type="text"
@@ -212,7 +207,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
             </div>
 
             <div className="form-group">
-              <label htmlFor="unit" className="form-label">Unit <span className="optional-label">(optional)</span></label>
+              <label htmlFor="unit" className="form-label">Unit</label>
               <input
                 id="unit"
                 type="text"
@@ -229,7 +224,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
           </div>
 
           <div className="form-group">
-            <label htmlFor="store-select" className="form-label">Store <span className="optional-label">(recommended)</span></label>
+            <label htmlFor="store-select" className="form-label">Store</label>
             <select
               id="store-select"
               className="form-input"
@@ -253,7 +248,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
           </div>
 
           <div className="form-group">
-            <label htmlFor="price" className="form-label">Price ($) <span className="optional-label">({storeId ? 'recommended' : 'optional'})</span></label>
+            <label htmlFor="price" className="form-label">Price ($)</label>
             <input
               id="price"
               type="text"
