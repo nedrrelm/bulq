@@ -23,24 +23,60 @@ Python FastAPI application with PostgreSQL database integration and comprehensiv
 
 ### Core Application (`/backend/app`)
 
-Main application logic and infrastructure:
+Main application entry point:
 
-- **main.py** - FastAPI application entry point; configures CORS middleware, registers all route blueprints (auth, groups, runs, stores, shopping, distribution, products, notifications, search, websocket), sets up database initialization, error handlers, middleware, and logging configuration based on environment
-- **models.py** - SQLAlchemy ORM model definitions for all entities: User (authentication), Group (buying groups), GroupMembership (M2M relationship), Store, Product (store-agnostic), Run (shopping runs with state machine), RunParticipation (user participation with leader flag), ProductBid (quantity/price tracking), ShoppingListItem (purchase tracking), ProductAvailability (product-store-price junction table), Notification (user notifications)
-- **database.py** - Database connection management using SQLAlchemy; provides `get_db()` dependency for FastAPI endpoints to inject database sessions with automatic cleanup
-- **config.py** - Application configuration management; defines `REPO_MODE` environment variable (default: "memory") to switch between in-memory test data and PostgreSQL database, controls seed data loading behavior
-- **auth.py** - Authentication and security utilities including password hashing with bcrypt, password verification, and `require_auth()` dependency that validates session cookies and retrieves the current authenticated user
+- **main.py** - FastAPI application entry point; configures CORS middleware, registers all route blueprints, sets up database initialization, error handlers, middleware, logging configuration, event handlers, and background tasks
+- **__init__.py** - Package initialization marker for the app module
+
+### Core Domain (`/backend/app/core`)
+
+Core domain models and business rules:
+
+- **models.py** - SQLAlchemy ORM model definitions for all entities: User (authentication), Group (buying groups), GroupMembership (M2M relationship), Store, Product (store-agnostic), Run (shopping runs with state machine), RunParticipation (user participation with leader flag), ProductBid (quantity/price tracking), ShoppingListItem (purchase tracking), ProductAvailability (product-store-price junction table), Notification (user notifications), LeaderReassignmentRequest (leader transfer requests)
 - **repository.py** - Repository pattern implementation with `Repository` abstract base class defining all data access methods, `DatabaseRepository` for PostgreSQL production use, and `InMemoryRepository` for development/testing with rich seed data including multiple users, groups, stores, products, and runs in various states
 - **run_state.py** - Run state machine implementation with `RunState` enum and `RunStateMachine` class; defines valid state transitions (planning→active→confirmed→shopping→adjusting→distributing→completed/cancelled), validates transitions, provides state descriptions, and includes singleton instance for convenience
 - **exceptions.py** - Custom exception classes for the application: `AppException` (base), `NotFoundError`, `UnauthorizedError`, `ForbiddenError`, `ValidationError`, `ConflictError`, `BadRequestError`; all exceptions include status codes and optional details
-- **error_handlers.py** - Global exception handlers for FastAPI: handles custom AppException errors, Pydantic validation errors, SQLAlchemy database errors, and unexpected exceptions; provides structured error responses with logging
-- **error_models.py** - Pydantic models for error responses: `ErrorDetail`, `ErrorResponse`, `ValidationErrorResponse`; used by error handlers to format consistent error responses
-- **middleware.py** - Request logging middleware (`RequestLoggingMiddleware`); logs all HTTP requests with timing, request ID, method, path, status code, and duration; skips WebSocket connections
-- **logging_config.py** - Structured logging configuration with `JSONFormatter` for production and `StructuredFormatter` for development; supports file rotation, context managers, and configurable log levels; includes `LogContext` for adding structured context to logs
-- **websocket_manager.py** - WebSocket connection manager for real-time updates; handles connection lifecycle, broadcasting messages to specific runs or users, connection tracking, and error handling
-- **__init__.py** - Package initialization marker for the app module
+- **__init__.py** - Package initialization marker for core module
 
-### API Routes (`/backend/app/routes`)
+### API Layer (`/backend/app/api`)
+
+HTTP and WebSocket interface layer:
+
+- **middleware.py** - Request logging middleware (`RequestLoggingMiddleware`); logs all HTTP requests with timing, request ID, method, path, status code, and duration; skips WebSocket connections
+- **websocket_manager.py** - WebSocket connection manager for real-time updates; handles connection lifecycle, broadcasting messages to specific runs or users, connection tracking, and error handling
+- **routes/** - RESTful API endpoints (see section below)
+- **schemas/** - Pydantic request/response models (see section below)
+- **__init__.py** - Package initialization marker for API module
+
+### Infrastructure (`/backend/app/infrastructure`)
+
+External dependencies and infrastructure concerns:
+
+- **database.py** - Database connection management using SQLAlchemy; provides `get_db()` dependency for FastAPI endpoints to inject database sessions with automatic cleanup; includes connection pool configuration and monitoring
+- **config.py** - Application configuration management; defines environment variables including `REPO_MODE` (database/memory), `ALLOWED_ORIGINS`, `SECURE_COOKIES`, `SESSION_EXPIRY_HOURS`, and validates production configuration requirements
+- **auth.py** - Authentication and security utilities including password hashing with bcrypt, password verification, session management (in-memory storage), and `require_auth()` dependency that validates session cookies and retrieves the current authenticated user
+- **logging_config.py** - Structured logging configuration with `JSONFormatter` for production and `StructuredFormatter` for development; supports file rotation, context managers, and configurable log levels; includes `LogContext` for adding structured context to logs
+- **request_context.py** - Request context management using Python's contextvars for thread-safe request ID tracking; provides `get_logger()` wrapper that automatically includes request_id in all log entries; enables request tracing across distributed logs
+- **transaction.py** - Transaction management utilities providing `@transactional` decorator and `transaction()` context manager for explicit database transaction control with automatic rollback on errors
+- **__init__.py** - Package initialization marker for infrastructure module
+
+### Error Handling (`/backend/app/errors`)
+
+Centralized error handling:
+
+- **handlers.py** - Global exception handlers for FastAPI: handles custom AppException errors, Pydantic validation errors, SQLAlchemy database errors, and unexpected exceptions; provides structured error responses with logging
+- **models.py** - Pydantic models for error responses: `ErrorDetail`, `ErrorResponse`, `ValidationErrorResponse`; used by error handlers to format consistent error responses
+- **__init__.py** - Package initialization marker for errors module
+
+### Utilities (`/backend/app/utils`)
+
+Shared utility functions:
+
+- **validation.py** - Validation helper functions including UUID validation, state transition validation (delegates to state machine), and common validation patterns used across services
+- **background_tasks.py** - Background task utilities providing `create_background_task()` wrapper with proper error handling, logging, and cleanup for long-running asyncio tasks
+- **__init__.py** - Package initialization marker for utils module
+
+### API Routes (`/backend/app/api/routes`)
 
 RESTful API endpoints organized by domain and responsibility:
 
@@ -54,21 +90,57 @@ RESTful API endpoints organized by domain and responsibility:
 - **notifications.py** - Notification system: `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all`, `DELETE /notifications/{id}`, `GET /notifications/unread-count`; manages user notifications with pagination
 - **search.py** - Global search: `GET /search?q={query}`; consolidated search across products (up to 3), stores (up to 3), and user's groups (up to 3)
 - **websocket.py** - WebSocket endpoint: `WS /ws/{run_id}`; provides real-time updates for run participants; broadcasts bid updates, state changes, and participant actions; handles connection authentication and lifecycle
+- **admin.py** - Admin endpoints: admin-only routes for verifying stores and products, managing users
+- **reassignment.py** - Leader reassignment endpoints: routes for creating, accepting, and declining leader transfer requests
 - **__init__.py** - Package initialization marker for routes module
+
+### API Schemas (`/backend/app/api/schemas`)
+
+Pydantic models for request validation and response serialization:
+
+- **common.py** - Shared schema models used across multiple endpoints: `MessageResponse`, `PaginationParams`, base response models
+- **auth_schemas.py** - Authentication schemas: `UserRegister`, `UserLogin`, `UserResponse`, session-related models
+- **group_schemas.py** - Group schemas: `CreateGroupRequest`, `GroupResponse`, `GroupMemberResponse`, invite-related models
+- **run_schemas.py** - Run schemas: `CreateRunRequest`, `RunResponse`, `PlaceBidRequest`, `PlaceBidResponse`, bid-related models
+- **store_schemas.py** - Store schemas: `CreateStoreRequest`, `StoreResponse`, `UpdateStoreRequest`
+- **product_schemas.py** - Product schemas: `CreateProductRequest`, `ProductResponse`, `SearchProductsResponse`, price history models
+- **shopping_schemas.py** - Shopping schemas: `ShoppingListItemResponse`, `UpdateAvailabilityPriceRequest`, `MarkPurchasedRequest`, completion models
+- **distribution_schemas.py** - Distribution schemas: `DistributionDataResponse`, `TogglePickupRequest`, pickup-related models
+- **notification_schemas.py** - Notification schemas: `NotificationResponse`, notification type enums, pagination models
+- **search_schemas.py** - Search schemas: `GlobalSearchResponse`, aggregated search result models
+- **admin_schemas.py** - Admin schemas: admin-specific response models for user/store/product management
+- **reassignment_schemas.py** - Reassignment schemas: leader transfer request and response models
+- **__init__.py** - Package initialization marker for schemas module
 
 ### Service Layer (`/backend/app/services`)
 
 Business logic layer separating route handlers from data access:
 
-- **base_service.py** - Base service class providing common functionality for all services
+- **base_service.py** - Base service class providing common functionality for all services including repository access and shared helper methods
 - **group_service.py** - Group business logic: group creation, membership management, invite token generation, run summaries, member removal; includes authorization checks and notification triggers
 - **run_service.py** - Run business logic: run creation, state transitions, bid management, participant tracking, ready status, shopping list generation; enforces state machine rules and adjusting state constraints; triggers notifications for state changes
+- **bid_service.py** - Bid business logic: placing, updating, and retracting bids; validates bid constraints, handles interested-only bids, publishes bid events to event bus
+- **run_state_service.py** - Run state transition logic: validates and executes state transitions using the state machine; handles state-specific business rules
+- **run_notification_service.py** - Run notification logic: creates notifications for run-related events; handles different notification types and participant notifications
 - **shopping_service.py** - Shopping business logic: shopping list management, product availability price updates, purchase tracking, completion logic (determines transition to distributing or adjusting based on quantities); validates leader permissions
 - **distribution_service.py** - Distribution business logic: distribution tracking, pickup status management, completion logic; ensures all items are picked up before completing
 - **product_service.py** - Product business logic: product search, creation, price history retrieval; handles product catalog operations
 - **store_service.py** - Store business logic: store CRUD operations, search functionality
 - **notification_service.py** - Notification business logic: notification creation, retrieval, marking as read, deletion; supports pagination and unread count; creates notifications for run events (state changes, bid updates, leader actions)
+- **admin_service.py** - Admin business logic: store and product verification, user management; enforces admin-only operations
+- **reassignment_service.py** - Leader reassignment business logic: creating transfer requests, accepting/declining transfers, updating run leadership
 - **__init__.py** - Service module exports for convenient imports
+
+### Events System (`/backend/app/events`)
+
+Domain event system for decoupled event handling:
+
+- **domain_events.py** - Domain event definitions: `BidPlacedEvent`, `BidRetractedEvent`, `RunStateChangedEvent`, `RunCreatedEvent`, `RunCancelledEvent`, `MemberJoinedEvent`, `MemberRemovedEvent`, `ReadyToggledEvent`; all inherit from base `DomainEvent` class
+- **event_bus.py** - Event bus implementation: in-memory pub-sub system for domain events; provides `subscribe()` and `publish()` methods; handles async event handlers with proper error handling and background task execution
+- **handlers/** - Event handler implementations:
+  - **websocket_handler.py** - Broadcasts domain events to connected WebSocket clients for real-time UI updates
+  - **notification_handler.py** - Creates database notifications from domain events for persistent user notifications
+- **__init__.py** - Package initialization marker for events module
 
 ### Scripts (`/backend/app/scripts`)
 
