@@ -64,10 +64,15 @@ a:hover {
   color: var(--color-primary-hover);
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 #root {

@@ -33,6 +33,8 @@
   border: 1px solid var(--color-gray-200);
   border-radius: 8px;
   padding: 1.5rem;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .card-lg {
@@ -40,6 +42,18 @@
   border: 1px solid var(--color-gray-200);
   border-radius: 12px;
   padding: 24px;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+  }
+
+  .card-lg {
+    padding: 1rem;
+  }
 }
 
 .card-hover {
@@ -176,6 +190,8 @@
   animation: modal-enter 0.2s ease-out;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-scrollable {
@@ -191,14 +207,29 @@
   max-width: 500px;
 }
 
-@media (max-width: 480px) {
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
   .modal {
     padding: 16px;
     border-radius: 8px;
+    width: calc(100% - 1rem);
   }
 
   .modal-overlay {
     padding: 0.5rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions button {
+    width: 100%;
   }
 }
 
@@ -455,6 +486,12 @@
   display: flex;
   gap: 12px;
   margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .button-group {
+    flex-direction: column;
+  }
 }
 
 .flex-between {
