@@ -1,18 +1,63 @@
-:3000 {
-    root * /srv
-    try_files {path} /index.html
-    file_server
+# Caddy configuration for Bulq
+# Development: https://localhost:3000 (HTTPS with self-signed cert)
+#              http://localhost redirects to HTTPS
+# Production: Set DOMAIN environment variable (e.g., DOMAIN=yourdomain.com)
 
-    # CORS headers for API calls
+localhost:3000 {
+    # Caddy automatically enables HTTPS for localhost and redirects HTTP to HTTPS
+
+    # Enable gzip compression
+    encode gzip
+
+    # Security headers
     header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization"
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-    # Handle preflight requests
-    @options {
-        method OPTIONS
+    # Handle API routes - proxy to backend
+    handle /auth/* {
+        reverse_proxy backend:8000
     }
-    respond @options 204
+    handle /groups/* {
+        reverse_proxy backend:8000
+    }
+    handle /runs/* {
+        reverse_proxy backend:8000
+    }
+    handle /stores/* {
+        reverse_proxy backend:8000
+    }
+    handle /products/* {
+        reverse_proxy backend:8000
+    }
+    handle /shopping/* {
+        reverse_proxy backend:8000
+    }
+    handle /distribution/* {
+        reverse_proxy backend:8000
+    }
+    handle /notifications/* {
+        reverse_proxy backend:8000
+    }
+    handle /search/* {
+        reverse_proxy backend:8000
+    }
+    handle /reassignment/* {
+        reverse_proxy backend:8000
+    }
+    handle /admin/* {
+        reverse_proxy backend:8000
+    }
+    handle /ws/* {
+        reverse_proxy backend:8000
+    }
+
+    # Handle everything else - serve static files
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
 }
