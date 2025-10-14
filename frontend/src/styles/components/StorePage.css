@@ -35,6 +35,12 @@
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 }
 
+@media (max-width: 768px) {
+  .active-runs-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Products Section */
 .products-section h2 {
   font-size: 1.5rem;
@@ -46,6 +52,12 @@
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+@media (max-width: 768px) {
+  .products-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .product-card {

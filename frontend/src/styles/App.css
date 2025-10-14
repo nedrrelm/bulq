@@ -13,6 +13,14 @@ header {
   gap: 2rem;
 }
 
+@media (max-width: 768px) {
+  header {
+    padding: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
 main {
   margin: 2rem 0;
   padding: 0;
@@ -24,10 +32,31 @@ main.dashboard {
   padding: 0 2rem;
 }
 
+@media (max-width: 768px) {
+  main.dashboard {
+    padding: 0 1rem;
+    margin: 1rem auto;
+  }
+}
+
 .header-search {
   flex: 1;
   max-width: 500px;
   position: relative;
+}
+
+@media (max-width: 768px) {
+  .header-search {
+    order: 3;
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-search {
+    display: none;
+  }
 }
 
 .header-search .form-input {
@@ -127,6 +156,12 @@ main.dashboard {
   align-items: center;
   gap: 1rem;
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .user-info {
+    gap: 0.5rem;
+  }
 }
 
 .admin-button {
