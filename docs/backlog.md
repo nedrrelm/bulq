@@ -89,34 +89,6 @@ Remove `create_tables()` call from `main.py` once migrations are in place.
 
 ---
 
-## 🛠️ Frontend: Tooling & Infrastructure
-
----
-
-### 45. Enable TypeScript Strict Mode
-**Status**: Medium (type safety)
-**Affected files**: `tsconfig.json`, `tsconfig.app.json`
-
-**Problem:** TypeScript strict mode not fully enabled, missing some type safety checks.
-
-**Impact:** Missing type safety, potential runtime errors.
-
-**Fix:** Enable stricter TypeScript options:
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
-
----
-
 ## 🔧 Future Enhancements
 
 ---
