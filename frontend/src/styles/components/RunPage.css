@@ -411,7 +411,23 @@
   gap: 8px;
 }
 
-/* Using .badge and .badge-primary from utilities.css */
+.leader-badge,
+.helper-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.leader-badge {
+  background: var(--color-warning);
+}
+
+.helper-badge {
+  background: var(--color-primary);
+}
 
 .participant-ready {
   display: flex;

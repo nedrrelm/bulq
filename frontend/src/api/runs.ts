@@ -42,5 +42,8 @@ export const runsApi = {
     api.post(`/runs/${runId}/cancel`),
 
   getAvailableProducts: (runId: string) =>
-    api.get(`/runs/${runId}/available-products`, z.array(availableProductSchema))
+    api.get(`/runs/${runId}/available-products`, z.array(availableProductSchema)),
+
+  toggleHelper: (runId: string, userId: string) =>
+    api.post(`/runs/${runId}/helpers/${userId}`)
 }

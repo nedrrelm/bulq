@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/DistributionPage.css'
 import LoadingSpinner from './LoadingSpinner'
 import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
-import { useDistribution, useMarkPickedUp, useCompleteDistribution } from '../hooks/queries/useDistribution'
+import { useDistribution, useMarkPickedUp, useCompleteDistribution, distributionKeys } from '../hooks/queries/useDistribution'
 import type { DistributionUser } from '../schemas/distribution'
 import { logger } from '../utils/logger'
+import { useWebSocket } from '../hooks/useWebSocket'
+import { WS_BASE_URL } from '../config'
 
 export default function DistributionPage() {
   const { runId } = useParams<{ runId: string }>()
@@ -18,11 +21,27 @@ export default function DistributionPage() {
     return null
   }
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
   // Use React Query hooks
   const { data: allUsers = [], isLoading, error: queryError, refetch } = useDistribution(runId)
   const markPickedUpMutation = useMarkPickedUp(runId)
   const completeDistributionMutation = useCompleteDistribution(runId)
+
+  // WebSocket for real-time updates
+  const handleWebSocketMessage = useCallback((message: any) => {
+    if (message.type === 'distribution_updated') {
+      // Invalidate distribution data to refetch with updates
+      queryClient.invalidateQueries({ queryKey: distributionKeys.list(runId) })
+    }
+  }, [queryClient, runId])
+
+  useWebSocket(
+    runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
+    {
+      onMessage: handleWebSocketMessage
+    }
+  )
 
   // Filter out users who have no purchased products
   const users = useMemo(() => {

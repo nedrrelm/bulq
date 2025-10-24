@@ -28,6 +28,7 @@ export const participantSchema = z.object({
   user_id: uuidSchema,
   user_name: z.string(),
   is_leader: z.boolean(),
+  is_helper: z.boolean(),
   is_ready: z.boolean(),
   is_removed: z.boolean().optional().default(false)
 })
@@ -43,7 +44,9 @@ export const runDetailSchema = z.object({
   participants: z.array(participantSchema),
   current_user_is_ready: z.boolean(),
   current_user_is_leader: z.boolean(),
-  leader_name: z.string()
+  current_user_is_helper: z.boolean(),
+  leader_name: z.string(),
+  helpers: z.array(z.string())
 })
 
 export type RunDetail = z.infer<typeof runDetailSchema>
