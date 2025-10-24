@@ -8,7 +8,11 @@ The codebase now uses **environment variables** to control all dev/prod differen
 
 ### Development
 ```bash
+# One-time setup
 cp .env.development .env
+cp docker-compose.override.yml.example docker-compose.override.yml
+
+# Start services
 docker compose up
 ```
 Access at: https://localhost:3000
@@ -55,10 +59,10 @@ Backend port exposure:
 - **Development:** `8000` (exposed for direct access)
 - **Production:** `` (empty, not exposed)
 
-### `BACKEND_VOLUME`
-Source code mounting for hot-reload:
-- **Development:** `./backend` (mount for hot-reload)
-- **Production:** `/dev/null` (no mount)
+### Docker Compose Override
+Hot-reload configuration via override file:
+- **Development:** `docker-compose.override.yml` mounts `./backend` for hot-reload
+- **Production:** No override file (no volume mount)
 
 ### `BUILD_DEV_DEPS`
 Include dev dependencies in Docker build:
@@ -117,8 +121,7 @@ backend:
       BUILD_DEV_DEPS: ${BUILD_DEV_DEPS:-false}
   ports:
     - "${BACKEND_PORT:-}:8000"
-  volumes:
-    - ${BACKEND_VOLUME:-/dev/null}:/app
+  # No volumes in base file (production default)
 
 frontend:
   build:
@@ -129,9 +132,18 @@ frontend:
   environment:
     CADDY_LISTEN: ${CADDY_LISTEN:-localhost:3000}
 ```
-- All configurations controlled by `.env`
-- Conditional port exposure
-- Conditional volume mounts
+
+**docker-compose.override.yml:** (development only, gitignored)
+```yaml
+services:
+  backend:
+    volumes:
+      - ./backend:/app  # Hot-reload in development
+```
+
+- Base compose file = production-ready
+- Override file adds dev features
+- Auto-loaded in development
 - Build args passed to Dockerfiles
 
 ## Configuration Files
@@ -142,9 +154,9 @@ Pre-configured for local development:
 - `CADDY_LISTEN=localhost:3000`
 - `FRONTEND_PORT=3000`
 - `BACKEND_PORT=8000` (exposed)
-- `BACKEND_VOLUME=./backend` (hot-reload)
 - `BUILD_DEV_DEPS=true`
 - `REPO_MODE=memory` (in-memory test data)
+- Requires: `docker-compose.override.yml` for hot-reload
 
 ### `.env.production`
 Pre-configured for production at vagolan.com/bulq:
@@ -152,10 +164,10 @@ Pre-configured for production at vagolan.com/bulq:
 - `CADDY_LISTEN=:80`
 - `FRONTEND_PORT=8080`
 - `BACKEND_PORT=` (not exposed)
-- `BACKEND_VOLUME=/dev/null` (no mount)
 - `BUILD_DEV_DEPS=false`
 - `REPO_MODE=database`
 - Requires: SECRET_KEY, database password
+- No override file (no hot-reload)
 
 ### `.env.example`
 Template showing all available options with documentation.
@@ -258,13 +270,15 @@ docker compose up -d
 ```
 
 ### Hot-Reload Not Working
-**Symptom:** Code changes don't reflect
+**Symptom:** Backend code changes don't reflect
 
-**Cause:** Volume mount not configured
+**Cause:** Override file not present
 
 **Fix:**
-- Check `.env` has `BACKEND_VOLUME=./backend`
-- Restart: `docker compose down && docker compose up`
+```bash
+cp docker-compose.override.yml.example docker-compose.override.yml
+docker compose down && docker compose up
+```
 
 ### Caddy Won't Start
 **Symptom:** Frontend container exits immediately
