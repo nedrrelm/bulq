@@ -77,8 +77,6 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
     }
   }
 
-  const charCount = groupName.length
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>

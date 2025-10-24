@@ -77,8 +77,6 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
     }
   }
 
-  const charCount = storeName.length
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>

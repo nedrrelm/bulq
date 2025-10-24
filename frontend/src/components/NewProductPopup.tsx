@@ -158,8 +158,6 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
     checkStoreAndPrice()
   }
 
-  const charCount = productName.length
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
