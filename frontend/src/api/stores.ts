@@ -9,8 +9,8 @@ export interface CreateStoreRequest {
 }
 
 export const storesApi = {
-  getStores: () =>
-    api.get<Store[]>('/stores', z.array(storeSchema)),
+  getStores: (limit: number = 100, offset: number = 0) =>
+    api.get<Store[]>(`/stores?limit=${limit}&offset=${offset}`, z.array(storeSchema)),
 
   checkSimilar: (name: string) =>
     api.get<Store[]>(`/stores/check-similar?name=${encodeURIComponent(name)}`, z.array(storeSchema)),
