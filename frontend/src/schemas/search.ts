@@ -32,10 +32,14 @@ export const searchGroupSchema = z.object({
 })
 
 export const searchResultsSchema = z.object({
-  products: z.array(searchProductSchema),
-  stores: z.array(searchStoreSchema),
-  groups: z.array(searchGroupSchema)
-})
+  products: z.array(searchProductSchema).optional().default([]),
+  stores: z.array(searchStoreSchema).optional().default([]),
+  groups: z.array(searchGroupSchema).optional().default([])
+}).transform(data => ({
+  products: data.products ?? [],
+  stores: data.stores ?? [],
+  groups: data.groups ?? []
+}))
 
 export type SearchProduct = z.infer<typeof searchProductSchema>
 export type SearchStore = z.infer<typeof searchStoreSchema>
