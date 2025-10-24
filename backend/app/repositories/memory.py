@@ -309,7 +309,7 @@ class MemoryRepository(AbstractRepository):
 
     def create_store(self, name: str) -> Store:
         """Create a new store."""
-        store = Store(id=uuid4(), name=name)
+        store = Store(id=uuid4(), name=name, verified=False)
         self._stores[store.id] = store
         return store
 
@@ -324,6 +324,7 @@ class MemoryRepository(AbstractRepository):
             name=name,
             brand=brand,
             unit=unit,
+            verified=False,
             created_at=datetime.now(),
             updated_at=datetime.now(),
         )

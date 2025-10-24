@@ -143,7 +143,7 @@ class AdminService(BaseService):
                 name=p.name,
                 brand=p.brand,
                 unit=p.unit,
-                verified=p.verified,
+                verified=p.verified if p.verified is not None else False,
                 created_at=p.created_at.isoformat() if p.created_at else None,
             )
             for p in paginated_products
@@ -230,7 +230,7 @@ class AdminService(BaseService):
                 id=str(s.id),
                 name=s.name,
                 address=s.address,
-                verified=s.verified,
+                verified=s.verified if s.verified is not None else False,
                 created_at=s.created_at.isoformat() if s.created_at else None,
             )
             for s in paginated_stores

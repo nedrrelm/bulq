@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { storesApi, productsApi, ApiError } from '../api'
-import type { Store } from '../api'
+import type { Store, ProductSearchResult } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, validateDecimal, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
@@ -25,6 +25,8 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [loadingStores, setLoadingStores] = useState(true)
+  const [similarProducts, setSimilarProducts] = useState<ProductSearchResult[]>([])
+  const [checkingSimilar, setCheckingSimilar] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
@@ -45,6 +47,34 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
 
     fetchStores()
   }, [])
+
+  // Check for similar products as user types
+  useEffect(() => {
+    const checkSimilar = async () => {
+      const trimmed = productName.trim()
+
+      // Only check if we have at least MIN_NAME_LENGTH characters
+      if (trimmed.length < MIN_NAME_LENGTH) {
+        setSimilarProducts([])
+        return
+      }
+
+      try {
+        setCheckingSimilar(true)
+        const similar = await productsApi.checkSimilar(trimmed)
+        setSimilarProducts(similar)
+      } catch (err) {
+        // Silently fail - this is a nice-to-have feature
+        setSimilarProducts([])
+      } finally {
+        setCheckingSimilar(false)
+      }
+    }
+
+    // Debounce the API call
+    const timeoutId = setTimeout(checkSimilar, 300)
+    return () => clearTimeout(timeoutId)
+  }, [productName])
 
   const validateProductName = (value: string): boolean => {
     const trimmed = value.trim()
@@ -145,6 +175,20 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
       return
     }
 
+    // Check for exact match
+    const exactMatch = similarProducts.find(
+      p => p.name.toLowerCase() === productName.trim().toLowerCase() &&
+           (brand.trim() === '' || p.brand?.toLowerCase() === brand.trim().toLowerCase())
+    )
+
+    if (exactMatch) {
+      const matchName = exactMatch.brand
+        ? `${exactMatch.brand} ${exactMatch.name}`
+        : exactMatch.name
+      setError(`A product named "${matchName}" already exists.`)
+      return
+    }
+
     // Warn if no store selected
     if (!storeId) {
       showConfirm(
@@ -157,6 +201,14 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
     // Check for price if store is selected
     checkStoreAndPrice()
   }
+
+  // Check if there's an exact match
+  const exactMatch = similarProducts.find(
+    p => p.name.toLowerCase() === productName.trim().toLowerCase() &&
+         (brand.trim() === '' || p.brand?.toLowerCase() === brand.trim().toLowerCase())
+  )
+
+  const hasNonExactSimilar = similarProducts.length > 0 && !exactMatch
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -184,6 +236,30 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
               disabled={submitting}
               required
             />
+
+            {exactMatch && (
+              <div className="alert alert-error" style={{ marginTop: '0.5rem' }}>
+                A product named "{exactMatch.brand ? `${exactMatch.brand} ${exactMatch.name}` : exactMatch.name}" already exists.
+              </div>
+            )}
+
+            {hasNonExactSimilar && (
+              <div className="alert" style={{ marginTop: '0.5rem', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
+                <strong>Similar products found:</strong>
+                <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.5rem' }}>
+                  {similarProducts.map(product => (
+                    <li key={product.id}>
+                      {product.brand ? `${product.brand} ${product.name}` : product.name}
+                      {product.stores && product.stores.length > 0 && (
+                        <span style={{ fontSize: '0.85em', color: '#666' }}>
+                          {' '}(at {product.stores.map(s => s.store_name).join(', ')})
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="form-row">

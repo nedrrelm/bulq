@@ -46,6 +46,21 @@ class ProductService(BaseService):
 
         return result
 
+    def get_similar_products(self, name: str, limit: int = 5) -> list[ProductSearchResult]:
+        """Get products with similar names for duplicate detection.
+
+        Uses case-insensitive search to find products with names similar to the input.
+        Returns up to `limit` results, ordered by similarity.
+        """
+        if not name or not name.strip():
+            return []
+
+        # Use the search_products method which does case-insensitive matching
+        results = self.search_products(name.strip())
+
+        # Limit results
+        return results[:limit]
+
     def get_product_details(self, product_id: UUID) -> ProductDetailResponse | None:
         """Get detailed product information including price history from shopping list items and availabilities.
 
