@@ -92,11 +92,15 @@ export default function ShoppingPage() {
     setShowPurchasePopup(true)
   }
 
-  const handleSubmitPrice = async (price: number, notes: string) => {
+  const handleSubmitPrice = async (price: number, notes: string, minimumQuantity?: number) => {
     if (!selectedItem) return
 
     try {
-      await shoppingApi.updateAvailabilityPrice(runId, selectedItem.id, { price, notes })
+      await shoppingApi.updateAvailabilityPrice(runId, selectedItem.id, {
+        price,
+        notes,
+        minimum_quantity: minimumQuantity
+      })
       // Invalidate shopping list to refetch with updates
       queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
       setShowPricePopup(false)
@@ -331,12 +335,14 @@ function PricePopup({
   onClose
 }: {
   item: ShoppingListItem
-  onSubmit: (price: number, notes: string) => void
+  onSubmit: (price: number, notes: string, minimumQuantity?: number) => void
   onClose: () => void
 }) {
   const [price, setPrice] = useState('')
   const [notes, setNotes] = useState('')
+  const [minimumQuantity, setMinimumQuantity] = useState('')
   const [priceError, setPriceError] = useState('')
+  const [minQtyError, setMinQtyError] = useState('')
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef, true, onClose)
@@ -353,6 +359,20 @@ function PricePopup({
     return true
   }
 
+  const validateMinimumQuantity = (value: string): boolean => {
+    setMinQtyError('')
+
+    if (!value) return true // Optional field
+
+    const num = parseInt(value, 10)
+    if (isNaN(num) || num < 1 || num > 9999) {
+      setMinQtyError('Minimum quantity must be between 1 and 9999')
+      return false
+    }
+
+    return true
+  }
+
   const handlePriceChange = (value: string) => {
     setPrice(value)
     setPriceError('')
@@ -363,15 +383,24 @@ function PricePopup({
     setNotes(sanitized)
   }
 
+  const handleMinimumQuantityChange = (value: string) => {
+    setMinimumQuantity(value)
+    setMinQtyError('')
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validatePrice(price)) {
+    const isPriceValid = validatePrice(price)
+    const isMinQtyValid = validateMinimumQuantity(minimumQuantity)
+
+    if (!isPriceValid || !isMinQtyValid) {
       return
     }
 
     const priceNum = parseDecimal(price)
-    onSubmit(priceNum, notes.trim())
+    const minQty = minimumQuantity ? parseInt(minimumQuantity, 10) : undefined
+    onSubmit(priceNum, notes.trim(), minQty)
   }
 
   const notesCharCount = notes.length
@@ -396,6 +425,19 @@ function PricePopup({
               min="0.01"
             />
             {priceError && <span className="error-message">{priceError}</span>}
+          </div>
+          <div className="form-group">
+            <label>Minimum Quantity (optional)</label>
+            <input
+              type="number"
+              value={minimumQuantity}
+              onChange={e => handleMinimumQuantityChange(e.target.value)}
+              placeholder="e.g., 2 (must buy at least 2)"
+              className={`form-input ${minQtyError ? 'input-error' : ''}`}
+              min="1"
+              max="9999"
+            />
+            {minQtyError && <span className="error-message">{minQtyError}</span>}
           </div>
           <div className="form-group">
             <label>Notes (optional)</label>

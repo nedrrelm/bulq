@@ -31,6 +31,7 @@ class UpdateAvailabilityPriceRequest(BaseModel):
 
     price: float = Field(gt=0, le=99999.99)
     notes: str = Field(default='', max_length=200)
+    minimum_quantity: int | None = Field(default=None, ge=1, le=9999)
 
     @field_validator('price')
     @classmethod

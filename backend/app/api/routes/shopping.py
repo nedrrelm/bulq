@@ -41,7 +41,7 @@ async def update_availability_price(
     service = ShoppingService(db)
 
     return await service.add_availability_price(
-        run_id, item_id, request.price, request.notes, current_user
+        run_id, item_id, request.price, request.notes, request.minimum_quantity, current_user
     )
 
 
