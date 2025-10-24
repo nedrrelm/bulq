@@ -198,9 +198,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   const hasResults = searchResults && (
-    searchResults.products.length > 0 ||
-    searchResults.stores.length > 0 ||
-    searchResults.groups.length > 0
+    (searchResults.products?.length ?? 0) > 0 ||
+    (searchResults.stores?.length ?? 0) > 0 ||
+    (searchResults.groups?.length ?? 0) > 0
   )
 
   const closeSearch = () => {
@@ -223,10 +223,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           />
           {hasResults && (
             <div className="search-dropdown">
-              {searchResults!.products.length > 0 && (
+              {(searchResults?.products?.length ?? 0) > 0 && (
                 <>
                   <div className="search-category-label">Products</div>
-                  {searchResults!.products.map((product: { id: string; name: string; brand: string | null; stores: { store_name: string; price: number | null }[] }) => (
+                  {searchResults!.products!.map((product: { id: string; name: string; brand: string | null; stores: { store_name: string; price: number | null }[] }) => (
                     <div
                       key={`product-${product.id}`}
                       className="search-result-item"
@@ -252,11 +252,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 </>
               )}
 
-              {searchResults!.stores.length > 0 && (
+              {(searchResults?.stores?.length ?? 0) > 0 && (
                 <>
-                  {searchResults!.products.length > 0 && <div className="search-divider" />}
+                  {(searchResults?.products?.length ?? 0) > 0 && <div className="search-divider" />}
                   <div className="search-category-label">Stores</div>
-                  {searchResults!.stores.map((store: { id: string; name: string; address: string | null }) => (
+                  {searchResults!.stores!.map((store: { id: string; name: string; address: string | null }) => (
                     <div
                       key={`store-${store.id}`}
                       className="search-result-item"
@@ -274,13 +274,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 </>
               )}
 
-              {searchResults!.groups.length > 0 && (
+              {(searchResults?.groups?.length ?? 0) > 0 && (
                 <>
-                  {(searchResults!.products.length > 0 || searchResults!.stores.length > 0) && (
+                  {((searchResults?.products?.length ?? 0) > 0 || (searchResults?.stores?.length ?? 0) > 0) && (
                     <div className="search-divider" />
                   )}
                   <div className="search-category-label">Groups</div>
-                  {searchResults!.groups.map((group: { id: string; name: string; member_count: number }) => (
+                  {searchResults!.groups!.map((group: { id: string; name: string; member_count: number }) => (
                     <div
                       key={`group-${group.id}`}
                       className="search-result-item"
