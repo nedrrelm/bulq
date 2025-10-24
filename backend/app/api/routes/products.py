@@ -32,6 +32,20 @@ async def search_products(
     return service.search_products(q)
 
 
+@router.get('/check-similar', response_model=list[ProductSearchResult])
+async def check_similar_products(
+    name: str = Query(..., min_length=1, description='Product name to check for similarity'),
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Check for products with similar names.
+
+    Returns products that are similar to the provided name, useful for preventing duplicates.
+    """
+    service = ProductService(db)
+    return service.get_similar_products(name)
+
+
 @router.post('/create', response_model=CreateProductResponse)
 async def create_product(
     request: CreateProductRequest,

@@ -21,6 +21,9 @@ export const productsApi = {
   search: (query: string) =>
     api.get<ProductSearchResult[]>(`/products/search?q=${encodeURIComponent(query)}`, z.array(productSearchResultSchema)),
 
+  checkSimilar: (name: string) =>
+    api.get<ProductSearchResult[]>(`/products/check-similar?name=${encodeURIComponent(name)}`, z.array(productSearchResultSchema)),
+
   getProduct: (productId: string) =>
     api.get<ProductDetail>(`/products/${productId}`, productDetailSchema),
 

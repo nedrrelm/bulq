@@ -32,9 +32,9 @@ export const searchGroupSchema = z.object({
 })
 
 export const searchResultsSchema = z.object({
-  products: z.array(searchProductSchema).optional().default([]),
-  stores: z.array(searchStoreSchema).optional().default([]),
-  groups: z.array(searchGroupSchema).optional().default([])
+  products: z.array(searchProductSchema).catch([]),
+  stores: z.array(searchStoreSchema).catch([]),
+  groups: z.array(searchGroupSchema).catch([])
 }).transform(data => ({
   products: data.products ?? [],
   stores: data.stores ?? [],

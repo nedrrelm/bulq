@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { storesApi, ApiError } from '../api'
 import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
@@ -16,9 +16,39 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
   const [storeName, setStoreName] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [similarStores, setSimilarStores] = useState<Store[]>([])
+  const [checkingSimilar, setCheckingSimilar] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef, true, onClose)
+
+  // Check for similar stores as user types
+  useEffect(() => {
+    const checkSimilar = async () => {
+      const trimmed = storeName.trim()
+
+      // Only check if we have at least MIN_LENGTH characters
+      if (trimmed.length < MIN_LENGTH) {
+        setSimilarStores([])
+        return
+      }
+
+      try {
+        setCheckingSimilar(true)
+        const similar = await storesApi.checkSimilar(trimmed)
+        setSimilarStores(similar)
+      } catch (err) {
+        // Silently fail - this is a nice-to-have feature
+        setSimilarStores([])
+      } finally {
+        setCheckingSimilar(false)
+      }
+    }
+
+    // Debounce the API call
+    const timeoutId = setTimeout(checkSimilar, 300)
+    return () => clearTimeout(timeoutId)
+  }, [storeName])
 
   const validateStoreName = (value: string): boolean => {
     setError('')
@@ -65,6 +95,16 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
       return
     }
 
+    // Check for exact match
+    const exactMatch = similarStores.find(
+      s => s.name.toLowerCase() === storeName.trim().toLowerCase()
+    )
+
+    if (exactMatch) {
+      setError(`A store named "${exactMatch.name}" already exists.`)
+      return
+    }
+
     try {
       setSubmitting(true)
       setError('')
@@ -76,6 +116,13 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
       setSubmitting(false)
     }
   }
+
+  // Check if there's an exact match
+  const exactMatch = similarStores.find(
+    s => s.name.toLowerCase() === storeName.trim().toLowerCase()
+  )
+
+  const hasNonExactSimilar = similarStores.length > 0 && !exactMatch
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -107,6 +154,23 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
             <small className="input-hint">
               Letters, numbers, spaces, and - _ & ' allowed (unicode supported)
             </small>
+
+            {exactMatch && (
+              <div className="alert alert-error" style={{ marginTop: '0.5rem' }}>
+                A store named "{exactMatch.name}" already exists.
+              </div>
+            )}
+
+            {hasNonExactSimilar && (
+              <div className="alert" style={{ marginTop: '0.5rem', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
+                <strong>Similar stores found:</strong>
+                <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.5rem' }}>
+                  {similarStores.map(store => (
+                    <li key={store.id}>{store.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="modal-actions">

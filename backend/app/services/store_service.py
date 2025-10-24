@@ -16,6 +16,21 @@ class StoreService(BaseService):
         """Get all available stores (paginated)."""
         return self.repo.get_all_stores(limit, offset)
 
+    def get_similar_stores(self, name: str, limit: int = 5) -> list[Store]:
+        """Get stores with similar names for duplicate detection.
+
+        Uses case-insensitive search to find stores with names similar to the input.
+        Returns up to `limit` results, ordered by similarity.
+        """
+        if not name or not name.strip():
+            return []
+
+        # Use the search_stores method which does case-insensitive matching
+        results = self.repo.search_stores(name.strip())
+
+        # Limit results
+        return results[:limit]
+
     def create_store(self, name: str) -> Store:
         """Create a new store."""
         if not name or not name.strip():

@@ -32,6 +32,22 @@ async def get_stores(
     return [StoreResponse(id=str(store.id), name=store.name) for store in stores]
 
 
+@router.get('/check-similar', response_model=list[StoreResponse])
+async def check_similar_stores(
+    name: str = Query(..., min_length=1, description='Store name to check for similarity'),
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Check for stores with similar names.
+
+    Returns stores that are similar to the provided name, useful for preventing duplicates.
+    """
+    service = StoreService(db)
+    similar_stores = service.get_similar_stores(name)
+
+    return [StoreResponse(id=str(store.id), name=store.name) for store in similar_stores]
+
+
 @router.get('/{store_id}', response_model=StorePageResponse)
 async def get_store_page(
     store_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
