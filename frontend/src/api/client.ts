@@ -112,21 +112,13 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
           return schema.parse(data) as T
         } catch (error) {
           if (error instanceof z.ZodError) {
-            // Zod stores validation issues in error.issues (not error.errors)
             const issues = error.issues || []
-
-            // Debug: log validation errors with details
-            console.error('=== ZOD VALIDATION ERROR ===')
-            console.error('Endpoint:', endpoint)
-            console.error('Validation issues:', issues)
-            console.error('Response data:', data)
-            console.error('===========================')
 
             const errorDetails = issues.length > 0
               ? issues.map(e =>
                   `  - ${e.path.join('.') || 'root'}: ${e.message}`
                 ).join('\n')
-              : `Unknown validation error - check console for details`
+              : `Unknown validation error`
 
             throw new ValidationError(
               `Invalid response from ${endpoint}:\n${errorDetails}`,
@@ -134,8 +126,6 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
               endpoint
             )
           }
-          // Not a ZodError, log and re-throw
-          console.error('Non-Zod validation error:', error)
           throw error
         }
       }

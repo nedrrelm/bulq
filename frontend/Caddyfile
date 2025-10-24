@@ -15,40 +15,41 @@
     }
 
     # Handle API routes - proxy to backend
-    handle /auth/* {
+    # Using * without trailing slash to match both /path and /path?query=params
+    handle /auth* {
         reverse_proxy backend:8000
     }
-    handle /groups/* {
+    handle /groups* {
         reverse_proxy backend:8000
     }
-    handle /runs/* {
+    handle /runs* {
         reverse_proxy backend:8000
     }
-    handle /stores/* {
+    handle /stores* {
         reverse_proxy backend:8000
     }
-    handle /products/* {
+    handle /products* {
         reverse_proxy backend:8000
     }
-    handle /shopping/* {
+    handle /shopping* {
         reverse_proxy backend:8000
     }
-    handle /distribution/* {
+    handle /distribution* {
         reverse_proxy backend:8000
     }
-    handle /notifications/* {
+    handle /notifications* {
         reverse_proxy backend:8000
     }
     handle /search* {
         reverse_proxy backend:8000
     }
-    handle /reassignment/* {
+    handle /reassignment* {
         reverse_proxy backend:8000
     }
-    handle /admin/* {
+    handle /admin* {
         reverse_proxy backend:8000
     }
-    handle /ws/* {
+    handle /ws* {
         reverse_proxy backend:8000
     }
 
