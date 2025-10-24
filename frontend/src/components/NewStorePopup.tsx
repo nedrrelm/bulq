@@ -17,7 +17,6 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [similarStores, setSimilarStores] = useState<Store[]>([])
-  const [checkingSimilar, setCheckingSimilar] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef, true, onClose)
@@ -34,14 +33,11 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
       }
 
       try {
-        setCheckingSimilar(true)
         const similar = await storesApi.checkSimilar(trimmed)
         setSimilarStores(similar)
       } catch (err) {
         // Silently fail - this is a nice-to-have feature
         setSimilarStores([])
-      } finally {
-        setCheckingSimilar(false)
       }
     }
 
