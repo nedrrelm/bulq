@@ -25,6 +25,9 @@ build/
 .env.local
 .env.*.local
 
+# Docker Compose local overrides (keep .example file)
+docker-compose.override.yml
+
 # Database
 *.db
 *.sqlite3

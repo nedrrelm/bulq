@@ -23,14 +23,10 @@ services:
       context: ./backend
       args:
         BUILD_DEV_DEPS: ${BUILD_DEV_DEPS:-false}
-    # Conditionally expose port for development
     ports:
       - "${BACKEND_PORT:-}:8000"
     env_file:
       - .env
-    # Conditionally mount source for hot-reload in development
-    volumes:
-      - ${BACKEND_VOLUME:-/dev/null}:/app
     depends_on:
       db:
         condition: service_healthy
