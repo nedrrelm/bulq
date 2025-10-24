@@ -15,8 +15,40 @@
     }
 
     # Handle API routes - proxy to backend
-    # This catches all API endpoints: /auth*, /stores*, /search*, /ws*, etc.
-    handle /auth* /groups* /runs* /stores* /products* /shopping* /distribution* /notifications* /search* /reassignment* /admin* /ws* {
+    handle /auth/* {
+        reverse_proxy backend:8000
+    }
+    handle /groups/* {
+        reverse_proxy backend:8000
+    }
+    handle /runs/* {
+        reverse_proxy backend:8000
+    }
+    handle /stores/* {
+        reverse_proxy backend:8000
+    }
+    handle /products/* {
+        reverse_proxy backend:8000
+    }
+    handle /shopping/* {
+        reverse_proxy backend:8000
+    }
+    handle /distribution/* {
+        reverse_proxy backend:8000
+    }
+    handle /notifications/* {
+        reverse_proxy backend:8000
+    }
+    handle /search* {
+        reverse_proxy backend:8000
+    }
+    handle /reassignment/* {
+        reverse_proxy backend:8000
+    }
+    handle /admin/* {
+        reverse_proxy backend:8000
+    }
+    handle /ws/* {
         reverse_proxy backend:8000
     }
 
