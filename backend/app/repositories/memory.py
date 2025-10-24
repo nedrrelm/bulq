@@ -743,6 +743,7 @@ class MemoryRepository(AbstractRepository):
         store_id: UUID,
         price: float | None = None,
         notes: str = '',
+        minimum_quantity: int | None = None,
         user_id: UUID = None,
     ) -> ProductAvailability:
         """Create a new product availability record (price observation)."""
@@ -755,6 +756,7 @@ class MemoryRepository(AbstractRepository):
             store_id=store_id,
             price=Decimal(str(price)) if price is not None else None,
             notes=notes,
+            minimum_quantity=minimum_quantity,
             created_at=datetime.now(),
             updated_at=datetime.now(),
             created_by=user_id,

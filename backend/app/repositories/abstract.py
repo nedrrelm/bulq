@@ -349,6 +349,7 @@ class AbstractRepository(ABC):
         store_id: UUID,
         price: float | None = None,
         notes: str = '',
+        minimum_quantity: int | None = None,
         user_id: UUID = None,
     ) -> Any:
         """Create or update a product availability at a store."""

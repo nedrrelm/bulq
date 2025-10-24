@@ -7,6 +7,7 @@ export type { ShoppingListItem }
 export interface UpdateAvailabilityPriceRequest {
   price: number
   notes: string
+  minimum_quantity?: number
 }
 
 export interface PurchaseRequest {

@@ -204,7 +204,7 @@ class ShoppingService(BaseService):
         return response_items
 
     async def add_availability_price(
-        self, run_id: str, item_id: str, price: float, notes: str, user: User
+        self, run_id: str, item_id: str, price: float, notes: str, minimum_quantity: int | None, user: User
     ) -> MessageResponse:
         """Update product availability price for a shopping list item.
 
@@ -213,6 +213,7 @@ class ShoppingService(BaseService):
             item_id: The shopping list item ID as string
             price: The price to set
             notes: Optional notes about the price
+            minimum_quantity: Optional minimum quantity required for this price
             user: The authenticated user
 
         Returns:
@@ -251,6 +252,7 @@ class ShoppingService(BaseService):
             store_id=run.store_id,
             price=price,
             notes=notes,
+            minimum_quantity=minimum_quantity,
             user_id=user.id,
         )
 
