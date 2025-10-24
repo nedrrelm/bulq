@@ -60,7 +60,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
       return false
     }
 
-    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'(),.', 'Product name')
+    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'(),.', 'Product name', true)
     if (!alphanumericValidation.isValid) {
       setError(alphanumericValidation.error || 'Product name contains invalid characters')
       return false

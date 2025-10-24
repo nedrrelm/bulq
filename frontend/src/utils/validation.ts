@@ -73,16 +73,37 @@ export function validateDecimal(
 
 /**
  * Validate alphanumeric with allowed special characters
+ * @param value - The string value to validate
+ * @param allowedChars - Additional characters to allow (e.g., '- _&\'')
+ * @param fieldName - The field name for error messages
+ * @param allowUnicode - Whether to allow unicode letters and numbers (default: false)
  */
 export function validateAlphanumeric(
   value: string,
   allowedChars: string = '- _&\'',
-  fieldName: string = 'This field'
+  fieldName: string = 'This field',
+  allowUnicode: boolean = false
 ): ValidationResult {
-  const pattern = new RegExp(`^[a-zA-Z0-9${allowedChars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s]+$`)
+  const trimmed = value.trim()
 
-  if (!pattern.test(value.trim())) {
-    return { isValid: false, error: `${fieldName} contains invalid characters` }
+  if (allowUnicode) {
+    // Use alternation: unicode letter OR unicode number OR allowed special char OR whitespace
+    // \p{L} = any unicode letter, \p{N} = any unicode number
+    // Must use alternation because \p{} cannot be used inside character classes with other chars
+    const escapedChars = allowedChars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const pattern = new RegExp(`^(\\p{L}|\\p{N}|[${escapedChars}\\s])+$`, 'u')
+
+    if (!pattern.test(trimmed)) {
+      return { isValid: false, error: `${fieldName} contains invalid characters` }
+    }
+  } else {
+    // Original ASCII-only pattern
+    const escapedChars = allowedChars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const pattern = new RegExp(`^[a-zA-Z0-9${escapedChars}\\s]+$`)
+
+    if (!pattern.test(trimmed)) {
+      return { isValid: false, error: `${fieldName} contains invalid characters` }
+    }
   }
 
   return { isValid: true }
