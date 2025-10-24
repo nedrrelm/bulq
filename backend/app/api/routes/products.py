@@ -64,6 +64,7 @@ async def create_product(
             unit=request.unit,
             store_id=store_uuid,
             price=request.price,
+            minimum_quantity=request.minimum_quantity,
             user_id=current_user.id,
         )
 

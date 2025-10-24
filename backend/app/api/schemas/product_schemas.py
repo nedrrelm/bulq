@@ -11,6 +11,7 @@ class CreateProductRequest(BaseModel):
     unit: str | None = None
     store_id: str | None = None  # Optional: add availability if provided
     price: float | None = None  # Optional: price for availability
+    minimum_quantity: int | None = None  # Optional: minimum quantity for availability
 
 
 class StoreInfo(BaseModel):

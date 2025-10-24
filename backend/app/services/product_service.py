@@ -156,6 +156,7 @@ class ProductService(BaseService):
         unit: str | None = None,
         store_id: UUID | None = None,
         price: float | None = None,
+        minimum_quantity: int | None = None,
         user_id: UUID | None = None,
     ) -> tuple[Product, Any | None]:
         """Create a new product (store-agnostic).
@@ -186,7 +187,7 @@ class ProductService(BaseService):
         availability = None
         if store_id:
             availability = self.repo.create_product_availability(
-                product.id, store_id, price=price, user_id=user_id
+                product.id, store_id, price=price, minimum_quantity=minimum_quantity, user_id=user_id
             )
 
         return product, availability
