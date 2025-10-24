@@ -8,5 +8,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173
+  },
+  build: {
+    sourcemap: true  // Enable source maps for production debugging
   }
 })
