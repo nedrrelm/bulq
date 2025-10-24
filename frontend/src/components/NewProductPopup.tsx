@@ -26,7 +26,6 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
   const [submitting, setSubmitting] = useState(false)
   const [loadingStores, setLoadingStores] = useState(true)
   const [similarProducts, setSimilarProducts] = useState<ProductSearchResult[]>([])
-  const [checkingSimilar, setCheckingSimilar] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
@@ -60,14 +59,11 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
       }
 
       try {
-        setCheckingSimilar(true)
         const similar = await productsApi.checkSimilar(trimmed)
         setSimilarProducts(similar)
       } catch (err) {
         // Silently fail - this is a nice-to-have feature
         setSimilarProducts([])
-      } finally {
-        setCheckingSimilar(false)
       }
     }
 
