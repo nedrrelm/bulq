@@ -123,6 +123,32 @@ async def finish_adjusting(
     return result
 
 
+@router.post('/{run_id}/helpers/{user_id}', response_model=MessageResponse)
+async def toggle_helper(
+    run_id: str,
+    user_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Toggle helper status for a run participant (leader only)."""
+    service = RunService(db)
+    result = service.toggle_helper(run_id, user_id, current_user)
+
+    # Broadcast helper status change to all participants
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'helper_toggled',
+            'data': {
+                'run_id': run_id,
+                'user_id': user_id
+            }
+        }
+    )
+
+    return result
+
+
 @router.get('/{run_id}/available-products', response_model=list[AvailableProductResponse])
 async def get_available_products(
     run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)

@@ -286,6 +286,13 @@ class AbstractRepository(ABC):
         raise NotImplementedError('Subclass must implement update_participation_ready')
 
     @abstractmethod
+    def update_participation_helper(
+        self, user_id: UUID, run_id: UUID, is_helper: bool
+    ) -> RunParticipation | None:
+        """Update the helper status of a participation."""
+        raise NotImplementedError('Subclass must implement update_participation_helper')
+
+    @abstractmethod
     def get_run_by_id(self, run_id: UUID) -> Run | None:
         """Get run by ID."""
         raise NotImplementedError('Subclass must implement get_run_by_id')

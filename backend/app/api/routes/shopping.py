@@ -14,6 +14,7 @@ from app.api.schemas import (
     UpdateAvailabilityPriceRequest,
 )
 from app.services import ShoppingService
+from app.api.websocket_manager import manager
 
 router = APIRouter(prefix='/shopping', tags=['shopping'])
 logger = get_logger(__name__)
@@ -40,9 +41,24 @@ async def update_availability_price(
     """Update product availability price for a shopping list item."""
     service = ShoppingService(db)
 
-    return await service.add_availability_price(
+    result = await service.add_availability_price(
         run_id, item_id, request.price, request.notes, request.minimum_quantity, current_user
     )
+
+    # Broadcast shopping item update to all connected clients for this run
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'shopping_item_updated',
+            'data': {
+                'run_id': run_id,
+                'item_id': item_id,
+                'action': 'price_added'
+            }
+        }
+    )
+
+    return result
 
 
 @router.post('/{run_id}/items/{item_id}/purchase', response_model=MarkPurchasedResponse)
@@ -56,9 +72,24 @@ async def mark_purchased(
     """Mark a shopping list item as purchased."""
     service = ShoppingService(db)
 
-    return await service.mark_purchased(
+    result = await service.mark_purchased(
         run_id, item_id, request.quantity, request.price_per_unit, request.total, current_user
     )
+
+    # Broadcast shopping item update to all connected clients for this run
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'shopping_item_updated',
+            'data': {
+                'run_id': run_id,
+                'item_id': item_id,
+                'action': 'marked_purchased'
+            }
+        }
+    )
+
+    return result
 
 
 @router.post('/{run_id}/complete', response_model=CompleteShoppingResponse)
