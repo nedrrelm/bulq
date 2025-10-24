@@ -36,7 +36,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
       return false
     }
 
-    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', 'Store name')
+    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', 'Store name', true)
     if (!alphanumericValidation.isValid) {
       setError(alphanumericValidation.error || 'Store name contains invalid characters')
       return false
@@ -105,7 +105,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
               disabled={submitting}
             />
             <small className="input-hint">
-              Use letters, numbers, spaces, and - _ & '
+              Letters, numbers, spaces, and - _ & ' allowed (unicode supported)
             </small>
           </div>
 
