@@ -1,11 +1,9 @@
 # Caddy configuration for Bulq
-# Development: https://localhost:3000 (HTTPS with self-signed cert)
-#              http://localhost redirects to HTTPS
-# Production: Set DOMAIN environment variable (e.g., DOMAIN=yourdomain.com)
+# Production: Behind upstream reverse proxy at vagolan.com/bulq
+# Upstream proxy forwards vagolan.com/bulq/* to this server
+# This server listens on :80 and serves the app at root
 
-localhost:3000 {
-    # Caddy automatically enables HTTPS for localhost and redirects HTTP to HTTPS
-
+:80 {
     # Enable gzip compression
     encode gzip
 

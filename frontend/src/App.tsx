@@ -394,7 +394,7 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/bulq">
           <AppRoutes />
         </BrowserRouter>
       </NotificationProvider>

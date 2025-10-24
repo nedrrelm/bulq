@@ -20,15 +20,11 @@ services:
 
   backend:
     build: ./backend
-    # Development: expose port for local frontend development
-    # Production: only internal network (Caddy proxies)
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    # Production: only expose to internal network (Caddy proxies)
+    expose:
+      - "8000"
     env_file:
       - .env
-    volumes:
-      # Development: mount source for hot-reload
-      - ./backend:/app
     depends_on:
       db:
         condition: service_healthy
@@ -39,19 +35,13 @@ services:
   frontend:
     build: ./frontend
     ports:
-      # Development: expose on 3000
-      - "${FRONTEND_PORT:-3000}:3000"
-      # Production: expose on 80 and 443 for Let's Encrypt
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
+      # Expose port 80 for upstream reverse proxy
+      # The upstream proxy at vagolan.com forwards /bulq/* to this port
+      - "${FRONTEND_PORT:-8080}:80"
     env_file:
       - .env
-    environment:
-      # Pass domain to Caddy for SSL certificate provisioning
-      DOMAIN: ${DOMAIN:-}
     volumes:
-      # Production: Caddy data for SSL certificates
-      - caddy_data:/data
+      # Caddy config volume
       - caddy_config:/config
     depends_on:
       - backend
@@ -61,7 +51,6 @@ services:
 
 volumes:
   postgres_data:
-  caddy_data:
   caddy_config:
 
 networks:
