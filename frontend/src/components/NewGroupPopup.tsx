@@ -78,7 +78,6 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
   }
 
   const charCount = groupName.length
-  const isOverLimit = charCount > MAX_LENGTH
 
   return (
     <div className="modal-overlay" onClick={onClose}>

@@ -78,7 +78,6 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
   }
 
   const charCount = storeName.length
-  const isOverLimit = charCount > MAX_LENGTH
 
   return (
     <div className="modal-overlay" onClick={onClose}>
