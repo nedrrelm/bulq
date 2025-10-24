@@ -76,8 +76,9 @@ class ParticipantResponse(BaseModel):
 
     user_id: str
     user_name: str
-    is_leader: bool
-    is_ready: bool
+    is_leader: bool = False
+    is_helper: bool = False
+    is_ready: bool = False
     is_removed: bool = False
 
     class Config:
@@ -95,9 +96,11 @@ class RunDetailResponse(BaseModel):
     state: str
     products: list[ProductResponse]
     participants: list[ParticipantResponse]
-    current_user_is_ready: bool
-    current_user_is_leader: bool
+    current_user_is_ready: bool = False
+    current_user_is_leader: bool = False
+    current_user_is_helper: bool = False
     leader_name: str
+    helpers: list[str] = []
 
     class Config:
         from_attributes = True

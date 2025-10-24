@@ -12,6 +12,7 @@ from app.api.schemas import (
     StateChangeResponse,
 )
 from app.services import DistributionService
+from app.api.websocket_manager import manager
 
 router = APIRouter(prefix='/distribution', tags=['distribution'])
 
@@ -49,7 +50,22 @@ async def mark_picked_up(
     except ValueError as e:
         raise HTTPException(status_code=400, detail='Invalid ID format') from e
 
-    return service.mark_picked_up(run_uuid, bid_uuid, current_user)
+    result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
+
+    # Broadcast distribution update to all connected clients for this run
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'distribution_updated',
+            'data': {
+                'run_id': run_id,
+                'bid_id': bid_id,
+                'action': 'marked_picked_up'
+            }
+        }
+    )
+
+    return result
 
 
 @router.post('/{run_id}/complete', response_model=StateChangeResponse)

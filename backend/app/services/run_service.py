@@ -14,6 +14,7 @@ from app.api.schemas import (
     AvailableProductResponse,
     CancelRunResponse,
     CreateRunResponse,
+    MessageResponse,
     ParticipantResponse,
     PlaceBidResponse,
     ProductResponse,
@@ -163,7 +164,7 @@ class RunService(BaseService):
             raise NotFoundError('Group or Store', str(run.group_id) + ' or ' + str(run.store_id))
 
         # Get participants data
-        participants, current_user_is_ready, current_user_is_leader, leader_name = (
+        participants, current_user_is_ready, current_user_is_leader, current_user_is_helper, leader_name, helpers = (
             self._get_participants_data(run.id, user.id)
         )
 
@@ -181,7 +182,9 @@ class RunService(BaseService):
             participants=participants,
             current_user_is_ready=current_user_is_ready,
             current_user_is_leader=current_user_is_leader,
+            current_user_is_helper=current_user_is_helper,
             leader_name=leader_name,
+            helpers=helpers,
         )
 
     def place_bid(
@@ -383,16 +386,18 @@ class RunService(BaseService):
 
     def _get_participants_data(
         self, run_id: UUID, current_user_id: UUID
-    ) -> tuple[list[ParticipantResponse], bool, bool, str]:
+    ) -> tuple[list[ParticipantResponse], bool, bool, bool, str, list[str]]:
         """Get participants data for a run.
 
         Returns:
-            Tuple of (participants_list, current_user_is_ready, current_user_is_leader, leader_name)
+            Tuple of (participants_list, current_user_is_ready, current_user_is_leader, current_user_is_helper, leader_name, helpers)
         """
         participants_data = []
         current_user_is_ready = False
         current_user_is_leader = False
         leader_name = 'Unknown'
+        current_user_is_helper = False
+        helpers = []
 
         participations = self.repo.get_run_participations_with_users(run_id)
 
@@ -401,10 +406,15 @@ class RunService(BaseService):
             if participation.user_id == current_user_id:
                 current_user_is_ready = participation.is_ready
                 current_user_is_leader = participation.is_leader
+                current_user_is_helper = participation.is_helper
 
             # Find the leader
             if participation.is_leader and participation.user:
                 leader_name = participation.user.name
+
+            # Collect helpers
+            if participation.is_helper and participation.user:
+                helpers.append(participation.user.name)
 
             # Add to participants list if user data is available
             if participation.user:
@@ -413,12 +423,13 @@ class RunService(BaseService):
                         user_id=str(participation.user_id),
                         user_name=participation.user.name,
                         is_leader=participation.is_leader,
+                        is_helper=participation.is_helper,
                         is_ready=participation.is_ready,
                         is_removed=participation.is_removed,
                     )
                 )
 
-        return participants_data, current_user_is_ready, current_user_is_leader, leader_name
+        return participants_data, current_user_is_ready, current_user_is_leader, current_user_is_helper, leader_name, helpers
 
     def _get_products_data(self, run: Run, current_user_id: UUID) -> list[ProductResponse]:
         """Get products data with bids for a run."""
@@ -517,3 +528,55 @@ class RunService(BaseService):
                     current_user_bid = bid_response
 
         return user_bids_data, current_user_bid
+
+    def toggle_helper(self, run_id: str, target_user_id: str, current_user: User) -> MessageResponse:
+        """Toggle helper status for a run participant.
+
+        Args:
+            run_id: The run ID as string
+            target_user_id: The user ID to toggle helper status for
+            current_user: The authenticated user (must be leader)
+
+        Returns:
+            MessageResponse with success message
+
+        Raises:
+            BadRequestError: If ID format is invalid
+            NotFoundError: If run or user is not found
+            ForbiddenError: If current user is not the run leader
+            BadRequestError: If trying to make leader a helper
+        """
+        from uuid import UUID
+
+        # Validate IDs
+        try:
+            run_uuid = UUID(run_id)
+            target_user_uuid = UUID(target_user_id)
+        except ValueError as e:
+            raise BadRequestError('Invalid ID format') from e
+
+        # Get the run
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError('Run', run_id)
+
+        # Verify current user is the run leader
+        current_participation = self.repo.get_participation(current_user.id, run_uuid)
+        if not current_participation or not current_participation.is_leader:
+            raise ForbiddenError('Only the run leader can manage helpers')
+
+        # Get target user's participation
+        target_participation = self.repo.get_participation(target_user_uuid, run_uuid)
+        if not target_participation:
+            raise BadRequestError('User is not a participant in this run')
+
+        # Cannot make leader a helper
+        if target_participation.is_leader:
+            raise BadRequestError('Cannot assign helper status to the run leader')
+
+        # Toggle helper status
+        new_helper_status = not target_participation.is_helper
+        self.repo.update_participation_helper(target_user_uuid, run_uuid, new_helper_status)
+
+        action = 'added as' if new_helper_status else 'removed as'
+        return MessageResponse(message=f'User {action} helper')

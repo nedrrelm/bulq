@@ -515,6 +515,22 @@ class DatabaseRepository(AbstractRepository):
             return participation
         return None
 
+    def update_participation_helper(
+        self, user_id: UUID, run_id: UUID, is_helper: bool
+    ) -> RunParticipation | None:
+        """Update the helper status of a participation."""
+        participation = (
+            self.db.query(RunParticipation)
+            .filter(RunParticipation.user_id == user_id, RunParticipation.run_id == run_id)
+            .first()
+        )
+        if participation:
+            participation.is_helper = is_helper
+            self.db.commit()
+            self.db.refresh(participation)
+            return participation
+        return None
+
     def update_run_state(self, run_id: UUID, new_state: str) -> Run | None:
         """Update the state of a run."""
         from datetime import datetime
@@ -901,7 +917,7 @@ class DatabaseRepository(AbstractRepository):
     ) -> RunParticipation:
         """Test helper to create participation with is_ready already set."""
         participation = RunParticipation(
-            user_id=user_id, run_id=run_id, is_leader=is_leader, is_ready=is_ready, is_removed=False
+            user_id=user_id, run_id=run_id, is_leader=is_leader, is_helper=False, is_ready=is_ready, is_removed=False
         )
         self.db.add(participation)
         self.db.commit()

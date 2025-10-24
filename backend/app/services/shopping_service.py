@@ -26,6 +26,10 @@ logger = get_logger(__name__)
 class ShoppingService(BaseService):
     """Service for managing shopping list operations."""
 
+    def _is_leader_or_helper(self, participation) -> bool:
+        """Check if participation is leader or helper."""
+        return participation.is_leader or participation.is_helper
+
     async def _update_product_availability_if_needed(
         self, product_id: UUID, store_id: UUID, price: float, user_id: UUID
     ) -> None:
@@ -236,10 +240,10 @@ class ShoppingService(BaseService):
         if not run:
             raise NotFoundError('Run', run_id)
 
-        # Verify user is the run leader
+        # Verify user is the run leader or helper
         participation = self.repo.get_participation(user.id, run_uuid)
-        if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can add prices')
+        if not participation or not self._is_leader_or_helper(participation):
+            raise ForbiddenError('Only the run leader or helpers can add prices')
 
         # Get the shopping list item to find the product
         item = self.repo.get_shopping_list_item(item_uuid)
@@ -297,10 +301,10 @@ class ShoppingService(BaseService):
         if not run:
             raise NotFoundError('Run', run_id)
 
-        # Verify user is the run leader
+        # Verify user is the run leader or helper
         participation = self.repo.get_participation(user.id, run_uuid)
-        if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can mark items as purchased')
+        if not participation or not self._is_leader_or_helper(participation):
+            raise ForbiddenError('Only the run leader or helpers can mark items as purchased')
 
         # Get next purchase order number
         existing_items = self.repo.get_shopping_list_items(run_uuid)

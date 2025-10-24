@@ -499,6 +499,7 @@ class MemoryRepository(AbstractRepository):
             user_id=user_id,
             run_id=run_id,
             is_leader=is_leader,
+            is_helper=False,
             is_ready=is_ready,
             is_removed=False,
         )
@@ -616,6 +617,16 @@ class MemoryRepository(AbstractRepository):
         if participation:
             participation.is_ready = is_ready
             return participation
+        return None
+
+    def update_participation_helper(
+        self, user_id: UUID, run_id: UUID, is_helper: bool
+    ) -> RunParticipation | None:
+        """Update the helper status of a participation."""
+        for participation in self._participations.values():
+            if participation.user_id == user_id and participation.run_id == run_id:
+                participation.is_helper = is_helper
+                return participation
         return None
 
     def get_run_by_id(self, run_id: UUID) -> Run | None:

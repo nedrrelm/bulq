@@ -27,6 +27,10 @@ logger = get_logger(__name__)
 class DistributionService(BaseService):
     """Service for distribution operations."""
 
+    def _is_leader_or_helper(self, participation) -> bool:
+        """Check if participation is leader or helper."""
+        return participation.is_leader or participation.is_helper
+
     def get_distribution_summary(self, run_id: UUID, current_user: User) -> list[DistributionUser]:
         """Get distribution data aggregated by user.
 
@@ -156,10 +160,10 @@ class DistributionService(BaseService):
         if not run:
             raise NotFoundError('Run', run_id)
 
-        # Verify user is the run leader
+        # Verify user is the run leader or helper
         participation = self.repo.get_participation(current_user.id, run_id)
-        if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can mark items as picked up')
+        if not participation or not self._is_leader_or_helper(participation):
+            raise ForbiddenError('Only the run leader or helpers can mark items as picked up')
 
         # Mark as picked up
         bid = self._get_bid(bid_id)

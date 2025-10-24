@@ -173,6 +173,7 @@ class RunParticipation(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
     is_leader = Column(Boolean, nullable=False, default=False)
+    is_helper = Column(Boolean, nullable=False, default=False)
     is_ready = Column(Boolean, nullable=False, default=False)
     is_removed = Column(
         Boolean, nullable=False, default=False
