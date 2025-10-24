@@ -17,6 +17,7 @@ interface RegisterFormData {
   name: string
   email: string
   password: string
+  confirmPassword: string
 }
 
 export default function Login({ onLogin }: LoginProps) {
@@ -27,14 +28,15 @@ export default function Login({ onLogin }: LoginProps) {
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   const [loginData, setLoginData] = useState<LoginFormData>({
-    email: 'test@example.com',
-    password: 'a'
+    email: '',
+    password: ''
   })
 
   const [registerData, setRegisterData] = useState<RegisterFormData>({
     name: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   })
 
   useEffect(() => {
@@ -65,6 +67,13 @@ export default function Login({ onLogin }: LoginProps) {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    // Validate password confirmation
+    if (registerData.password !== registerData.confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
 
     try {
       const sanitizedName = sanitizeString(registerData.name, 100)
@@ -116,6 +125,9 @@ export default function Login({ onLogin }: LoginProps) {
                 required
                 disabled={loading}
               />
+              <small className="input-hint">
+                Used for login only - can be fake (e.g., yourname@bulq.local)
+              </small>
             </div>
 
             <div className="form-group">
@@ -126,6 +138,20 @@ export default function Login({ onLogin }: LoginProps) {
                 className="form-input"
                 value={registerData.password}
                 onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                required
+                disabled={loading}
+                minLength={6}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                className="form-input"
+                value={registerData.confirmPassword}
+                onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
                 required
                 disabled={loading}
                 minLength={6}
