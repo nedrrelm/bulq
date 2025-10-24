@@ -166,7 +166,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
     try {
       setSearching(true)
+      console.log('Searching for:', query)
       const results = await searchApi.searchAll(query)
+      console.log('Search results:', results)
+      console.log('Products:', results.products)
+      console.log('Stores:', results.stores)
+      console.log('Groups:', results.groups)
       setSearchResults(results)
     } catch (err) {
       console.error('Search failed:', err)
