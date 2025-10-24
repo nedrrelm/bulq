@@ -13,8 +13,9 @@ export interface CreateProductRequest {
   name: string
   brand?: string | null
   unit?: string | null
-  store_id?: string | null  // Optional: create availability if provided
-  price?: number | null     // Optional: price for availability
+  store_id?: string | null        // Optional: create availability if provided
+  price?: number | null           // Optional: price for availability
+  minimum_quantity?: number | null // Optional: minimum quantity for availability
 }
 
 export const productsApi = {

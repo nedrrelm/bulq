@@ -21,6 +21,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
   const [unit, setUnit] = useState('')
   const [storeId, setStoreId] = useState(initialStoreId || '')
   const [price, setPrice] = useState('')
+  const [minimumQuantity, setMinimumQuantity] = useState('')
   const [stores, setStores] = useState<Store[]>([])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -134,7 +135,8 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
         brand: brand.trim() || null,
         unit: unit.trim() || null,
         store_id: storeId || null,
-        price: price.trim() ? parseFloat(price) : null
+        price: price.trim() ? parseFloat(price) : null,
+        minimum_quantity: minimumQuantity.trim() ? parseInt(minimumQuantity) : null
       })
 
       onSuccess()
@@ -316,18 +318,38 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
             )}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="price" className="form-label">Price ($)</label>
-            <input
-              id="price"
-              type="text"
-              inputMode="decimal"
-              className="form-input"
-              value={price}
-              onChange={(e) => handlePriceChange(e.target.value)}
-              placeholder="0.00"
-              disabled={submitting}
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="price" className="form-label">Price ($)</label>
+              <input
+                id="price"
+                type="text"
+                inputMode="decimal"
+                className="form-input"
+                value={price}
+                onChange={(e) => handlePriceChange(e.target.value)}
+                placeholder="0.00"
+                disabled={submitting}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="minimum-quantity" className="form-label">Min. Qty</label>
+              <input
+                id="minimum-quantity"
+                type="number"
+                inputMode="numeric"
+                className="form-input"
+                value={minimumQuantity}
+                onChange={(e) => {
+                  setMinimumQuantity(e.target.value)
+                  setError('')
+                }}
+                placeholder="1"
+                min="1"
+                disabled={submitting}
+              />
+            </div>
           </div>
 
           <div className="modal-actions">
