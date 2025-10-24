@@ -8,8 +8,15 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies including dev dependencies for testing
-RUN uv sync --frozen --no-cache --dev
+# Build argument to control dev dependencies installation
+ARG BUILD_DEV_DEPS=false
+
+# Install dependencies (conditionally include dev dependencies)
+RUN if [ "$BUILD_DEV_DEPS" = "true" ]; then \
+      uv sync --frozen --no-cache --dev; \
+    else \
+      uv sync --frozen --no-cache; \
+    fi
 
 # Copy application code
 COPY . .
