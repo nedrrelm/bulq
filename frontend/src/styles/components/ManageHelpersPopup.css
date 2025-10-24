@@ -1,0 +1,38 @@
+.helpers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.helper-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--color-background-light);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.helper-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.helper-name {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.helper-badge-small {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

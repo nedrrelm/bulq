@@ -13,6 +13,7 @@ import ErrorBoundary from './ErrorBoundary'
 const BidPopup = lazy(() => import('./BidPopup'))
 const AddProductPopup = lazy(() => import('./AddProductPopup'))
 const ReassignLeaderPopup = lazy(() => import('./ReassignLeaderPopup'))
+const ManageHelpersPopup = lazy(() => import('./ManageHelpersPopup'))
 import RunProductItem from './RunProductItem'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
@@ -57,6 +58,7 @@ export default function RunPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
   const [showReassignPopup, setShowReassignPopup] = useState(false)
+  const [showManageHelpersPopup, setShowManageHelpersPopup] = useState(false)
   const [reassignmentRequest, setReassignmentRequest] = useState<LeaderReassignmentRequest | null>(null)
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
@@ -107,7 +109,7 @@ export default function RunPage() {
     // This is simpler than manual state updates and ensures data consistency
     if (message.type === 'bid_updated' || message.type === 'bid_retracted' ||
         message.type === 'ready_toggled' || message.type === 'state_changed' ||
-        message.type === 'participant_removed') {
+        message.type === 'participant_removed' || message.type === 'helper_toggled') {
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
     } else if (message.type === 'reassignment_requested') {
       // Reassignment request created - fetch request for all participants
@@ -363,6 +365,22 @@ export default function RunPage() {
               </div>
             </div>
             <div className="info-item">
+              <label>Helpers:</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>{run.helpers.length > 0 ? run.helpers.join(', ') : 'None'}</span>
+                {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
+                  <button
+                    onClick={() => setShowManageHelpersPopup(true)}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                    title="Manage helpers"
+                  >
+                    Manage
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="info-item">
               <label>Status:</label>
               <span>{stateDisplay.description}</span>
             </div>
@@ -380,6 +398,7 @@ export default function RunPage() {
                       <span className={`participant-name ${participant.is_removed ? 'removed-user' : ''}`}>
                         {participant.user_name}
                         {participant.is_leader && <span className="leader-badge">Leader</span>}
+                        {participant.is_helper && <span className="helper-badge">Helper</span>}
                       </span>
                     </div>
                     <div className="participant-ready">
@@ -427,7 +446,7 @@ export default function RunPage() {
           </div>
         )}
 
-        {run.state === 'shopping' && run.current_user_is_leader && (
+        {run.state === 'shopping' && (run.current_user_is_leader || run.current_user_is_helper) && (
           <div className="info-card">
             <h3>Shopping in Progress</h3>
             <p>You are currently shopping for this run.</p>
@@ -460,7 +479,7 @@ export default function RunPage() {
           </div>
         )}
 
-        {run.state === 'distributing' && (
+        {run.state === 'distributing' && (run.current_user_is_leader || run.current_user_is_helper) && (
           <div className="info-card">
             <h3>Distribution in Progress</h3>
             <p>Shopping is complete. Time to distribute items to participants.</p>
@@ -623,6 +642,13 @@ export default function RunPage() {
               fetchReassignmentRequest()
             }}
             onCancelRun={run.state !== 'completed' && run.state !== 'cancelled' ? handleCancelRun : undefined}
+          />
+        )}
+
+        {showManageHelpersPopup && run && (
+          <ManageHelpersPopup
+            run={run}
+            onClose={() => setShowManageHelpersPopup(false)}
           />
         )}
       </Suspense>

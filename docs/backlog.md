@@ -8,35 +8,6 @@ These items must be completed before production deployment.
 
 ---
 
-### Database Migrations with Alembic
-**Status**: Critical (before production)
-**Affected files**: New `alembic/` directory, `app/main.py`
-
-**Problem:** Using `create_tables()` which can't handle schema changes. No migration history.
-
-**Current limitations:**
-- Can't add/remove/modify columns safely
-- Can't track what schema version is deployed
-- Can't roll back changes
-
-**Solution:** Set up Alembic for database migrations:
-```bash
-alembic init alembic
-alembic revision --autogenerate -m "Initial migration"
-alembic upgrade head
-```
-
-**Workflow:**
-1. Modify models in `models.py`
-2. Generate migration: `alembic revision --autogenerate -m "description"`
-3. Review generated migration file
-4. Apply: `alembic upgrade head`
-5. Rollback if needed: `alembic downgrade -1`
-
-Remove `create_tables()` call from `main.py` once migrations are in place.
-
----
-
 ### Security & Infrastructure
 **Status**: Partially Complete
 **Affected files**: `app/main.py`, `app/routes/auth.py`, `Caddyfile`, `docker-compose.yml`
