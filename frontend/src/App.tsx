@@ -391,10 +391,13 @@ function AppRoutes() {
 }
 
 function App() {
+  const basePath = import.meta.env.VITE_BASE_PATH || '/'
+  const basename = basePath === '/' ? undefined : basePath
+
   return (
     <AuthProvider>
       <NotificationProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={basename}>
           <AppRoutes />
         </BrowserRouter>
       </NotificationProvider>

@@ -1,11 +1,17 @@
 // API Configuration
-// Production: Use relative URLs (Caddy reverse proxy handles routing)
-// Development: Can use VITE_API_URL to point to backend directly (default: http://localhost:8000)
+// Uses BASE_PATH for subpath deployment (e.g., /bulq in production)
+// Development: Direct connection to backend
+// Production: Proxied through Caddy with BASE_PATH prefix
+const BASE_PATH = import.meta.env.VITE_BASE_PATH || '/'
+
 export const API_BASE_URL = import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD ? '' : 'http://localhost:8000')
+  (import.meta.env.PROD ? BASE_PATH.replace(/\/$/, '') : 'http://localhost:8000')
 
 // WebSocket Configuration
-// Production: Use relative URL (Caddy reverse proxy handles routing)
+// Uses BASE_PATH for subpath deployment
 // Development: Direct WebSocket connection to backend
+// Production: WebSocket through Caddy with BASE_PATH prefix
 export const WS_BASE_URL = import.meta.env.VITE_WS_URL ||
-  (import.meta.env.PROD ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}` : 'ws://localhost:8000')
+  (import.meta.env.PROD
+    ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}${BASE_PATH.replace(/\/$/, '')}`
+    : 'ws://localhost:8000')

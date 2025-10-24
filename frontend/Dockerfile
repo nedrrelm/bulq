@@ -3,6 +3,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Build argument for base path
+ARG VITE_BASE_PATH=/
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
+
 # Copy package files
 COPY package*.json ./
 
@@ -24,7 +28,7 @@ COPY --from=builder /app/dist /srv
 # Copy Caddy configuration
 COPY Caddyfile /etc/caddy/Caddyfile
 
-# Expose port
-EXPOSE 3000
+# Expose port 3000 (dev) or 80 (prod) - controlled by docker-compose
+EXPOSE 3000 80
 
 # Caddy will start automatically

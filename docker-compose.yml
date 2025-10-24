@@ -19,16 +19,18 @@ services:
       - bulq-network
 
   backend:
-    build: ./backend
-    # Development: expose port for local frontend development
-    # Production: only internal network (Caddy proxies)
+    build:
+      context: ./backend
+      args:
+        BUILD_DEV_DEPS: ${BUILD_DEV_DEPS:-false}
+    # Conditionally expose port for development
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_PORT:-}:8000"
     env_file:
       - .env
+    # Conditionally mount source for hot-reload in development
     volumes:
-      # Development: mount source for hot-reload
-      - ./backend:/app
+      - ${BACKEND_VOLUME:-/dev/null}:/app
     depends_on:
       db:
         condition: service_healthy
@@ -37,21 +39,20 @@ services:
       - bulq-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
     ports:
-      # Development: expose on 3000
-      - "${FRONTEND_PORT:-3000}:3000"
-      # Production: expose on 80 and 443 for Let's Encrypt
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
+      # Maps host port to container port (3000 for dev, 80 for prod)
+      - "${FRONTEND_PORT:-3000}:${CADDY_PORT:-3000}"
     env_file:
       - .env
     environment:
-      # Pass domain to Caddy for SSL certificate provisioning
-      DOMAIN: ${DOMAIN:-}
+      # Pass variables to Caddy
+      CADDY_LISTEN: ${CADDY_LISTEN:-localhost:3000}
     volumes:
-      # Production: Caddy data for SSL certificates
-      - caddy_data:/data
+      # Caddy config volume
       - caddy_config:/config
     depends_on:
       - backend
@@ -61,7 +62,6 @@ services:
 
 volumes:
   postgres_data:
-  caddy_data:
   caddy_config:
 
 networks:
