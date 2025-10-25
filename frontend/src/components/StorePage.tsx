@@ -6,6 +6,7 @@ import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
 import RunCard from './RunCard'
 import NewProductPopup from './NewProductPopup'
+import { API_BASE_URL } from '../config'
 
 interface Product {
   id: string
@@ -54,7 +55,7 @@ function StorePage({ storeId, onBack }: StorePageProps) {
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`http://localhost:8000/stores/${storeId}`, {
+      const response = await fetch(`${API_BASE_URL}/stores/${storeId}`, {
         credentials: 'include'
       })
 
