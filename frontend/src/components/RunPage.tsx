@@ -196,6 +196,7 @@ export default function RunPage() {
       id: product.id,
       name: product.name,
       brand: product.brand || null,
+      unit: null,
       current_price: product.current_price,
       total_quantity: 0,
       interested_count: 0,
