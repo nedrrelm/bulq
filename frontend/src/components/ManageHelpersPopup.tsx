@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { runsApi } from '../api'
+import { runsApi, groupsApi } from '../api'
 import { runKeys } from '../hooks/queries'
 import type { RunDetail } from '../api'
 import '../styles/components/ManageHelpersPopup.css'
@@ -11,15 +11,50 @@ interface ManageHelpersPopupProps {
   onClose: () => void
 }
 
+interface GroupMember {
+  id: string
+  name: string
+  email: string
+  is_group_admin: boolean
+}
+
 export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupProps) {
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null)
   const [error, setError] = useState<string>('')
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([])
+  const [loadingMembers, setLoadingMembers] = useState(true)
   const queryClient = useQueryClient()
 
-  // Filter out leader and removed participants
-  const eligibleParticipants = run.participants.filter(
-    p => !p.is_leader && !p.is_removed
+  // Fetch all group members
+  useEffect(() => {
+    const fetchGroupMembers = async () => {
+      try {
+        setLoadingMembers(true)
+        const response = await groupsApi.getGroupMembers(run.group_id)
+        setGroupMembers(response.members || [])
+      } catch (err) {
+        setError(formatErrorForDisplay(err, 'fetch group members'))
+      } finally {
+        setLoadingMembers(false)
+      }
+    }
+
+    fetchGroupMembers()
+  }, [run.group_id])
+
+  // Find current leader
+  const currentLeader = run.participants.find(p => p.is_leader)
+
+  // Get all eligible members (everyone except the leader)
+  const eligibleMembers = groupMembers.filter(
+    member => member.id !== currentLeader?.user_id
   )
+
+  // Check if a member is currently a helper
+  const isHelper = (userId: string) => {
+    const participant = run.participants.find(p => p.user_id === userId)
+    return participant?.is_helper || false
+  }
 
   // Handle ESC key
   useEffect(() => {
@@ -61,32 +96,39 @@ export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupP
           </div>
         )}
 
-        {eligibleParticipants.length === 0 ? (
+        {loadingMembers ? (
           <p className="text-center" style={{ color: 'var(--color-text-light)', padding: '2rem 0' }}>
-            No other participants available to assign as helpers.
+            Loading group members...
+          </p>
+        ) : eligibleMembers.length === 0 ? (
+          <p className="text-center" style={{ color: 'var(--color-text-light)', padding: '2rem 0' }}>
+            No other group members available to assign as helpers.
           </p>
         ) : (
           <div className="helpers-list">
-            {eligibleParticipants.map(participant => (
-              <div key={participant.user_id} className="helper-item">
-                <div className="helper-info">
-                  <span className="helper-name">{participant.user_name}</span>
-                  {participant.is_helper && <span className="helper-badge-small">Helper</span>}
+            {eligibleMembers.map(member => {
+              const memberIsHelper = isHelper(member.id)
+              return (
+                <div key={member.id} className="helper-item">
+                  <div className="helper-info">
+                    <span className="helper-name">{member.name}</span>
+                    {memberIsHelper && <span className="helper-badge-small">Helper</span>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleHelper(member.id, memberIsHelper)}
+                    disabled={loadingUserId === member.id}
+                    className={memberIsHelper ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'}
+                  >
+                    {loadingUserId === member.id
+                      ? '...'
+                      : memberIsHelper
+                      ? '− Remove Helper'
+                      : '+ Add Helper'}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggleHelper(participant.user_id, participant.is_helper)}
-                  disabled={loadingUserId === participant.user_id}
-                  className={participant.is_helper ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'}
-                >
-                  {loadingUserId === participant.user_id
-                    ? '...'
-                    : participant.is_helper
-                    ? '− Remove Helper'
-                    : '+ Add Helper'}
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 

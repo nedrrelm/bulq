@@ -490,11 +490,11 @@ class DatabaseRepository(AbstractRepository):
         )
 
     def create_participation(
-        self, user_id: UUID, run_id: UUID, is_leader: bool = False
+        self, user_id: UUID, run_id: UUID, is_leader: bool = False, is_helper: bool = False
     ) -> RunParticipation:
         """Create a participation record for a user in a run."""
         participation = RunParticipation(
-            user_id=user_id, run_id=run_id, is_leader=is_leader, is_removed=False
+            user_id=user_id, run_id=run_id, is_leader=is_leader, is_helper=is_helper, is_removed=False
         )
         self.db.add(participation)
         self.db.commit()

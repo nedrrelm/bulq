@@ -15,6 +15,7 @@ export const shoppingListItemSchema = z.object({
   id: uuidSchema,
   product_id: uuidSchema,
   product_name: z.string(),
+  product_unit: nullable(z.string()),
   requested_quantity: z.number(),
   recent_prices: z.array(priceObservationSchema),
   purchased_quantity: nullable(z.number()),

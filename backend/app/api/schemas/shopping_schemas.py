@@ -17,6 +17,7 @@ class ShoppingListItemResponse(BaseModel):
     id: str
     product_id: str
     product_name: str
+    product_unit: str | None = None
     requested_quantity: int
     recent_prices: list[PriceObservation]
     purchased_quantity: int | None

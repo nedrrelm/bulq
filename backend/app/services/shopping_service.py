@@ -188,6 +188,7 @@ class ShoppingService(BaseService):
                     id=str(item.id),
                     product_id=str(item.product_id),
                     product_name=product.name if product else 'Unknown Product',
+                    product_unit=product.unit if product else None,
                     requested_quantity=item.requested_quantity,
                     recent_prices=recent_prices_models,
                     purchased_quantity=item.purchased_quantity,

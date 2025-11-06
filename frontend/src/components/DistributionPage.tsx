@@ -121,7 +121,7 @@ export default function DistributionPage() {
             >
               <div className="user-info">
                 <span className="user-name">{user.user_name}</span>
-                <span className="user-total">${user.total_cost}</span>
+                <span className="user-total">{user.total_cost} RSD</span>
               </div>
               <div className="user-actions">
                 {user.all_picked_up && <span className="pickup-badge">✓ Picked up</span>}
@@ -150,10 +150,10 @@ export default function DistributionPage() {
                     <div className="product-info">
                       <div className="product-name">{product.product_name}</div>
                       <div className="product-details">
-                        <span>Requested: {product.requested_quantity}</span>
-                        <span>Distributed: {product.distributed_quantity}</span>
-                        <span>@${product.price_per_unit}</span>
-                        <span className="product-subtotal">${product.subtotal}</span>
+                        <span>Requested: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                        <span>Distributed: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                        <span>@{product.price_per_unit} RSD</span>
+                        <span className="product-subtotal">{product.subtotal} RSD</span>
                       </div>
                     </div>
                     <button

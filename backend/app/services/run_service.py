@@ -3,13 +3,6 @@
 from typing import Any
 from uuid import UUID
 
-from app.infrastructure.config import MAX_ACTIVE_RUNS_PER_GROUP
-from app.events.domain_events import RunCreatedEvent
-from app.events.event_bus import event_bus
-from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
-from app.core.models import Product, ProductBid, Run, User
-from app.infrastructure.request_context import get_logger
-from app.core.run_state import RunState, state_machine
 from app.api.schemas import (
     AvailableProductResponse,
     CancelRunResponse,
@@ -24,7 +17,15 @@ from app.api.schemas import (
     StateChangeResponse,
     UserBidResponse,
 )
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from app.core.models import Product, ProductBid, Run, User
+from app.core.run_state import RunState, state_machine
+from app.events.domain_events import RunCreatedEvent
+from app.events.event_bus import event_bus
+from app.infrastructure.config import MAX_ACTIVE_RUNS_PER_GROUP
+from app.infrastructure.request_context import get_logger
 from app.utils.validation import validate_uuid
+
 from .base_service import BaseService
 from .bid_service import BidService
 from .run_notification_service import RunNotificationService
@@ -489,6 +490,7 @@ class RunService(BaseService):
             id=str(product.id),
             name=product.name,
             brand=product.brand,
+            unit=product.unit,
             current_price=current_price,
             total_quantity=total_quantity,
             interested_count=interested_count,
@@ -565,18 +567,35 @@ class RunService(BaseService):
         if not current_participation or not current_participation.is_leader:
             raise ForbiddenError('Only the run leader can manage helpers')
 
-        # Get target user's participation
+        # Verify target user is a member of the group
+        target_user = self.repo.get_user_by_id(target_user_uuid)
+        if not target_user:
+            raise NotFoundError('User', target_user_id)
+
+        target_user_groups = self.repo.get_user_groups(target_user)
+        if not any(g.id == run.group_id for g in target_user_groups):
+            raise BadRequestError('User is not a member of this group')
+
+        # Get or create target user's participation
         target_participation = self.repo.get_participation(target_user_uuid, run_uuid)
-        if not target_participation:
-            raise BadRequestError('User is not a participant in this run')
 
         # Cannot make leader a helper
-        if target_participation.is_leader:
+        if target_participation and target_participation.is_leader:
             raise BadRequestError('Cannot assign helper status to the run leader')
 
-        # Toggle helper status
-        new_helper_status = not target_participation.is_helper
-        self.repo.update_participation_helper(target_user_uuid, run_uuid, new_helper_status)
+        if not target_participation:
+            # Create participation as helper for this user if they're not yet a participant
+            target_participation = self.repo.create_participation(
+                user_id=target_user_uuid,
+                run_id=run_uuid,
+                is_leader=False,
+                is_helper=True
+            )
+            new_helper_status = True
+        else:
+            # Toggle helper status
+            new_helper_status = not target_participation.is_helper
+            self.repo.update_participation_helper(target_user_uuid, run_uuid, new_helper_status)
 
         action = 'added as' if new_helper_status else 'removed as'
         return MessageResponse(message=f'User {action} helper')

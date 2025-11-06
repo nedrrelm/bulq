@@ -108,6 +108,7 @@ class DistributionService(BaseService):
                     bid_id=str(bid.id),
                     product_id=str(bid.product_id),
                     product_name=product.name,
+                    product_unit=product.unit,
                     requested_quantity=bid.quantity,
                     distributed_quantity=bid.distributed_quantity,
                     price_per_unit=f'{price_per_unit:.2f}',

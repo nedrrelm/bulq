@@ -16,6 +16,7 @@ export const productInRunSchema = z.object({
   id: uuidSchema,
   name: z.string(),
   brand: nullable(z.string()),
+  unit: nullable(z.string()),
   current_price: nullable(z.string()),
   total_quantity: z.number(),
   interested_count: z.number(),
