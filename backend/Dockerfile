@@ -13,7 +13,7 @@ ARG BUILD_DEV_DEPS=false
 
 # Install dependencies (conditionally include dev dependencies)
 RUN if [ "$BUILD_DEV_DEPS" = "true" ]; then \
-      uv sync --frozen --no-cache --dev; \
+      uv sync --frozen --no-cache --extra dev; \
     else \
       uv sync --frozen --no-cache; \
     fi

@@ -302,6 +302,22 @@ See [Production Deployment Guide - Troubleshooting](docs/production_deployment.m
 
 ## Development Guidelines
 
+### Code Quality
+
+**Linting with Ruff:**
+```bash
+# Check code style
+docker compose exec backend uv run --extra dev ruff check app/
+
+# Auto-fix issues
+docker compose exec backend uv run --extra dev ruff check app/ --fix
+
+# Format code
+docker compose exec backend uv run --extra dev ruff format app/
+```
+
+Note: Dev dependencies (including ruff) are installed when `BUILD_DEV_DEPS=true` in `.env`
+
 ### Commit Message Standards
 
 - Keep commit messages simple, descriptive one-liners

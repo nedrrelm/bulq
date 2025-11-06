@@ -22,7 +22,7 @@ services:
     build:
       context: ./backend
       args:
-        BUILD_DEV_DEPS: ${BUILD_DEV_DEPS:-false}
+        - BUILD_DEV_DEPS=${BUILD_DEV_DEPS:-false}
     ports:
       - "${BACKEND_PORT:-}:8000"
     env_file:

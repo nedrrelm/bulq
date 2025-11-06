@@ -273,7 +273,7 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def create_participation(
-        self, user_id: UUID, run_id: UUID, is_leader: bool = False
+        self, user_id: UUID, run_id: UUID, is_leader: bool = False, is_helper: bool = False
     ) -> RunParticipation:
         """Create a participation record for a user in a run."""
         raise NotImplementedError('Subclass must implement create_participation')

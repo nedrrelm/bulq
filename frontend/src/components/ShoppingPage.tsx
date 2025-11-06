@@ -182,7 +182,7 @@ export default function ShoppingPage() {
         <h2>🛒 Shopping Mode</h2>
         <div className="header-actions">
           <div className="total-display">
-            Total: ${totalSpent.toFixed(2)}
+            Total: {totalSpent.toFixed(2)} RSD
           </div>
           <button onClick={handleCompleteShopping} className="btn btn-success btn-lg">
             ✓ Complete Shopping
@@ -280,11 +280,11 @@ function ShoppingItem({
           {isPurchased ? (
             <>
               <span className={quantityDiffers ? 'quantity-differs' : ''}>
-                {item.purchased_quantity} {quantityDiffers && `/ ${item.requested_quantity}`}
+                {item.purchased_quantity}{item.product_unit ? ` ${item.product_unit}` : ''} {quantityDiffers && `/ ${item.requested_quantity}${item.product_unit ? ` ${item.product_unit}` : ''}`}
               </span>
             </>
           ) : (
-            <span>{item.requested_quantity}</span>
+            <span>{item.requested_quantity}{item.product_unit ? ` ${item.product_unit}` : ''}</span>
           )}
         </div>
       </div>
@@ -296,7 +296,7 @@ function ShoppingItem({
           </small>
           {item.recent_prices.map((priceObs, idx) => (
             <div key={idx} className="price-tag">
-              ${priceObs.price.toFixed(2)}
+              {priceObs.price.toFixed(2)} RSD
               {priceObs.notes && <span className="price-notes"> - {priceObs.notes}</span>}
             </div>
           ))}
@@ -306,7 +306,7 @@ function ShoppingItem({
       {isPurchased ? (
         <div className="purchase-info">
           <div className="purchase-detail">
-            ${item.purchased_price_per_unit} × {item.purchased_quantity} = <strong>${item.purchased_total}</strong>
+            {item.purchased_price_per_unit} RSD × {item.purchased_quantity}{item.product_unit ? ` ${item.product_unit}` : ''} = <strong>{item.purchased_total} RSD</strong>
           </div>
         </div>
       ) : (
@@ -593,7 +593,7 @@ function PurchasePopup({
       <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
         <h3>Mark as Purchased</h3>
         <p><strong>{item.product_name}</strong></p>
-        <p className="requested-hint">Requested: {item.requested_quantity}</p>
+        <p className="requested-hint">Requested: {item.requested_quantity}{item.product_unit ? ` ${item.product_unit}` : ''}</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Quantity Purchased</label>

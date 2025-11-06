@@ -9,6 +9,7 @@ class DistributionProduct(BaseModel):
     bid_id: str
     product_id: str
     product_name: str
+    product_unit: str | None = None
     requested_quantity: int
     distributed_quantity: int
     price_per_unit: str

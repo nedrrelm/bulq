@@ -60,6 +60,7 @@ class ProductResponse(BaseModel):
     id: str
     name: str
     brand: str | None = None
+    unit: str | None = None
     current_price: str | None
     total_quantity: int
     interested_count: int

@@ -43,17 +43,17 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
     <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : notPurchasedAdjusting ? 'not-purchased-adjusting' : ''} ${notPurchased ? 'not-purchased' : ''}`}>
       <div className="product-header">
         <h4>{product.name}</h4>
-        {product.current_price && <span className="product-price">${product.current_price}</span>}
+        {product.current_price && <span className="product-price">{product.current_price} RSD</span>}
       </div>
 
       {runState === 'adjusting' && (
         <div>
           {product.purchased_quantity !== null && product.purchased_quantity > 0 ? (
             <div className={`adjustment-info ${needsAdjustment ? 'needs-adjustment' : 'adjustment-ok'}`}>
-              <strong>Purchased:</strong> {product.purchased_quantity} | <strong>Requested:</strong> {product.total_quantity}
+              <strong>Purchased:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>Requested:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
               {needsAdjustment && (
                 <span className="adjustment-warning">
-                  ⚠ Reduce by {product.total_quantity - product.purchased_quantity}
+                  ⚠ Reduce by {product.total_quantity - product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''}
                 </span>
               )}
               {adjustmentOk && (
@@ -75,7 +75,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
 
       <div className="product-stats">
         <div className="stat">
-          <span className="stat-value">{product.total_quantity}</span>
+          <span className="stat-value">{product.total_quantity}{product.unit ? ` ${product.unit}` : ''}</span>
           <span className="stat-label">Total Quantity</span>
         </div>
         <div className="stat">
@@ -88,7 +88,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
         <h5>Bidders:</h5>
         <div className="user-avatars">
           {product.user_bids.map((bid, index) => (
-            <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? 'Interested' : `${bid.quantity} items`}`}>
+            <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? 'Interested' : `${bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}`}>
               <span className="avatar-initials">{getUserInitials(bid.user_name)}</span>
               <span className="bid-quantity">
                 {bid.interested_only ? '?' : bid.quantity}
@@ -106,7 +106,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               {needsAdjustment && product.current_user_bid ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
+                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                   <div className="bid-buttons">
                     <button
@@ -130,7 +130,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               ) : product.current_user_bid && (adjustmentOk || notPurchasedAdjusting) ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
+                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                 </div>
               ) : null}
@@ -141,7 +141,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               {product.current_user_bid ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity} items`}
+                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                   <div className="bid-buttons">
                     <button
