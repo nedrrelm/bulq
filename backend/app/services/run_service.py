@@ -434,8 +434,6 @@ class RunService(BaseService):
 
     def _get_products_data(self, run: Run, current_user_id: UUID) -> list[ProductResponse]:
         """Get products data with bids for a run."""
-        # Get all products for the store
-        store_products = self.repo.get_products_by_store(run.store_id)
         # Get bids with participations and users eagerly loaded to avoid N+1 queries
         run_bids = self.repo.get_bids_by_run_with_participations(run.id)
 
@@ -444,10 +442,20 @@ class RunService(BaseService):
             self._get_shopping_list_map(run) if run.state == RunState.ADJUSTING else {}
         )
 
+        # Get all unique product IDs that have bids
+        product_ids_with_bids = {bid.product_id for bid in run_bids}
+
+        # Fetch all products that have bids (whether or not they have store availability)
+        products_map = {}
+        for product_id in product_ids_with_bids:
+            product = self.repo.get_product_by_id(product_id)
+            if product:
+                products_map[product_id] = product
+
         # Calculate product statistics
         products_data = []
-        for product in store_products:
-            product_bids = [bid for bid in run_bids if bid.product_id == product.id]
+        for product_id, product in products_map.items():
+            product_bids = [bid for bid in run_bids if bid.product_id == product_id]
 
             if len(product_bids) > 0:  # Only include products with bids
                 product_response = self._build_product_response(
