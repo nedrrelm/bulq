@@ -236,6 +236,20 @@ class RunService(BaseService):
         """
         return self.state_service.toggle_ready(run_id, user)
 
+    def force_confirm_run(self, run_id: str, user: User) -> StateChangeResponse:
+        """Force confirm run - transition from active to confirmed without waiting for all users (leader only).
+
+        Delegates to RunStateService.
+
+        Args:
+            run_id: Run ID as string
+            user: Current user (must be leader)
+
+        Returns:
+            StateChangeResponse with success message and new state
+        """
+        return self.state_service.force_confirm(run_id, user)
+
     def start_run(self, run_id: str, user: User) -> StateChangeResponse:
         """Start shopping - transition from confirmed to shopping state (leader only).
 

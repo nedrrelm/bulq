@@ -14,6 +14,7 @@ const BidPopup = lazy(() => import('./BidPopup'))
 const AddProductPopup = lazy(() => import('./AddProductPopup'))
 const ReassignLeaderPopup = lazy(() => import('./ReassignLeaderPopup'))
 const ManageHelpersPopup = lazy(() => import('./ManageHelpersPopup'))
+const ForceConfirmPopup = lazy(() => import('./ForceConfirmPopup'))
 import RunProductItem from './RunProductItem'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
@@ -59,6 +60,7 @@ export default function RunPage() {
   const [showAddProductPopup, setShowAddProductPopup] = useState(false)
   const [showReassignPopup, setShowReassignPopup] = useState(false)
   const [showManageHelpersPopup, setShowManageHelpersPopup] = useState(false)
+  const [showForceConfirmPopup, setShowForceConfirmPopup] = useState(false)
   const [reassignmentRequest, setReassignmentRequest] = useState<LeaderReassignmentRequest | null>(null)
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
@@ -353,15 +355,27 @@ export default function RunPage() {
                   {run.participants.find(p => p.is_leader)?.user_name || 'Unknown'}
                 </span>
                 {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && run.participants.length > 1 && (
-                  <button
-                    onClick={() => setShowReassignPopup(true)}
-                    className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-                    disabled={reassignmentRequest !== null}
-                    title={reassignmentRequest ? 'Reassignment request pending' : 'Reassign leadership'}
-                  >
-                    {reassignmentRequest ? 'Pending...' : 'Reassign'}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setShowReassignPopup(true)}
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                      disabled={reassignmentRequest !== null}
+                      title={reassignmentRequest ? 'Reassignment request pending' : 'Reassign leadership'}
+                    >
+                      {reassignmentRequest ? 'Pending...' : 'Reassign'}
+                    </button>
+                    {run.state === 'active' && (
+                      <button
+                        onClick={() => setShowForceConfirmPopup(true)}
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                        title="Force confirm run without waiting for all participants"
+                      >
+                        Force Confirm
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -650,6 +664,18 @@ export default function RunPage() {
           <ManageHelpersPopup
             run={run}
             onClose={() => setShowManageHelpersPopup(false)}
+          />
+        )}
+
+        {showForceConfirmPopup && (
+          <ForceConfirmPopup
+            runId={runId}
+            onClose={() => setShowForceConfirmPopup(false)}
+            onSuccess={() => {
+              setShowForceConfirmPopup(false)
+              showToast('Run force confirmed!', 'success')
+              queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+            }}
           />
         )}
       </Suspense>
