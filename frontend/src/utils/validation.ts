@@ -128,10 +128,10 @@ export function parseDecimal(value: string): number {
 }
 
 /**
- * Sanitize string for safe display (trim and limit length)
+ * Sanitize string for safe display (limit length without trimming)
  */
 export function sanitizeString(value: string, maxLength: number = 255): string {
-  return value.trim().slice(0, maxLength)
+  return value.slice(0, maxLength)
 }
 
 /**
