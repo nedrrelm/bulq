@@ -72,6 +72,26 @@ export function validateDecimal(
 }
 
 /**
+ * Validate email address
+ */
+export function validateEmail(value: string, fieldName: string = 'Email'): ValidationResult {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return { isValid: false, error: `${fieldName} is required` }
+  }
+
+  // Basic email validation regex
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  if (!emailPattern.test(trimmed)) {
+    return { isValid: false, error: `${fieldName} must be a valid email address` }
+  }
+
+  return { isValid: true }
+}
+
+/**
  * Validate alphanumeric with allowed special characters
  * @param value - The string value to validate
  * @param allowedChars - Additional characters to allow (e.g., '- _&\'')
