@@ -194,9 +194,8 @@ class BidService(BaseService):
                 )
             )
 
-        # Verify product exists in store
-        store_products = self.repo.get_products_by_store(run.store_id)
-        product = next((p for p in store_products if p.id == product_uuid), None)
+        # Verify product exists (products don't need store availability to be bid on)
+        product = self.repo.get_product_by_id(product_uuid)
         if not product:
             raise NotFoundError('Product', product_id)
 
