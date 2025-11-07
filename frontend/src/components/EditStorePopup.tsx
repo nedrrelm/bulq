@@ -241,7 +241,7 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
             onClick={() => showConfirm(
               `Delete store "${store.name}"? This cannot be undone. The operation will fail if there are associated runs.`,
               handleDelete,
-              true
+              { danger: true }
             )}
             disabled={submitting}
           >
