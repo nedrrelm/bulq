@@ -32,6 +32,9 @@ export const runsApi = {
   toggleReady: (runId: string) =>
     api.post(`/runs/${runId}/ready`),
 
+  forceConfirm: (runId: string) =>
+    api.post(`/runs/${runId}/force-confirm`),
+
   startShopping: (runId: string) =>
     api.post(`/runs/${runId}/start-shopping`),
 

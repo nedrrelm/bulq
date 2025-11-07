@@ -94,6 +94,55 @@ class RunStateService(BaseService):
             group_id=None,
         )
 
+    def force_confirm(self, run_id: str, user: User) -> StateChangeResponse:
+        """Force confirm run - transition from active to confirmed without waiting for all users (leader only).
+
+        Args:
+            run_id: Run ID as string
+            user: Current user (must be leader)
+
+        Returns:
+            StateChangeResponse with success message and new state
+
+        Raises:
+            BadRequestError: If run ID invalid or not in active state
+            NotFoundError: If run not found
+            ForbiddenError: If user is not the leader
+        """
+        from app.core.exceptions import BadRequestError, ForbiddenError
+
+        # Validate run ID
+        run_uuid = validate_uuid(run_id, 'Run')
+
+        # Get the run
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError('Run', run_id)
+
+        # Verify user has access to this run (member of the group)
+        user_groups = self.repo.get_user_groups(user)
+        if not any(g.id == run.group_id for g in user_groups):
+            raise ForbiddenError('Not authorized to modify this run')
+
+        # Check if user is the run leader
+        participation = self.repo.get_participation(user.id, run_uuid)
+        if not participation or not participation.is_leader:
+            raise ForbiddenError('Only the run leader can force confirm the run')
+
+        # Check if run is in active state
+        if run.state != RunState.ACTIVE:
+            raise BadRequestError(f'Run must be in active state to force confirm, currently in {run.state}')
+
+        # Transition to confirmed state
+        self._transition_run_state(run, RunState.CONFIRMED)
+
+        return StateChangeResponse(
+            message='Run force confirmed successfully',
+            state=RunState.CONFIRMED,
+            run_id=str(run_uuid),
+            group_id=str(run.group_id),
+        )
+
     def start_shopping(self, run_id: str, user: User) -> StateChangeResponse:
         """Start shopping - transition from confirmed to shopping state (leader only).
 

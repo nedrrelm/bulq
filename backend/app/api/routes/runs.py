@@ -85,6 +85,25 @@ async def toggle_ready(
     return service.toggle_ready(run_id, current_user)
 
 
+@router.post('/{run_id}/force-confirm', response_model=StateChangeResponse)
+async def force_confirm(
+    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+):
+    """Force confirm run - transition from active to confirmed state without waiting for all users (leader only)."""
+    service = RunService(db)
+    # Set WebSocket manager for broadcasting
+    service.notification_service.set_websocket_manager(manager)
+
+    result = service.force_confirm_run(run_id, current_user)
+
+    # Broadcast state change using notification service
+    await service.notification_service.broadcast_state_change(
+        result.run_id, result.group_id, result.state
+    )
+
+    return result
+
+
 @router.post('/{run_id}/start-shopping', response_model=StateChangeResponse)
 async def start_shopping(
     run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
