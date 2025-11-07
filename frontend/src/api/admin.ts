@@ -27,6 +27,18 @@ export interface AdminStore {
   created_at: string
 }
 
+export interface MergeResponse {
+  message: string
+  source_id: string
+  target_id: string
+  affected_records: number
+}
+
+export interface DeleteResponse {
+  message: string
+  deleted_id: string
+}
+
 export const adminApi = {
   async getUsers(search?: string, verified?: boolean, limit: number = 100, offset: number = 0): Promise<AdminUser[]> {
     const params = new URLSearchParams()
@@ -40,6 +52,14 @@ export const adminApi = {
 
   async toggleUserVerification(userId: string): Promise<AdminUser> {
     return await api.post<AdminUser>(`/admin/users/${userId}/verify`)
+  },
+
+  async updateUser(userId: string, data: { name: string; email: string; is_admin: boolean; verified: boolean }): Promise<AdminUser> {
+    return await api.put<AdminUser>(`/admin/users/${userId}`, data)
+  },
+
+  async deleteUser(userId: string): Promise<DeleteResponse> {
+    return await api.delete<DeleteResponse>(`/admin/users/${userId}`)
   },
 
   async getProducts(search?: string, verified?: boolean, limit: number = 100, offset: number = 0): Promise<AdminProduct[]> {
@@ -56,6 +76,18 @@ export const adminApi = {
     return await api.post<AdminProduct>(`/admin/products/${productId}/verify`)
   },
 
+  async updateProduct(productId: string, data: { name: string; brand?: string | null; unit?: string | null }): Promise<AdminProduct> {
+    return await api.put<AdminProduct>(`/admin/products/${productId}`, data)
+  },
+
+  async mergeProducts(sourceId: string, targetId: string): Promise<MergeResponse> {
+    return await api.post<MergeResponse>(`/admin/products/${sourceId}/merge/${targetId}`)
+  },
+
+  async deleteProduct(productId: string): Promise<DeleteResponse> {
+    return await api.delete<DeleteResponse>(`/admin/products/${productId}`)
+  },
+
   async getStores(search?: string, verified?: boolean, limit: number = 100, offset: number = 0): Promise<AdminStore[]> {
     const params = new URLSearchParams()
     if (search) params.append('search', search)
@@ -68,5 +100,17 @@ export const adminApi = {
 
   async toggleStoreVerification(storeId: string): Promise<AdminStore> {
     return await api.post<AdminStore>(`/admin/stores/${storeId}/verify`)
+  },
+
+  async updateStore(storeId: string, data: { name: string; address?: string | null; chain?: string | null; opening_hours?: Record<string, string> | null }): Promise<AdminStore> {
+    return await api.put<AdminStore>(`/admin/stores/${storeId}`, data)
+  },
+
+  async mergeStores(sourceId: string, targetId: string): Promise<MergeResponse> {
+    return await api.post<MergeResponse>(`/admin/stores/${sourceId}/merge/${targetId}`)
+  },
+
+  async deleteStore(storeId: string): Promise<DeleteResponse> {
+    return await api.delete<DeleteResponse>(`/admin/stores/${storeId}`)
   },
 }

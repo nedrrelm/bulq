@@ -4,6 +4,11 @@ from .admin_schemas import (
     AdminProductResponse,
     AdminStoreResponse,
     AdminUserResponse,
+    DeleteResponse,
+    MergeResponse,
+    UpdateProductRequest,
+    UpdateStoreRequest,
+    UpdateUserRequest,
     VerificationToggleResponse,
 )
 from .auth_schemas import (
@@ -107,6 +112,11 @@ __all__ = [
     'AdminProductResponse',
     'AdminStoreResponse',
     'VerificationToggleResponse',
+    'UpdateProductRequest',
+    'UpdateStoreRequest',
+    'UpdateUserRequest',
+    'MergeResponse',
+    'DeleteResponse',
     # Store schemas
     'StoreResponse',
     'CreateStoreRequest',

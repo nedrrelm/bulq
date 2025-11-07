@@ -31,6 +31,7 @@ class AdminStoreResponse(BaseModel):
     id: str
     name: str
     address: str | None
+    chain: str | None
     verified: bool
     created_at: str | None
 
@@ -41,3 +42,54 @@ class VerificationToggleResponse(BaseModel):
     id: str
     verified: bool
     message: str
+
+
+# Update/Edit Request Schemas
+
+
+class UpdateProductRequest(BaseModel):
+    """Request to update product fields."""
+
+    name: str
+    brand: str | None = None
+    unit: str | None = None
+
+
+class UpdateStoreRequest(BaseModel):
+    """Request to update store fields."""
+
+    name: str
+    address: str | None = None
+    chain: str | None = None
+    opening_hours: dict | None = None
+
+
+class UpdateUserRequest(BaseModel):
+    """Request to update user fields."""
+
+    name: str
+    email: str
+    is_admin: bool
+    verified: bool
+
+
+# Merge Response Schema
+
+
+class MergeResponse(BaseModel):
+    """Response for merge operations."""
+
+    message: str
+    source_id: str
+    target_id: str
+    affected_records: int
+
+
+# Delete Response Schema
+
+
+class DeleteResponse(BaseModel):
+    """Response for delete operations."""
+
+    message: str
+    deleted_id: str

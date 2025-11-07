@@ -267,3 +267,304 @@ class AdminService(BaseService):
             verified=store.verified,
             message=f'Store verification {"enabled" if store.verified else "disabled"}',
         )
+
+    # ==================== Update Methods ====================
+
+    def update_product(self, product_id: UUID, data: dict, admin_user: User) -> AdminProductResponse:
+        """Update product fields.
+
+        Args:
+            product_id: ID of product to update
+            data: Dictionary with fields to update (name, brand, unit)
+            admin_user: Admin user performing the action
+
+        Returns:
+            AdminProductResponse with updated product info
+
+        Raises:
+            NotFoundError: If product not found
+        """
+        product = self.repo.update_product(product_id, **data)
+        if not product:
+            raise NotFoundError('Product', str(product_id))
+
+        return AdminProductResponse(
+            id=str(product.id),
+            name=product.name,
+            brand=product.brand,
+            unit=product.unit,
+            verified=product.verified,
+            created_at=product.created_at.isoformat() if product.created_at else None,
+        )
+
+    def update_store(self, store_id: UUID, data: dict, admin_user: User) -> AdminStoreResponse:
+        """Update store fields.
+
+        Args:
+            store_id: ID of store to update
+            data: Dictionary with fields to update (name, address, chain, opening_hours)
+            admin_user: Admin user performing the action
+
+        Returns:
+            AdminStoreResponse with updated store info
+
+        Raises:
+            NotFoundError: If store not found
+        """
+        store = self.repo.update_store(store_id, **data)
+        if not store:
+            raise NotFoundError('Store', str(store_id))
+
+        return AdminStoreResponse(
+            id=str(store.id),
+            name=store.name,
+            address=store.address,
+            chain=store.chain,
+            verified=store.verified,
+            created_at=store.created_at.isoformat() if store.created_at else None,
+        )
+
+    def update_user(self, user_id: UUID, data: dict, admin_user: User) -> AdminUserResponse:
+        """Update user fields.
+
+        Args:
+            user_id: ID of user to update
+            data: Dictionary with fields to update (name, email, is_admin, verified)
+            admin_user: Admin user performing the action
+
+        Returns:
+            AdminUserResponse with updated user info
+
+        Raises:
+            NotFoundError: If user not found
+            ForbiddenError: If trying to remove own admin status
+        """
+        # Prevent admin from removing own admin status
+        if user_id == admin_user.id and 'is_admin' in data and not data['is_admin']:
+            from app.core.exceptions import ForbiddenError
+            raise ForbiddenError('Cannot remove your own admin status')
+
+        user = self.repo.update_user(user_id, **data)
+        if not user:
+            raise NotFoundError('User', str(user_id))
+
+        return AdminUserResponse(
+            id=str(user.id),
+            name=user.name,
+            email=user.email,
+            verified=user.verified,
+            is_admin=user.is_admin,
+            created_at=user.created_at.isoformat() if user.created_at else None,
+        )
+
+    # ==================== Merge Methods ====================
+
+    def merge_products(
+        self, source_id: UUID, target_id: UUID, admin_user: User
+    ) -> dict[str, Any]:
+        """Merge one product into another.
+
+        All bids, availabilities, and shopping list items from source will be moved to target.
+        Source product will be deleted.
+
+        Args:
+            source_id: ID of product to merge from (will be deleted)
+            target_id: ID of product to merge into (will be kept)
+            admin_user: Admin user performing the action
+
+        Returns:
+            MergeResponse with affected records count
+
+        Raises:
+            NotFoundError: If either product not found
+            BadRequestError: If trying to merge product into itself
+        """
+        from app.core.exceptions import BadRequestError
+
+        # Validate products exist
+        source = self.repo.get_product_by_id(source_id)
+        target = self.repo.get_product_by_id(target_id)
+
+        if not source:
+            raise NotFoundError('Source product', str(source_id))
+        if not target:
+            raise NotFoundError('Target product', str(target_id))
+        if source_id == target_id:
+            raise BadRequestError('Cannot merge product into itself')
+
+        # Move all references
+        bids_count = self.repo.bulk_update_product_bids(source_id, target_id)
+        avails_count = self.repo.bulk_update_product_availabilities(source_id, target_id)
+        items_count = self.repo.bulk_update_shopping_list_items(source_id, target_id)
+
+        # Delete source product
+        self.repo.delete_product(source_id)
+
+        total_affected = bids_count + avails_count + items_count
+
+        from app.api.schemas import MergeResponse
+        return MergeResponse(
+            message=f'Successfully merged product "{source.name}" into "{target.name}"',
+            source_id=str(source_id),
+            target_id=str(target_id),
+            affected_records=total_affected,
+        )
+
+    def merge_stores(self, source_id: UUID, target_id: UUID, admin_user: User) -> dict[str, Any]:
+        """Merge one store into another.
+
+        All runs and product availabilities from source will be moved to target.
+        Source store will be deleted.
+
+        Args:
+            source_id: ID of store to merge from (will be deleted)
+            target_id: ID of store to merge into (will be kept)
+            admin_user: Admin user performing the action
+
+        Returns:
+            MergeResponse with affected records count
+
+        Raises:
+            NotFoundError: If either store not found
+            BadRequestError: If trying to merge store into itself
+        """
+        from app.core.exceptions import BadRequestError
+
+        # Validate stores exist
+        source = self.repo.get_store_by_id(source_id)
+        target = self.repo.get_store_by_id(target_id)
+
+        if not source:
+            raise NotFoundError('Source store', str(source_id))
+        if not target:
+            raise NotFoundError('Target store', str(target_id))
+        if source_id == target_id:
+            raise BadRequestError('Cannot merge store into itself')
+
+        # Move all references
+        runs_count = self.repo.bulk_update_runs(source_id, target_id)
+        avails_count = self.repo.bulk_update_store_availabilities(source_id, target_id)
+
+        # Delete source store
+        self.repo.delete_store(source_id)
+
+        total_affected = runs_count + avails_count
+
+        from app.api.schemas import MergeResponse
+        return MergeResponse(
+            message=f'Successfully merged store "{source.name}" into "{target.name}"',
+            source_id=str(source_id),
+            target_id=str(target_id),
+            affected_records=total_affected,
+        )
+
+    # ==================== Delete Methods ====================
+
+    def delete_product(self, product_id: UUID, admin_user: User) -> dict[str, str]:
+        """Delete a product.
+
+        Args:
+            product_id: ID of product to delete
+            admin_user: Admin user performing the action
+
+        Returns:
+            DeleteResponse with success message
+
+        Raises:
+            NotFoundError: If product not found
+            BadRequestError: If product has bids (cannot delete)
+        """
+        from app.core.exceptions import BadRequestError
+
+        product = self.repo.get_product_by_id(product_id)
+        if not product:
+            raise NotFoundError('Product', str(product_id))
+
+        # Check if product has any bids
+        bid_count = self.repo.count_product_bids(product_id)
+        if bid_count > 0:
+            raise BadRequestError(
+                f'Cannot delete product with {bid_count} associated bids. Consider merging instead.'
+            )
+
+        # Delete the product
+        self.repo.delete_product(product_id)
+
+        from app.api.schemas import DeleteResponse
+        return DeleteResponse(
+            message=f'Product "{product.name}" deleted successfully',
+            deleted_id=str(product_id),
+        )
+
+    def delete_store(self, store_id: UUID, admin_user: User) -> dict[str, str]:
+        """Delete a store.
+
+        Args:
+            store_id: ID of store to delete
+            admin_user: Admin user performing the action
+
+        Returns:
+            DeleteResponse with success message
+
+        Raises:
+            NotFoundError: If store not found
+            BadRequestError: If store has runs (cannot delete)
+        """
+        from app.core.exceptions import BadRequestError
+
+        store = self.repo.get_store_by_id(store_id)
+        if not store:
+            raise NotFoundError('Store', str(store_id))
+
+        # Check if store has any runs
+        run_count = self.repo.count_store_runs(store_id)
+        if run_count > 0:
+            raise BadRequestError(
+                f'Cannot delete store with {run_count} associated runs. Consider merging instead.'
+            )
+
+        # Delete the store
+        self.repo.delete_store(store_id)
+
+        from app.api.schemas import DeleteResponse
+        return DeleteResponse(
+            message=f'Store "{store.name}" deleted successfully',
+            deleted_id=str(store_id),
+        )
+
+    def delete_user(self, user_id: UUID, admin_user: User) -> dict[str, str]:
+        """Delete a user.
+
+        Args:
+            user_id: ID of user to delete
+            admin_user: Admin user performing the action
+
+        Returns:
+            DeleteResponse with success message
+
+        Raises:
+            NotFoundError: If user not found
+            ForbiddenError: If trying to delete self or another admin
+        """
+        from app.core.exceptions import ForbiddenError
+
+        user = self.repo.get_user_by_id(user_id)
+        if not user:
+            raise NotFoundError('User', str(user_id))
+
+        # Prevent self-deletion
+        if user_id == admin_user.id:
+            raise ForbiddenError('Cannot delete your own account')
+
+        # Prevent deleting other admins
+        if user.is_admin:
+            raise ForbiddenError('Cannot delete admin users')
+
+        # Delete the user
+        self.repo.delete_user(user_id)
+
+        from app.api.schemas import DeleteResponse
+        return DeleteResponse(
+            message=f'User "{user.name}" deleted successfully',
+            deleted_id=str(user_id),
+        )
