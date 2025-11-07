@@ -13,7 +13,7 @@ export interface AdminProduct {
   id: string
   name: string
   brand: string | null
-  store_name: string | null
+  unit: string | null
   verified: boolean
   created_at: string
 }

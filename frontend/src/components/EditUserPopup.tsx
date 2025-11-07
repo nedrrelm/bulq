@@ -217,7 +217,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
             onClick={() => showConfirm(
               `Delete user "${user.name}"? This cannot be undone.`,
               handleDelete,
-              true
+              { danger: true }
             )}
             disabled={submitting}
           >

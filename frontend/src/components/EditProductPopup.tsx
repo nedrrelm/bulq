@@ -244,7 +244,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
             onClick={() => showConfirm(
               `Delete product "${product.name}"? This cannot be undone. The operation will fail if there are associated bids.`,
               handleDelete,
-              true
+              { danger: true }
             )}
             disabled={submitting}
           >
