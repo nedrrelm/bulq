@@ -453,3 +453,70 @@ class AbstractRepository(ABC):
         raise NotImplementedError(
             'Subclass must implement cancel_all_pending_reassignments_for_run'
         )
+
+    # ==================== Admin Methods ====================
+
+    @abstractmethod
+    def update_product(self, product_id: UUID, **fields) -> Product | None:
+        """Update product fields. Returns updated product or None if not found."""
+        raise NotImplementedError('Subclass must implement update_product')
+
+    @abstractmethod
+    def update_store(self, store_id: UUID, **fields) -> Store | None:
+        """Update store fields. Returns updated store or None if not found."""
+        raise NotImplementedError('Subclass must implement update_store')
+
+    @abstractmethod
+    def update_user(self, user_id: UUID, **fields) -> User | None:
+        """Update user fields. Returns updated user or None if not found."""
+        raise NotImplementedError('Subclass must implement update_user')
+
+    @abstractmethod
+    def delete_product(self, product_id: UUID) -> bool:
+        """Delete a product. Returns True if deleted, False if not found."""
+        raise NotImplementedError('Subclass must implement delete_product')
+
+    @abstractmethod
+    def delete_store(self, store_id: UUID) -> bool:
+        """Delete a store. Returns True if deleted, False if not found."""
+        raise NotImplementedError('Subclass must implement delete_store')
+
+    @abstractmethod
+    def delete_user(self, user_id: UUID) -> bool:
+        """Delete a user. Returns True if deleted, False if not found."""
+        raise NotImplementedError('Subclass must implement delete_user')
+
+    @abstractmethod
+    def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all product bids from old product to new product. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_product_bids')
+
+    @abstractmethod
+    def bulk_update_product_availabilities(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all product availabilities from old product to new product. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_product_availabilities')
+
+    @abstractmethod
+    def bulk_update_shopping_list_items(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all shopping list items from old product to new product. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_shopping_list_items')
+
+    @abstractmethod
+    def bulk_update_runs(self, old_store_id: UUID, new_store_id: UUID) -> int:
+        """Update all runs from old store to new store. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_runs')
+
+    @abstractmethod
+    def bulk_update_store_availabilities(self, old_store_id: UUID, new_store_id: UUID) -> int:
+        """Update all store availabilities from old store to new store. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_store_availabilities')
+
+    @abstractmethod
+    def count_product_bids(self, product_id: UUID) -> int:
+        """Count how many bids reference this product."""
+        raise NotImplementedError('Subclass must implement count_product_bids')
+
+    @abstractmethod
+    def count_store_runs(self, store_id: UUID) -> int:
+        """Count how many runs reference this store."""
+        raise NotImplementedError('Subclass must implement count_store_runs')

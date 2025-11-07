@@ -46,19 +46,19 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
-# Include routers
-app.include_router(auth_router)
-app.include_router(groups_router)
-app.include_router(runs_router)
-app.include_router(stores_router)
-app.include_router(shopping_router)
-app.include_router(distribution_router)
-app.include_router(products_router)
-app.include_router(search_router)
-app.include_router(notifications_router)
-app.include_router(reassignment_router)
-app.include_router(admin_router)
-app.include_router(websocket_router)
+# Include routers with /api prefix to avoid conflicts with frontend routes
+app.include_router(auth_router, prefix='/api')
+app.include_router(groups_router, prefix='/api')
+app.include_router(runs_router, prefix='/api')
+app.include_router(stores_router, prefix='/api')
+app.include_router(shopping_router, prefix='/api')
+app.include_router(distribution_router, prefix='/api')
+app.include_router(products_router, prefix='/api')
+app.include_router(search_router, prefix='/api')
+app.include_router(notifications_router, prefix='/api')
+app.include_router(reassignment_router, prefix='/api')
+app.include_router(admin_router, prefix='/api')
+app.include_router(websocket_router, prefix='/api')
 
 # Add CORS middleware
 app.add_middleware(

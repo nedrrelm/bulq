@@ -923,3 +923,118 @@ class MemoryRepository(AbstractRepository):
                 request.resolved_at = datetime.now()
                 count += 1
         return count
+
+    # ==================== Admin Methods ====================
+
+    def update_product(self, product_id: UUID, **fields) -> Product | None:
+        """Update product fields. Returns updated product or None if not found."""
+        product = self._products.get(product_id)
+        if not product:
+            return None
+
+        for key, value in fields.items():
+            if hasattr(product, key):
+                setattr(product, key, value)
+
+        return product
+
+    def update_store(self, store_id: UUID, **fields) -> Store | None:
+        """Update store fields. Returns updated store or None if not found."""
+        store = self._stores.get(store_id)
+        if not store:
+            return None
+
+        for key, value in fields.items():
+            if hasattr(store, key):
+                setattr(store, key, value)
+
+        return store
+
+    def update_user(self, user_id: UUID, **fields) -> User | None:
+        """Update user fields. Returns updated user or None if not found."""
+        user = self._users.get(user_id)
+        if not user:
+            return None
+
+        for key, value in fields.items():
+            if hasattr(user, key):
+                setattr(user, key, value)
+
+        return user
+
+    def delete_product(self, product_id: UUID) -> bool:
+        """Delete a product. Returns True if deleted, False if not found."""
+        if product_id not in self._products:
+            return False
+
+        del self._products[product_id]
+        return True
+
+    def delete_store(self, store_id: UUID) -> bool:
+        """Delete a store. Returns True if deleted, False if not found."""
+        if store_id not in self._stores:
+            return False
+
+        del self._stores[store_id]
+        return True
+
+    def delete_user(self, user_id: UUID) -> bool:
+        """Delete a user. Returns True if deleted, False if not found."""
+        if user_id not in self._users:
+            return False
+
+        del self._users[user_id]
+        return True
+
+    def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all product bids from old product to new product. Returns count of updated records."""
+        count = 0
+        for bid in self._product_bids.values():
+            if bid.product_id == old_product_id:
+                bid.product_id = new_product_id
+                count += 1
+        return count
+
+    def bulk_update_product_availabilities(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all product availabilities from old product to new product. Returns count of updated records."""
+        count = 0
+        for avail in self._product_availabilities.values():
+            if avail.product_id == old_product_id:
+                avail.product_id = new_product_id
+                count += 1
+        return count
+
+    def bulk_update_shopping_list_items(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all shopping list items from old product to new product. Returns count of updated records."""
+        count = 0
+        for item in self._shopping_list_items.values():
+            if item.product_id == old_product_id:
+                item.product_id = new_product_id
+                count += 1
+        return count
+
+    def bulk_update_runs(self, old_store_id: UUID, new_store_id: UUID) -> int:
+        """Update all runs from old store to new store. Returns count of updated records."""
+        count = 0
+        for run in self._runs.values():
+            if run.store_id == old_store_id:
+                run.store_id = new_store_id
+                count += 1
+        return count
+
+    def bulk_update_store_availabilities(self, old_store_id: UUID, new_store_id: UUID) -> int:
+        """Update all store availabilities from old store to new store. Returns count of updated records."""
+        count = 0
+        for avail in self._product_availabilities.values():
+            if avail.store_id == old_store_id:
+                avail.store_id = new_store_id
+                count += 1
+        return count
+
+    def count_product_bids(self, product_id: UUID) -> int:
+        """Count how many bids reference this product."""
+        return sum(1 for bid in self._product_bids.values() if bid.product_id == product_id)
+
+    def count_store_runs(self, store_id: UUID) -> int:
+        """Count how many runs reference this store."""
+        return sum(1 for run in self._runs.values() if run.store_id == store_id)

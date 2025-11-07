@@ -948,3 +948,135 @@ class DatabaseRepository(AbstractRepository):
     ) -> ShoppingListItem:
         """Test helper to create shopping list item (same as public method)."""
         return self.create_shopping_list_item(run_id, product_id, requested_quantity)
+
+    # ==================== Admin Methods ====================
+
+    def update_product(self, product_id: UUID, **fields) -> Product | None:
+        """Update product fields. Returns updated product or None if not found."""
+        product = self.db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            return None
+
+        for key, value in fields.items():
+            if hasattr(product, key):
+                setattr(product, key, value)
+
+        self.db.commit()
+        self.db.refresh(product)
+        return product
+
+    def update_store(self, store_id: UUID, **fields) -> Store | None:
+        """Update store fields. Returns updated store or None if not found."""
+        store = self.db.query(Store).filter(Store.id == store_id).first()
+        if not store:
+            return None
+
+        for key, value in fields.items():
+            if hasattr(store, key):
+                setattr(store, key, value)
+
+        self.db.commit()
+        self.db.refresh(store)
+        return store
+
+    def update_user(self, user_id: UUID, **fields) -> User | None:
+        """Update user fields. Returns updated user or None if not found."""
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return None
+
+        for key, value in fields.items():
+            if hasattr(user, key):
+                setattr(user, key, value)
+
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def delete_product(self, product_id: UUID) -> bool:
+        """Delete a product. Returns True if deleted, False if not found."""
+        product = self.db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            return False
+
+        self.db.delete(product)
+        self.db.commit()
+        return True
+
+    def delete_store(self, store_id: UUID) -> bool:
+        """Delete a store. Returns True if deleted, False if not found."""
+        store = self.db.query(Store).filter(Store.id == store_id).first()
+        if not store:
+            return False
+
+        self.db.delete(store)
+        self.db.commit()
+        return True
+
+    def delete_user(self, user_id: UUID) -> bool:
+        """Delete a user. Returns True if deleted, False if not found."""
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
+
+        self.db.delete(user)
+        self.db.commit()
+        return True
+
+    def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all product bids from old product to new product. Returns count of updated records."""
+        result = (
+            self.db.query(ProductBid)
+            .filter(ProductBid.product_id == old_product_id)
+            .update({ProductBid.product_id: new_product_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_product_availabilities(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all product availabilities from old product to new product. Returns count of updated records."""
+        result = (
+            self.db.query(ProductAvailability)
+            .filter(ProductAvailability.product_id == old_product_id)
+            .update({ProductAvailability.product_id: new_product_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_shopping_list_items(self, old_product_id: UUID, new_product_id: UUID) -> int:
+        """Update all shopping list items from old product to new product. Returns count of updated records."""
+        result = (
+            self.db.query(ShoppingListItem)
+            .filter(ShoppingListItem.product_id == old_product_id)
+            .update({ShoppingListItem.product_id: new_product_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_runs(self, old_store_id: UUID, new_store_id: UUID) -> int:
+        """Update all runs from old store to new store. Returns count of updated records."""
+        result = (
+            self.db.query(Run)
+            .filter(Run.store_id == old_store_id)
+            .update({Run.store_id: new_store_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_store_availabilities(self, old_store_id: UUID, new_store_id: UUID) -> int:
+        """Update all store availabilities from old store to new store. Returns count of updated records."""
+        result = (
+            self.db.query(ProductAvailability)
+            .filter(ProductAvailability.store_id == old_store_id)
+            .update({ProductAvailability.store_id: new_store_id})
+        )
+        self.db.commit()
+        return result
+
+    def count_product_bids(self, product_id: UUID) -> int:
+        """Count how many bids reference this product."""
+        return self.db.query(ProductBid).filter(ProductBid.product_id == product_id).count()
+
+    def count_store_runs(self, store_id: UUID) -> int:
+        """Count how many runs reference this store."""
+        return self.db.query(Run).filter(Run.store_id == store_id).count()

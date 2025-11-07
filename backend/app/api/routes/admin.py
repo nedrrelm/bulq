@@ -94,3 +94,115 @@ async def toggle_store_verification(
     """Toggle store verification status."""
     service = AdminService(db)
     return service.toggle_store_verification(UUID(store_id), admin_user)
+
+
+# ==================== Update Routes ====================
+
+
+@router.put('/products/{product_id}', response_model=AdminProductResponse)
+async def update_product(
+    product_id: str,
+    request: 'UpdateProductRequest',
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Update product fields."""
+    from app.api.schemas import UpdateProductRequest
+
+    service = AdminService(db)
+    return service.update_product(UUID(product_id), request.dict(), admin_user)
+
+
+@router.put('/stores/{store_id}', response_model=AdminStoreResponse)
+async def update_store(
+    store_id: str,
+    request: 'UpdateStoreRequest',
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Update store fields."""
+    from app.api.schemas import UpdateStoreRequest
+
+    service = AdminService(db)
+    return service.update_store(UUID(store_id), request.dict(), admin_user)
+
+
+@router.put('/users/{user_id}', response_model=AdminUserResponse)
+async def update_user(
+    user_id: str,
+    request: 'UpdateUserRequest',
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Update user fields."""
+    from app.api.schemas import UpdateUserRequest
+
+    service = AdminService(db)
+    return service.update_user(UUID(user_id), request.dict(), admin_user)
+
+
+# ==================== Merge Routes ====================
+
+
+@router.post('/products/{source_id}/merge/{target_id}', response_model='MergeResponse')
+async def merge_products(
+    source_id: str,
+    target_id: str,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Merge one product into another. All bids and availabilities will be transferred."""
+    from app.api.schemas import MergeResponse
+
+    service = AdminService(db)
+    return service.merge_products(UUID(source_id), UUID(target_id), admin_user)
+
+
+@router.post('/stores/{source_id}/merge/{target_id}', response_model='MergeResponse')
+async def merge_stores(
+    source_id: str,
+    target_id: str,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Merge one store into another. All runs and availabilities will be transferred."""
+    from app.api.schemas import MergeResponse
+
+    service = AdminService(db)
+    return service.merge_stores(UUID(source_id), UUID(target_id), admin_user)
+
+
+# ==================== Delete Routes ====================
+
+
+@router.delete('/products/{product_id}', response_model='DeleteResponse')
+async def delete_product(
+    product_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
+    """Delete a product. Cannot delete if it has associated bids."""
+    from app.api.schemas import DeleteResponse
+
+    service = AdminService(db)
+    return service.delete_product(UUID(product_id), admin_user)
+
+
+@router.delete('/stores/{store_id}', response_model='DeleteResponse')
+async def delete_store(
+    store_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
+    """Delete a store. Cannot delete if it has associated runs."""
+    from app.api.schemas import DeleteResponse
+
+    service = AdminService(db)
+    return service.delete_store(UUID(store_id), admin_user)
+
+
+@router.delete('/users/{user_id}', response_model='DeleteResponse')
+async def delete_user(
+    user_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
+    """Delete a user. Cannot delete yourself or other admins."""
+    from app.api.schemas import DeleteResponse
+
+    service = AdminService(db)
+    return service.delete_user(UUID(user_id), admin_user)

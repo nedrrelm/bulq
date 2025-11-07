@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../api/admin'
 import type { AdminUser, AdminProduct, AdminStore } from '../api/admin'
+import EditProductPopup from '../components/EditProductPopup'
+import EditStorePopup from '../components/EditStorePopup'
+import EditUserPopup from '../components/EditUserPopup'
 import '../styles/pages/AdminPage.css'
 
 type TabType = 'users' | 'products' | 'stores'
@@ -28,6 +31,11 @@ export default function AdminPage() {
   // Stores
   const [stores, setStores] = useState<AdminStore[]>([])
   const [loadingStores, setLoadingStores] = useState(false)
+
+  // Edit popups
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null)
+  const [editingStore, setEditingStore] = useState<AdminStore | null>(null)
 
   useEffect(() => {
     if (activeTab === 'users') {
@@ -199,6 +207,13 @@ export default function AdminPage() {
                       <td>{user.verified ? '✓' : '✗'}</td>
                       <td>
                         <button
+                          onClick={() => setEditingUser(user)}
+                          className="btn-small"
+                          style={{ marginRight: '0.5rem' }}
+                        >
+                          Edit
+                        </button>
+                        <button
                           onClick={() => toggleUserVerification(user.id)}
                           className="btn-small"
                         >
@@ -261,6 +276,13 @@ export default function AdminPage() {
                       <td className="id-cell">{product.id}</td>
                       <td>{product.verified ? '✓' : '✗'}</td>
                       <td>
+                        <button
+                          onClick={() => setEditingProduct(product)}
+                          className="btn-small"
+                          style={{ marginRight: '0.5rem' }}
+                        >
+                          Edit
+                        </button>
                         <button
                           onClick={() => toggleProductVerification(product.id)}
                           className="btn-small"
@@ -325,6 +347,13 @@ export default function AdminPage() {
                       <td>{store.verified ? '✓' : '✗'}</td>
                       <td>
                         <button
+                          onClick={() => setEditingStore(store)}
+                          className="btn-small"
+                          style={{ marginRight: '0.5rem' }}
+                        >
+                          Edit
+                        </button>
+                        <button
                           onClick={() => toggleStoreVerification(store.id)}
                           className="btn-small"
                         >
@@ -359,6 +388,40 @@ export default function AdminPage() {
             </>
           )}
         </div>
+      )}
+
+      {/* Edit Popups */}
+      {editingUser && (
+        <EditUserPopup
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSuccess={() => {
+            setEditingUser(null)
+            fetchUsers()
+          }}
+        />
+      )}
+
+      {editingProduct && (
+        <EditProductPopup
+          product={editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onSuccess={() => {
+            setEditingProduct(null)
+            fetchProducts()
+          }}
+        />
+      )}
+
+      {editingStore && (
+        <EditStorePopup
+          store={editingStore}
+          onClose={() => setEditingStore(null)}
+          onSuccess={() => {
+            setEditingStore(null)
+            fetchStores()
+          }}
+        />
       )}
     </div>
   )

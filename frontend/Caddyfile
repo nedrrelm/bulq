@@ -15,47 +15,15 @@
     }
 
     # Handle API routes - proxy to backend
-    # Using * without trailing slash to match both /path and /path?query=params
-    handle /auth* {
-        reverse_proxy backend:8000
-    }
-    handle /groups* {
-        reverse_proxy backend:8000
-    }
-    handle /runs* {
-        reverse_proxy backend:8000
-    }
-    handle /stores* {
-        reverse_proxy backend:8000
-    }
-    handle /products* {
-        reverse_proxy backend:8000
-    }
-    handle /shopping* {
-        reverse_proxy backend:8000
-    }
-    handle /distribution* {
-        reverse_proxy backend:8000
-    }
-    handle /notifications* {
-        reverse_proxy backend:8000
-    }
-    handle /search* {
-        reverse_proxy backend:8000
-    }
-    handle /reassignment* {
-        reverse_proxy backend:8000
-    }
-    handle /admin* {
-        reverse_proxy backend:8000
-    }
-    handle /ws* {
+    # All backend routes are prefixed with /api to avoid conflicts with frontend routes
+    handle /api/* {
         reverse_proxy backend:8000
     }
 
-    # Handle everything else - serve static files
+    # Handle everything else - serve static files with SPA fallback
     handle {
         root * /srv
+        # Try to serve the requested file, if not found serve index.html for SPA routing
         try_files {path} /index.html
         file_server
     }
