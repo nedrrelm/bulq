@@ -1,6 +1,6 @@
 """Schemas for admin-related requests and responses."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AdminUserResponse(BaseModel):
@@ -50,9 +50,9 @@ class VerificationToggleResponse(BaseModel):
 class UpdateProductRequest(BaseModel):
     """Request to update product fields."""
 
-    name: str
-    brand: str | None = None
-    unit: str | None = None
+    name: str = Field(..., min_length=1, max_length=255, description="Product name")
+    brand: str | None = Field(None, max_length=255, description="Product brand")
+    unit: str | None = Field(None, max_length=50, description="Product unit")
 
 
 class UpdateStoreRequest(BaseModel):

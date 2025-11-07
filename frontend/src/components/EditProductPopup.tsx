@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { adminApi, type AdminProduct } from '../api/admin'
-import type { ApiError } from '../api'
+import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
@@ -68,10 +68,13 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
     try {
       setSubmitting(true)
 
+      const trimmedBrand = brand.trim()
+      const trimmedUnit = unit.trim()
+
       await adminApi.updateProduct(product.id, {
         name: productName.trim(),
-        brand: brand.trim() || null,
-        unit: unit.trim() || null,
+        brand: trimmedBrand === '' ? null : trimmedBrand,
+        unit: trimmedUnit === '' ? null : trimmedUnit,
       })
 
       onSuccess()

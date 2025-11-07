@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { adminApi, type AdminStore } from '../api/admin'
-import type { ApiError } from '../api'
+import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'

@@ -13,6 +13,9 @@ from app.api.schemas import (
     AdminProductResponse,
     AdminStoreResponse,
     AdminUserResponse,
+    UpdateProductRequest,
+    UpdateStoreRequest,
+    UpdateUserRequest,
     VerificationToggleResponse,
 )
 from app.services import AdminService
@@ -102,43 +105,37 @@ async def toggle_store_verification(
 @router.put('/products/{product_id}', response_model=AdminProductResponse)
 async def update_product(
     product_id: str,
-    request: 'UpdateProductRequest',
+    data: UpdateProductRequest,
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Update product fields."""
-    from app.api.schemas import UpdateProductRequest
-
     service = AdminService(db)
-    return service.update_product(UUID(product_id), request.dict(), admin_user)
+    return service.update_product(UUID(product_id), data.model_dump(), admin_user)
 
 
 @router.put('/stores/{store_id}', response_model=AdminStoreResponse)
 async def update_store(
     store_id: str,
-    request: 'UpdateStoreRequest',
+    data: UpdateStoreRequest,
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Update store fields."""
-    from app.api.schemas import UpdateStoreRequest
-
     service = AdminService(db)
-    return service.update_store(UUID(store_id), request.dict(), admin_user)
+    return service.update_store(UUID(store_id), data.model_dump(), admin_user)
 
 
 @router.put('/users/{user_id}', response_model=AdminUserResponse)
 async def update_user(
     user_id: str,
-    request: 'UpdateUserRequest',
+    data: UpdateUserRequest,
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Update user fields."""
-    from app.api.schemas import UpdateUserRequest
-
     service = AdminService(db)
-    return service.update_user(UUID(user_id), request.dict(), admin_user)
+    return service.update_user(UUID(user_id), data.model_dump(), admin_user)
 
 
 # ==================== Merge Routes ====================

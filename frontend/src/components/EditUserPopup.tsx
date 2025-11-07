@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { adminApi, type AdminUser } from '../api/admin'
-import type { ApiError } from '../api'
+import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateEmail, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'

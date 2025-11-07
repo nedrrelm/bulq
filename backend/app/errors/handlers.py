@@ -72,12 +72,15 @@ async def validation_exception_handler(
             )
         )
 
-    logger.info(
-        f'Validation error on {request.url.path}',
+    # Log validation errors details for debugging
+    error_details = [{'field': e.field, 'message': e.message, 'code': e.code} for e in errors]
+    logger.warning(
+        f'Validation error on {request.url.path}: {error_details}',
         extra={
             'path': request.url.path,
             'method': request.method,
             'error_count': len(errors),
+            'errors': error_details,
         },
     )
 
