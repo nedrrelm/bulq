@@ -261,7 +261,7 @@ export default function AdminPage() {
                   <tr>
                     <th>Name</th>
                     <th>Brand</th>
-                    <th>Store</th>
+                    <th>Unit</th>
                     <th>ID</th>
                     <th>Verified</th>
                     <th>Actions</th>
@@ -272,7 +272,7 @@ export default function AdminPage() {
                     <tr key={product.id}>
                       <td>{product.name}</td>
                       <td>{product.brand || '-'}</td>
-                      <td>{product.store_name || '-'}</td>
+                      <td>{product.unit || '-'}</td>
                       <td className="id-cell">{product.id}</td>
                       <td>{product.verified ? '✓' : '✗'}</td>
                       <td>

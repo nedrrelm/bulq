@@ -230,6 +230,7 @@ class AdminService(BaseService):
                 id=str(s.id),
                 name=s.name,
                 address=s.address,
+                chain=s.chain,
                 verified=s.verified if s.verified is not None else False,
                 created_at=s.created_at.isoformat() if s.created_at else None,
             )

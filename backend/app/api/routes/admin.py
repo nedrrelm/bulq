@@ -13,6 +13,8 @@ from app.api.schemas import (
     AdminProductResponse,
     AdminStoreResponse,
     AdminUserResponse,
+    DeleteResponse,
+    MergeResponse,
     UpdateProductRequest,
     UpdateStoreRequest,
     UpdateUserRequest,
@@ -141,7 +143,7 @@ async def update_user(
 # ==================== Merge Routes ====================
 
 
-@router.post('/products/{source_id}/merge/{target_id}', response_model='MergeResponse')
+@router.post('/products/{source_id}/merge/{target_id}', response_model=MergeResponse)
 async def merge_products(
     source_id: str,
     target_id: str,
@@ -149,13 +151,11 @@ async def merge_products(
     db: Session = Depends(get_db),
 ):
     """Merge one product into another. All bids and availabilities will be transferred."""
-    from app.api.schemas import MergeResponse
-
     service = AdminService(db)
     return service.merge_products(UUID(source_id), UUID(target_id), admin_user)
 
 
-@router.post('/stores/{source_id}/merge/{target_id}', response_model='MergeResponse')
+@router.post('/stores/{source_id}/merge/{target_id}', response_model=MergeResponse)
 async def merge_stores(
     source_id: str,
     target_id: str,
@@ -163,8 +163,6 @@ async def merge_stores(
     db: Session = Depends(get_db),
 ):
     """Merge one store into another. All runs and availabilities will be transferred."""
-    from app.api.schemas import MergeResponse
-
     service = AdminService(db)
     return service.merge_stores(UUID(source_id), UUID(target_id), admin_user)
 
@@ -172,34 +170,28 @@ async def merge_stores(
 # ==================== Delete Routes ====================
 
 
-@router.delete('/products/{product_id}', response_model='DeleteResponse')
+@router.delete('/products/{product_id}', response_model=DeleteResponse)
 async def delete_product(
     product_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
     """Delete a product. Cannot delete if it has associated bids."""
-    from app.api.schemas import DeleteResponse
-
     service = AdminService(db)
     return service.delete_product(UUID(product_id), admin_user)
 
 
-@router.delete('/stores/{store_id}', response_model='DeleteResponse')
+@router.delete('/stores/{store_id}', response_model=DeleteResponse)
 async def delete_store(
     store_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
     """Delete a store. Cannot delete if it has associated runs."""
-    from app.api.schemas import DeleteResponse
-
     service = AdminService(db)
     return service.delete_store(UUID(store_id), admin_user)
 
 
-@router.delete('/users/{user_id}', response_model='DeleteResponse')
+@router.delete('/users/{user_id}', response_model=DeleteResponse)
 async def delete_user(
     user_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
     """Delete a user. Cannot delete yourself or other admins."""
-    from app.api.schemas import DeleteResponse
-
     service = AdminService(db)
     return service.delete_user(UUID(user_id), admin_user)
