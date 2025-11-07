@@ -4,6 +4,7 @@ import type { Notification } from '../types/notification'
 import { useAuth } from './AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import Toast from '../components/Toast'
+import { WS_BASE_URL } from '../config'
 
 /**
  * NotificationContext - Real-time notification management
@@ -53,13 +54,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
-  // Construct WebSocket URL
-  const wsUrl = user ? (() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.hostname
-    const port = import.meta.env.DEV ? '8000' : window.location.port
-    return `${protocol}//${host}:${port}/ws/user`
-  })() : null
+  // Construct WebSocket URL using WS_BASE_URL from config
+  const wsUrl = user ? `${WS_BASE_URL}/ws/user` : null
 
   const getNotificationMessage = (notification: Notification): string => {
     if (notification.type === 'run_state_changed') {
