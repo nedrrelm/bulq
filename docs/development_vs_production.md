@@ -30,10 +30,12 @@ See [Unified Environment Configuration Guide](unified_env_guide.md) for technica
 ### Development
 
 ```bash
-# Simply set this in .env:
-ENV=development
+# Simply set these flags in .env:
+DEV=true
+PROD=
 
 # Everything else automatically uses DEV_* values:
+# - ENV=development
 # - SECRET_KEY=dev-secret-key-not-for-production
 # - POSTGRES_PASSWORD=bulq_dev_pass
 # - REPO_MODE=memory
@@ -52,10 +54,12 @@ ENV=development
 ### Production
 
 ```bash
-# Simply set this in .env:
-ENV=production
+# Simply set these flags in .env:
+DEV=
+PROD=true
 
 # Everything else automatically uses PROD_* values:
+# - ENV=production
 # - SECRET_KEY=<your-generated-secret>
 # - POSTGRES_PASSWORD=<your-strong-password>
 # - REPO_MODE=database
@@ -309,8 +313,9 @@ LOG_FILE=/app/logs/app.log
    PROD_POSTGRES_PASSWORD=your-strong-password
    PROD_ALLOWED_ORIGINS=https://yourdomain.com
 
-   # Step 2: Change ENV (that's it!)
-   ENV=production
+   # Step 2: Switch flags (that's it!)
+   DEV=
+   PROD=true
    ```
 
 2. **Update `docker-compose.yml`:**
@@ -332,8 +337,9 @@ All variables automatically switch to production values!
 
 1. **Update `.env`:**
    ```bash
-   # Just change ENV (that's it!)
-   ENV=development
+   # Just switch flags (that's it!)
+   DEV=true
+   PROD=
    ```
 
 2. **Update `docker-compose.yml`:**
