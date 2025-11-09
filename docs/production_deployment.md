@@ -34,55 +34,56 @@ cd bulq
 
 ### 2. Configure Environment Variables
 
-Copy the example environment file and configure for production:
+Copy the example environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with production values:
+Edit `.env` and configure for production:
 
+**Step 1: Set production-specific values**
 ```bash
-# REQUIRED: Set to production mode
+# Generate a strong secret key
+openssl rand -hex 32
+# Copy the output and set it as PROD_SECRET_KEY in .env
+
+# Example in .env:
+PROD_SECRET_KEY=a1b2c3d4e5f6...  # paste your generated key here
+PROD_POSTGRES_PASSWORD=YourStrong16+CharPassword
+PROD_ALLOWED_ORIGINS=https://yourdomain.com  # update if different
+```
+
+**Step 2: Switch to production mode**
+```bash
+# In .env, change this single line:
 ENV=production
+```
 
-# REQUIRED: Generate a strong secret key
-# Generate with: openssl rand -hex 32
-SECRET_KEY=your-generated-secret-key-here
+That's it! All variables automatically switch to use PROD_* values.
 
-# REQUIRED: Enable secure cookies (requires HTTPS)
-SECURE_COOKIES=true
+**Step 3: Comment out development volume mount**
 
-# Database configuration
-POSTGRES_DB=bulq
-POSTGRES_USER=bulq
-POSTGRES_PASSWORD=change-to-strong-password
-DATABASE_URL=postgresql://bulq:change-to-strong-password@db:5432/bulq
-
-# REQUIRED: Use database mode in production
-REPO_MODE=database
-
-# Session configuration
-SESSION_EXPIRY_HOURS=24
-
-# REQUIRED: Set allowed origins to your domain
-ALLOWED_ORIGINS=https://yourdomain.com
-
-# REQUIRED: Set your domain for automatic HTTPS
-DOMAIN=yourdomain.com
-
-# Port configuration (defaults are fine)
-FRONTEND_PORT=3000
-HTTP_PORT=80
-HTTPS_PORT=443
-
-# Logging configuration
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-LOG_FILE=/app/logs/app.log
+In `docker-compose.yml`, comment out the backend volume mount:
+```yaml
+backend:
+  # volumes:
+  #   - ./backend:/app
 ```
 
 ### 3. Verify Configuration
+
+You can verify the configuration is correctly set:
+
+```bash
+# Check that ENV is set to production
+grep "^ENV=" .env
+
+# Verify production values are configured
+grep "^PROD_SECRET_KEY=" .env
+grep "^PROD_POSTGRES_PASSWORD=" .env
+grep "^PROD_ALLOWED_ORIGINS=" .env
+```
 
 Production mode enforces strict validation. The application will fail to start if:
 
@@ -91,6 +92,8 @@ Production mode enforces strict validation. The application will fail to start i
 - `REPO_MODE=database` but `DATABASE_URL` is not set
 
 This prevents accidentally running in insecure mode.
+
+**Note:** The unified `.env` file automatically switches all variables based on the `ENV` setting. See [Unified Environment Configuration Guide](unified_env_guide.md) for technical details.
 
 ### 4. Deploy with Docker Compose
 

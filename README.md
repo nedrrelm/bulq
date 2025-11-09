@@ -104,6 +104,27 @@ Friend groups who trust each other and handle discussions/payments outside the a
 
 ## Development Setup
 
+### Environment Configuration
+
+Bulq uses a unified `.env` file for both development and production configurations.
+
+**First-time setup:**
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# The default configuration is already set for development
+# No changes needed for local development
+```
+
+The `.env` file contains:
+- **DEV_*** variables for development
+- **PROD_*** variables for production
+- **Final variables** that reference either DEV or PROD values
+- Switch between modes by changing the `ENV` variable and updating final variable references
+
+**For production deployment**, see [Production Deployment Guide](docs/production_deployment.md).
+
 ### Quick Start with Docker Compose
 
 The easiest way to run the application is using docker compose:
