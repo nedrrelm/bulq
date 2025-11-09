@@ -123,7 +123,7 @@ The `.env` file contains:
 - **Final variables** that reference either DEV or PROD values
 - Switch between modes by changing the `ENV` variable and updating final variable references
 
-**For production deployment**, see [Production Deployment Guide](docs/production_deployment.md).
+**For production deployment**, see [Deployment Guide](docs/deployment.md).
 
 ### Quick Start with Docker Compose
 
