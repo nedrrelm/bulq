@@ -22,9 +22,9 @@ services:
     build:
       context: ./backend
       args:
-        - BUILD_DEV_DEPS=${BUILD_DEV_DEPS:-false}
+        - BUILD_DEV_DEPS=${BUILD_DEV_DEPS}
     ports:
-      - "${BACKEND_PORT:-}:8000"
+      - "${BACKEND_PORT}:8000"
     env_file:
       - .env
     volumes:
@@ -42,15 +42,15 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
+        VITE_BASE_PATH: ${VITE_BASE_PATH}
     ports:
       # Maps host port to container port (3000 for dev, 80 for prod)
-      - "${FRONTEND_PORT:-3000}:${CADDY_PORT:-3000}"
+      - "${FRONTEND_PORT}:${CADDY_PORT}"
     env_file:
       - .env
     environment:
       # Pass variables to Caddy
-      CADDY_LISTEN: ${CADDY_LISTEN:-localhost:3000}
+      CADDY_LISTEN: ${CADDY_LISTEN}
     volumes:
       # Caddy config volume
       - caddy_config:/config

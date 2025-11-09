@@ -1,6 +1,6 @@
 # Unified Environment Configuration Guide
 
-This guide explains how to set up a single `.env` file that automatically switches between development and production configurations based on a single `ENV` variable.
+This guide explains how to set up a single `.env` file that automatically switches between development and production configurations based on simple flag variables.
 
 ## The Problem
 
@@ -8,15 +8,16 @@ Traditionally, you need separate `.env.development` and `.env.production` files,
 
 ## The Solution
 
-Use bash parameter expansion **inside the `.env` file** to automatically select dev or prod values based on an `ENV` variable.
+Use bash parameter expansion **inside the `.env` file** to automatically select dev or prod values based on `DEV` and `PROD` flags.
 
 ## How It Works
 
 ### 1. Structure
 
 ```bash
-# Set the environment
-ENV=development  # or "production"
+# Set ONE flag (leave the other empty)
+DEV=true
+PROD=
 
 # Define dev-specific values
 DEV_SECRET_KEY=dev-secret
@@ -28,10 +29,11 @@ PROD_SECRET_KEY=prod-secret-generated-key
 PROD_POSTGRES_PASSWORD=strong-prod-password
 PROD_FRONTEND_PORT=8080
 
-# Auto-select based on ENV
-PROD=${ENV:+${ENV}}
-PROD=${PROD/development/}
+# Derived ENV variable
+ENV=${PROD:+production}
+ENV=${ENV:-development}
 
+# Auto-select based on PROD flag
 SECRET_KEY=${PROD:+${PROD_SECRET_KEY}}
 SECRET_KEY=${SECRET_KEY:-${DEV_SECRET_KEY}}
 
@@ -42,31 +44,55 @@ FRONTEND_PORT=${PROD:+${PROD_FRONTEND_PORT}}
 FRONTEND_PORT=${FRONTEND_PORT:-${DEV_FRONTEND_PORT}}
 ```
 
-### 2. The Magic Lines
+### 2. The Flag System
 
-These two lines create a conditional flag:
+Instead of using a single `ENV` variable, we use two flags:
 
 ```bash
-PROD=${ENV:+${ENV}}           # If ENV is set, PROD=ENV value
-PROD=${PROD/development/}     # If PROD="development", clear it (PROD="")
+# Development mode
+DEV=true
+PROD=
+
+# Production mode
+DEV=
+PROD=true
+```
+
+The `ENV` variable is automatically derived:
+```bash
+ENV=${PROD:+production}    # If PROD is set, ENV=production
+ENV=${ENV:-development}     # Otherwise, ENV=development
 ```
 
 **Result:**
-- If `ENV=production` → `PROD="production"` (truthy)
-- If `ENV=development` → `PROD=""` (empty/falsy)
+- If `PROD=true` → `ENV=production` (uses PROD_* values)
+- If `PROD=` (empty) → `ENV=development` (uses DEV_* values)
 
 ### 3. The Conditional Pattern
 
 For each variable, use this two-line pattern:
 
 ```bash
-VARIABLE_NAME=${PROD:+${PROD_VARIABLE_NAME}}      # If PROD is set, use PROD_*
-VARIABLE_NAME=${VARIABLE_NAME:-${DEV_VARIABLE_NAME}}  # Otherwise, use DEV_*
+VARIABLE_NAME=${PROD:+${PROD_VARIABLE_NAME}}           # If PROD is set, use PROD_*
+VARIABLE_NAME=${VARIABLE_NAME:-${DEV_VARIABLE_NAME}}   # Otherwise, use DEV_*
 ```
 
 **How it works:**
-- `${PROD:+${PROD_VARIABLE_NAME}}` → If PROD is set (production), expand to PROD_VARIABLE_NAME
-- `${VARIABLE_NAME:-${DEV_VARIABLE_NAME}}` → If VARIABLE_NAME is empty, use DEV_VARIABLE_NAME as default
+- `${PROD:+${PROD_VARIABLE_NAME}}` → If PROD is set (not empty), expand to PROD_VARIABLE_NAME value
+- `${VARIABLE_NAME:-${DEV_VARIABLE_NAME}}` → If VARIABLE_NAME is still empty, use DEV_VARIABLE_NAME as default
+
+**Example execution:**
+```bash
+# In development (PROD="")
+POSTGRES_PASSWORD=${PROD:+${PROD_POSTGRES_PASSWORD}}  # PROD is empty, so this expands to ""
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-bulq_dev_pass}  # POSTGRES_PASSWORD is empty, so use bulq_dev_pass
+# Result: POSTGRES_PASSWORD=bulq_dev_pass
+
+# In production (PROD=true)
+POSTGRES_PASSWORD=${PROD:+${PROD_POSTGRES_PASSWORD}}  # PROD is set, so expand to value of PROD_POSTGRES_PASSWORD
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-bulq_dev_pass}  # POSTGRES_PASSWORD already set, skip this
+# Result: POSTGRES_PASSWORD=<value of PROD_POSTGRES_PASSWORD>
+```
 
 ## Step-by-Step Implementation
 
@@ -76,7 +102,13 @@ VARIABLE_NAME=${VARIABLE_NAME:-${DEV_VARIABLE_NAME}}  # Otherwise, use DEV_*
 # ============================================
 # ENVIRONMENT SELECTOR
 # ============================================
-ENV=development
+# Set ONE of these to "true" (leave the other empty)
+DEV=true
+PROD=
+
+# Derived ENV variable
+ENV=${PROD:+production}
+ENV=${ENV:-development}
 
 # ============================================
 # DEVELOPMENT VALUES
@@ -101,9 +133,6 @@ PROD_BACKEND_PORT=
 # ============================================
 # AUTO-SELECTED VARIABLES
 # ============================================
-PROD=${ENV:+${ENV}}
-PROD=${PROD/development/}
-
 SECRET_KEY=${PROD:+${PROD_SECRET_KEY}}
 SECRET_KEY=${SECRET_KEY:-${DEV_SECRET_KEY}}
 
@@ -123,7 +152,7 @@ BACKEND_PORT=${BACKEND_PORT:-${DEV_BACKEND_PORT}}
 
 ### 2. Use in Docker Compose
 
-In `docker-compose.yml`, just reference the final variable names directly:
+In `docker-compose.yml`, just reference the final variable names directly (no defaults, no interpolation):
 
 ```yaml
 services:
@@ -131,7 +160,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${BACKEND_PORT:-}:8000"  # No interpolation needed!
+      - "${BACKEND_PORT}:8000"  # No defaults needed - .env handles everything
 
   frontend:
     env_file:
@@ -140,14 +169,17 @@ services:
       - "${FRONTEND_PORT}:${CADDY_PORT}"
 ```
 
-**Important:** All interpolation happens in `.env`, NOT in `docker-compose.yml`.
+**Important:**
+- All interpolation happens in `.env`, NOT in `docker-compose.yml`
+- Don't use defaults like `${VAR:-default}` in docker-compose.yml - let `.env` handle it
+- Every variable used by docker-compose must have a value in `.env` (either DEV or PROD)
 
 ### 3. Usage
 
 **Development:**
 ```bash
 cp .env.example .env
-# ENV=development (already default)
+# DEV=true, PROD= (already default)
 docker compose up
 ```
 
@@ -155,8 +187,8 @@ docker compose up
 ```bash
 cp .env.example .env
 # Edit .env:
-# 1. Set ENV=production
-# 2. Update PROD_SECRET_KEY and PROD_POSTGRES_PASSWORD
+# 1. Update PROD_SECRET_KEY and PROD_POSTGRES_PASSWORD
+# 2. Set PROD=true and DEV=
 docker compose up -d
 ```
 
@@ -169,10 +201,9 @@ Verify the configuration works:
 source .env && echo "ENV=$ENV, PASSWORD=$POSTGRES_PASSWORD, PORT=$FRONTEND_PORT"
 # Output: ENV=development, PASSWORD=dev-pass, PORT=3000
 
-# Test production (temporarily)
-sed 's/ENV=development/ENV=production/' .env > /tmp/test.env
-source /tmp/test.env && echo "ENV=$ENV, PASSWORD=$POSTGRES_PASSWORD, PORT=$FRONTEND_PORT"
-# Output: ENV=production, PASSWORD=REPLACE_WITH_STRONG_PASSWORD, PORT=8080
+# Test with docker-compose
+docker compose config | grep -E "POSTGRES_PASSWORD|FRONTEND_PORT|ENV"
+# Should show development values
 ```
 
 ## Key Benefits
@@ -185,18 +216,38 @@ source /tmp/test.env && echo "ENV=$ENV, PASSWORD=$POSTGRES_PASSWORD, PORT=$FRONT
 
 ## Common Pitfalls
 
-❌ **Don't use bash substitution in docker-compose.yml**
+❌ **Don't use interpolation or defaults in docker-compose.yml**
 ```yaml
-# Wrong - Docker Compose doesn't support this
+# Wrong - Docker Compose should just read variables
 environment:
-  - PASSWORD=${ENV:+${PROD_PASSWORD}}
+  - PASSWORD=${POSTGRES_PASSWORD:-default}
+ports:
+  - "${BACKEND_PORT:-8000}:8000"
 ```
 
-✅ **Do use bash substitution in .env**
+✅ **Do all interpolation in .env**
+```yaml
+# Correct - docker-compose.yml just references variables
+environment:
+  - PASSWORD=${POSTGRES_PASSWORD}
+ports:
+  - "${BACKEND_PORT}:8000"
+```
+
+❌ **Don't use string substitution (unsupported by docker-compose)**
 ```bash
-# Correct - .env file supports bash expansion
-PASSWORD=${PROD:+${PROD_PASSWORD}}
-PASSWORD=${PASSWORD:-${DEV_PASSWORD}}
+# Wrong - Docker Compose can't parse this
+PROD=${ENV:+${ENV}}
+PROD=${PROD/development/}  # String substitution not supported
+```
+
+✅ **Use simple flag variables**
+```bash
+# Correct - Works with docker-compose
+DEV=true
+PROD=
+ENV=${PROD:+production}
+ENV=${ENV:-development}
 ```
 
 ❌ **Don't forget the two-line pattern**
@@ -217,8 +268,9 @@ PASSWORD=${PASSWORD:-${DEV_PASSWORD}}
 The pattern is simple:
 
 1. **Define** both `DEV_*` and `PROD_*` prefixed values
-2. **Create** the `PROD` flag from `ENV`
-3. **Apply** the two-line conditional pattern to each variable
-4. **Switch** environments by changing `ENV` only
+2. **Set** either `DEV=true` or `PROD=true` (leave the other empty)
+3. **Derive** `ENV` variable from `PROD` flag
+4. **Apply** the two-line conditional pattern to each variable
+5. **Switch** environments by changing `DEV`/`PROD` flags only
 
-That's it! One variable change switches your entire configuration.
+That's it! Change two flags and your entire configuration switches between dev and prod.

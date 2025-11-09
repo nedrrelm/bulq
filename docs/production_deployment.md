@@ -56,8 +56,9 @@ PROD_ALLOWED_ORIGINS=https://yourdomain.com  # update if different
 
 **Step 2: Switch to production mode**
 ```bash
-# In .env, change this single line:
-ENV=production
+# In .env, switch these flags:
+DEV=
+PROD=true
 ```
 
 That's it! All variables automatically switch to use PROD_* values.
@@ -76,8 +77,12 @@ backend:
 You can verify the configuration is correctly set:
 
 ```bash
-# Check that ENV is set to production
-grep "^ENV=" .env
+# Check that production mode is enabled
+grep "^PROD=" .env
+# Should show: PROD=true
+
+grep "^DEV=" .env
+# Should show: DEV= (empty)
 
 # Verify production values are configured
 grep "^PROD_SECRET_KEY=" .env
