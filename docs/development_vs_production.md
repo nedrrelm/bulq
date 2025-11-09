@@ -18,15 +18,28 @@ This document explains the key differences between development and production mo
 
 ## Environment Configuration
 
+Bulq uses a **unified `.env` file** with automatic environment switching. Simply change the `ENV` variable, and all configuration values automatically switch between dev and prod.
+
+**How it works:**
+- `.env` file contains both `DEV_*` and `PROD_*` prefixed values
+- Bash parameter expansion automatically selects the right values based on `ENV`
+- No manual copying or find-replace needed
+
+See [Unified Environment Configuration Guide](unified_env_guide.md) for technical details.
+
 ### Development
 
 ```bash
+# Simply set this in .env:
 ENV=development
-SECRET_KEY=any-secret-key-for-dev
-SECURE_COOKIES=false
-ALLOWED_ORIGINS=
-REPO_MODE=memory
-DOMAIN=
+
+# Everything else automatically uses DEV_* values:
+# - SECRET_KEY=dev-secret-key-not-for-production
+# - POSTGRES_PASSWORD=bulq_dev_pass
+# - REPO_MODE=memory
+# - FRONTEND_PORT=3000
+# - SECURE_COOKIES=false
+# - etc.
 ```
 
 **Characteristics:**
@@ -34,16 +47,21 @@ DOMAIN=
 - CORS allows localhost by default
 - Can use in-memory test data
 - Relaxed validation for quick iteration
+- Backend volume mount enabled for hot-reload
 
 ### Production
 
 ```bash
+# Simply set this in .env:
 ENV=production
-SECRET_KEY=strong-random-32-char-secret
-SECURE_COOKIES=true
-ALLOWED_ORIGINS=https://yourdomain.com
-REPO_MODE=database
-DOMAIN=yourdomain.com
+
+# Everything else automatically uses PROD_* values:
+# - SECRET_KEY=<your-generated-secret>
+# - POSTGRES_PASSWORD=<your-strong-password>
+# - REPO_MODE=database
+# - FRONTEND_PORT=8080
+# - SECURE_COOKIES=true
+# - etc.
 ```
 
 **Characteristics:**
@@ -52,6 +70,7 @@ DOMAIN=yourdomain.com
 - Database required
 - Secure cookies required
 - Runtime validation prevents misconfigurations
+- Backend volume mount should be commented out
 
 ## Network Architecture
 
@@ -285,17 +304,20 @@ LOG_FILE=/app/logs/app.log
 
 1. **Update `.env`:**
    ```bash
+   # Step 1: Set production values
+   PROD_SECRET_KEY=$(openssl rand -hex 32)
+   PROD_POSTGRES_PASSWORD=your-strong-password
+   PROD_ALLOWED_ORIGINS=https://yourdomain.com
+
+   # Step 2: Change ENV (that's it!)
    ENV=production
-   SECURE_COOKIES=true
-   ALLOWED_ORIGINS=https://yourdomain.com
-   DOMAIN=yourdomain.com
-   REPO_MODE=database
    ```
 
-2. **Generate strong secret:**
+2. **Update `docker-compose.yml`:**
    ```bash
-   openssl rand -hex 32
-   # Update SECRET_KEY in .env
+   # Comment out backend volume mount for production
+   # volumes:
+   #   - ./backend:/app
    ```
 
 3. **Rebuild and deploy:**
@@ -304,23 +326,31 @@ LOG_FILE=/app/logs/app.log
    docker compose up -d
    ```
 
+All variables automatically switch to production values!
+
 ### From Production to Development
 
 1. **Update `.env`:**
    ```bash
+   # Just change ENV (that's it!)
    ENV=development
-   SECURE_COOKIES=false
-   ALLOWED_ORIGINS=
-   DOMAIN=
-   REPO_MODE=memory
    ```
 
-2. **Rebuild:**
+2. **Update `docker-compose.yml`:**
+   ```bash
+   # Uncomment backend volume mount for hot-reload
+   volumes:
+     - ./backend:/app
+   ```
+
+3. **Rebuild:**
    ```bash
    docker compose down
    docker compose build
    docker compose up -d
    ```
+
+All variables automatically switch back to development values!
 
 ## Testing Production Configuration Locally
 
