@@ -28,40 +28,7 @@ These items must be completed before production deployment.
 
 ---
 
-## 🐛 Bugs
-
----
-
-### Product Bidding Issues
-**Status**: To Investigate
-**Priority**: High
-**Affected files**: `backend/app/services/bid_service.py`, `backend/app/api/routes/runs.py`
-
-**Issues:**
-1. **Adding products to a run which don't have a store listed doesn't work**
-   - Error: "Product not found" (404)
-   - Log: `timestamp=2025-11-07T08:31:39.383720Z level=WARNING logger=app.errors.handlers message="Application error: Product not found" request_id=97537890-0f56-4106-962c-fc99c757322d path=/runs/02fb2b17-818e-47e2-bca5-c3752e15d6ed/bids method=POST status_code=404`
-   - Need to allow bidding on products without store availability
-
-2. **Admin page for products shows store as always empty**
-   - Store field not displaying correctly on admin products page
-   - Need to investigate product-store relationship display
-
----
-
 ## 🔧 Future Enhancements
-
----
-
-### Admin Panel Improvements
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Frontend admin pages, backend routes
-
-**Features:**
-- Allow modifying products (name, brand, unit, etc.)
-- Allow modifying stores (name, address, chain, opening hours)
-- Admin CRUD operations for all entities
 
 ---
 
@@ -154,6 +121,167 @@ These items must be completed before production deployment.
 - Cache store lists (rarely change)
 - Cache product lists per store
 - Use Redis with TTL and invalidation on updates
+
+---
+
+### Shopping List Export
+**Status**: Future
+**Priority**: Medium
+**Affected files**: Backend routes, frontend shopping page
+
+**Features:**
+- Export shopping list as TXT format
+- Export shopping list as JSON format
+- Per-product view: all quantities aggregated by product
+- Per-user view: breakdown showing each user's bids per product
+
+**Implementation:**
+- Add export endpoints: `/runs/{run_id}/shopping-list/export?format=txt|json&view=product|user`
+- Frontend download buttons on shopping page
+- TXT format: human-readable, printer-friendly
+- JSON format: structured data for external tools
+
+---
+
+### Authentication & User Management
+**Status**: Future
+**Priority**: High
+**Affected files**: Backend auth routes, config, frontend registration
+
+**Features:**
+1. **Global Account Creation Flag**
+   - Environment variable to enable/disable new registrations
+   - Allow admin to close registration after initial users join
+   - Existing users can still login when disabled
+   - Clear message on registration page when disabled
+
+2. **Remove Email, Username-Only Login**
+   - Remove email field from User model
+   - Use only username for authentication
+   - Update registration/login forms
+   - Migrate existing users (generate usernames from emails)
+
+**Schema Changes:**
+- Remove `email` column from User table
+- Make `username` non-nullable and required
+- Add unique constraint on username
+
+**Configuration:**
+- `ALLOW_REGISTRATION=true|false` environment variable
+
+---
+
+### UI/UX Improvements
+**Status**: Future
+**Priority**: Medium
+**Affected files**: Frontend components (RunPage, NotificationPanel, DistributionPage)
+
+**Features:**
+1. **Smart User Initials in Bid Circles**
+   - When multiple users have same first letter, use 2 letters
+   - Example: "Alice" and "Alex" → "Al" and "Ax" instead of both "A"
+   - Fallback to numbers if needed: "A1", "A2"
+
+2. **Post-Shopping Product Status Indicators**
+   - On run page after shopping, show purchased vs not purchased
+   - Similar to adjusting phase UI (orange highlights)
+   - Visual indicators for:
+     - ✅ Fully purchased (green)
+     - ⚠️ Partially purchased (orange)
+     - ❌ Not purchased (gray/crossed out)
+
+3. **Mobile Notification Panel Fix**
+   - Fix notification panel positioning on mobile
+   - Currently shows only right half, left half off-screen
+   - Make full panel visible with proper responsive layout
+
+4. **Distribution Page Visibility & Views**
+   - Show distribution page to all run participants (not just leader)
+   - Everyone can see what they bought and amounts
+   - Add view toggle: "By User" (default) and "By Product"
+   - By Product view: group items by product showing all users' quantities
+   - By User view: current behavior, items grouped per user
+
+**Implementation:**
+- Update user initial generation logic in frontend utils
+- Add product status badges on RunPage after shopping state
+- Fix CSS for notification panel mobile responsiveness
+- Update distribution route permissions (remove leader-only check)
+- Add view toggle component on DistributionPage
+
+---
+
+### Advanced Shopping Features
+**Status**: Future
+**Priority**: Medium
+**Affected files**: Backend shopping service, frontend shopping page
+
+**Features:**
+1. **Additional Quantity Purchases**
+   - Allow buying more of an already-purchased item
+   - Update total quantity and price
+   - Useful for deals/sales discovered during shopping
+   - Track as separate purchase event or update existing
+
+**Implementation:**
+- Add "Add More" button on shopping page for purchased items
+- Update ShoppingListItem with additional quantity tracking
+- Recalculate totals and distribution
+
+---
+
+### Run Comments & Context
+**Status**: Future
+**Priority**: Medium
+**Affected files**: Database schema, backend models/services, frontend RunPage
+
+**Features:**
+1. **Run Description/Comment**
+   - Leader can add short description for run
+   - Visible to all participants
+   - Examples: "Bringing cooler", "Meeting at 2pm", "Focus on produce"
+   - Editable by leader at any time
+
+2. **Product Bid Comments**
+   - Each user can add notes to their bids
+   - Examples: "Granny Smith apples", "Organic preferred", "Any brand fine"
+   - Visible to all participants and leader during shopping
+   - Helps shopper make better choices
+
+**Schema Changes:**
+- Add `description` text field to Run table (nullable)
+- Add `comment` text field to ProductBid table (nullable)
+
+**Implementation:**
+- Add description field to run creation/edit form
+- Show description prominently on run page
+- Add comment textarea to BidPopup component
+- Display bid comments on shopping page and run detail view
+
+---
+
+### Seller Group Type
+**Status**: Future
+**Priority**: Low
+**Affected files**: Database schema, backend models/services, frontend group management
+
+**Features:**
+- New group type: "Seller" (vs current "Buyer" groups)
+- Seller posts products they're selling with available quantities
+- Users bid on available inventory (reverse auction model)
+- Use case: Local farmers, bulk resellers, group organizers
+
+**Schema Changes:**
+- Add `group_type` enum to Group table: 'buyer' | 'seller'
+- Seller-specific fields on Run:
+  - Inventory limits per product
+  - First-come-first-served vs allocation logic
+
+**Implementation:**
+- Seller UI for posting inventory
+- Buyer UI for bidding on limited stock
+- Allocation algorithm when demand exceeds supply
+- Separate workflows for seller vs buyer groups
 
 ---
 
