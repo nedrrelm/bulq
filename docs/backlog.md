@@ -169,6 +169,20 @@ These items must be completed before production deployment.
 **Configuration:**
 - `ALLOW_REGISTRATION=true|false` environment variable
 
+3. **User Profile Management**
+   - Allow users to change their username
+   - Allow users to change their password
+   - Require current password for authentication before changes
+   - Username uniqueness validation
+   - Password strength requirements
+
+**Implementation:**
+- Add `/auth/change-username` endpoint (requires current password)
+- Add `/auth/change-password` endpoint (requires current password + new password)
+- Frontend profile/settings page with change forms
+- Validation: username availability, password strength
+- Update session after username change
+
 ---
 
 ### UI/UX Improvements
