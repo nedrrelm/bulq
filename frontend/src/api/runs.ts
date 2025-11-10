@@ -38,8 +38,8 @@ export const runsApi = {
   startShopping: (runId: string) =>
     api.post(`/runs/${runId}/start-shopping`),
 
-  finishAdjusting: (runId: string) =>
-    api.post(`/runs/${runId}/finish-adjusting`),
+  finishAdjusting: (runId: string, force: boolean = false) =>
+    api.post(`/runs/${runId}/finish-adjusting?force=${force}`),
 
   cancelRun: (runId: string) =>
     api.post(`/runs/${runId}/cancel`),

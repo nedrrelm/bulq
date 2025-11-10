@@ -32,15 +32,24 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
   const notPurchasedAdjusting = runState === 'adjusting' &&
                                 (product.purchased_quantity === null || product.purchased_quantity === 0)
 
-  // Check if product was not purchased (for distributing state)
-  const notPurchased = (runState === 'distributing' || runState === 'completed') &&
-                       (product.purchased_quantity === null || product.purchased_quantity === 0)
+  // Post-shopping status indicators for distributing/completed states
+  const isPostShopping = runState === 'distributing' || runState === 'completed'
+  const fullyPurchased = isPostShopping &&
+                         product.purchased_quantity !== null &&
+                         product.purchased_quantity > 0 &&
+                         product.purchased_quantity === product.total_quantity
+  const partiallyPurchased = isPostShopping &&
+                             product.purchased_quantity !== null &&
+                             product.purchased_quantity > 0 &&
+                             product.purchased_quantity < product.total_quantity
+  const notPurchasedFinal = isPostShopping &&
+                            (product.purchased_quantity === null || product.purchased_quantity === 0)
 
   const shortage = product.purchased_quantity !== null ? product.total_quantity - product.purchased_quantity : 0
   const canRetract = !adjustmentOk && !(runState === 'adjusting' && product.current_user_bid && !product.current_user_bid.interested_only && product.current_user_bid.quantity > shortage)
 
   return (
-    <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : notPurchasedAdjusting ? 'not-purchased-adjusting' : ''} ${notPurchased ? 'not-purchased' : ''}`}>
+    <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : notPurchasedAdjusting ? 'not-purchased-adjusting' : ''} ${fullyPurchased ? 'adjustment-ok' : partiallyPurchased ? 'needs-adjustment' : notPurchasedFinal ? 'not-purchased-adjusting' : ''}`}>
       <div className="product-header">
         <h4>{product.name}</h4>
         {product.current_price && <span className="product-price">{product.current_price} RSD</span>}
@@ -63,6 +72,34 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               )}
             </div>
           ) : (
+            <div className="adjustment-info not-purchased-info">
+              <strong>Not Purchased</strong>
+              <span className="not-purchased-badge">
+                ❌ Not Purchased
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {isPostShopping && (
+        <div>
+          {(fullyPurchased || partiallyPurchased) && (
+            <div className={`adjustment-info ${fullyPurchased ? 'adjustment-ok' : 'needs-adjustment'}`}>
+              <strong>Purchased:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>Requested:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
+              {fullyPurchased && (
+                <span className="adjustment-ok-badge">
+                  ✓ OK
+                </span>
+              )}
+              {partiallyPurchased && (
+                <span className="adjustment-warning">
+                  ⚠️ Partially Purchased
+                </span>
+              )}
+            </div>
+          )}
+          {notPurchasedFinal && (
             <div className="adjustment-info not-purchased-info">
               <strong>Not Purchased</strong>
               <span className="not-purchased-badge">

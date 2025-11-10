@@ -238,7 +238,7 @@ export function useFinishAdjusting(runId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => runsApi.finishAdjusting(runId),
+    mutationFn: (force: boolean = false) => runsApi.finishAdjusting(runId, force),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
     },
