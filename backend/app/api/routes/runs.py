@@ -125,14 +125,21 @@ async def start_shopping(
 
 @router.post('/{run_id}/finish-adjusting', response_model=StateChangeResponse)
 async def finish_adjusting(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str,
+    force: bool = False,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
 ):
-    """Finish adjusting bids - transition from adjusting to distributing state (leader only)."""
+    """Finish adjusting bids - transition from adjusting to distributing state (leader only).
+
+    Query params:
+        force: If true, skip quantity verification and proceed anyway
+    """
     service = RunService(db)
     # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
-    result = service.finish_adjusting(run_id, current_user)
+    result = service.finish_adjusting(run_id, current_user, force)
 
     # Broadcast state change using notification service
     await service.notification_service.broadcast_state_change(

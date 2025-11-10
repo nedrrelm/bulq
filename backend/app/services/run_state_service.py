@@ -198,7 +198,7 @@ class RunStateService(BaseService):
             group_id=str(run.group_id),
         )
 
-    def finish_adjusting(self, run_id: str, user: User) -> StateChangeResponse:
+    def finish_adjusting(self, run_id: str, user: User, force: bool = False) -> StateChangeResponse:
         """Finish adjusting bids - transition from adjusting to distributing state (leader only).
 
         Validates that quantities match purchased quantities and distributes items to bidders.
@@ -207,12 +207,13 @@ class RunStateService(BaseService):
         Args:
             run_id: Run ID as string
             user: Current user (must be leader)
+            force: If True, skip quantity verification and distribute as-is
 
         Returns:
             StateChangeResponse with success message and new state
 
         Raises:
-            BadRequestError: If run ID invalid, state doesn't allow, or quantities don't match
+            BadRequestError: If run ID invalid, state doesn't allow, or quantities don't match (when not forced)
             NotFoundError: If run not found
             ForbiddenError: If user is not the leader
         """
@@ -220,12 +221,14 @@ class RunStateService(BaseService):
 
         # Wrap verification, distribution, and state change in transaction
         with transaction(self.db, "finish adjusting and distribute items"):
-            self._verify_quantities_match(run_uuid)
+            if not force:
+                self._verify_quantities_match(run_uuid)
             self._distribute_items_to_bidders(run_uuid)
             self._transition_run_state(run, RunState.DISTRIBUTING)
 
+        message = 'Distribution started!' if force else 'Adjustments complete! Moving to distribution.'
         return StateChangeResponse(
-            message='Adjustments complete! Moving to distribution.',
+            message=message,
             state=RunState.DISTRIBUTING,
             run_id=str(run_uuid),
             group_id=str(run.group_id),
@@ -453,7 +456,11 @@ class RunStateService(BaseService):
                 )
 
     def _distribute_items_to_bidders(self, run_id: UUID) -> None:
-        """Distribute purchased items to bidders."""
+        """Distribute purchased items to bidders.
+
+        When quantities match exactly, each bidder gets their full bid quantity.
+        When quantities don't match (force mode), distribute proportionally.
+        """
         shopping_items = self.repo.get_shopping_list_items(run_id)
         all_bids = self.repo.get_bids_by_run(run_id)
 
@@ -475,7 +482,18 @@ class RunStateService(BaseService):
                 shopping_item.id, total_requested
             )
 
-            for bid in product_bids:
-                self.repo.update_bid_distributed_quantities(
-                    bid.id, bid.quantity, shopping_item.purchased_price_per_unit
-                )
+            # Check if we need proportional distribution
+            if total_requested > shopping_item.purchased_quantity:
+                # Proportional distribution: scale down each bid
+                ratio = shopping_item.purchased_quantity / total_requested
+                for bid in product_bids:
+                    distributed_qty = bid.quantity * ratio
+                    self.repo.update_bid_distributed_quantities(
+                        bid.id, distributed_qty, shopping_item.purchased_price_per_unit
+                    )
+            else:
+                # Exact match or over-purchased: give everyone their full bid
+                for bid in product_bids:
+                    self.repo.update_bid_distributed_quantities(
+                        bid.id, bid.quantity, shopping_item.purchased_price_per_unit
+                    )

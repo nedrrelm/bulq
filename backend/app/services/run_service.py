@@ -278,7 +278,7 @@ class RunService(BaseService):
         """
         return self.start_run(run_id, user)
 
-    def finish_adjusting(self, run_id: str, user: User) -> StateChangeResponse:
+    def finish_adjusting(self, run_id: str, user: User, force: bool = False) -> StateChangeResponse:
         """Finish adjusting bids - transition from adjusting to distributing state (leader only).
 
         Delegates to RunStateService.
@@ -286,11 +286,12 @@ class RunService(BaseService):
         Args:
             run_id: Run ID as string
             user: Current user (must be leader)
+            force: If True, skip quantity verification
 
         Returns:
             StateChangeResponse with success message and new state
         """
-        return self.state_service.finish_adjusting(run_id, user)
+        return self.state_service.finish_adjusting(run_id, user, force)
 
     def cancel_run(self, run_id: str, user: User) -> CancelRunResponse:
         """Cancel a run.
@@ -451,9 +452,11 @@ class RunService(BaseService):
         # Get bids with participations and users eagerly loaded to avoid N+1 queries
         run_bids = self.repo.get_bids_by_run_with_participations(run.id)
 
-        # Get shopping list items if in adjusting state
+        # Get shopping list items if in adjusting, distributing, or completed state
         shopping_list_map = (
-            self._get_shopping_list_map(run) if run.state == RunState.ADJUSTING else {}
+            self._get_shopping_list_map(run)
+            if run.state in [RunState.ADJUSTING, RunState.DISTRIBUTING, RunState.COMPLETED]
+            else {}
         )
 
         # Get all unique product IDs that have bids

@@ -245,10 +245,27 @@ export default function RunPage() {
 
   const handleFinishAdjusting = async () => {
     try {
-      await finishAdjustingMutation.mutateAsync()
+      await finishAdjustingMutation.mutateAsync(false)
     } catch (err) {
       showToast(formatErrorForDisplay(err, 'finish adjusting'), 'error')
     }
+  }
+
+  const handleForceFinishAdjusting = () => {
+    const forceFinishAction = async () => {
+      try {
+        await finishAdjustingMutation.mutateAsync(true)
+        showToast('Moved to distribution!', 'success')
+      } catch (err) {
+        showToast(formatErrorForDisplay(err, 'force finish adjusting'), 'error')
+      }
+    }
+
+    showConfirm(
+      'Not all quantities have been adjusted. Are you sure you want to proceed to distribution anyway?',
+      forceFinishAction,
+      { danger: true }
+    )
   }
 
   // Distribution handlers
@@ -539,15 +556,24 @@ export default function RunPage() {
           <div className="info-card">
             <h3>Adjusting Bids</h3>
             <p>Some items had insufficient quantities. Participants need to reduce their bids until the total matches what was purchased.</p>
-            <button
-              onClick={handleFinishAdjusting}
-              className="btn btn-primary btn-lg"
-              disabled={finishAdjustingMutation.isPending}
-            >
-              {finishAdjustingMutation.isPending ? '⏳ Processing...' : '✓ Finish Adjusting'}
-            </button>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleFinishAdjusting}
+                className="btn btn-primary btn-lg"
+                disabled={finishAdjustingMutation.isPending}
+              >
+                {finishAdjustingMutation.isPending ? '⏳ Processing...' : '✓ Finish Adjusting'}
+              </button>
+              <button
+                onClick={handleForceFinishAdjusting}
+                className="btn btn-secondary btn-lg"
+                disabled={finishAdjustingMutation.isPending}
+              >
+                Force Finish
+              </button>
+            </div>
             <p className="ready-hint">
-              Click when all bid totals match purchased quantities.
+              Click "Finish Adjusting" when all bid totals match purchased quantities, or "Force Finish" to proceed anyway.
             </p>
           </div>
         )}
