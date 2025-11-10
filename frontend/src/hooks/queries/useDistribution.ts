@@ -14,11 +14,11 @@ export const distributionKeys = {
 /**
  * Get distribution data for a run (user-centric view)
  */
-export function useDistribution(runId: string | undefined) {
+export function useDistribution(runId: string | undefined, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: distributionKeys.list(runId!),
     queryFn: () => distributionApi.getDistribution(runId!),
-    enabled: !!runId,
+    enabled: !!runId && (options?.enabled !== false),
   })
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/RunPage.css'
@@ -26,6 +26,8 @@ import { useNotifications } from '../contexts/NotificationContext'
 import { useRun, runKeys, useToggleReady, useStartShopping, useFinishAdjusting } from '../hooks/queries'
 import { useAuth } from '../contexts/AuthContext'
 import { handleError, formatErrorForDisplay } from '../utils/errorHandling'
+import { useDistribution, useMarkPickedUp, useCompleteDistribution, distributionKeys } from '../hooks/queries/useDistribution'
+import type { DistributionUser } from '../schemas/distribution'
 
 // Using RunDetail type from API layer
 type Product = RunDetail['products'][0]
@@ -52,6 +54,13 @@ export default function RunPage() {
   const toggleReadyMutation = useToggleReady(runId)
   const startShoppingMutation = useStartShopping(runId)
   const finishAdjustingMutation = useFinishAdjusting(runId)
+
+  // Distribution data (only fetched when in distributing or completed state)
+  const shouldFetchDistribution = run?.state === 'distributing' || run?.state === 'completed'
+  const { data: allUsers = [] } = useDistribution(runId, { enabled: shouldFetchDistribution })
+  const markPickedUpMutation = useMarkPickedUp(runId)
+  const completeDistributionMutation = useCompleteDistribution(runId)
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
 
   const error = queryError instanceof Error ? queryError.message : ''
 
@@ -113,6 +122,9 @@ export default function RunPage() {
         message.type === 'ready_toggled' || message.type === 'state_changed' ||
         message.type === 'participant_removed' || message.type === 'helper_toggled') {
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+    } else if (message.type === 'distribution_updated') {
+      // Distribution update - refetch distribution data
+      queryClient.invalidateQueries({ queryKey: distributionKeys.list(runId) })
     } else if (message.type === 'reassignment_requested') {
       // Reassignment request created - fetch request for all participants
       fetchReassignmentRequest()
@@ -238,6 +250,52 @@ export default function RunPage() {
       showToast(formatErrorForDisplay(err, 'finish adjusting'), 'error')
     }
   }
+
+  // Distribution handlers
+  const handlePickup = async (bidId: string) => {
+    try {
+      await markPickedUpMutation.mutateAsync(bidId)
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'mark as picked up'), 'error')
+    }
+  }
+
+  const handleMarkAllPickedUp = async (user: DistributionUser) => {
+    try {
+      const unpickedProducts = user.products.filter(p => !p.is_picked_up)
+      for (const product of unpickedProducts) {
+        await markPickedUpMutation.mutateAsync(product.bid_id)
+      }
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'mark all as picked up'), 'error')
+    }
+  }
+
+  const handleCompleteRun = async () => {
+    try {
+      await completeDistributionMutation.mutateAsync()
+      showToast('Run completed successfully!', 'success')
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'complete run'), 'error')
+    }
+  }
+
+  const toggleExpand = (userId: string) => {
+    setExpandedUserId(expandedUserId === userId ? null : userId)
+  }
+
+  // Filter out users who have no purchased products
+  const distributionUsers = useMemo(() => {
+    return allUsers
+      .map((user) => ({
+        ...user,
+        products: user.products.filter(p => p.distributed_quantity > 0)
+      }))
+      .filter((user) => user.products.length > 0)
+  }, [allUsers])
+
+  const allPickedUp = distributionUsers.length > 0 && distributionUsers.every(user => user.all_picked_up)
+  const isLeaderOrHelper = run?.current_user_is_leader || run?.current_user_is_helper
 
   const handleCancelRun = () => {
     const cancelAction = async () => {
@@ -494,22 +552,86 @@ export default function RunPage() {
           </div>
         )}
 
-        {run.state === 'distributing' && (run.current_user_is_leader || run.current_user_is_helper) && (
-          <div className="info-card">
-            <h3>Distribution in Progress</h3>
-            <p>Shopping is complete. Time to distribute items to participants.</p>
-            <button
-              onClick={() => navigate(`/distribution/${runId}`)}
-              className="btn btn-success btn-lg"
-            >
-              📦 Open Distribution
-            </button>
-            <p className="ready-hint">
-              Track who picked up their items.
-            </p>
-          </div>
-        )}
       </div>
+
+      {/* Distribution Section - shown in distributing and completed states */}
+      {shouldFetchDistribution && distributionUsers.length > 0 && (
+        <div className="distribution-section">
+          <h3>Distribution</h3>
+          <div className="distribution-list">
+            {distributionUsers.map(user => (
+              <div key={user.user_id} className={`user-card ${user.all_picked_up ? 'completed' : ''}`}>
+                <div
+                  className="user-header"
+                  onClick={() => toggleExpand(user.user_id)}
+                >
+                  <div className="user-info">
+                    <span className="user-name">{user.user_name}</span>
+                    <span className="user-total">{user.total_cost} RSD</span>
+                  </div>
+                  <div className="user-actions">
+                    {user.all_picked_up && <span className="pickup-badge">✓ Picked up</span>}
+                    <span className="expand-icon">{expandedUserId === user.user_id ? '▼' : '▶'}</span>
+                  </div>
+                </div>
+
+                {expandedUserId === user.user_id && (
+                  <div className="user-products">
+                    <div className="user-products-header">
+                      {!user.all_picked_up && isLeaderOrHelper && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleMarkAllPickedUp(user)
+                          }}
+                          className="mark-all-button"
+                          disabled={markPickedUpMutation.isPending}
+                        >
+                          {markPickedUpMutation.isPending ? '⏳ Updating...' : 'Mark All Picked Up'}
+                        </button>
+                      )}
+                    </div>
+                    {user.products.map(product => (
+                      <div key={product.bid_id} className={`product-item ${product.is_picked_up ? 'picked-up' : ''}`}>
+                        <div className="product-info">
+                          <div className="product-name">{product.product_name}</div>
+                          <div className="product-details">
+                            <span>Requested: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                            <span>Distributed: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                            <span>@{product.price_per_unit} RSD</span>
+                            <span className="product-subtotal">{product.subtotal} RSD</span>
+                          </div>
+                        </div>
+                        {isLeaderOrHelper && (
+                          <button
+                            onClick={() => handlePickup(product.bid_id)}
+                            disabled={product.is_picked_up || markPickedUpMutation.isPending}
+                            className={`pickup-button ${product.is_picked_up ? 'picked-up' : ''}`}
+                          >
+                            {markPickedUpMutation.isPending ? '⏳ Updating...' : product.is_picked_up ? '✓ Picked up' : 'Mark Picked Up'}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {allPickedUp && isLeaderOrHelper && run?.state === 'distributing' && (
+            <div className="complete-section">
+              <button
+                onClick={handleCompleteRun}
+                className="complete-button"
+                disabled={completeDistributionMutation.isPending}
+              >
+                {completeDistributionMutation.isPending ? '⏳ Completing...' : 'Complete Run'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="products-section">
         <div className="products-header">

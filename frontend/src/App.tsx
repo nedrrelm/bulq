@@ -17,7 +17,6 @@ const ManageGroupPage = lazy(() => import('./components/ManageGroupPage'))
 const RunPage = lazy(() => import('./components/RunPage'))
 const JoinGroup = lazy(() => import('./components/JoinGroup'))
 const ShoppingPage = lazy(() => import('./components/ShoppingPage'))
-const DistributionPage = lazy(() => import('./components/DistributionPage'))
 const ProductPage = lazy(() => import('./components/ProductPage'))
 const StorePage = lazy(() => import('./components/StorePage'))
 const NotificationPage = lazy(() => import('./pages/NotificationPage'))
@@ -44,14 +43,6 @@ function ShoppingPageWrapper() {
   return (
     <AppLayout>
       <ShoppingPage />
-    </AppLayout>
-  )
-}
-
-function DistributionPageWrapper() {
-  return (
-    <AppLayout>
-      <DistributionPage />
     </AppLayout>
   )
 }
@@ -390,7 +381,6 @@ function AppRoutes() {
         <Route path="/groups/:groupId/manage" element={<ManageGroupPageWrapper />} />
         <Route path="/runs/:runId" element={<RunPageWrapper />} />
         <Route path="/shopping/:runId" element={<ShoppingPageWrapper />} />
-        <Route path="/distribution/:runId" element={<DistributionPageWrapper />} />
         <Route path="/products/:productId" element={<ProductPageWrapper />} />
         <Route path="/stores/:storeId" element={<StorePageWrapper />} />
         <Route path="/notifications" element={<NotificationPageWrapper />} />
