@@ -69,6 +69,7 @@ from .run_schemas import (
     RetractBidResponse,
     RunDetailResponse,
     StateChangeResponse,
+    UpdateRunCommentRequest,
     UserBidResponse,
 )
 from .search_schemas import (

@@ -15,6 +15,7 @@ from app.api.schemas import (
     ReadyToggleResponse,
     RunDetailResponse,
     StateChangeResponse,
+    UpdateRunCommentRequest,
 )
 from app.services import RunService
 from app.api.websocket_manager import manager
@@ -31,7 +32,7 @@ async def create_run(
 ):
     """Create a new run for a group."""
     service = RunService(db)
-    return service.create_run(request.group_id, request.store_id, current_user)
+    return service.create_run(request.group_id, request.store_id, current_user, request.comment)
 
 
 @router.get('/{run_id}', response_model=RunDetailResponse)
@@ -216,6 +217,32 @@ async def cancel_run(
     result = service.cancel_run(run_id, current_user)
 
     # No additional broadcast needed - state service handles notifications
+
+    return result
+
+
+@router.patch('/{run_id}/comment', response_model=MessageResponse)
+async def update_run_comment(
+    run_id: str,
+    request: UpdateRunCommentRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Update the comment/description for a run (leader only)."""
+    service = RunService(db)
+    result = service.update_run_comment(run_id, request.comment, current_user)
+
+    # Broadcast comment update to all participants
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'comment_updated',
+            'data': {
+                'run_id': run_id,
+                'comment': request.comment
+            }
+        }
+    )
 
     return result
 

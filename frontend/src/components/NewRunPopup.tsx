@@ -14,6 +14,7 @@ interface NewRunPopupProps {
 export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopupProps) {
   const [stores, setStores] = useState<Store[]>([])
   const [selectedStoreId, setSelectedStoreId] = useState('')
+  const [comment, setComment] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showNewStorePopup, setShowNewStorePopup] = useState(false)
@@ -61,7 +62,8 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     try {
       await runsApi.createRun({
         group_id: groupId,
-        store_id: selectedStoreId
+        store_id: selectedStoreId,
+        comment: comment.trim() || undefined
       })
       onSuccess()
     } catch (err) {
@@ -120,6 +122,21 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
                 + Create New Store
               </button>
             )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="comment" className="form-label">Comment (optional)</label>
+            <textarea
+              id="comment"
+              className="form-input"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="e.g., Bringing cooler, Meeting at 2pm"
+              disabled={loading}
+              maxLength={500}
+              rows={2}
+            />
+            <span className="char-counter">{comment.length}/500</span>
           </div>
 
           {stores.length > 0 && (

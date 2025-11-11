@@ -451,9 +451,9 @@ class DatabaseRepository(AbstractRepository):
 
     # ==================== Run & Participation Methods ====================
 
-    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
+    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None) -> Run:
         """Create a new run with the leader as first participant."""
-        run = Run(group_id=group_id, store_id=store_id, state=RunState.PLANNING)
+        run = Run(group_id=group_id, store_id=store_id, state=RunState.PLANNING, comment=comment)
         self.db.add(run)
         self.db.flush()  # Get the run ID without committing
 
@@ -465,6 +465,16 @@ class DatabaseRepository(AbstractRepository):
         self.db.commit()
         self.db.refresh(run)
         return run
+
+    def update_run_comment(self, run_id: UUID, comment: str | None) -> Run | None:
+        """Update the comment for a run."""
+        run = self.db.query(Run).filter(Run.id == run_id).first()
+        if run:
+            run.comment = comment
+            self.db.commit()
+            self.db.refresh(run)
+            return run
+        return None
 
     def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:
         """Get a user's participation in a run."""

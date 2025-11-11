@@ -118,6 +118,7 @@ class Run(Base):
     group_id = Column(UUID(as_uuid=True), ForeignKey('groups.id'), nullable=False, index=True)
     store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
     state = Column(String, nullable=False, default=RunState.PLANNING, index=True)
+    comment = Column(Text, nullable=True)  # Leader's comment/description for the run
     planned_on = Column(
         DateTime(timezone=True), nullable=True
     )  # Day the leader wants to go shopping

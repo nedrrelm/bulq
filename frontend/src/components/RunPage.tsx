@@ -70,6 +70,7 @@ export default function RunPage() {
   const [showReassignPopup, setShowReassignPopup] = useState(false)
   const [showManageHelpersPopup, setShowManageHelpersPopup] = useState(false)
   const [showForceConfirmPopup, setShowForceConfirmPopup] = useState(false)
+  const [showEditCommentPopup, setShowEditCommentPopup] = useState(false)
   const [reassignmentRequest, setReassignmentRequest] = useState<LeaderReassignmentRequest | null>(null)
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
@@ -120,7 +121,8 @@ export default function RunPage() {
     // This is simpler than manual state updates and ensures data consistency
     if (message.type === 'bid_updated' || message.type === 'bid_retracted' ||
         message.type === 'ready_toggled' || message.type === 'state_changed' ||
-        message.type === 'participant_removed' || message.type === 'helper_toggled') {
+        message.type === 'participant_removed' || message.type === 'helper_toggled' ||
+        message.type === 'comment_updated') {
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
     } else if (message.type === 'distribution_updated') {
       // Distribution update - refetch distribution data
@@ -501,6 +503,35 @@ export default function RunPage() {
                 )}
               </div>
             </div>
+            {run.comment && (
+              <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                <label>Comment:</label>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                  <span style={{ flex: 1 }}>{run.comment}</span>
+                  {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
+                    <button
+                      onClick={() => setShowEditCommentPopup(true)}
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                      title="Edit comment"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            {!run.comment && run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
+              <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                <button
+                  onClick={() => setShowEditCommentPopup(true)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.875rem' }}
+                >
+                  + Add Comment
+                </button>
+              </div>
+            )}
             <div className="info-item">
               <label>Status:</label>
               <span>{stateDisplay.description}</span>
@@ -870,6 +901,18 @@ export default function RunPage() {
         )}
       </Suspense>
 
+      {showEditCommentPopup && run && (
+        <EditCommentPopup
+          runId={runId}
+          currentComment={run.comment || ''}
+          onClose={() => setShowEditCommentPopup(false)}
+          onSuccess={() => {
+            setShowEditCommentPopup(false)
+            showToast('Comment updated!', 'success')
+          }}
+        />
+      )}
+
       {toast && (
         <Toast
           message={toast.message}
@@ -886,6 +929,83 @@ export default function RunPage() {
           danger={confirmState.danger}
         />
       )}
+    </div>
+  )
+}
+
+// EditCommentPopup component
+function EditCommentPopup({
+  runId,
+  currentComment,
+  onClose,
+  onSuccess
+}: {
+  runId: string
+  currentComment: string
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [comment, setComment] = useState(currentComment)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const queryClient = useQueryClient()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    try {
+      await runsApi.updateComment(runId, { comment: comment.trim() || null })
+      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update comment')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
+        <h3>Edit Comment</h3>
+        {error && <div className="alert alert-error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="comment" className="form-label">Comment</label>
+            <textarea
+              id="comment"
+              className="form-input"
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="e.g., Bringing cooler, Meeting at 2pm"
+              disabled={loading}
+              maxLength={500}
+              rows={3}
+              autoFocus
+            />
+            <span className="char-counter">{comment.length}/500</span>
+          </div>
+          <div className="button-group">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+            >
+              {loading ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
