@@ -137,6 +137,14 @@
 .product-name {
   font-weight: 500;
   margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shortage-badge {
+  font-size: 0.875rem;
+  color: #f59e0b;
 }
 
 .product-details {

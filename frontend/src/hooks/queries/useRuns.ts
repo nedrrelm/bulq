@@ -241,6 +241,8 @@ export function useFinishAdjusting(runId: string) {
     mutationFn: (force: boolean = false) => runsApi.finishAdjusting(runId, force),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+      // Also invalidate distribution data since it will be fetched when state changes to distributing
+      queryClient.invalidateQueries({ queryKey: ['distribution', 'list', runId] })
     },
   })
 }

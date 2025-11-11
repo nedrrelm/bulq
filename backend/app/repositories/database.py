@@ -428,7 +428,7 @@ class DatabaseRepository(AbstractRepository):
         )
 
     def update_bid_distributed_quantities(
-        self, bid_id: UUID, quantity: int, price_per_unit: Decimal
+        self, bid_id: UUID, quantity: float, price_per_unit: Decimal
     ) -> None:
         """Update the distributed quantity and price for a bid."""
         bid = self.db.query(ProductBid).filter(ProductBid.id == bid_id).first()

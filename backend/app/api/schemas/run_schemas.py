@@ -47,7 +47,7 @@ class UserBidResponse(BaseModel):
 
     user_id: str
     user_name: str
-    quantity: int
+    quantity: float
     interested_only: bool
 
     class Config:
@@ -62,11 +62,11 @@ class ProductResponse(BaseModel):
     brand: str | None = None
     unit: str | None = None
     current_price: str | None
-    total_quantity: int
+    total_quantity: float
     interested_count: int
     user_bids: list[UserBidResponse]
     current_user_bid: UserBidResponse | None
-    purchased_quantity: int | None = None  # For adjusting state
+    purchased_quantity: float | None = None  # For adjusting state
 
     class Config:
         from_attributes = True
