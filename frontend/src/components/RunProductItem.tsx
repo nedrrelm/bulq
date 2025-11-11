@@ -9,7 +9,7 @@ interface RunProductItemProps {
   canBid: boolean
   onPlaceBid: (product: Product) => void
   onRetractBid: (product: Product) => void
-  getUserInitials: (name: string) => string
+  getUserInitials: (name: string, allNames?: string[]) => string
 }
 
 /**
@@ -124,14 +124,17 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
       <div className="bid-users">
         <h5>Bidders:</h5>
         <div className="user-avatars">
-          {product.user_bids.map((bid, index) => (
+          {product.user_bids.map((bid, index) => {
+            const allBidderNames = product.user_bids.map(b => b.user_name)
+            return (
             <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? 'Interested' : `${bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}`}>
-              <span className="avatar-initials">{getUserInitials(bid.user_name)}</span>
+              <span className="avatar-initials">{getUserInitials(bid.user_name, allBidderNames)}</span>
               <span className="bid-quantity">
                 {bid.interested_only ? '?' : bid.quantity}
               </span>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
