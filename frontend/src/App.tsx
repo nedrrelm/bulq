@@ -320,7 +320,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Hamburger button - mobile only */}
           <button
-            className="hamburger-button"
+            className={`hamburger-button ${menuOpen ? 'open' : ''}`}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Menu"
           >
@@ -350,6 +350,102 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <>
           <div className="menu-overlay" onClick={() => setMenuOpen(false)} />
           <div className="mobile-drawer">
+            <div className="drawer-search">
+              <input
+                type="text"
+                placeholder="Search products, stores, groups..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="form-input"
+              />
+              {hasResults && (
+                <div className="search-dropdown">
+                  {(searchResults?.products?.length ?? 0) > 0 && (
+                    <>
+                      <div className="search-category-label">Products</div>
+                      {searchResults!.products!.map((product: { id: string; name: string; brand: string | null; stores: { store_name: string; price: number | null }[] }) => (
+                        <div
+                          key={`product-${product.id}`}
+                          className="search-result-item"
+                          onClick={() => {
+                            navigate(`/products/${product.id}`)
+                            closeSearch()
+                            setMenuOpen(false)
+                          }}
+                        >
+                          <div className="product-info">
+                            <strong>{product.name}</strong>
+                            {product.brand && <span className="product-brand">{product.brand}</span>}
+                            {product.stores.length > 0 && (
+                              <span className="product-store">
+                                {product.stores.map((s: { store_name: string; price: number | null }) => s.store_name).join(', ')}
+                              </span>
+                            )}
+                          </div>
+                          {product.stores.length > 0 && product.stores[0] && product.stores[0].price && (
+                            <span className="product-price">${product.stores[0].price.toFixed(2)}</span>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {(searchResults?.stores?.length ?? 0) > 0 && (
+                    <>
+                      {(searchResults?.products?.length ?? 0) > 0 && <div className="search-divider" />}
+                      <div className="search-category-label">Stores</div>
+                      {searchResults!.stores!.map((store: { id: string; name: string; address: string | null }) => (
+                        <div
+                          key={`store-${store.id}`}
+                          className="search-result-item"
+                          onClick={() => {
+                            navigate(`/stores/${store.id}`)
+                            closeSearch()
+                            setMenuOpen(false)
+                          }}
+                        >
+                          <div className="product-info">
+                            <strong>{store.name}</strong>
+                            {store.address && <span className="product-store">{store.address}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {(searchResults?.groups?.length ?? 0) > 0 && (
+                    <>
+                      {((searchResults?.products?.length ?? 0) > 0 || (searchResults?.stores?.length ?? 0) > 0) && (
+                        <div className="search-divider" />
+                      )}
+                      <div className="search-category-label">Groups</div>
+                      {searchResults!.groups!.map((group: { id: string; name: string; member_count: number }) => (
+                        <div
+                          key={`group-${group.id}`}
+                          className="search-result-item"
+                          onClick={() => {
+                            navigate(`/groups/${group.id}`)
+                            closeSearch()
+                            setMenuOpen(false)
+                          }}
+                        >
+                          <div className="product-info">
+                            <strong>{group.name}</strong>
+                            <span className="product-store">{group.member_count} members</span>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              {searchQuery.trim().length >= 2 && !searching && !hasResults && (
+                <div className="search-dropdown">
+                  <div className="search-no-results">No results found</div>
+                </div>
+              )}
+            </div>
+            <div className="drawer-divider" />
             {user.is_admin && (
               <button
                 onClick={() => handleMenuItemClick(() => navigate('/admin'))}
