@@ -6,6 +6,7 @@ from app.core.models import User
 from app.infrastructure.request_context import get_logger
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
+    AddMorePurchaseRequest,
     CompleteShoppingResponse,
     MarkPurchasedRequest,
     MarkPurchasedResponse,
@@ -85,6 +86,37 @@ async def mark_purchased(
                 'run_id': run_id,
                 'item_id': item_id,
                 'action': 'marked_purchased'
+            }
+        }
+    )
+
+    return result
+
+
+@router.post('/{run_id}/items/{item_id}/add-more', response_model=MessageResponse)
+async def add_more_purchase(
+    run_id: str,
+    item_id: str,
+    request: AddMorePurchaseRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Add more purchased quantity to an already-purchased item."""
+    service = ShoppingService(db)
+
+    result = await service.add_more_purchased(
+        run_id, item_id, request.quantity, request.price_per_unit, request.total, current_user
+    )
+
+    # Broadcast shopping item update to all connected clients for this run
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'shopping_item_updated',
+            'data': {
+                'run_id': run_id,
+                'item_id': item_id,
+                'action': 'added_more'
             }
         }
     )

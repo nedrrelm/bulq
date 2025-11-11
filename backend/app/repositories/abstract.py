@@ -334,6 +334,23 @@ class AbstractRepository(ABC):
         raise NotImplementedError('Subclass must implement mark_item_purchased')
 
     @abstractmethod
+    def add_more_purchased(
+        self, item_id: UUID, additional_quantity: float, additional_total: float, new_price_per_unit: float
+    ) -> ShoppingListItem | None:
+        """Add more purchased quantity to an already-purchased item.
+
+        Args:
+            item_id: The shopping list item ID
+            additional_quantity: Additional quantity purchased
+            additional_total: Additional total cost
+            new_price_per_unit: New weighted average price per unit
+
+        Returns:
+            Updated ShoppingListItem or None if not found
+        """
+        raise NotImplementedError('Subclass must implement add_more_purchased')
+
+    @abstractmethod
     def update_shopping_list_item_requested_quantity(
         self, item_id: UUID, requested_quantity: int
     ) -> None:

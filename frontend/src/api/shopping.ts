@@ -16,6 +16,12 @@ export interface PurchaseRequest {
   total: number
 }
 
+export interface AddMorePurchaseRequest {
+  quantity: number
+  price_per_unit: number
+  total: number
+}
+
 export const shoppingApi = {
   getShoppingList: (runId: string) =>
     api.get<ShoppingListItem[]>(`/shopping/${runId}/items`, z.array(shoppingListItemSchema)),
@@ -25,6 +31,9 @@ export const shoppingApi = {
 
   markPurchased: (runId: string, itemId: string, data: PurchaseRequest) =>
     api.post(`/shopping/${runId}/items/${itemId}/purchase`, data),
+
+  addMorePurchase: (runId: string, itemId: string, data: AddMorePurchaseRequest) =>
+    api.post(`/shopping/${runId}/items/${itemId}/add-more`, data),
 
   completeShopping: (runId: string) =>
     api.post(`/shopping/${runId}/complete`)

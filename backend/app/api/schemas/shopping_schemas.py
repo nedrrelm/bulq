@@ -95,6 +95,44 @@ class MarkPurchasedResponse(BaseModel):
     purchase_order: int
 
 
+class AddMorePurchaseRequest(BaseModel):
+    """Request model for adding more quantity to an already-purchased item."""
+
+    quantity: float = Field(gt=0, le=9999)
+    price_per_unit: float = Field(gt=0, le=99999.99)
+    total: float = Field(gt=0, le=999999.99)
+
+    @field_validator('quantity')
+    @classmethod
+    def validate_quantity(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError('Quantity must be greater than 0')
+        # Check max 2 decimal places
+        if round(v, 2) != v:
+            raise ValueError('Quantity can have at most 2 decimal places')
+        return v
+
+    @field_validator('price_per_unit')
+    @classmethod
+    def validate_price_per_unit(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError('Price per unit must be greater than 0')
+        # Check max 2 decimal places
+        if round(v, 2) != v:
+            raise ValueError('Price per unit can have at most 2 decimal places')
+        return v
+
+    @field_validator('total')
+    @classmethod
+    def validate_total(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError('Total must be greater than 0')
+        # Check max 2 decimal places
+        if round(v, 2) != v:
+            raise ValueError('Total can have at most 2 decimal places')
+        return v
+
+
 class CompleteShoppingResponse(BaseModel):
     """Response model for completing shopping."""
 
