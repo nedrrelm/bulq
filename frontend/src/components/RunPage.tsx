@@ -194,8 +194,24 @@ export default function RunPage() {
     setSelectedProduct(null)
   }
 
-  const getUserInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase()
+  const getUserInitials = (name: string, allNames?: string[]) => {
+    if (!name) return ''
+
+    const firstInitial = name[0]?.toUpperCase() || ''
+
+    // If allNames provided, check if first letter conflicts with others
+    if (allNames && allNames.length > 1) {
+      const firstLetters = allNames.map(n => n[0]?.toUpperCase() || '')
+      const hasDuplicate = firstLetters.filter(l => l === firstInitial).length > 1
+
+      if (hasDuplicate) {
+        // Use first 2 characters if duplicate found
+        return name.substring(0, 2).toUpperCase()
+      }
+    }
+
+    // Default: use first letter only
+    return firstInitial
   }
 
   const handleAddProduct = () => {
