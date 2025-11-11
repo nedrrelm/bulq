@@ -64,6 +64,7 @@ export default function ShoppingPage() {
   const [showPurchasePopup, setShowPurchasePopup] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ShoppingListItem | null>(null)
   const [showPricePopup, setShowPricePopup] = useState(false)
+  const [showBuyMorePopup, setShowBuyMorePopup] = useState(false)
   const { toast, showToast, hideToast} = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
@@ -90,6 +91,11 @@ export default function ShoppingPage() {
   const handleMarkPurchased = (item: ShoppingListItem) => {
     setSelectedItem(item)
     setShowPurchasePopup(true)
+  }
+
+  const handleBuyMore = (item: ShoppingListItem) => {
+    setSelectedItem(item)
+    setShowBuyMorePopup(true)
   }
 
   const handleSubmitPrice = async (price: number, notes: string, minimumQuantity?: number) => {
@@ -125,6 +131,24 @@ export default function ShoppingPage() {
       setSelectedItem(null)
     } catch (err) {
       showToast(formatErrorForDisplay(err, 'mark as purchased'), 'error')
+    }
+  }
+
+  const handleSubmitBuyMore = async (quantity: number, pricePerUnit: number, total: number) => {
+    if (!selectedItem) return
+
+    try {
+      await shoppingApi.addMorePurchase(runId, selectedItem.id, {
+        quantity,
+        price_per_unit: pricePerUnit,
+        total
+      })
+      // Invalidate shopping list to refetch with updates
+      queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
+      setShowBuyMorePopup(false)
+      setSelectedItem(null)
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'add more purchase'), 'error')
     }
   }
 
@@ -212,7 +236,7 @@ export default function ShoppingPage() {
             <h3>Purchased ({purchasedItems.length})</h3>
             <div className="shopping-list">
               {purchasedItems.map(item => (
-                <ShoppingItem key={item.id} item={item} />
+                <ShoppingItem key={item.id} item={item} onBuyMore={handleBuyMore} />
               ))}
             </div>
           </div>
@@ -241,6 +265,17 @@ export default function ShoppingPage() {
         />
       )}
 
+      {showBuyMorePopup && selectedItem && (
+        <BuyMorePopup
+          item={selectedItem}
+          onSubmit={handleSubmitBuyMore}
+          onClose={() => {
+            setShowBuyMorePopup(false)
+            setSelectedItem(null)
+          }}
+        />
+      )}
+
       {toast && (
         <Toast
           message={toast.message}
@@ -263,11 +298,13 @@ export default function ShoppingPage() {
 function ShoppingItem({
   item,
   onAddPrice,
-  onMarkPurchased
+  onMarkPurchased,
+  onBuyMore
 }: {
   item: ShoppingListItem
   onAddPrice?: (item: ShoppingListItem) => void
   onMarkPurchased?: (item: ShoppingListItem) => void
+  onBuyMore?: (item: ShoppingListItem) => void
 }) {
   const isPurchased = item.is_purchased
   const quantityDiffers = isPurchased && item.purchased_quantity !== item.requested_quantity
@@ -308,6 +345,13 @@ function ShoppingItem({
           <div className="purchase-detail">
             {item.purchased_price_per_unit} RSD × {item.purchased_quantity}{item.product_unit ? ` ${item.product_unit}` : ''} = <strong>{item.purchased_total} RSD</strong>
           </div>
+          {onBuyMore && (
+            <div className="item-actions">
+              <button onClick={() => onBuyMore(item)} className="btn btn-primary btn-sm">
+                + Buy More
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="item-actions">
@@ -456,6 +500,195 @@ function PricePopup({
             </button>
             <button type="submit" className="btn btn-primary">
               Add Price
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function BuyMorePopup({
+  item,
+  onSubmit,
+  onClose
+}: {
+  item: ShoppingListItem
+  onSubmit: (quantity: number, pricePerUnit: number, total: number) => void
+  onClose: () => void
+}) {
+  const [quantity, setQuantity] = useState('')
+  const [pricePerUnit, setPricePerUnit] = useState('')
+  const [total, setTotal] = useState('')
+  const [priceMode, setPriceMode] = useState<'unit' | 'total'>('unit')
+  const [quantityError, setQuantityError] = useState('')
+  const [priceError, setPriceError] = useState('')
+  const [totalError, setTotalError] = useState('')
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useModalFocusTrap(modalRef)
+
+  const validateQuantity = (value: string): boolean => {
+    setQuantityError('')
+
+    const validation = validateDecimal(value, 0.01, 9999, 2, 'Quantity')
+    if (!validation.isValid) {
+      setQuantityError(validation.error || 'Invalid quantity')
+      return false
+    }
+
+    const qty = parseDecimal(value)
+    if (qty === 0) {
+      setQuantityError('Quantity must be greater than 0')
+      return false
+    }
+
+    return true
+  }
+
+  const validatePrice = (value: string): boolean => {
+    setPriceError('')
+
+    const validation = validateDecimal(value, 0.01, 99999.99, 2, 'Price per unit')
+    if (!validation.isValid) {
+      setPriceError(validation.error || 'Invalid price')
+      return false
+    }
+
+    return true
+  }
+
+  const validateTotal = (value: string): boolean => {
+    setTotalError('')
+
+    const validation = validateDecimal(value, 0.01, 999999.99, 2, 'Total')
+    if (!validation.isValid) {
+      setTotalError(validation.error || 'Invalid total')
+      return false
+    }
+
+    return true
+  }
+
+  const handleQuantityChange = (newQuantity: string) => {
+    setQuantity(newQuantity)
+    setQuantityError('')
+    if (priceMode === 'unit' && pricePerUnit) {
+      const qtyNum = parseFloat(newQuantity)
+      const priceNum = parseFloat(pricePerUnit)
+      if (!isNaN(qtyNum) && !isNaN(priceNum)) {
+        setTotal((qtyNum * priceNum).toFixed(2))
+      }
+    } else if (priceMode === 'total' && total) {
+      const qtyNum = parseFloat(newQuantity)
+      const totalNum = parseFloat(total)
+      if (!isNaN(qtyNum) && !isNaN(totalNum) && qtyNum !== 0) {
+        setPricePerUnit((totalNum / qtyNum).toFixed(2))
+      }
+    }
+  }
+
+  const handlePricePerUnitChange = (newPrice: string) => {
+    setPricePerUnit(newPrice)
+    setPriceError('')
+    setPriceMode('unit')
+    if (quantity && newPrice) {
+      const qtyNum = parseFloat(quantity)
+      const priceNum = parseFloat(newPrice)
+      if (!isNaN(qtyNum) && !isNaN(priceNum)) {
+        setTotal((qtyNum * priceNum).toFixed(2))
+      }
+    }
+  }
+
+  const handleTotalChange = (newTotal: string) => {
+    setTotal(newTotal)
+    setTotalError('')
+    setPriceMode('total')
+    if (quantity && newTotal) {
+      const qtyNum = parseFloat(quantity)
+      const totalNum = parseFloat(newTotal)
+      if (!isNaN(qtyNum) && !isNaN(totalNum) && qtyNum !== 0) {
+        setPricePerUnit((totalNum / qtyNum).toFixed(2))
+      }
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const isQuantityValid = validateQuantity(quantity)
+    const isPriceValid = validatePrice(pricePerUnit)
+    const isTotalValid = validateTotal(total)
+
+    if (!isQuantityValid || !isPriceValid || !isTotalValid) {
+      return
+    }
+
+    const qtyNum = parseDecimal(quantity)
+    const priceNum = parseDecimal(pricePerUnit)
+    const totalNum = parseDecimal(total)
+
+    onSubmit(qtyNum, priceNum, totalNum)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
+        <h3>Buy More</h3>
+        <p><strong>{item.product_name}</strong></p>
+        <p className="requested-hint">
+          Already purchased: {item.purchased_quantity}{item.product_unit ? ` ${item.product_unit}` : ''}
+        </p>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Additional Quantity</label>
+            <input
+              type="number"
+              step="0.01"
+              value={quantity}
+              onChange={e => handleQuantityChange(e.target.value)}
+              className={`form-input ${quantityError ? 'input-error' : ''}`}
+              autoFocus
+              required
+              min="0.01"
+            />
+            {quantityError && <span className="error-message">{quantityError}</span>}
+          </div>
+          <div className="form-group">
+            <label>Price per Unit</label>
+            <input
+              type="number"
+              step="0.01"
+              value={pricePerUnit}
+              onChange={e => handlePricePerUnitChange(e.target.value)}
+              placeholder="12.99"
+              className={`form-input ${priceError ? 'input-error' : ''}`}
+              required
+              min="0.01"
+            />
+            {priceError && <span className="error-message">{priceError}</span>}
+          </div>
+          <div className="form-group">
+            <label>Total Price</label>
+            <input
+              type="number"
+              step="0.01"
+              value={total}
+              onChange={e => handleTotalChange(e.target.value)}
+              placeholder="25.98"
+              className={`form-input ${totalError ? 'input-error' : ''}`}
+              required
+              min="0.01"
+            />
+            {totalError && <span className="error-message">{totalError}</span>}
+          </div>
+          <div className="button-group">
+            <button type="button" onClick={onClose} className="btn btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Add Purchase
             </button>
           </div>
         </form>

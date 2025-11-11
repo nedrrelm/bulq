@@ -327,6 +327,96 @@ class ShoppingService(BaseService):
 
         return MarkPurchasedResponse(message='Item marked as purchased', purchase_order=next_order)
 
+    async def add_more_purchased(
+        self,
+        run_id: str,
+        item_id: str,
+        quantity: float,
+        price_per_unit: float,
+        total: float,
+        user: User,
+    ) -> MessageResponse:
+        """Add more purchased quantity to an already-purchased item.
+
+        This method:
+        1. Verifies the user is the run leader or helper
+        2. Calculates the new weighted average price per unit
+        3. Updates the shopping list item with new totals
+        4. Creates a new ProductAvailability if the price differs
+
+        Args:
+            run_id: The run ID as string
+            item_id: The shopping list item ID as string
+            quantity: The additional quantity purchased
+            price_per_unit: The price per unit for this additional purchase
+            total: The total price for this additional purchase
+            user: The authenticated user
+
+        Returns:
+            MessageResponse with success message
+
+        Raises:
+            BadRequestError: If ID format is invalid or item is not purchased
+            NotFoundError: If run or item is not found
+            ForbiddenError: If user is not the run leader or helper
+        """
+        # Validate IDs
+        try:
+            run_uuid = UUID(run_id)
+            item_uuid = UUID(item_id)
+        except ValueError as e:
+            raise BadRequestError('Invalid ID format') from e
+
+        # Get the run
+        run = self.repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError('Run', run_id)
+
+        # Verify user is the run leader or helper
+        participation = self.repo.get_participation(user.id, run_uuid)
+        if not participation or not self._is_leader_or_helper(participation):
+            raise ForbiddenError('Only the run leader or helpers can add more purchases')
+
+        # Get the shopping list item
+        item = self.repo.get_shopping_list_item(item_uuid)
+        if not item:
+            raise NotFoundError('Shopping list item', item_id)
+
+        if not item.is_purchased:
+            raise BadRequestError('Can only add more to already-purchased items')
+
+        # Calculate new weighted average price per unit
+        current_quantity = float(item.purchased_quantity or 0)
+        current_total = float(item.purchased_total or 0)
+        new_quantity = current_quantity + quantity
+        new_total = current_total + total
+        new_price_per_unit = new_total / new_quantity if new_quantity > 0 else 0
+
+        # Update the shopping list item
+        updated_item = self.repo.add_more_purchased(item_uuid, quantity, total, new_price_per_unit)
+        if not updated_item:
+            raise NotFoundError('Shopping list item', item_id)
+
+        # Update ProductAvailability if the price differs from today's prices
+        await self._update_product_availability_if_needed(
+            item.product_id, run.store_id, price_per_unit, user.id
+        )
+
+        logger.info(
+            'Added more purchased quantity to shopping list item',
+            extra={
+                'run_id': run_id,
+                'item_id': item_id,
+                'additional_quantity': quantity,
+                'additional_total': total,
+                'new_total_quantity': new_quantity,
+                'new_total': new_total,
+                'user_id': str(user.id),
+            },
+        )
+
+        return MessageResponse(message='Additional purchase added successfully')
+
     async def complete_shopping(
         self, run_id: str, user: User, db: Any = None
     ) -> CompleteShoppingResponse:

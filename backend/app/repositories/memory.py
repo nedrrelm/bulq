@@ -717,6 +717,18 @@ class MemoryRepository(AbstractRepository):
             return item
         return None
 
+    def add_more_purchased(
+        self, item_id: UUID, additional_quantity: float, additional_total: float, new_price_per_unit: float
+    ) -> ShoppingListItem | None:
+        """Add more purchased quantity to an already-purchased item."""
+        item = self._shopping_list_items.get(item_id)
+        if item and item.is_purchased:
+            item.purchased_quantity = float(item.purchased_quantity or 0) + additional_quantity
+            item.purchased_total = Decimal(str(float(item.purchased_total or 0) + additional_total))
+            item.purchased_price_per_unit = Decimal(str(new_price_per_unit))
+            return item
+        return None
+
     def update_shopping_list_item_requested_quantity(
         self, item_id: UUID, requested_quantity: int
     ) -> None:

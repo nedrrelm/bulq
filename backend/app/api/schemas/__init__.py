@@ -77,6 +77,7 @@ from .search_schemas import (
     StoreSearchResult,
 )
 from .shopping_schemas import (
+    AddMorePurchaseRequest,
     CompleteShoppingResponse,
     MarkPurchasedRequest,
     MarkPurchasedResponse,
