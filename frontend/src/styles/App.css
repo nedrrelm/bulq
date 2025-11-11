@@ -53,9 +53,7 @@ main.dashboard {
 
 @media (max-width: 768px) {
   .header-search {
-    order: 3;
-    flex-basis: 100%;
-    max-width: 100%;
+    display: none;
   }
 }
 
@@ -210,6 +208,10 @@ main.dashboard {
   transition: all 0.3s ease;
 }
 
+.hamburger-button.open .hamburger-icon span {
+  background: var(--color-text);
+}
+
 /* Mobile drawer overlay */
 .menu-overlay {
   position: fixed;
@@ -237,14 +239,16 @@ main.dashboard {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 250px;
+  width: 280px;
+  max-width: 80vw;
   background: white;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  padding: 1rem 0;
   animation: slideIn 0.3s ease;
+  overflow-y: auto;
+  padding-top: 80px;
 }
 
 @keyframes slideIn {
@@ -274,6 +278,40 @@ main.dashboard {
 
 .drawer-item:last-child {
   border-bottom: none;
+}
+
+/* Drawer search section */
+.drawer-search {
+  padding: 1rem;
+  position: relative;
+}
+
+.drawer-search .form-input {
+  width: 100%;
+  background: white !important;
+  border: 1px solid var(--color-gray-300);
+  color: var(--color-text) !important;
+}
+
+.drawer-search .form-input:focus {
+  background: white !important;
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.drawer-search .search-dropdown {
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  max-height: 300px;
+}
+
+.drawer-divider {
+  height: 1px;
+  background-color: var(--color-gray-200);
+  margin: 0.5rem 0;
 }
 
 .admin-button {
