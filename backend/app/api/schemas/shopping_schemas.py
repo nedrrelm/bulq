@@ -18,9 +18,9 @@ class ShoppingListItemResponse(BaseModel):
     product_id: str
     product_name: str
     product_unit: str | None = None
-    requested_quantity: int
+    requested_quantity: float
     recent_prices: list[PriceObservation]
-    purchased_quantity: int | None
+    purchased_quantity: float | None
     purchased_price_per_unit: str | None
     purchased_total: str | None
     is_purchased: bool

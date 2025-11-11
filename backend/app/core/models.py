@@ -200,11 +200,11 @@ class ProductBid(Base):
         UUID(as_uuid=True), ForeignKey('run_participations.id'), nullable=False, index=True
     )
     product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
-    quantity = Column(Integer, nullable=False, default=0)
+    quantity = Column(DECIMAL(10, 2), nullable=False, default=0)
     interested_only = Column(Boolean, nullable=False, default=False)
 
     # Distribution fields
-    distributed_quantity = Column(Integer, nullable=True)  # Actual quantity allocated to user
+    distributed_quantity = Column(DECIMAL(10, 2), nullable=True)  # Actual quantity allocated to user
     distributed_price_per_unit = Column(DECIMAL(10, 2), nullable=True)  # Price we paid per unit
     is_picked_up = Column(
         Boolean, nullable=False, default=False
@@ -259,8 +259,8 @@ class ShoppingListItem(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
     product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
-    requested_quantity = Column(Integer, nullable=False)
-    purchased_quantity = Column(Integer, nullable=True)
+    requested_quantity = Column(DECIMAL(10, 2), nullable=False)
+    purchased_quantity = Column(DECIMAL(10, 2), nullable=True)
     purchased_price_per_unit = Column(DECIMAL(10, 2), nullable=True)
     purchased_total = Column(DECIMAL(10, 2), nullable=True)
     is_purchased = Column(Boolean, nullable=False, default=False)

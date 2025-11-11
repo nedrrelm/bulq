@@ -262,7 +262,7 @@ export default function RunPage() {
     }
 
     showConfirm(
-      'Not all quantities have been adjusted. Are you sure you want to proceed to distribution anyway?',
+      'Not all quantities have been adjusted. Items will be distributed proportionally based on each user\'s bid. For example, if you purchased 10 units but users bid for 15 total, each user will receive 2/3 of their original bid. Are you sure you want to proceed?',
       forceFinishAction,
       { danger: true }
     )
@@ -303,12 +303,27 @@ export default function RunPage() {
 
   // Filter out users who have no purchased products
   const distributionUsers = useMemo(() => {
-    return allUsers
-      .map((user) => ({
-        ...user,
-        products: user.products.filter(p => p.distributed_quantity > 0)
-      }))
+    console.log('Distribution raw data:', { allUsers, count: allUsers.length })
+    const result = allUsers
+      .map((user) => {
+        const filteredProducts = user.products.filter(p => {
+          console.log('Product filter:', {
+            user: user.user_name,
+            product: p.product_name,
+            distributed_quantity: p.distributed_quantity,
+            type: typeof p.distributed_quantity,
+            passes: p.distributed_quantity && p.distributed_quantity > 0
+          })
+          return p.distributed_quantity && p.distributed_quantity > 0
+        })
+        return {
+          ...user,
+          products: filteredProducts
+        }
+      })
       .filter((user) => user.products.length > 0)
+    console.log('Distribution filtered result:', { result, count: result.length })
+    return result
   }, [allUsers])
 
   const allPickedUp = distributionUsers.length > 0 && distributionUsers.every(user => user.all_picked_up)
@@ -581,11 +596,16 @@ export default function RunPage() {
       </div>
 
       {/* Distribution Section - shown in distributing and completed states */}
-      {shouldFetchDistribution && distributionUsers.length > 0 && (
+      {shouldFetchDistribution && (
         <div className="distribution-section">
           <h3>Distribution</h3>
-          <div className="distribution-list">
-            {distributionUsers.map(user => (
+          {distributionUsers.length === 0 ? (
+            <div className="empty-state">
+              <p>No items to distribute. Either no products were purchased or no users have allocated items.</p>
+            </div>
+          ) : (
+            <div className="distribution-list">
+              {distributionUsers.map(user => (
               <div key={user.user_id} className={`user-card ${user.all_picked_up ? 'completed' : ''}`}>
                 <div
                   className="user-header"
@@ -620,10 +640,15 @@ export default function RunPage() {
                     {user.products.map(product => (
                       <div key={product.bid_id} className={`product-item ${product.is_picked_up ? 'picked-up' : ''}`}>
                         <div className="product-info">
-                          <div className="product-name">{product.product_name}</div>
+                          <div className="product-name">
+                            {product.product_name}
+                            {product.distributed_quantity < product.requested_quantity && (
+                              <span className="shortage-badge" title="Quantity reduced due to shortage">⚠️</span>
+                            )}
+                          </div>
                           <div className="product-details">
                             <span>Requested: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
-                            <span>Distributed: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                            <span>Allocated: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
                             <span>@{product.price_per_unit} RSD</span>
                             <span className="product-subtotal">{product.subtotal} RSD</span>
                           </div>
@@ -643,7 +668,8 @@ export default function RunPage() {
                 )}
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
           {allPickedUp && isLeaderOrHelper && run?.state === 'distributing' && (
             <div className="complete-section">

@@ -48,11 +48,43 @@ class DistributionService(BaseService):
         """
         self._validate_distribution_access(run_id, current_user)
         all_bids = self.repo.get_bids_by_run_with_participations(run_id)
+
+        logger.info(f"Found {len(all_bids)} bids for distribution", extra={'run_id': str(run_id)})
+        for bid in all_bids:
+            logger.info(
+                f"Bid: product={bid.product_id}, interested_only={bid.interested_only}, "
+                f"distributed_qty={bid.distributed_quantity}, type={type(bid.distributed_quantity).__name__}",
+                extra={'run_id': str(run_id), 'bid_id': str(bid.id)}
+            )
+
         users_data = self._aggregate_bids_by_user(all_bids)
-        distributions = [
-            self._build_user_distribution(user_data) for user_data in users_data.values()
-        ]
-        return self._sort_distributions(distributions)
+        logger.info(f"Aggregated into {len(users_data)} users", extra={'run_id': str(run_id)})
+
+        distributions = []
+        for user_data in users_data.values():
+            # Skip users with no products (all bids were unpurchased)
+            if not user_data['products']:
+                logger.info(f"Skipping user {user_data['user_name']}: no purchased products",
+                           extra={'run_id': str(run_id)})
+                continue
+            try:
+                dist = self._build_user_distribution(user_data)
+                logger.info(f"Built distribution for user {user_data['user_name']}: {len(user_data['products'])} products",
+                           extra={'run_id': str(run_id)})
+                distributions.append(dist)
+            except Exception as e:
+                logger.error(f"Error building distribution for user {user_data.get('user_name', 'unknown')}: {e}",
+                            extra={'run_id': str(run_id)}, exc_info=True)
+
+        logger.info(f"Returning {len(distributions)} distributions", extra={'run_id': str(run_id)})
+        sorted_distributions = self._sort_distributions(distributions)
+
+        # Log the actual data being returned
+        for dist in sorted_distributions:
+            logger.info(f"Distribution data: user={dist.user_name}, products={len(dist.products)}, total={dist.total_cost}",
+                       extra={'run_id': str(run_id)})
+
+        return sorted_distributions
 
     def _validate_distribution_access(self, run_id: UUID, current_user: User) -> None:
         """Validate user has access to view distribution."""
@@ -78,7 +110,10 @@ class DistributionService(BaseService):
         users_data = {}
 
         for bid in all_bids:
-            if bid.interested_only or not bid.distributed_quantity:
+            # Skip interested-only bids or bids with no distributed quantity
+            if bid.interested_only:
+                continue
+            if bid.distributed_quantity is None or float(bid.distributed_quantity) <= 0:
                 continue
 
             if not bid.participation or not bid.participation.user:
@@ -109,8 +144,8 @@ class DistributionService(BaseService):
                     product_id=str(bid.product_id),
                     product_name=product.name,
                     product_unit=product.unit,
-                    requested_quantity=bid.quantity,
-                    distributed_quantity=bid.distributed_quantity,
+                    requested_quantity=round(float(bid.quantity), 2),
+                    distributed_quantity=round(float(bid.distributed_quantity), 2),
                     price_per_unit=f'{price_per_unit:.2f}',
                     subtotal=f'{subtotal:.2f}',
                     is_picked_up=bid.is_picked_up if bid.is_picked_up is not None else False,
@@ -121,9 +156,9 @@ class DistributionService(BaseService):
 
         return users_data
 
-    def _calculate_subtotal(self, price_per_unit: float, quantity: int) -> float:
+    def _calculate_subtotal(self, price_per_unit: float, quantity: float) -> float:
         """Calculate subtotal for a product."""
-        return price_per_unit * quantity
+        return price_per_unit * float(quantity)
 
     def _build_user_distribution(self, user_data: dict[str, Any]) -> DistributionUser:
         """Build DistributionUser from aggregated user data."""

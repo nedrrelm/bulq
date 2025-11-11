@@ -10,8 +10,8 @@ export const distributionProductSchema = z.object({
   product_id: uuidSchema,
   product_name: z.string(),
   product_unit: nullable(z.string()),
-  requested_quantity: z.number().int(),
-  distributed_quantity: z.number().int(),
+  requested_quantity: z.number(),
+  distributed_quantity: z.number(),
   price_per_unit: z.string(), // Decimal as string from backend
   subtotal: z.string(), // Decimal as string from backend
   is_picked_up: z.boolean()

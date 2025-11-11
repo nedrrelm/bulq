@@ -227,7 +227,7 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def update_bid_distributed_quantities(
-        self, bid_id: UUID, quantity: int, price_per_unit: Decimal
+        self, bid_id: UUID, quantity: float, price_per_unit: Decimal
     ) -> None:
         """Update the distributed quantity and price for a bid."""
         raise NotImplementedError('Subclass must implement update_bid_distributed_quantities')

@@ -464,12 +464,22 @@ class RunStateService(BaseService):
         shopping_items = self.repo.get_shopping_list_items(run_id)
         all_bids = self.repo.get_bids_by_run(run_id)
 
+        logger.info(f"Distributing items: found {len(shopping_items)} shopping items and {len(all_bids)} bids",
+                   extra={'run_id': str(run_id)})
+
         for shopping_item in shopping_items:
+            logger.info(f"Processing shopping item: product={shopping_item.product_id}, is_purchased={shopping_item.is_purchased}, purchased_qty={shopping_item.purchased_quantity}",
+                       extra={'run_id': str(run_id)})
+
             if not shopping_item.is_purchased:
+                logger.info(f"Skipping unpurchased item: product={shopping_item.product_id}",
+                           extra={'run_id': str(run_id)})
                 continue
 
             # Skip items with 0 purchased quantity (not actually bought)
             if not shopping_item.purchased_quantity or shopping_item.purchased_quantity == 0:
+                logger.info(f"Skipping item with 0 quantity: product={shopping_item.product_id}",
+                           extra={'run_id': str(run_id)})
                 continue
 
             product_bids = [
@@ -478,6 +488,8 @@ class RunStateService(BaseService):
                 if bid.product_id == shopping_item.product_id and not bid.interested_only
             ]
             total_requested = sum(bid.quantity for bid in product_bids)
+            logger.info(f"Product {shopping_item.product_id}: {len(product_bids)} bids, total_requested={total_requested}, purchased={shopping_item.purchased_quantity}",
+                       extra={'run_id': str(run_id)})
             self.repo.update_shopping_list_item_requested_quantity(
                 shopping_item.id, total_requested
             )
@@ -486,8 +498,18 @@ class RunStateService(BaseService):
             if total_requested > shopping_item.purchased_quantity:
                 # Proportional distribution: scale down each bid
                 ratio = shopping_item.purchased_quantity / total_requested
-                for bid in product_bids:
-                    distributed_qty = bid.quantity * ratio
+
+                # Distribute with rounding to 2 decimal places
+                # Track total to ensure we don't exceed purchased quantity
+                total_distributed = 0.0
+                for i, bid in enumerate(product_bids):
+                    if i == len(product_bids) - 1:
+                        # Last bid gets the remainder to avoid rounding errors
+                        distributed_qty = shopping_item.purchased_quantity - total_distributed
+                    else:
+                        distributed_qty = round(bid.quantity * ratio, 2)
+                        total_distributed += distributed_qty
+
                     self.repo.update_bid_distributed_quantities(
                         bid.id, distributed_qty, shopping_item.purchased_price_per_unit
                     )

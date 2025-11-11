@@ -10,8 +10,8 @@ class DistributionProduct(BaseModel):
     product_id: str
     product_name: str
     product_unit: str | None = None
-    requested_quantity: int
-    distributed_quantity: int
+    requested_quantity: float
+    distributed_quantity: float
     price_per_unit: str
     subtotal: str
     is_picked_up: bool
