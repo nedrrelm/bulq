@@ -146,6 +146,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null)
   const [searching, setSearching] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   if (!user) return null
 
@@ -186,12 +187,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     debouncedSearch(query)
   }
 
-  // Close search dropdown on ESC key
+  // Close search dropdown and menu on ESC key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSearchQuery('')
         setSearchResults(null)
+        setMenuOpen(false)
       }
     }
 
@@ -208,6 +210,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const closeSearch = () => {
     setSearchQuery('')
     setSearchResults(null)
+  }
+
+  const handleMenuItemClick = (action: () => void) => {
+    action()
+    setMenuOpen(false)
   }
 
   return (
@@ -310,16 +317,56 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="user-info">
           <NotificationBadge />
-          {user.is_admin && (
-            <button onClick={() => navigate('/admin')} className="admin-button">
-              Admin
-            </button>
-          )}
-          <button onClick={logout} className="logout-button">
-            Logout
+
+          {/* Hamburger button - mobile only */}
+          <button
+            className="hamburger-button"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Menu"
+          >
+            <div className="hamburger-icon">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
           </button>
+
+          {/* Desktop buttons - desktop only */}
+          <div className="desktop-buttons">
+            {user.is_admin && (
+              <button onClick={() => navigate('/admin')} className="admin-button">
+                Admin
+              </button>
+            )}
+            <button onClick={logout} className="logout-button">
+              Logout
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* Mobile drawer menu */}
+      {menuOpen && (
+        <>
+          <div className="menu-overlay" onClick={() => setMenuOpen(false)} />
+          <div className="mobile-drawer">
+            {user.is_admin && (
+              <button
+                onClick={() => handleMenuItemClick(() => navigate('/admin'))}
+                className="drawer-item"
+              >
+                Admin Panel
+              </button>
+            )}
+            <button
+              onClick={() => handleMenuItemClick(logout)}
+              className="drawer-item"
+            >
+              Logout
+            </button>
+          </div>
+        </>
+      )}
 
       <main className={window.location.pathname === '/' ? 'dashboard' : ''}>
         <ErrorBoundary>
