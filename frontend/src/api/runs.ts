@@ -8,12 +8,17 @@ export type { RunDetail }
 export interface CreateRunRequest {
   group_id: string
   store_id: string
+  comment?: string
 }
 
 export interface PlaceBidRequest {
   product_id: string
   quantity: number
   interested_only: boolean
+}
+
+export interface UpdateRunCommentRequest {
+  comment: string | null
 }
 
 export const runsApi = {
@@ -48,5 +53,8 @@ export const runsApi = {
     api.get(`/runs/${runId}/available-products`, z.array(availableProductSchema)),
 
   toggleHelper: (runId: string, userId: string) =>
-    api.post(`/runs/${runId}/helpers/${userId}`)
+    api.post(`/runs/${runId}/helpers/${userId}`),
+
+  updateComment: (runId: string, data: UpdateRunCommentRequest) =>
+    api.patch(`/runs/${runId}/comment`, data)
 }

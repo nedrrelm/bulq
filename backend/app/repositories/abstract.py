@@ -247,9 +247,14 @@ class AbstractRepository(ABC):
     # ==================== Run & Participation Methods ====================
 
     @abstractmethod
-    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
+    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None) -> Run:
         """Create a new run with the leader as first participant."""
         raise NotImplementedError('Subclass must implement create_run')
+
+    @abstractmethod
+    def update_run_comment(self, run_id: UUID, comment: str | None) -> Run | None:
+        """Update the comment for a run."""
+        raise NotImplementedError('Subclass must implement update_run_comment')
 
     @abstractmethod
     def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:

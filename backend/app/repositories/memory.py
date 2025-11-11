@@ -554,15 +554,23 @@ class MemoryRepository(AbstractRepository):
         self._shopping_list_items[item.id] = item
         return item
 
-    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID) -> Run:
+    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None) -> Run:
         from datetime import datetime
 
-        run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state='planning')
+        run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state='planning', comment=comment)
         run.planning_at = datetime.now()
         self._runs[run.id] = run
         # Create participation for the leader
         self._create_participation(leader_id, run.id, is_leader=True)
         return run
+
+    def update_run_comment(self, run_id: UUID, comment: str | None) -> Run | None:
+        """Update the comment for a run."""
+        run = self._runs.get(run_id)
+        if run:
+            run.comment = comment
+            return run
+        return None
 
     def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:
         for participation in self._participations.values():

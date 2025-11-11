@@ -52,13 +52,14 @@ class RunService(BaseService):
         self.notification_service = RunNotificationService(db)
         self.state_service = RunStateService(db, self.notification_service)
 
-    def create_run(self, group_id: str, store_id: str, user: User) -> CreateRunResponse:
+    def create_run(self, group_id: str, store_id: str, user: User, comment: str | None = None) -> CreateRunResponse:
         """Create a new run for a group.
 
         Args:
             group_id: Group ID as string
             store_id: Store ID as string
             user: Current user creating the run
+            comment: Optional comment/description for the run
 
         Returns:
             CreateRunResponse with run data
@@ -109,7 +110,7 @@ class RunService(BaseService):
             )
 
         # Create the run with current user as leader
-        run = self.repo.create_run(group_uuid, store_uuid, user.id)
+        run = self.repo.create_run(group_uuid, store_uuid, user.id, comment)
 
         logger.info(
             'Run created successfully',
@@ -179,6 +180,7 @@ class RunService(BaseService):
             store_id=str(run.store_id),
             store_name=store.name,
             state=run.state,
+            comment=run.comment,
             products=products,
             participants=participants,
             current_user_is_ready=current_user_is_ready,
@@ -306,6 +308,43 @@ class RunService(BaseService):
             CancelRunResponse with success message
         """
         return self.state_service.cancel_run(run_id, user)
+
+    def update_run_comment(self, run_id: str, comment: str | None, user: User) -> MessageResponse:
+        """Update the comment/description for a run.
+
+        Args:
+            run_id: Run ID as string
+            comment: New comment (or None to clear)
+            user: Current user (must be leader)
+
+        Returns:
+            MessageResponse with success message
+
+        Raises:
+            BadRequestError: If run ID format is invalid
+            NotFoundError: If run not found
+            ForbiddenError: If user is not the run leader
+        """
+        # Validate and get run with authorization check
+        run_uuid = self._validate_run_id(run_id)
+        run = self._get_run_with_auth_check(run_uuid, user)
+
+        # Check if user is the leader
+        participation = self.repo.get_participation(user.id, run_uuid)
+        if not participation or not participation.is_leader:
+            raise ForbiddenError('Only the run leader can update the comment')
+
+        # Update the comment
+        updated_run = self.repo.update_run_comment(run_uuid, comment)
+        if not updated_run:
+            raise NotFoundError('Run', run_id)
+
+        logger.info(
+            'Run comment updated',
+            extra={'run_id': run_id, 'user_id': str(user.id)},
+        )
+
+        return MessageResponse(message='Comment updated successfully')
 
     def delete_run(self, run_id: str, user: User) -> CancelRunResponse:
         """Delete a run (alias for cancel_run for backward compatibility).

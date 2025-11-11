@@ -8,6 +8,7 @@ class CreateRunRequest(BaseModel):
 
     group_id: str
     store_id: str
+    comment: str | None = Field(default=None, max_length=500)
 
 
 class CreateRunResponse(BaseModel):
@@ -95,6 +96,7 @@ class RunDetailResponse(BaseModel):
     store_id: str
     store_name: str
     state: str
+    comment: str | None = None
     products: list[ProductResponse]
     participants: list[ParticipantResponse]
     current_user_is_ready: bool = False
@@ -174,3 +176,9 @@ class RetractBidResponse(BaseModel):
     product_id: str
     user_id: str
     new_total: float
+
+
+class UpdateRunCommentRequest(BaseModel):
+    """Request model for updating run comment."""
+
+    comment: str | None = Field(default=None, max_length=500)

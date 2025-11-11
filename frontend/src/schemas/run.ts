@@ -41,6 +41,7 @@ export const runDetailSchema = z.object({
   store_id: uuidSchema,
   store_name: z.string(),
   state: z.string(),
+  comment: nullable(z.string()),
   products: z.array(productInRunSchema),
   participants: z.array(participantSchema),
   current_user_is_ready: z.boolean(),
