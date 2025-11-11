@@ -216,12 +216,33 @@ These items must be completed before production deployment.
    - By Product view: group items by product showing all users' quantities
    - By User view: current behavior, items grouped per user
 
+5. **Dark Theme**
+   - Add dark mode toggle to user interface
+   - Persist theme preference in localStorage
+   - Use CSS variables for easy color switching
+   - Ensure all components and pages support dark theme
+   - Consider system preference detection on first load
+
+6. **User Profile Page**
+   - Personal profile page (users can only see their own)
+   - Display user statistics:
+     - Total runs participated in
+     - Total amount spent across all runs
+     - Number of products purchased
+     - Favorite stores (most frequent)
+     - Recent activity timeline
+   - Integration with Authentication & User Management section for username/password changes
+
 **Implementation:**
 - Update user initial generation logic in frontend utils
 - Add product status badges on RunPage after shopping state
 - Fix CSS for notification panel mobile responsiveness
 - Update distribution route permissions (remove leader-only check)
 - Add view toggle component on DistributionPage
+- Implement theme provider with CSS variable switching
+- Add `/profile` route and ProfilePage component
+- Create backend endpoint `/users/me/stats` for user statistics
+- Add user stats calculations in backend service layer
 
 ---
 
