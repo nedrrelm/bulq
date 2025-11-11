@@ -30,22 +30,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
   const recentNotifications = notifications.slice(0, 3)
 
   return (
-    <div
-      className="notification-dropdown"
-      style={{
-        position: 'absolute',
-        right: 0,
-        top: '100%',
-        marginTop: '0.5rem',
-        width: '24rem',
-        maxWidth: '90vw',
-        backgroundColor: 'white',
-        borderRadius: '0.5rem',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        border: '1px solid #e5e7eb',
-        zIndex: 9999
-      }}
-    >
+    <div className="notification-dropdown">
       <div
         style={{
           display: 'flex',
