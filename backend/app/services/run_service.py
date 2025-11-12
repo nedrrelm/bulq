@@ -755,7 +755,7 @@ class RunService(BaseService):
                     'quantity_requested': quantity_requested,
                     'quantity_purchased': quantity_purchased,
                     'price': item_price,
-                    'is_picked_up': bid.is_picked_up if bid.is_picked_up is not None else False
+                    'is_picked_up': bid.is_picked_up
                 }
 
                 # Add to per-user total
@@ -770,7 +770,7 @@ class RunService(BaseService):
                     'quantity_requested': quantity_requested,
                     'quantity_purchased': quantity_purchased,
                     'price': item_price,
-                    'is_picked_up': bid.is_picked_up if bid.is_picked_up is not None else False
+                    'is_picked_up': bid.is_picked_up
                 }
 
                 if item_price is not None:
