@@ -663,3 +663,136 @@ class RunService(BaseService):
 
         action = 'added as' if new_helper_status else 'removed as'
         return MessageResponse(message=f'User {action} helper')
+
+    def export_run_state(self, run_id: str, user: User) -> dict[str, Any]:
+        """Export the current state of a run as structured JSON.
+
+        Available for runs in confirmed, shopping, adjusting, or distributing states.
+        Only accessible by run leader or helpers.
+
+        Args:
+            run_id: Run ID as string
+            user: Current user requesting export
+
+        Returns:
+            Dictionary with run state including per_product and per_user breakdowns
+
+        Raises:
+            BadRequestError: If run ID format is invalid or run not in exportable state
+            NotFoundError: If run not found
+            ForbiddenError: If user is not leader or helper
+        """
+        # Validate and get run with authorization check
+        run_uuid = self._validate_run_id(run_id)
+        run = self._get_run_with_auth_check(run_uuid, user)
+
+        # Check if user is leader or helper
+        participation = self.repo.get_participation(user.id, run_uuid)
+        if not participation or not (participation.is_leader or participation.is_helper):
+            raise ForbiddenError('Only run leader and helpers can export run state')
+
+        # Check if run is in an exportable state
+        exportable_states = [RunState.CONFIRMED, RunState.SHOPPING, RunState.ADJUSTING, RunState.DISTRIBUTING]
+        if RunState(run.state) not in exportable_states:
+            raise BadRequestError(f'Run state export is only available in {", ".join(s.value for s in exportable_states)} states')
+
+        # Get all bids with participations and users
+        run_bids = self.repo.get_bids_by_run_with_participations(run.id)
+
+        # Get shopping list items if in adjusting or distributing state
+        shopping_list_map = {}
+        if RunState(run.state) in [RunState.ADJUSTING, RunState.DISTRIBUTING]:
+            shopping_items = self.repo.get_shopping_list_items(run.id)
+            shopping_list_map = {item.product_id: item for item in shopping_items}
+
+        # Build the export data structure
+        per_product = {}
+        per_user = {}
+        total_price = 0.0
+
+        # Group bids by product
+        products_map = {}
+        for bid in run_bids:
+            if bid.interested_only:
+                continue
+
+            if bid.product_id not in products_map:
+                products_map[bid.product_id] = []
+            products_map[bid.product_id].append(bid)
+
+        # Process each product
+        for product_id, product_bids in products_map.items():
+            product = self.repo.get_product_by_id(product_id)
+            if not product:
+                continue
+
+            total_quantity_requested = sum(bid.quantity for bid in product_bids)
+
+            # Get shopping list data if available
+            shopping_item = shopping_list_map.get(product_id)
+            total_quantity_purchased = float(shopping_item.purchased_quantity) if shopping_item and shopping_item.purchased_quantity else None
+            purchased_price_per_unit = float(shopping_item.purchased_price_per_unit) if shopping_item and shopping_item.purchased_price_per_unit else None
+
+            # Build per-user data for this product
+            per_user_product = {}
+            for bid in product_bids:
+                if not bid.participation or not bid.participation.user:
+                    continue
+
+                username = bid.participation.user.name
+                quantity_requested = float(bid.quantity)
+
+                # For distributing state, use distributed quantities and prices
+                if RunState(run.state) == RunState.DISTRIBUTING:
+                    quantity_purchased = float(bid.distributed_quantity) if bid.distributed_quantity else 0.0
+                    price_per_unit = float(bid.distributed_price_per_unit) if bid.distributed_price_per_unit else 0.0
+                    item_price = quantity_purchased * price_per_unit
+                else:
+                    quantity_purchased = quantity_requested if purchased_price_per_unit is not None else None
+                    item_price = (quantity_purchased * purchased_price_per_unit) if (quantity_purchased is not None and purchased_price_per_unit is not None) else None
+
+                per_user_product[username] = {
+                    'quantity_requested': quantity_requested,
+                    'quantity_purchased': quantity_purchased,
+                    'price': item_price,
+                    'is_picked_up': bid.is_picked_up if bid.is_picked_up is not None else False
+                }
+
+                # Add to per-user total
+                if username not in per_user:
+                    per_user[username] = {
+                        'total_price': 0.0,
+                        'per_product': {}
+                    }
+
+                per_user[username]['per_product'][str(product_id)] = {
+                    'product_name': product.name,
+                    'quantity_requested': quantity_requested,
+                    'quantity_purchased': quantity_purchased,
+                    'price': item_price,
+                    'is_picked_up': bid.is_picked_up if bid.is_picked_up is not None else False
+                }
+
+                if item_price is not None:
+                    per_user[username]['total_price'] += item_price
+                    total_price += item_price
+
+            # Build product entry
+            per_product[str(product_id)] = {
+                'name': product.name,
+                'total_quantity_requested': total_quantity_requested,
+                'total_quantity_purchased': total_quantity_purchased,
+                'purchased_price_per_unit': purchased_price_per_unit,
+                'per_user': per_user_product
+            }
+
+        logger.info(
+            'Run state exported',
+            extra={'run_id': run_id, 'user_id': str(user.id), 'state': run.state}
+        )
+
+        return {
+            'total_price': total_price,
+            'per_product': per_product,
+            'per_user': per_user
+        }

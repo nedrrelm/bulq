@@ -124,25 +124,6 @@ These items must be completed before production deployment.
 
 ---
 
-### Shopping List Export
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Backend routes, frontend shopping page
-
-**Features:**
-- Export shopping list as TXT format
-- Export shopping list as JSON format
-- Per-product view: all quantities aggregated by product
-- Per-user view: breakdown showing each user's bids per product
-
-**Implementation:**
-- Add export endpoints: `/runs/{run_id}/shopping-list/export?format=txt|json&view=product|user`
-- Frontend download buttons on shopping page
-- TXT format: human-readable, printer-friendly
-- JSON format: structured data for external tools
-
----
-
 ### Authentication & User Management
 **Status**: Future
 **Priority**: High
