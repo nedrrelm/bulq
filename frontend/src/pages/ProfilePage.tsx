@@ -57,6 +57,21 @@ export default function ProfilePage() {
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
+  const handleDarkModeToggle = async () => {
+    try {
+      const updatedUser = await authApi.toggleDarkMode()
+      updateUser(updatedUser)
+      // Apply dark mode class to body immediately
+      if (updatedUser.dark_mode) {
+        document.body.classList.add('dark-mode')
+      } else {
+        document.body.classList.remove('dark-mode')
+      }
+    } catch (err) {
+      console.error('Failed to toggle dark mode:', err)
+    }
+  }
+
   if (!user) return null
 
   return (
@@ -147,6 +162,21 @@ export default function ProfilePage() {
       <div className="profile-section">
         <h2>Account Settings</h2>
         <div className="settings-actions">
+          <div className="setting-item">
+            <div>
+              <h3>Dark Mode</h3>
+              <p>Toggle dark mode theme</p>
+            </div>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={user.dark_mode || false}
+                onChange={handleDarkModeToggle}
+              />
+              <span className="toggle-slider"></span>
+            </label>
+          </div>
+
           <div className="setting-item">
             <div>
               <h3>Name</h3>

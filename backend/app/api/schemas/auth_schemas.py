@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     name: str
     username: str
     is_admin: bool = False
+    dark_mode: bool = False
 
 
 class UserStatsResponse(BaseModel):

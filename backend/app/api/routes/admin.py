@@ -195,3 +195,35 @@ async def delete_user(
     """Delete a user. Cannot delete yourself or other admins."""
     service = AdminService(db)
     return service.delete_user(UUID(user_id), admin_user)
+
+
+@router.get('/settings/registration')
+async def get_registration_setting(
+    admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
+    """Get the current registration allowed setting."""
+    from app.infrastructure.runtime_settings import is_registration_allowed
+
+    return {'allow_registration': is_registration_allowed(db)}
+
+
+@router.post('/settings/registration')
+async def set_registration_setting(
+    allow_registration: bool,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Enable or disable user registration."""
+    from app.infrastructure.runtime_settings import set_registration_allowed
+    from app.infrastructure.request_context import get_logger
+
+    logger = get_logger(__name__)
+
+    set_registration_allowed(db, allow_registration)
+
+    logger.info(
+        f'Registration {"enabled" if allow_registration else "disabled"} by admin',
+        extra={'admin_id': str(admin_user.id), 'admin_name': admin_user.name},
+    )
+
+    return {'allow_registration': allow_registration, 'message': 'Setting updated successfully'}

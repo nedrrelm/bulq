@@ -128,6 +128,18 @@ async def startup_event():
     logger = get_logger(__name__)
     logger.info('✅ Event handlers registered successfully')
 
+    # Initialize default settings
+    from .infrastructure.runtime_settings import initialize_default_settings
+    from .infrastructure.database import SessionLocal
+
+    try:
+        db = SessionLocal()
+        initialize_default_settings(db)
+        db.close()
+        logger.info('⚙️  Default settings initialized')
+    except Exception as e:
+        logger.error(f'Failed to initialize default settings: {e}', exc_info=True)
+
     # Create seed data if in development
     import os
 

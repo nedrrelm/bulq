@@ -42,6 +42,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     is_admin = Column(Boolean, nullable=False, default=False)
     verified = Column(Boolean, nullable=False, default=False)
+    dark_mode = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     groups = relationship('Group', secondary=group_membership, back_populates='members')
@@ -325,3 +326,13 @@ class LeaderReassignmentRequest(Base):
         # Composite index for finding pending requests for a run
         Index('ix_reassignment_requests_run_status', 'run_id', 'status'),
     )
+
+
+class AppSettings(Base):
+    """Application settings model for storing runtime configuration."""
+
+    __tablename__ = 'app_settings'
+
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

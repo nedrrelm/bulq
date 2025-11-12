@@ -37,6 +37,14 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null)
   const [editingStore, setEditingStore] = useState<AdminStore | null>(null)
 
+  // Registration setting
+  const [allowRegistration, setAllowRegistration] = useState(true)
+  const [loadingRegistrationSetting, setLoadingRegistrationSetting] = useState(true)
+
+  useEffect(() => {
+    fetchRegistrationSetting()
+  }, [])
+
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers()
@@ -133,9 +141,52 @@ export default function AdminPage() {
     }
   }
 
+  const fetchRegistrationSetting = async () => {
+    setLoadingRegistrationSetting(true)
+    try {
+      const data = await adminApi.getRegistrationSetting()
+      setAllowRegistration(data.allow_registration)
+    } catch (err) {
+      console.error('Failed to fetch registration setting:', err)
+    } finally {
+      setLoadingRegistrationSetting(false)
+    }
+  }
+
+  const toggleRegistration = async () => {
+    try {
+      const newValue = !allowRegistration
+      setAllowRegistration(newValue)
+      await adminApi.setRegistrationSetting(newValue)
+    } catch (err) {
+      console.error('Failed to toggle registration:', err)
+      // Revert on error
+      setAllowRegistration(!allowRegistration)
+    }
+  }
+
   return (
     <div className="admin-page">
       <h1>Admin Console</h1>
+
+      {/* Global Settings */}
+      <div className="admin-settings">
+        <div className="setting-row">
+          <div>
+            <h3>Allow Registration</h3>
+            <p>Enable or disable new user registration</p>
+          </div>
+          <label className="toggle-switch">
+            <input
+              type="checkbox"
+              checked={allowRegistration}
+              onChange={toggleRegistration}
+              disabled={loadingRegistrationSetting}
+            />
+            <span className="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
 
       <div className="admin-tabs">
         <button

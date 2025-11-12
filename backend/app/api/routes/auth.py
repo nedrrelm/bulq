@@ -58,6 +58,13 @@ async def register(
     user_data: UserRegister, response: Response, db: Session = Depends(get_db)
 ) -> UserResponse:
     """Register a new user."""
+    from app.infrastructure.runtime_settings import is_registration_allowed
+
+    # Check if registration is allowed
+    if not is_registration_allowed(db):
+        logger.warning('Registration attempt when registration is disabled', extra={'username': user_data.username})
+        raise BadRequestError('Registration is currently disabled')
+
     logger.info('Registration attempt', extra={'username': user_data.username})
     repo = get_repository(db)
 
@@ -91,7 +98,13 @@ async def register(
         'User registered successfully', extra={'user_id': str(new_user.id), 'username': new_user.username}
     )
 
-    return UserResponse(id=str(new_user.id), name=new_user.name, username=new_user.username)
+    return UserResponse(
+        id=str(new_user.id),
+        name=new_user.name,
+        username=new_user.username,
+        is_admin=new_user.is_admin,
+        dark_mode=new_user.dark_mode or False,
+    )
 
 
 @router.post('/login', response_model=UserResponse)
@@ -130,7 +143,13 @@ async def login(
         },
     )
 
-    return UserResponse(id=str(user.id), name=user.name, username=user.username, is_admin=user.is_admin)
+    return UserResponse(
+        id=str(user.id),
+        name=user.name,
+        username=user.username,
+        is_admin=user.is_admin,
+        dark_mode=user.dark_mode or False,
+    )
 
 
 @router.post('/logout', response_model=MessageResponse)
@@ -155,6 +174,7 @@ async def get_current_user_info(current_user: User = Depends(require_auth)) -> U
         name=current_user.name,
         username=current_user.username,
         is_admin=current_user.is_admin,
+        dark_mode=current_user.dark_mode or False,
     )
 
 
@@ -245,6 +265,7 @@ async def change_username(
         name=updated_user.name,
         username=updated_user.username,
         is_admin=updated_user.is_admin,
+        dark_mode=updated_user.dark_mode or False,
     )
 
 
@@ -287,4 +308,33 @@ async def change_name(
         name=updated_user.name,
         username=updated_user.username,
         is_admin=updated_user.is_admin,
+        dark_mode=updated_user.dark_mode or False,
+    )
+
+
+@router.post('/toggle-dark-mode', response_model=UserResponse)
+async def toggle_dark_mode(
+    current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+) -> UserResponse:
+    """Toggle dark mode for the current user."""
+    logger.info('Dark mode toggle request', extra={'user_id': str(current_user.id)})
+    repo = get_repository(db)
+
+    # Toggle dark mode
+    new_dark_mode = not current_user.dark_mode
+    updated_user = repo.update_user(current_user.id, dark_mode=new_dark_mode)
+    if not updated_user:
+        raise BadRequestError('Failed to toggle dark mode')
+
+    logger.info(
+        f'Dark mode {"enabled" if new_dark_mode else "disabled"}',
+        extra={'user_id': str(current_user.id)},
+    )
+
+    return UserResponse(
+        id=str(updated_user.id),
+        name=updated_user.name,
+        username=updated_user.username,
+        is_admin=updated_user.is_admin,
+        dark_mode=updated_user.dark_mode or False,
     )
