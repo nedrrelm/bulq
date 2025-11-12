@@ -542,3 +542,18 @@ class AbstractRepository(ABC):
     def count_store_runs(self, store_id: UUID) -> int:
         """Count how many runs reference this store."""
         raise NotImplementedError('Subclass must implement count_store_runs')
+
+    @abstractmethod
+    def get_user_stats(self, user_id: UUID) -> dict:
+        """Get user statistics including runs, bids, and spending.
+
+        Returns:
+            Dictionary with keys:
+                - total_quantity_bought: Sum of distributed quantities from picked up bids
+                - total_money_spent: Sum of (distributed_quantity * distributed_price_per_unit)
+                - runs_participated: Count of distinct runs user participated in
+                - runs_helped: Count of runs where user was helper
+                - runs_led: Count of runs where user was leader
+                - groups_count: Count of groups user is member of
+        """
+        raise NotImplementedError('Subclass must implement get_user_stats')

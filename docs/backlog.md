@@ -136,39 +136,6 @@ These items must be completed before production deployment.
    - Existing users can still login when disabled
    - Clear message on registration page when disabled
 
-2. **Remove Email, Username-Only Login** [COMPLETED]
-   - ✅ Removed email field from User model
-   - ✅ Using username for authentication
-   - ✅ Updated registration/login forms
-   - ✅ Created migration script (002_remove_email_add_username.sql)
-   - ✅ Username validation (letters, numbers, hyphens, underscores only)
-
-**Schema Changes:**
-- ✅ Removed `email` column from User table
-- ✅ Made `username` non-nullable and required
-- ✅ Username has unique constraint on it
-
-**Configuration:**
-- `ALLOW_REGISTRATION=true|false` environment variable [TODO]
-
-**Migration Notes:**
-- Migration script: `backend/migrations/002_remove_email_add_username.sql`
-- See `backend/migrations/README.md` for detailed instructions
-
-3. **User Profile Management**
-   - Allow users to change their username
-   - Allow users to change their password
-   - Require current password for authentication before changes
-   - Username uniqueness validation
-   - Password strength requirements
-
-**Implementation:**
-- Add `/auth/change-username` endpoint (requires current password)
-- Add `/auth/change-password` endpoint (requires current password + new password)
-- Frontend profile/settings page with change forms
-- Validation: username availability, password strength
-- Update session after username change
-
 ---
 
 ### Run Comments & Context

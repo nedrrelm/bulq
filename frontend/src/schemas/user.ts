@@ -13,3 +13,14 @@ export const userSchema = z.object({
 })
 
 export type User = z.infer<typeof userSchema>
+
+export const userStatsSchema = z.object({
+  total_quantity_bought: z.number(),
+  total_money_spent: z.number(),
+  runs_participated: z.number(),
+  runs_helped: z.number(),
+  runs_led: z.number(),
+  groups_count: z.number()
+})
+
+export type UserStats = z.infer<typeof userStatsSchema>

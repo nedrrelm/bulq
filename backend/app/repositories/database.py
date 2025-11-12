@@ -1104,3 +1104,65 @@ class DatabaseRepository(AbstractRepository):
     def count_store_runs(self, store_id: UUID) -> int:
         """Count how many runs reference this store."""
         return self.db.query(Run).filter(Run.store_id == store_id).count()
+
+    def get_user_stats(self, user_id: UUID) -> dict:
+        """Get user statistics including runs, bids, and spending."""
+        from sqlalchemy import func
+        from app.core.models import group_membership
+
+        # Get total quantity bought and money spent from picked-up bids
+        bid_stats = (
+            self.db.query(
+                func.coalesce(func.sum(ProductBid.distributed_quantity), 0).label('total_quantity'),
+                func.coalesce(
+                    func.sum(ProductBid.distributed_quantity * ProductBid.distributed_price_per_unit), 0
+                ).label('total_spent'),
+            )
+            .join(RunParticipation, ProductBid.participation_id == RunParticipation.id)
+            .filter(RunParticipation.user_id == user_id, ProductBid.is_picked_up == True)
+            .first()
+        )
+
+        total_quantity = float(bid_stats.total_quantity) if bid_stats else 0.0
+        total_spent = float(bid_stats.total_spent) if bid_stats else 0.0
+
+        # Get runs participated count (distinct runs)
+        runs_participated = (
+            self.db.query(func.count(func.distinct(RunParticipation.run_id)))
+            .filter(RunParticipation.user_id == user_id)
+            .scalar()
+            or 0
+        )
+
+        # Get runs where user was helper
+        runs_helped = (
+            self.db.query(func.count(RunParticipation.id))
+            .filter(RunParticipation.user_id == user_id, RunParticipation.is_helper == True)
+            .scalar()
+            or 0
+        )
+
+        # Get runs where user was leader
+        runs_led = (
+            self.db.query(func.count(RunParticipation.id))
+            .filter(RunParticipation.user_id == user_id, RunParticipation.is_leader == True)
+            .scalar()
+            or 0
+        )
+
+        # Get groups count
+        groups_count = (
+            self.db.query(func.count(group_membership.c.group_id))
+            .filter(group_membership.c.user_id == user_id)
+            .scalar()
+            or 0
+        )
+
+        return {
+            'total_quantity_bought': total_quantity,
+            'total_money_spent': total_spent,
+            'runs_participated': runs_participated,
+            'runs_helped': runs_helped,
+            'runs_led': runs_led,
+            'groups_count': groups_count,
+        }

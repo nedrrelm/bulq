@@ -1,5 +1,5 @@
 import { api } from './client'
-import { userSchema, type User } from '../schemas/user'
+import { userSchema, userStatsSchema, type User, type UserStats } from '../schemas/user'
 
 export interface LoginRequest {
   username: string
@@ -23,5 +23,26 @@ export const authApi = {
     api.post<void>('/auth/logout'),
 
   getCurrentUser: () =>
-    api.get<User>('/auth/me', userSchema)
+    api.get<User>('/auth/me', userSchema),
+
+  getProfileStats: () =>
+    api.get<UserStats>('/auth/profile/stats', userStatsSchema),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post<void>('/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword
+    }),
+
+  changeUsername: (currentPassword: string, newUsername: string) =>
+    api.post<User>('/auth/change-username', {
+      current_password: currentPassword,
+      new_username: newUsername
+    }, userSchema),
+
+  changeName: (currentPassword: string, newName: string) =>
+    api.post<User>('/auth/change-name', {
+      current_password: currentPassword,
+      new_name: newName
+    }, userSchema)
 }
