@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.models import User
-from app.infrastructure.request_context import get_logger
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     AvailableProductResponse,
@@ -17,8 +14,11 @@ from app.api.schemas import (
     StateChangeResponse,
     UpdateRunCommentRequest,
 )
-from app.services import RunService
 from app.api.websocket_manager import manager
+from app.core.models import User
+from app.infrastructure.database import get_db
+from app.infrastructure.request_context import get_logger
+from app.services import RunService
 
 router = APIRouter(prefix='/runs', tags=['runs'])
 logger = get_logger(__name__)
@@ -261,3 +261,16 @@ async def delete_run(
     # No additional broadcast needed - state service handles notifications
 
     return MessageResponse(message=result.message)
+
+
+@router.get('/{run_id}/export')
+async def export_run_state(
+    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+):
+    """Export current state of run as JSON (leader and helpers only).
+
+    Available for runs in confirmed, shopping, adjusting, or distributing states.
+    Returns structured JSON with per-product and per-user breakdowns.
+    """
+    service = RunService(db)
+    return service.export_run_state(run_id, current_user)

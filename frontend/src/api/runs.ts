@@ -56,5 +56,8 @@ export const runsApi = {
     api.post(`/runs/${runId}/helpers/${userId}`),
 
   updateComment: (runId: string, data: UpdateRunCommentRequest) =>
-    api.patch(`/runs/${runId}/comment`, data)
+    api.patch(`/runs/${runId}/comment`, data),
+
+  exportRunState: (runId: string) =>
+    api.get(`/runs/${runId}/export`)
 }

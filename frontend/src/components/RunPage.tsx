@@ -16,6 +16,7 @@ const ReassignLeaderPopup = lazy(() => import('./ReassignLeaderPopup'))
 const ManageHelpersPopup = lazy(() => import('./ManageHelpersPopup'))
 const ForceConfirmPopup = lazy(() => import('./ForceConfirmPopup'))
 import RunProductItem from './RunProductItem'
+import DownloadRunStateButton from './DownloadRunStateButton'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
 import Toast from './Toast'
@@ -585,13 +586,20 @@ export default function RunPage() {
           <div className="info-card">
             <h3>Ready to Shop</h3>
             <p>All participants are ready! The shopping list is finalized.</p>
-            <button
-              onClick={handleStartShopping}
-              className="btn btn-primary btn-lg"
-              disabled={startShoppingMutation.isPending}
-            >
-              {startShoppingMutation.isPending ? '⏳ Starting...' : '🛒 Start Shopping'}
-            </button>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleStartShopping}
+                className="btn btn-primary btn-lg"
+                disabled={startShoppingMutation.isPending}
+              >
+                {startShoppingMutation.isPending ? '⏳ Starting...' : '🛒 Start Shopping'}
+              </button>
+              <DownloadRunStateButton
+                runId={runId}
+                storeName={run.store_name}
+                className="btn btn-secondary btn-lg"
+              />
+            </div>
             <p className="ready-hint">
               Click this button when you're heading to the store to begin the shopping phase.
             </p>
@@ -602,12 +610,19 @@ export default function RunPage() {
           <div className="info-card">
             <h3>Shopping in Progress</h3>
             <p>You are currently shopping for this run.</p>
-            <button
-              onClick={() => navigate(`/shopping/${runId}`)}
-              className="btn btn-success btn-lg"
-            >
-              📝 Open Shopping List
-            </button>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => navigate(`/shopping/${runId}`)}
+                className="btn btn-success btn-lg"
+              >
+                📝 Open Shopping List
+              </button>
+              <DownloadRunStateButton
+                runId={runId}
+                storeName={run.store_name}
+                className="btn btn-secondary btn-lg"
+              />
+            </div>
             <p className="ready-hint">
               Track prices and mark items as purchased.
             </p>
@@ -633,6 +648,11 @@ export default function RunPage() {
               >
                 Force Finish
               </button>
+              <DownloadRunStateButton
+                runId={runId}
+                storeName={run.store_name}
+                className="btn btn-secondary btn-lg"
+              />
             </div>
             <p className="ready-hint">
               Click "Finish Adjusting" when all bid totals match purchased quantities, or "Force Finish" to proceed anyway.
@@ -645,7 +665,16 @@ export default function RunPage() {
       {/* Distribution Section - shown in distributing and completed states */}
       {shouldFetchDistribution && (
         <div className="distribution-section">
-          <h3>Distribution</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3>Distribution</h3>
+            {(run.current_user_is_leader || run.current_user_is_helper) && (
+              <DownloadRunStateButton
+                runId={runId}
+                storeName={run.store_name}
+                className="btn btn-secondary"
+              />
+            )}
+          </div>
           {distributionUsers.length === 0 ? (
             <div className="empty-state">
               <p>No items to distribute. Either no products were purchased or no users have allocated items.</p>

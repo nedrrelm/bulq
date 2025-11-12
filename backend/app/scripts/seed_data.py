@@ -184,14 +184,14 @@ def create_seed_data(repo):
     # Shopping list items for adjusting run
     shopping_item4 = repo._create_shopping_list_item(run_adjusting.id, almond_butter.id, 4)  # 2 + 1 + 1
     shopping_item4.is_purchased = True
-    shopping_item4.actual_price = 9.99
-    shopping_item4.actual_quantity = 3
+    shopping_item4.purchased_price_per_unit = 9.99
+    shopping_item4.purchased_quantity = 3
     shopping_item4.purchase_order = 1
 
     shopping_item5 = repo._create_shopping_list_item(run_adjusting.id, frozen_berries.id, 3)  # 1 + 2
     shopping_item5.is_purchased = True
-    shopping_item5.actual_price = 12.99
-    shopping_item5.actual_quantity = 2
+    shopping_item5.purchased_price_per_unit = 12.99
+    shopping_item5.purchased_quantity = 2
     shopping_item5.purchase_order = 2
 
     # Distributing run - items purchased, being distributed
@@ -220,20 +220,20 @@ def create_seed_data(repo):
     # Shopping list items
     shopping_item6 = repo._create_shopping_list_item(run_distributing.id, rotisserie_chicken.id, 3)  # 2 + 1
     shopping_item6.is_purchased = True
-    shopping_item6.actual_price = 4.99
-    shopping_item6.actual_quantity = 3
+    shopping_item6.purchased_price_per_unit = 4.99
+    shopping_item6.purchased_quantity = 3
     shopping_item6.purchase_order = 1
 
     shopping_item7 = repo._create_shopping_list_item(run_distributing.id, toilet_paper.id, 1)
     shopping_item7.is_purchased = True
-    shopping_item7.actual_price = 22.99
-    shopping_item7.actual_quantity = 1
+    shopping_item7.purchased_price_per_unit = 22.99
+    shopping_item7.purchased_quantity = 1
     shopping_item7.purchase_order = 2
 
     shopping_item8 = repo._create_shopping_list_item(run_distributing.id, coffee_beans.id, 2)
     shopping_item8.is_purchased = True
-    shopping_item8.actual_price = 14.99
-    shopping_item8.actual_quantity = 2
+    shopping_item8.purchased_price_per_unit = 14.99
+    shopping_item8.purchased_quantity = 2
     shopping_item8.purchase_order = 3
 
     # Distribution records for distributing run
@@ -261,14 +261,14 @@ def create_seed_data(repo):
     # Shopping list items
     shopping_item9 = repo._create_shopping_list_item(run_completed.id, detergent.id, 1)
     shopping_item9.is_purchased = True
-    shopping_item9.actual_price = 16.98
-    shopping_item9.actual_quantity = 1
+    shopping_item9.purchased_price_per_unit = 16.98
+    shopping_item9.purchased_quantity = 1
     shopping_item9.purchase_order = 1
 
     shopping_item10 = repo._create_shopping_list_item(run_completed.id, laundry_pods.id, 1)
     shopping_item10.is_purchased = True
-    shopping_item10.actual_price = 18.98
-    shopping_item10.actual_quantity = 1
+    shopping_item10.purchased_price_per_unit = 18.98
+    shopping_item10.purchased_quantity = 1
     shopping_item10.purchase_order = 2
 
     # Additional completed runs for price history
@@ -290,14 +290,14 @@ def create_seed_data(repo):
 
     shopping_item11 = repo._create_shopping_list_item(run_completed_2.id, olive_oil.id, 1)
     shopping_item11.is_purchased = True
-    shopping_item11.actual_price = 23.99
-    shopping_item11.actual_quantity = 1
+    shopping_item11.purchased_price_per_unit = 23.99
+    shopping_item11.purchased_quantity = 1
     shopping_item11.purchase_order = 1
 
     shopping_item12 = repo._create_shopping_list_item(run_completed_2.id, paper_towels.id, 1)
     shopping_item12.is_purchased = True
-    shopping_item12.actual_price = 19.99
-    shopping_item12.actual_quantity = 1
+    shopping_item12.purchased_price_per_unit = 19.99
+    shopping_item12.purchased_quantity = 1
     shopping_item12.purchase_order = 2
 
     # run_completed_3 (45 days ago) - alice is leader
@@ -314,8 +314,8 @@ def create_seed_data(repo):
 
     shopping_item13 = repo._create_shopping_list_item(run_completed_3.id, detergent.id, 2)
     shopping_item13.is_purchased = True
-    shopping_item13.actual_price = 15.98
-    shopping_item13.actual_quantity = 2
+    shopping_item13.purchased_price_per_unit = 15.98
+    shopping_item13.purchased_quantity = 2
     shopping_item13.purchase_order = 1
 
     # run_completed_4 (60 days ago) - bob is leader
@@ -325,8 +325,8 @@ def create_seed_data(repo):
 
     shopping_item14 = repo._create_shopping_list_item(run_completed_4.id, olive_oil.id, 1)
     shopping_item14.is_purchased = True
-    shopping_item14.actual_price = 24.99
-    shopping_item14.actual_quantity = 1
+    shopping_item14.purchased_price_per_unit = 24.99
+    shopping_item14.purchased_quantity = 1
     shopping_item14.purchase_order = 1
 
     bid15 = repo._create_bid(bob_completed_4_p.id, olive_oil.id, 1, False)
@@ -347,6 +347,6 @@ def create_seed_data(repo):
 
     shopping_item15 = repo._create_shopping_list_item(run_completed_5.id, ground_beef.id, 1)
     shopping_item15.is_purchased = True
-    shopping_item15.actual_price = 16.48
-    shopping_item15.actual_quantity = 1
+    shopping_item15.purchased_price_per_unit = 16.48
+    shopping_item15.purchased_quantity = 1
     shopping_item15.purchase_order = 1
