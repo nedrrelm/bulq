@@ -14,7 +14,7 @@ interface ManageHelpersPopupProps {
 interface GroupMember {
   id: string
   name: string
-  email: string
+  username: string
   is_group_admin: boolean
 }
 

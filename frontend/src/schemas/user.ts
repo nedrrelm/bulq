@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { uuidSchema, emailSchema } from './common'
+import { uuidSchema } from './common'
 
 /**
  * User schemas
@@ -8,7 +8,7 @@ import { uuidSchema, emailSchema } from './common'
 export const userSchema = z.object({
   id: uuidSchema,
   name: z.string(),
-  email: emailSchema,
+  username: z.string(),
   is_admin: z.boolean().optional()
 })
 

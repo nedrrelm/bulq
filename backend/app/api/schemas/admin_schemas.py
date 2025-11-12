@@ -8,7 +8,7 @@ class AdminUserResponse(BaseModel):
 
     id: str
     name: str
-    email: str
+    username: str
     verified: bool
     is_admin: bool
     created_at: str | None
@@ -68,7 +68,7 @@ class UpdateUserRequest(BaseModel):
     """Request to update user fields."""
 
     name: str
-    email: str
+    username: str
     is_admin: bool
     verified: bool
 

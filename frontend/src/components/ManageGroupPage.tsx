@@ -81,7 +81,7 @@ export default function ManageGroupPage() {
         const newMember: GroupMember = {
           id: message.data.user_id,
           name: message.data.user_name,
-          email: message.data.user_email,
+          username: message.data.user_username,
           is_group_admin: false
         }
         setGroup({
@@ -315,7 +315,7 @@ export default function ManageGroupPage() {
                     <span className="admin-badge">Admin</span>
                   )}
                 </div>
-                <div className="member-email">{member.email}</div>
+                <div className="member-email">@{member.username}</div>
               </div>
               {group.is_current_user_admin && !member.is_group_admin && (
                 <div className="member-actions">

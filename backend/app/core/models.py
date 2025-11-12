@@ -38,11 +38,8 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False, index=True)
+    username = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
-    username = Column(
-        String, unique=True, nullable=True, index=True
-    )  # Will eventually replace email
     is_admin = Column(Boolean, nullable=False, default=False)
     verified = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

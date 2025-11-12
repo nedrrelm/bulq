@@ -49,21 +49,21 @@ async def register(
     user_data: UserRegister, response: Response, db: Session = Depends(get_db)
 ) -> UserResponse:
     """Register a new user."""
-    logger.info('Registration attempt', extra={'email': user_data.email})
+    logger.info('Registration attempt', extra={'username': user_data.username})
     repo = get_repository(db)
 
     # Check if user already exists
-    existing_user = repo.get_user_by_email(user_data.email)
+    existing_user = repo.get_user_by_username(user_data.username)
     if existing_user:
         logger.warning(
-            'Registration failed - email already exists', extra={'email': user_data.email}
+            'Registration failed - username already exists', extra={'username': user_data.username}
         )
-        raise BadRequestError('Email already registered')
+        raise BadRequestError('Username already registered')
 
     # Create new user
     password_hash = hash_password(user_data.password)
     new_user = repo.create_user(
-        name=user_data.name, email=user_data.email, password_hash=password_hash
+        name=user_data.name, username=user_data.username, password_hash=password_hash
     )
 
     # Create session
@@ -79,10 +79,10 @@ async def register(
     )
 
     logger.info(
-        'User registered successfully', extra={'user_id': str(new_user.id), 'email': new_user.email}
+        'User registered successfully', extra={'user_id': str(new_user.id), 'username': new_user.username}
     )
 
-    return UserResponse(id=str(new_user.id), name=new_user.name, email=new_user.email)
+    return UserResponse(id=str(new_user.id), name=new_user.name, username=new_user.username)
 
 
 @router.post('/login', response_model=UserResponse)
@@ -90,14 +90,14 @@ async def login(
     user_data: UserLogin, response: Response, db: Session = Depends(get_db)
 ) -> UserResponse:
     """Login user."""
-    logger.info('Login attempt', extra={'email': user_data.email})
+    logger.info('Login attempt', extra={'username': user_data.username})
     repo = get_repository(db)
 
-    # Find user by email
-    user = repo.get_user_by_email(user_data.email)
+    # Find user by username
+    user = repo.get_user_by_username(user_data.username)
     if not user or not repo.verify_password(user_data.password, user.password_hash):
-        logger.warning('Failed login attempt', extra={'email': user_data.email})
-        raise UnauthorizedError('Invalid email or password')
+        logger.warning('Failed login attempt', extra={'username': user_data.username})
+        raise UnauthorizedError('Invalid username or password')
 
     # Create session
     session_token = create_session(str(user.id))
@@ -115,13 +115,13 @@ async def login(
         'User logged in successfully - Session cookie set',
         extra={
             'user_id': str(user.id),
-            'email': user.email,
+            'username': user.username,
             'session_token_length': len(session_token),
             'max_age': SESSION_EXPIRY_HOURS * 3600,
         },
     )
 
-    return UserResponse(id=str(user.id), name=user.name, email=user.email, is_admin=user.is_admin)
+    return UserResponse(id=str(user.id), name=user.name, username=user.username, is_admin=user.is_admin)
 
 
 @router.post('/logout', response_model=MessageResponse)
@@ -144,6 +144,6 @@ async def get_current_user_info(current_user: User = Depends(require_auth)) -> U
     return UserResponse(
         id=str(current_user.id),
         name=current_user.name,
-        email=current_user.email,
+        username=current_user.username,
         is_admin=current_user.is_admin,
     )
