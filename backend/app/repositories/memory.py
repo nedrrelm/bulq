@@ -41,7 +41,7 @@ class MemoryRepository(AbstractRepository):
         """Initialize storage dictionaries and create test data. Called once by __new__."""
         # Storage dictionaries
         self._users: dict[UUID, User] = {}
-        self._users_by_email: dict[str, User] = {}
+        self._users_by_username: dict[str, User] = {}
         self._groups: dict[UUID, Group] = {}
         self._group_memberships: dict[UUID, list[UUID]] = {}  # group_id -> [user_ids]
         self._group_admin_status: dict[tuple, bool] = {}  # (group_id, user_id) -> is_admin
@@ -60,20 +60,20 @@ class MemoryRepository(AbstractRepository):
     def get_user_by_id(self, user_id: UUID) -> User | None:
         return self._users.get(user_id)
 
-    def get_user_by_email(self, email: str) -> User | None:
-        return self._users_by_email.get(email)
+    def get_user_by_username(self, username: str) -> User | None:
+        return self._users_by_username.get(username)
 
-    def create_user(self, name: str, email: str, password_hash: str) -> User:
+    def create_user(self, name: str, username: str, password_hash: str) -> User:
         user = User(
             id=uuid4(),
             name=name,
-            email=email,
+            username=username,
             password_hash=password_hash,
             verified=False,
             is_admin=False,
         )
         self._users[user.id] = user
-        self._users_by_email[email] = user
+        self._users_by_username[username] = user
         return user
 
     def get_all_users(self) -> list[User]:
@@ -165,7 +165,7 @@ class MemoryRepository(AbstractRepository):
                     {
                         'id': str(user.id),
                         'name': user.name,
-                        'email': user.email,
+                        'username': user.username,
                         'is_group_admin': self._group_admin_status.get((group_id, user_id), False),
                     }
                 )

@@ -11,10 +11,10 @@ def create_seed_data(repo):
         repo: Repository instance (AbstractRepository) to populate
     """
     # Create test users
-    alice = repo.create_user('Alice Johnson', 'alice@test.com', 'hashed_password')
-    bob = repo.create_user('Bob Smith', 'bob@test.com', 'hashed_password')
-    carol = repo.create_user('Carol Davis', 'carol@test.com', 'hashed_password')
-    test_user = repo.create_user('Test User', 'test@example.com', 'hashed_password')
+    alice = repo.create_user('Alice Johnson', 'alice', 'hashed_password')
+    bob = repo.create_user('Bob Smith', 'bob', 'hashed_password')
+    carol = repo.create_user('Carol Davis', 'carol', 'hashed_password')
+    test_user = repo.create_user('Test User', 'test', 'hashed_password')
     test_user.is_admin = True
 
     # Create test groups

@@ -55,13 +55,13 @@ class DatabaseRepository(AbstractRepository):
         """Get user by ID."""
         return self.db.query(User).filter(User.id == user_id).first()
 
-    def get_user_by_email(self, email: str) -> User | None:
-        """Get user by email."""
-        return self.db.query(User).filter(User.email == email).first()
+    def get_user_by_username(self, username: str) -> User | None:
+        """Get user by username."""
+        return self.db.query(User).filter(User.username == username).first()
 
-    def create_user(self, name: str, email: str, password_hash: str) -> User:
+    def create_user(self, name: str, username: str, password_hash: str) -> User:
         """Create a new user."""
-        user = User(name=name, email=email, password_hash=password_hash)
+        user = User(name=name, username=username, password_hash=password_hash)
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
@@ -175,7 +175,7 @@ class DatabaseRepository(AbstractRepository):
         ).all()
 
         return [
-            {'id': str(user.id), 'name': user.name, 'email': user.email, 'is_group_admin': is_admin}
+            {'id': str(user.id), 'name': user.name, 'username': user.username, 'is_group_admin': is_admin}
             for user, is_admin in results
         ]
 

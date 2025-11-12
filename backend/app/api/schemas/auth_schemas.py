@@ -9,22 +9,22 @@ class UserRegister(BaseModel):
     """Request model for user registration."""
 
     name: str = Field(min_length=1, max_length=100)
-    email: str = Field(min_length=3, max_length=255)
+    username: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=6, max_length=100)
 
-    @field_validator('email')
+    @field_validator('username')
     @classmethod
-    def validate_email(cls, v: str) -> str:
-        """Validate email format."""
-        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', v):
-            raise ValueError('Invalid email format')
+    def validate_username(cls, v: str) -> str:
+        """Validate username format."""
+        if not re.match(r'^[a-zA-Z0-9_-]+$', v):
+            raise ValueError('Username can only contain letters, numbers, hyphens, and underscores')
         return v.lower()
 
 
 class UserLogin(BaseModel):
     """Request model for user login."""
 
-    email: str
+    username: str
     password: str
 
 
@@ -33,5 +33,5 @@ class UserResponse(BaseModel):
 
     id: str
     name: str
-    email: str
+    username: str
     is_admin: bool = False

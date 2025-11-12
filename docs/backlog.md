@@ -125,30 +125,35 @@ These items must be completed before production deployment.
 ---
 
 ### Authentication & User Management
-**Status**: Future
+**Status**: Partially Complete
 **Priority**: High
 **Affected files**: Backend auth routes, config, frontend registration
 
 **Features:**
-1. **Global Account Creation Flag**
+1. **Global Account Creation Flag** [TODO]
    - Environment variable to enable/disable new registrations
    - Allow admin to close registration after initial users join
    - Existing users can still login when disabled
    - Clear message on registration page when disabled
 
-2. **Remove Email, Username-Only Login**
-   - Remove email field from User model
-   - Use only username for authentication
-   - Update registration/login forms
-   - Migrate existing users (generate usernames from emails)
+2. **Remove Email, Username-Only Login** [COMPLETED]
+   - ✅ Removed email field from User model
+   - ✅ Using username for authentication
+   - ✅ Updated registration/login forms
+   - ✅ Created migration script (002_remove_email_add_username.sql)
+   - ✅ Username validation (letters, numbers, hyphens, underscores only)
 
 **Schema Changes:**
-- Remove `email` column from User table
-- Make `username` non-nullable and required
-- Add unique constraint on username
+- ✅ Removed `email` column from User table
+- ✅ Made `username` non-nullable and required
+- ✅ Username has unique constraint on it
 
 **Configuration:**
-- `ALLOW_REGISTRATION=true|false` environment variable
+- `ALLOW_REGISTRATION=true|false` environment variable [TODO]
+
+**Migration Notes:**
+- Migration script: `backend/migrations/002_remove_email_add_username.sql`
+- See `backend/migrations/README.md` for detailed instructions
 
 3. **User Profile Management**
    - Allow users to change their username

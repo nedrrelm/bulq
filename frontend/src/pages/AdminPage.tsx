@@ -161,7 +161,7 @@ export default function AdminPage() {
       <div className="admin-filters">
         <input
           type="text"
-          placeholder="Search by name, email, or ID..."
+          placeholder="Search by name, username, or ID..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="form-input"
@@ -190,7 +190,7 @@ export default function AdminPage() {
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Email</th>
+                    <th>Username</th>
                     <th>ID</th>
                     <th>Admin</th>
                     <th>Verified</th>
@@ -201,7 +201,7 @@ export default function AdminPage() {
                   {users?.map((user) => (
                     <tr key={user.id}>
                       <td>{user.name}</td>
-                      <td>{user.email}</td>
+                      <td>@{user.username}</td>
                       <td className="id-cell">{user.id}</td>
                       <td>{user.is_admin ? '✓' : ''}</td>
                       <td>{user.verified ? '✓' : '✗'}</td>

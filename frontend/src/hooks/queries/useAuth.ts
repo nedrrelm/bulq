@@ -44,8 +44,8 @@ export function useLogin() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (credentials: { email: string; password: string }) =>
-      authApi.login(credentials.email, credentials.password),
+    mutationFn: (credentials: { username: string; password: string }) =>
+      authApi.login(credentials.username, credentials.password),
     onSuccess: (userData) => {
       // Set the current user data
       queryClient.setQueryData(authKeys.currentUser(), userData)
@@ -75,8 +75,8 @@ export function useRegister() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { name: string; email: string; password: string }) =>
-      authApi.register(data.name, data.email, data.password),
+    mutationFn: (data: { name: string; username: string; password: string }) =>
+      authApi.register(data.name, data.username, data.password),
     onSuccess: (userData) => {
       // Set the current user data after registration
       queryClient.setQueryData(authKeys.currentUser(), userData)

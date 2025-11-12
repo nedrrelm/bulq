@@ -9,13 +9,13 @@ interface LoginProps {
 }
 
 interface LoginFormData {
-  email: string
+  username: string
   password: string
 }
 
 interface RegisterFormData {
   name: string
-  email: string
+  username: string
   password: string
   confirmPassword: string
 }
@@ -24,17 +24,17 @@ export default function Login({ onLogin }: LoginProps) {
   const [isRegister, setIsRegister] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const emailInputRef = useRef<HTMLInputElement>(null)
+  const usernameInputRef = useRef<HTMLInputElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   const [loginData, setLoginData] = useState<LoginFormData>({
-    email: '',
+    username: '',
     password: ''
   })
 
   const [registerData, setRegisterData] = useState<RegisterFormData>({
     name: '',
-    email: '',
+    username: '',
     password: '',
     confirmPassword: ''
   })
@@ -42,8 +42,8 @@ export default function Login({ onLogin }: LoginProps) {
   useEffect(() => {
     if (isRegister && nameInputRef.current) {
       nameInputRef.current.focus()
-    } else if (!isRegister && emailInputRef.current) {
-      emailInputRef.current.focus()
+    } else if (!isRegister && usernameInputRef.current) {
+      usernameInputRef.current.focus()
     }
   }, [isRegister])
 
@@ -53,8 +53,8 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      const sanitizedEmail = sanitizeString(loginData.email.trim(), 255)
-      const user = await authApi.login(sanitizedEmail, loginData.password)
+      const sanitizedUsername = sanitizeString(loginData.username.trim(), 50)
+      const user = await authApi.login(sanitizedUsername, loginData.password)
       onLogin(user)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed')
@@ -77,8 +77,8 @@ export default function Login({ onLogin }: LoginProps) {
 
     try {
       const sanitizedName = sanitizeString(registerData.name, 100)
-      const sanitizedEmail = sanitizeString(registerData.email.trim(), 255)
-      const user = await authApi.register(sanitizedName, sanitizedEmail, registerData.password)
+      const sanitizedUsername = sanitizeString(registerData.username.trim(), 50)
+      const user = await authApi.register(sanitizedName, sanitizedUsername, registerData.password)
       onLogin(user)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed')
@@ -115,21 +115,24 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="email" className="form-label">Email</label>
+              <label htmlFor="username" className="form-label">Username</label>
               <input
-                type="email"
-                id="email"
+                type="text"
+                id="username"
                 className="form-input"
-                value={registerData.email}
-                onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                value={registerData.username}
+                onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
                 required
                 disabled={loading}
+                minLength={3}
+                maxLength={50}
+                pattern="[a-zA-Z0-9_-]+"
+                title="Username can only contain letters, numbers, hyphens, and underscores"
               />
               <small className="input-hint">
-                Used for login only - can be fake (e.g., yourname@bulq.local)
+                Letters, numbers, hyphens, and underscores only (3-50 characters)
               </small>
             </div>
-
             <div className="form-group">
               <label htmlFor="password" className="form-label">Password</label>
               <input
@@ -165,16 +168,16 @@ export default function Login({ onLogin }: LoginProps) {
         ) : (
           <form onSubmit={handleLogin} className="auth-form">
             <div className="form-group">
-              <label htmlFor="email" className="form-label">Email</label>
+              <label htmlFor="username" className="form-label">Username</label>
               <input
-                type="email"
-                id="email"
+                type="text"
+                id="username"
                 className="form-input"
-                value={loginData.email}
-                onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                value={loginData.username}
+                onChange={(e) => setLoginData({...loginData, username: e.target.value})}
                 required
                 disabled={loading}
-                ref={emailInputRef}
+                ref={usernameInputRef}
               />
             </div>
 

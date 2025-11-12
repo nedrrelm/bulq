@@ -31,12 +31,12 @@ class AbstractRepository(ABC):
         raise NotImplementedError('Subclass must implement get_user_by_id')
 
     @abstractmethod
-    def get_user_by_email(self, email: str) -> User | None:
-        """Get user by email."""
-        raise NotImplementedError('Subclass must implement get_user_by_email')
+    def get_user_by_username(self, username: str) -> User | None:
+        """Get user by username."""
+        raise NotImplementedError('Subclass must implement get_user_by_username')
 
     @abstractmethod
-    def create_user(self, name: str, email: str, password_hash: str) -> User:
+    def create_user(self, name: str, username: str, password_hash: str) -> User:
         """Create a new user."""
         raise NotImplementedError('Subclass must implement create_user')
 

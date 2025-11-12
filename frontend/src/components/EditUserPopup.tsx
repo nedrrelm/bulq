@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { adminApi, type AdminUser } from '../api/admin'
 import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
-import { validateLength, validateEmail, sanitizeString } from '../utils/validation'
+import { validateLength, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 
@@ -14,10 +14,12 @@ interface EditUserPopupProps {
 
 const MAX_NAME_LENGTH = 100
 const MIN_NAME_LENGTH = 2
+const MAX_USERNAME_LENGTH = 50
+const MIN_USERNAME_LENGTH = 3
 
 export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopupProps) {
   const [userName, setUserName] = useState(user.name)
-  const [email, setEmail] = useState(user.email)
+  const [username, setUsername] = useState(user.username)
   const [isAdmin, setIsAdmin] = useState(user.is_admin)
   const [verified, setVerified] = useState(user.verified)
   const [error, setError] = useState('')
@@ -44,17 +46,23 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
     return true
   }
 
-  const validateUserEmail = (value: string): boolean => {
+  const validateUsername = (value: string): boolean => {
     const trimmed = value.trim()
 
     if (trimmed.length === 0) {
-      setError('Email is required')
+      setError('Username is required')
       return false
     }
 
-    const emailValidation = validateEmail(trimmed)
-    if (!emailValidation.isValid) {
-      setError(emailValidation.error || 'Invalid email')
+    const lengthValidation = validateLength(trimmed, MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH, 'Username')
+    if (!lengthValidation.isValid) {
+      setError(lengthValidation.error || 'Invalid username')
+      return false
+    }
+
+    // Check username format
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+      setError('Username can only contain letters, numbers, hyphens, and underscores')
       return false
     }
 
@@ -72,7 +80,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
 
     setError('')
 
-    if (!validateUserName(userName) || !validateUserEmail(email)) {
+    if (!validateUserName(userName) || !validateUsername(username)) {
       return
     }
 
@@ -81,7 +89,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
 
       await adminApi.updateUser(user.id, {
         name: userName.trim(),
-        email: email.trim(),
+        username: username.trim().toLowerCase(),
         is_admin: isAdmin,
         verified: verified,
       })
@@ -134,20 +142,26 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
           </div>
 
           <div className="form-group">
-            <label htmlFor="email" className="form-label">Email *</label>
+            <label htmlFor="username" className="form-label">Username *</label>
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
               className={`form-input ${error ? 'input-error' : ''}`}
-              value={email}
+              value={username}
               onChange={(e) => {
-                setEmail(e.target.value)
+                setUsername(e.target.value)
                 setError('')
               }}
-              placeholder="user@example.com"
+              placeholder="username"
               disabled={submitting}
+              minLength={MIN_USERNAME_LENGTH}
+              maxLength={MAX_USERNAME_LENGTH}
+              pattern="[a-zA-Z0-9_-]+"
               required
             />
+            <small style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
+              Letters, numbers, hyphens, and underscores only (3-50 characters)
+            </small>
           </div>
 
           <div className="form-group">

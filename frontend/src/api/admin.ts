@@ -3,7 +3,7 @@ import { api } from './client'
 export interface AdminUser {
   id: string
   name: string
-  email: string
+  username: string
   verified: boolean
   is_admin: boolean
   created_at: string
@@ -54,7 +54,7 @@ export const adminApi = {
     return await api.post<AdminUser>(`/admin/users/${userId}/verify`)
   },
 
-  async updateUser(userId: string, data: { name: string; email: string; is_admin: boolean; verified: boolean }): Promise<AdminUser> {
+  async updateUser(userId: string, data: { name: string; username: string; is_admin: boolean; verified: boolean }): Promise<AdminUser> {
     return await api.put<AdminUser>(`/admin/users/${userId}`, data)
   },
 

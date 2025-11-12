@@ -23,7 +23,7 @@ class AdminService(BaseService):
         """Get all users with optional search and filtering (paginated).
 
         Args:
-            search: Optional search query for name, email, or ID
+            search: Optional search query for name, username, or ID
             verified: Optional filter by verification status
             limit: Maximum number of results (max 100)
             offset: Number of results to skip
@@ -33,7 +33,7 @@ class AdminService(BaseService):
         """
         users = self.repo.get_all_users()
 
-        # Filter by search query (name, email, or ID)
+        # Filter by search query (name, username, or ID)
         if search:
             search_lower = search.lower()
             users = [
@@ -41,7 +41,7 @@ class AdminService(BaseService):
                 for u in users
                 if (
                     search_lower in u.name.lower()
-                    or search_lower in u.email.lower()
+                    or search_lower in u.username.lower()
                     or search_lower in str(u.id).lower()
                 )
             ]
@@ -60,7 +60,7 @@ class AdminService(BaseService):
             AdminUserResponse(
                 id=str(u.id),
                 name=u.name,
-                email=u.email,
+                username=u.username,
                 verified=u.verified,
                 is_admin=u.is_admin,
                 created_at=u.created_at.isoformat() if u.created_at else None,
@@ -330,7 +330,7 @@ class AdminService(BaseService):
 
         Args:
             user_id: ID of user to update
-            data: Dictionary with fields to update (name, email, is_admin, verified)
+            data: Dictionary with fields to update (name, username, is_admin, verified)
             admin_user: Admin user performing the action
 
         Returns:
@@ -352,7 +352,7 @@ class AdminService(BaseService):
         return AdminUserResponse(
             id=str(user.id),
             name=user.name,
-            email=user.email,
+            username=user.username,
             verified=user.verified,
             is_admin=user.is_admin,
             created_at=user.created_at.isoformat() if user.created_at else None,

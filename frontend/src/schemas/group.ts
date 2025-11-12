@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { uuidSchema, nullable, emailSchema } from './common'
+import { uuidSchema, nullable } from './common'
 
 /**
  * Group-related schemas
@@ -55,7 +55,7 @@ export const groupDetailsSchema = z.object({
 export const groupMemberSchema = z.object({
   id: uuidSchema,
   name: z.string(),
-  email: emailSchema,
+  username: z.string(),
   is_group_admin: z.boolean()
 })
 
