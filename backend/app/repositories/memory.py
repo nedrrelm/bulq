@@ -335,7 +335,7 @@ class MemoryRepository(AbstractRepository):
         return list(self._products.values())
 
     def create_or_update_bid(
-        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool
+        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool, comment: str | None = None
     ) -> ProductBid:
         """Create or update a product bid."""
         from datetime import datetime
@@ -346,6 +346,7 @@ class MemoryRepository(AbstractRepository):
             # Update existing bid
             existing_bid.quantity = quantity
             existing_bid.interested_only = interested_only
+            existing_bid.comment = comment
             existing_bid.updated_at = datetime.now()
             return existing_bid
         else:
@@ -356,6 +357,7 @@ class MemoryRepository(AbstractRepository):
                 product_id=product_id,
                 quantity=quantity,
                 interested_only=interested_only,
+                comment=comment,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
             )

@@ -361,7 +361,7 @@ class DatabaseRepository(AbstractRepository):
         )
 
     def create_or_update_bid(
-        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool
+        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool, comment: str | None = None
     ) -> ProductBid:
         """Create or update a product bid."""
         # Check if bid already exists
@@ -377,6 +377,7 @@ class DatabaseRepository(AbstractRepository):
             # Update existing bid
             existing_bid.quantity = quantity
             existing_bid.interested_only = interested_only
+            existing_bid.comment = comment
             self.db.commit()
             self.db.refresh(existing_bid)
             return existing_bid
@@ -387,6 +388,7 @@ class DatabaseRepository(AbstractRepository):
                 product_id=product_id,
                 quantity=quantity,
                 interested_only=interested_only,
+                comment=comment,
             )
             self.db.add(bid)
             self.db.commit()

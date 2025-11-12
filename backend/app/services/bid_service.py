@@ -21,7 +21,7 @@ class BidService(BaseService):
     """Service for managing bid operations."""
 
     def place_bid(
-        self, run_id: str, product_id: str, quantity: float, interested_only: bool, user: User
+        self, run_id: str, product_id: str, quantity: float, interested_only: bool, user: User, comment: str | None = None
     ) -> PlaceBidResponse:
         """Place or update a bid on a product in a run.
 
@@ -66,7 +66,7 @@ class BidService(BaseService):
         self._validate_bid_for_state(run, product_uuid, quantity, participation)
 
         # Create or update the bid
-        self.repo.create_or_update_bid(participation.id, product_uuid, quantity, interested_only)
+        self.repo.create_or_update_bid(participation.id, product_uuid, quantity, interested_only, comment)
 
         # Handle automatic state transition (planning → active)
         state_changed = self._check_planning_to_active_transition(

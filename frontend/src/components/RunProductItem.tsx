@@ -9,6 +9,7 @@ interface RunProductItemProps {
   canBid: boolean
   onPlaceBid: (product: Product) => void
   onRetractBid: (product: Product) => void
+  onViewComments: (product: Product) => void
   getUserInitials: (name: string, allNames?: string[]) => string
 }
 
@@ -20,7 +21,7 @@ interface RunProductItemProps {
  * - Adjusting: Show purchase quantities and adjustment status
  * - Distributing/Completed: Show final purchase information
  */
-const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid, getUserInitials }: RunProductItemProps) => {
+const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid, onViewComments, getUserInitials }: RunProductItemProps) => {
   const needsAdjustment = runState === 'adjusting' &&
                           product.purchased_quantity !== null &&
                           product.purchased_quantity > 0 &&
@@ -48,10 +49,23 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
   const shortage = product.purchased_quantity !== null ? product.total_quantity - product.purchased_quantity : 0
   const canRetract = !adjustmentOk && !(runState === 'adjusting' && product.current_user_bid && !product.current_user_bid.interested_only && product.current_user_bid.quantity > shortage)
 
+  // Count comments
+  const commentCount = product.user_bids.filter(bid => bid.comment && bid.comment.trim().length > 0).length
+
   return (
     <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : notPurchasedAdjusting ? 'not-purchased-adjusting' : ''} ${fullyPurchased ? 'adjustment-ok' : partiallyPurchased ? 'needs-adjustment' : notPurchasedFinal ? 'not-purchased-adjusting' : ''}`}>
       <div className="product-header">
-        <h4>{product.name}</h4>
+        <div className="product-title-row">
+          <h4>{product.name}</h4>
+          <button
+            onClick={() => onViewComments(product)}
+            className="comments-button"
+            title={commentCount > 0 ? `View ${commentCount} comment${commentCount === 1 ? '' : 's'}` : 'Add or view comments'}
+          >
+            💬
+            {commentCount > 0 && <span className="comment-badge">{commentCount}</span>}
+          </button>
+        </div>
         {product.current_price && <span className="product-price">{product.current_price} RSD</span>}
       </div>
 

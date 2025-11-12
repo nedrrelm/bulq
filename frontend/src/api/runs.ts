@@ -15,6 +15,7 @@ export interface PlaceBidRequest {
   product_id: string
   quantity: number
   interested_only: boolean
+  comment?: string | null
 }
 
 export interface UpdateRunCommentRequest {

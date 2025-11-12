@@ -15,6 +15,7 @@ const AddProductPopup = lazy(() => import('./AddProductPopup'))
 const ReassignLeaderPopup = lazy(() => import('./ReassignLeaderPopup'))
 const ManageHelpersPopup = lazy(() => import('./ManageHelpersPopup'))
 const ForceConfirmPopup = lazy(() => import('./ForceConfirmPopup'))
+const CommentsPopup = lazy(() => import('./CommentsPopup'))
 import RunProductItem from './RunProductItem'
 import DownloadRunStateButton from './DownloadRunStateButton'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -72,6 +73,7 @@ export default function RunPage() {
   const [showManageHelpersPopup, setShowManageHelpersPopup] = useState(false)
   const [showForceConfirmPopup, setShowForceConfirmPopup] = useState(false)
   const [showEditCommentPopup, setShowEditCommentPopup] = useState(false)
+  const [showCommentsPopup, setShowCommentsPopup] = useState(false)
   const [reassignmentRequest, setReassignmentRequest] = useState<LeaderReassignmentRequest | null>(null)
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
@@ -174,14 +176,15 @@ export default function RunPage() {
     }
   }
 
-  const handleSubmitBid = async (quantity: number, interestedOnly: boolean) => {
+  const handleSubmitBid = async (quantity: number, interestedOnly: boolean, comment: string | null) => {
     if (!selectedProduct) return
 
     try {
       await runsApi.placeBid(runId, {
         product_id: selectedProduct.id,
         quantity,
-        interested_only: interestedOnly
+        interested_only: interestedOnly,
+        comment
       })
 
       // WebSocket will update the run data automatically
@@ -195,6 +198,30 @@ export default function RunPage() {
   const handleCancelBid = () => {
     setShowBidPopup(false)
     setSelectedProduct(null)
+  }
+
+  const handleViewComments = (product: Product) => {
+    setSelectedProduct(product)
+    setShowCommentsPopup(true)
+  }
+
+  const handleCloseComments = () => {
+    setShowCommentsPopup(false)
+    setSelectedProduct(null)
+  }
+
+  const handleEditOwnBid = () => {
+    // Close comments popup and open bid popup
+    setShowCommentsPopup(false)
+    setShowBidPopup(true)
+    // selectedProduct is already set
+  }
+
+  const handlePlaceBidFromComments = () => {
+    // Close comments popup and open bid popup
+    setShowCommentsPopup(false)
+    setShowBidPopup(true)
+    // selectedProduct is already set
   }
 
   const getUserInitials = (name: string, allNames?: string[]) => {
@@ -798,6 +825,7 @@ export default function RunPage() {
                     canBid={canBid}
                     onPlaceBid={handlePlaceBid}
                     onRetractBid={handleRetractBid}
+                    onViewComments={handleViewComments}
                     getUserInitials={getUserInitials}
                   />
                 </ErrorBoundary>
@@ -876,6 +904,7 @@ export default function RunPage() {
             <BidPopup
               productName={selectedProduct.name}
               currentQuantity={currentBid?.quantity}
+              currentComment={currentBid?.comment}
               onSubmit={handleSubmitBid}
               onCancel={handleCancelBid}
               adjustingMode={isAdjustingMode}
@@ -890,6 +919,17 @@ export default function RunPage() {
             runId={runId}
             onProductSelected={handleProductSelected}
             onCancel={handleCancelAddProduct}
+          />
+        )}
+
+        {showCommentsPopup && selectedProduct && (
+          <CommentsPopup
+            productName={selectedProduct.name}
+            userBids={selectedProduct.user_bids}
+            currentUserId={userId}
+            onClose={handleCloseComments}
+            onEditOwnBid={handleEditOwnBid}
+            onPlaceBid={handlePlaceBidFromComments}
           />
         )}
 

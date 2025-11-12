@@ -6,16 +6,18 @@ import { validateDecimal, parseDecimal } from '../utils/validation'
 interface BidPopupProps {
   productName: string
   currentQuantity?: number
-  onSubmit: (quantity: number, interestedOnly: boolean) => void
+  currentComment?: string | null
+  onSubmit: (quantity: number, interestedOnly: boolean, comment: string | null) => void
   onCancel: () => void
   adjustingMode?: boolean
   minAllowed?: number
   maxAllowed?: number
 }
 
-export default function BidPopup({ productName, currentQuantity, onSubmit, onCancel, adjustingMode, minAllowed, maxAllowed }: BidPopupProps) {
+export default function BidPopup({ productName, currentQuantity, currentComment, onSubmit, onCancel, adjustingMode, minAllowed, maxAllowed }: BidPopupProps) {
   const [quantity, setQuantity] = useState(currentQuantity?.toString() || '1')
   const [interestedOnly, setInterestedOnly] = useState(false)
+  const [comment, setComment] = useState(currentComment || '')
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -64,7 +66,8 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
     }
 
     const qty = parseDecimal(quantity)
-    onSubmit(qty, interestedOnly)
+    const finalComment = comment.trim() || null
+    onSubmit(qty, interestedOnly, finalComment)
   }
 
   const handleQuantityChange = (value: string) => {
@@ -124,6 +127,20 @@ export default function BidPopup({ productName, currentQuantity, onSubmit, onCan
               />
               Interested only (no quantity commitment)
             </label>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="comment">Comment (optional):</label>
+            <textarea
+              id="comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Add a note (e.g., 'Organic preferred', 'Any brand')"
+              maxLength={500}
+              rows={3}
+              className="comment-textarea"
+            />
+            <small className="input-hint">{comment.length}/500 characters</small>
           </div>
 
           <div className="button-group">

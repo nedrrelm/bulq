@@ -9,7 +9,8 @@ export const userBidSchema = z.object({
   user_id: uuidSchema,
   user_name: z.string(),
   quantity: z.number(),
-  interested_only: z.boolean()
+  interested_only: z.boolean(),
+  comment: nullable(z.string())
 })
 
 export const productInRunSchema = z.object({
