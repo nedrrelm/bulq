@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './styles/App.css'
+import './styles/dark-mode.css'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { searchApi } from './api'
@@ -196,6 +197,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     setSearchQuery(query)
     debouncedSearch(query)
   }
+
+  // Apply dark mode on initial load
+  useEffect(() => {
+    if (user?.dark_mode) {
+      document.body.classList.add('dark-mode')
+    } else {
+      document.body.classList.remove('dark-mode')
+    }
+  }, [user?.dark_mode])
 
   // Close search dropdown and menu on ESC key
   useEffect(() => {

@@ -113,4 +113,12 @@ export const adminApi = {
   async deleteStore(storeId: string): Promise<DeleteResponse> {
     return await api.delete<DeleteResponse>(`/admin/stores/${storeId}`)
   },
+
+  async getRegistrationSetting(): Promise<{ allow_registration: boolean }> {
+    return await api.get<{ allow_registration: boolean }>('/admin/settings/registration')
+  },
+
+  async setRegistrationSetting(allowRegistration: boolean): Promise<{ allow_registration: boolean; message: string }> {
+    return await api.post<{ allow_registration: boolean; message: string }>(`/admin/settings/registration?allow_registration=${allowRegistration}`)
+  },
 }

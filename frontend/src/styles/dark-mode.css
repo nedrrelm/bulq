@@ -1,0 +1,158 @@
+/* Dark Mode Styles */
+
+body.dark-mode {
+  --color-background: #1a1a1a;
+  --color-text: #e0e0e0;
+  --color-text-light: #a0a0a0;
+  --color-text-secondary: #888888;
+  --color-border: #333333;
+  --color-primary: #6366f1;
+  --color-secondary: #8b5cf6;
+  --color-danger: #ef4444;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-gray-50: #2a2a2a;
+  --color-gray-100: #333333;
+  --color-gray-200: #3d3d3d;
+  --color-gray-300: #4a4a4a;
+  --color-gray-400: #666666;
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+/* Card backgrounds */
+body.dark-mode .user-info-card,
+body.dark-mode .stat-card,
+body.dark-mode .setting-item,
+body.dark-mode .profile-form,
+body.dark-mode .admin-settings,
+body.dark-mode .modal,
+body.dark-mode .notification-item,
+body.dark-mode .group-card,
+body.dark-mode .group-item,
+body.dark-mode .run-card,
+body.dark-mode .run-summary,
+body.dark-mode .bid-item {
+  background: #242424 !important;
+  border-color: #333333;
+}
+
+/* Keep cards dark on hover */
+body.dark-mode .group-card:hover,
+body.dark-mode .group-item:hover,
+body.dark-mode .run-card:hover,
+body.dark-mode .run-summary:hover {
+  background: #2a2a2a !important;
+}
+
+/* Input fields */
+body.dark-mode .form-input,
+body.dark-mode .form-textarea,
+body.dark-mode select {
+  background-color: #2a2a2a;
+  border-color: #333333;
+  color: #e0e0e0;
+}
+
+body.dark-mode .form-input::placeholder {
+  color: #666666;
+}
+
+body.dark-mode .form-input:focus {
+  border-color: var(--color-primary);
+  background-color: #2a2a2a;
+}
+
+/* Buttons */
+body.dark-mode .btn-secondary {
+  background-color: #333333;
+  color: #e0e0e0;
+}
+
+body.dark-mode .btn-secondary:hover {
+  background-color: #3d3d3d;
+}
+
+/* Header */
+body.dark-mode header {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border-bottom-color: #333333;
+}
+
+/* Tabs */
+body.dark-mode .admin-tabs button,
+body.dark-mode .tab-button {
+  background-color: #2a2a2a;
+  color: #a0a0a0;
+}
+
+body.dark-mode .admin-tabs button.active,
+body.dark-mode .tab-button.active {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+/* Dropdowns and search */
+body.dark-mode .search-dropdown,
+body.dark-mode .drawer {
+  background-color: #242424;
+  border-color: #333333;
+}
+
+body.dark-mode .search-result-item:hover,
+body.dark-mode .drawer-item:hover {
+  background-color: #2a2a2a;
+}
+
+/* Alerts */
+body.dark-mode .alert {
+  background-color: #2a2a2a;
+  border-color: #333333;
+}
+
+body.dark-mode .alert-error {
+  background-color: #3a1a1a;
+  border-color: #5a2a2a;
+  color: #ff9999;
+}
+
+body.dark-mode .alert-success {
+  background-color: #1a3a1a;
+  border-color: #2a5a2a;
+  color: #99ff99;
+}
+
+/* Tables */
+body.dark-mode table {
+  background-color: #242424;
+}
+
+body.dark-mode th {
+  background-color: #2a2a2a;
+  border-color: #333333;
+}
+
+body.dark-mode td {
+  border-color: #333333;
+}
+
+body.dark-mode tr:hover {
+  background-color: #2a2a2a;
+}
+
+/* Dividers */
+body.dark-mode hr,
+body.dark-mode .drawer-divider,
+body.dark-mode .search-divider {
+  border-color: #333333;
+}
+
+/* Modal overlay */
+body.dark-mode .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+/* Stat icons */
+body.dark-mode .stat-icon {
+  color: var(--color-primary);
+}

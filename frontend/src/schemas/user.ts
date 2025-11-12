@@ -9,7 +9,8 @@ export const userSchema = z.object({
   id: uuidSchema,
   name: z.string(),
   username: z.string(),
-  is_admin: z.boolean().optional()
+  is_admin: z.boolean().optional(),
+  dark_mode: z.boolean().optional()
 })
 
 export type User = z.infer<typeof userSchema>

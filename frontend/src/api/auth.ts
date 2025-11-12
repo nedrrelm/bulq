@@ -44,5 +44,8 @@ export const authApi = {
     api.post<User>('/auth/change-name', {
       current_password: currentPassword,
       new_name: newName
-    }, userSchema)
+    }, userSchema),
+
+  toggleDarkMode: () =>
+    api.post<User>('/auth/toggle-dark-mode', {}, userSchema)
 }
