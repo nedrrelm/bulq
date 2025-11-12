@@ -166,57 +166,12 @@ These items must be completed before production deployment.
 
 ---
 
-### UI/UX Improvements
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Frontend components (RunPage, NotificationPanel, DistributionPage)
-
-**Features:**
-1. **Smart User Initials in Bid Circles**
-   - When multiple users have same first letter, use 2 letters
-   - Example: "Alice" and "Alex" → "Al" and "Ax" instead of both "A"
-   - Fallback to numbers if needed: "A1", "A2"
-
-2. **Post-Shopping Product Status Indicators**
-   - On run page after shopping, show purchased vs not purchased
-   - Similar to adjusting phase UI (orange highlights)
-   - Visual indicators for:
-     - ✅ Fully purchased (green)
-     - ⚠️ Partially purchased (orange)
-     - ❌ Not purchased (gray/crossed out)
-
-3. **Mobile Notification Panel Fix**
-   - Fix notification panel positioning on mobile
-   - Currently shows only right half, left half off-screen
-   - Make full panel visible with proper responsive layout
-
-4. **Distribution Page Visibility & Views**
-   - Show distribution page to all run participants (not just leader)
-   - Everyone can see what they bought and amounts
-   - Add view toggle: "By User" (default) and "By Product"
-   - By Product view: group items by product showing all users' quantities
-   - By User view: current behavior, items grouped per user
-
-**Implementation:**
-- Update user initial generation logic in frontend utils
-- Add product status badges on RunPage after shopping state
-- Fix CSS for notification panel mobile responsiveness
-- Update distribution route permissions (remove leader-only check)
-- Add view toggle component on DistributionPage
-
----
-
 ### Run Comments & Context
 **Status**: Future
 **Priority**: Medium
 **Affected files**: Database schema, backend models/services, frontend RunPage
 
 **Features:**
-1. **Run Description/Comment**
-   - Leader can add short description for run
-   - Visible to all participants
-   - Examples: "Bringing cooler", "Meeting at 2pm", "Focus on produce"
-   - Editable by leader at any time
 
 2. **Product Bid Comments**
    - Each user can add notes to their bids
