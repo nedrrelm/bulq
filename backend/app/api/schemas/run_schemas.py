@@ -31,6 +31,7 @@ class PlaceBidRequest(BaseModel):
     product_id: str
     quantity: float = Field(gt=0, le=9999)
     interested_only: bool = False
+    comment: str | None = Field(None, max_length=500)
 
     @field_validator('quantity')
     @classmethod
@@ -50,6 +51,7 @@ class UserBidResponse(BaseModel):
     user_name: str
     quantity: float
     interested_only: bool
+    comment: str | None = None
 
     class Config:
         from_attributes = True

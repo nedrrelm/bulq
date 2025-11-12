@@ -60,6 +60,7 @@ async def place_bid(
         bid_request.quantity,
         bid_request.interested_only,
         current_user,
+        bid_request.comment,
     )
     return MessageResponse(message=result.message)
 

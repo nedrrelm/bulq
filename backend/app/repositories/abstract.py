@@ -200,7 +200,7 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def create_or_update_bid(
-        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool
+        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool, comment: str | None = None
     ) -> ProductBid:
         """Create or update a product bid."""
         raise NotImplementedError('Subclass must implement create_or_update_bid')

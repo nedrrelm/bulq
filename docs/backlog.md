@@ -124,20 +124,6 @@ These items must be completed before production deployment.
 
 ---
 
-### Authentication & User Management
-**Status**: Partially Complete
-**Priority**: High
-**Affected files**: Backend auth routes, config, frontend registration
-
-**Features:**
-1. **Global Account Creation Flag** [TODO]
-   - Environment variable to enable/disable new registrations
-   - Allow admin to close registration after initial users join
-   - Existing users can still login when disabled
-   - Clear message on registration page when disabled
-
----
-
 ### Run Comments & Context
 **Status**: Future
 **Priority**: Medium

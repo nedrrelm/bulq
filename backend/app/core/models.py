@@ -201,6 +201,7 @@ class ProductBid(Base):
     product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
     quantity = Column(DECIMAL(10, 2), nullable=False, default=0)
     interested_only = Column(Boolean, nullable=False, default=False)
+    comment = Column(Text, nullable=True)  # User's comment/note for this bid
 
     # Distribution fields
     distributed_quantity = Column(DECIMAL(10, 2), nullable=True)  # Actual quantity allocated to user

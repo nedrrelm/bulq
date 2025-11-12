@@ -191,7 +191,7 @@ class RunService(BaseService):
         )
 
     def place_bid(
-        self, run_id: str, product_id: str, quantity: float, interested_only: bool, user: User
+        self, run_id: str, product_id: str, quantity: float, interested_only: bool, user: User, comment: str | None = None
     ) -> PlaceBidResponse:
         """Place or update a bid on a product in a run.
 
@@ -203,11 +203,12 @@ class RunService(BaseService):
             quantity: Quantity to bid
             interested_only: Whether this is an interest-only bid
             user: Current user placing the bid
+            comment: Optional comment/note for the bid
 
         Returns:
             PlaceBidResponse with status and calculated totals for broadcasting
         """
-        return self.bid_service.place_bid(run_id, product_id, quantity, interested_only, user)
+        return self.bid_service.place_bid(run_id, product_id, quantity, interested_only, user, comment)
 
     def retract_bid(self, run_id: str, product_id: str, user: User) -> RetractBidResponse:
         """Retract a user's bid on a product in a run.
@@ -586,6 +587,7 @@ class RunService(BaseService):
                     user_name=bid.participation.user.name,
                     quantity=bid.quantity,
                     interested_only=bid.interested_only,
+                    comment=bid.comment,
                 )
                 user_bids_data.append(bid_response)
 
