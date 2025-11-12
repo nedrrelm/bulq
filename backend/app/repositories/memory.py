@@ -976,6 +976,18 @@ class MemoryRepository(AbstractRepository):
         if not user:
             return None
 
+        # If username is being changed, update the username index
+        if 'username' in fields:
+            old_username = user.username
+            new_username = fields['username']
+
+            # Remove old username from index
+            if old_username in self._users_by_username:
+                del self._users_by_username[old_username]
+
+            # Add new username to index
+            self._users_by_username[new_username] = user
+
         for key, value in fields.items():
             if hasattr(user, key):
                 setattr(user, key, value)
@@ -1058,3 +1070,42 @@ class MemoryRepository(AbstractRepository):
     def count_store_runs(self, store_id: UUID) -> int:
         """Count how many runs reference this store."""
         return sum(1 for run in self._runs.values() if run.store_id == store_id)
+
+    def get_user_stats(self, user_id: UUID) -> dict:
+        """Get user statistics including runs, bids, and spending."""
+        # Get total quantity bought and money spent from picked-up bids
+        total_quantity = 0.0
+        total_spent = 0.0
+
+        for bid in self._bids.values():
+            participation = self._participations.get(bid.participation_id)
+            if participation and participation.user_id == user_id and bid.is_picked_up:
+                if bid.distributed_quantity and bid.distributed_price_per_unit:
+                    total_quantity += float(bid.distributed_quantity)
+                    total_spent += float(bid.distributed_quantity * bid.distributed_price_per_unit)
+
+        # Get runs participated count (distinct runs)
+        user_participations = [
+            p for p in self._participations.values() if p.user_id == user_id
+        ]
+        runs_participated = len(set(p.run_id for p in user_participations))
+
+        # Get runs where user was helper
+        runs_helped = sum(1 for p in user_participations if p.is_helper)
+
+        # Get runs where user was leader
+        runs_led = sum(1 for p in user_participations if p.is_leader)
+
+        # Get groups count
+        groups_count = sum(
+            1 for group_id, members in self._group_memberships.items() if user_id in members
+        )
+
+        return {
+            'total_quantity_bought': total_quantity,
+            'total_money_spent': total_spent,
+            'runs_participated': runs_participated,
+            'runs_helped': runs_helped,
+            'runs_led': runs_led,
+            'groups_count': groups_count,
+        }

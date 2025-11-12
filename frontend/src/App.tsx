@@ -10,6 +10,7 @@ import Login from './components/Login'
 import Groups from './components/Groups'
 import ErrorBoundary from './components/ErrorBoundary'
 import { NotificationBadge } from './components/NotificationBadge'
+import { ProfileButton } from './components/ProfileButton'
 
 // Lazy load route components for code splitting
 const GroupPage = lazy(() => import('./components/GroupPage'))
@@ -21,6 +22,7 @@ const ProductPage = lazy(() => import('./components/ProductPage'))
 const StorePage = lazy(() => import('./components/StorePage'))
 const NotificationPage = lazy(() => import('./pages/NotificationPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 
 // Wrapper components for lazy loading
 function GroupPageWrapper() {
@@ -135,6 +137,14 @@ function AdminPageWrapper() {
   return (
     <AppLayout>
       <AdminPage />
+    </AppLayout>
+  )
+}
+
+function ProfilePageWrapper() {
+  return (
+    <AppLayout>
+      <ProfilePage />
     </AppLayout>
   )
 }
@@ -317,6 +327,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="user-info">
           <NotificationBadge />
+          <ProfileButton />
 
           {/* Hamburger button - mobile only */}
           <button
@@ -446,6 +457,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               )}
             </div>
             <div className="drawer-divider" />
+            <button
+              onClick={() => handleMenuItemClick(() => navigate('/profile'))}
+              className="drawer-item"
+            >
+              Profile
+            </button>
             {user.is_admin && (
               <button
                 onClick={() => handleMenuItemClick(() => navigate('/admin'))}
@@ -527,6 +544,7 @@ function AppRoutes() {
         <Route path="/products/:productId" element={<ProductPageWrapper />} />
         <Route path="/stores/:storeId" element={<StorePageWrapper />} />
         <Route path="/notifications" element={<NotificationPageWrapper />} />
+        <Route path="/profile" element={<ProfilePageWrapper />} />
         <Route path="/admin" element={<AdminPageWrapper />} />
         <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />
       </Routes>

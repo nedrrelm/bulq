@@ -12,9 +12,13 @@ from .admin_schemas import (
     VerificationToggleResponse,
 )
 from .auth_schemas import (
+    ChangeNameRequest,
+    ChangePasswordRequest,
+    ChangeUsernameRequest,
     UserLogin,
     UserRegister,
     UserResponse,
+    UserStatsResponse,
 )
 from .common import MessageResponse
 from .distribution_schemas import (
@@ -101,6 +105,10 @@ __all__ = [
     'UserRegister',
     'UserLogin',
     'UserResponse',
+    'UserStatsResponse',
+    'ChangePasswordRequest',
+    'ChangeUsernameRequest',
+    'ChangeNameRequest',
     # Notification schemas
     'NotificationResponse',
     'UnreadCountResponse',

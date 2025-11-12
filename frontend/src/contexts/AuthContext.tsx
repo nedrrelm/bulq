@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null | undefined
   login: (userData: User) => void
   logout: () => Promise<void>
+  updateUser: (userData: User) => void
   loading: boolean
 }
 
@@ -21,6 +22,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (userData: User) => {
     // Set current user data in React Query cache
+    queryClient.setQueryData(authKeys.currentUser(), userData)
+  }
+
+  const updateUser = (userData: User) => {
+    // Update current user data in React Query cache
     queryClient.setQueryData(authKeys.currentUser(), userData)
   }
 
@@ -42,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: isError ? null : user,
       login,
       logout,
+      updateUser,
       loading
     }}>
       {children}

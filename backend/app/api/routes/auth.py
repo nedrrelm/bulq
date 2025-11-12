@@ -8,7 +8,16 @@ from app.core.exceptions import BadRequestError, UnauthorizedError
 from app.core.models import User
 from app.repositories import get_repository
 from app.infrastructure.request_context import get_logger
-from app.api.schemas import MessageResponse, UserLogin, UserRegister, UserResponse
+from app.api.schemas import (
+    ChangeNameRequest,
+    ChangePasswordRequest,
+    ChangeUsernameRequest,
+    MessageResponse,
+    UserLogin,
+    UserRegister,
+    UserResponse,
+    UserStatsResponse,
+)
 
 router = APIRouter(prefix='/auth', tags=['authentication'])
 logger = get_logger(__name__)
@@ -146,4 +155,136 @@ async def get_current_user_info(current_user: User = Depends(require_auth)) -> U
         name=current_user.name,
         username=current_user.username,
         is_admin=current_user.is_admin,
+    )
+
+
+@router.get('/profile/stats', response_model=UserStatsResponse)
+async def get_profile_stats(
+    current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+) -> UserStatsResponse:
+    """Get current user's statistics."""
+    logger.info('Fetching user statistics', extra={'user_id': str(current_user.id)})
+    repo = get_repository(db)
+    stats = repo.get_user_stats(current_user.id)
+    return UserStatsResponse(**stats)
+
+
+@router.post('/change-password', response_model=MessageResponse)
+async def change_password(
+    request: ChangePasswordRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """Change user password."""
+    logger.info('Password change request', extra={'user_id': str(current_user.id)})
+    repo = get_repository(db)
+
+    # Verify current password using repository method (handles memory vs database)
+    if not repo.verify_password(request.current_password, current_user.password_hash):
+        logger.warning(
+            'Password change failed - incorrect current password',
+            extra={'user_id': str(current_user.id)},
+        )
+        raise UnauthorizedError('Current password is incorrect')
+
+    # Hash new password and update
+    from app.infrastructure.auth import hash_password
+
+    new_password_hash = hash_password(request.new_password)
+    repo.update_user(current_user.id, password_hash=new_password_hash)
+
+    logger.info('Password changed successfully', extra={'user_id': str(current_user.id)})
+    return MessageResponse(message='Password changed successfully')
+
+
+@router.post('/change-username', response_model=UserResponse)
+async def change_username(
+    request: ChangeUsernameRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    """Change username."""
+    logger.info(
+        'Username change request',
+        extra={'user_id': str(current_user.id), 'new_username': request.new_username},
+    )
+    repo = get_repository(db)
+
+    # Verify current password using repository method (handles memory vs database)
+    if not repo.verify_password(request.current_password, current_user.password_hash):
+        logger.warning(
+            'Username change failed - incorrect password', extra={'user_id': str(current_user.id)}
+        )
+        raise UnauthorizedError('Current password is incorrect')
+
+    # Check if new username is already taken
+    existing_user = repo.get_user_by_username(request.new_username)
+    if existing_user and existing_user.id != current_user.id:
+        logger.warning(
+            'Username change failed - username already exists',
+            extra={'user_id': str(current_user.id), 'new_username': request.new_username},
+        )
+        raise BadRequestError('Username already taken')
+
+    # Update username
+    updated_user = repo.update_user(current_user.id, username=request.new_username)
+    if not updated_user:
+        raise BadRequestError('Failed to update username')
+
+    logger.info(
+        'Username changed successfully',
+        extra={
+            'user_id': str(current_user.id),
+            'old_username': current_user.username,
+            'new_username': request.new_username,
+        },
+    )
+
+    return UserResponse(
+        id=str(updated_user.id),
+        name=updated_user.name,
+        username=updated_user.username,
+        is_admin=updated_user.is_admin,
+    )
+
+
+@router.post('/change-name', response_model=UserResponse)
+async def change_name(
+    request: ChangeNameRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    """Change display name."""
+    logger.info(
+        'Name change request',
+        extra={'user_id': str(current_user.id), 'new_name': request.new_name},
+    )
+    repo = get_repository(db)
+
+    # Verify current password using repository method (handles memory vs database)
+    if not repo.verify_password(request.current_password, current_user.password_hash):
+        logger.warning(
+            'Name change failed - incorrect password', extra={'user_id': str(current_user.id)}
+        )
+        raise UnauthorizedError('Current password is incorrect')
+
+    # Update name
+    updated_user = repo.update_user(current_user.id, name=request.new_name)
+    if not updated_user:
+        raise BadRequestError('Failed to update name')
+
+    logger.info(
+        'Name changed successfully',
+        extra={
+            'user_id': str(current_user.id),
+            'old_name': current_user.name,
+            'new_name': request.new_name,
+        },
+    )
+
+    return UserResponse(
+        id=str(updated_user.id),
+        name=updated_user.name,
+        username=updated_user.username,
+        is_admin=updated_user.is_admin,
     )
