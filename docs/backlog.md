@@ -35,40 +35,20 @@ These items must be completed before production deployment.
 ### Product Management Enhancements
 **Status**: Future
 **Priority**: Medium
-**Affected files**: Database schema, backend models, frontend components
+**Affected files**: Database schema, backend models, frontend components, admin panel
 
 **Features:**
-1. **Multiple Product Names** (Aliases/Translations)
-   - Allow products to have multiple names for search/display
-   - Support different languages/regional names
-   - Examples: "Soda" vs "Pop", "Chips" vs "Crisps"
 
-2. **Product Categories**
-   - Hierarchical category system (e.g., Food > Dairy > Milk)
-   - Filter products by category
-   - Category-based organization in UI
+1. **Product Tag System**
+   - Tag dimensions: category, subcategory, generic items, brands, etc.
+   - Users manually create and apply tags to products
+   - Admins verify tags through admin panel
+   - Add tag management table to admin panel
 
-3. **Product Families**
-   - Group related products (e.g., different sizes of same item)
-   - Family-level pricing comparison
-   - Bulk family operations
-
-4. **Product Connections**
-   - Separate entity for flexible product relationships
-   - Connection types:
-     - "type of" (hierarchy/taxonomy)
-     - "good pairing with" (recommendations)
-     - "alternative" (substitutes)
-     - "complementary" (often bought together)
-   - Bidirectional connections with optional metadata
-   - Use for smart recommendations and discovery
-
-**Schema Changes:**
-- `ProductName` table (product_id, name, language, is_primary)
-- `Category` table (id, name, parent_id)
-- `ProductCategory` junction table
-- `ProductFamily` table (id, name, description)
-- `ProductConnection` table (product_a_id, product_b_id, connection_type, metadata)
+2. **Product Aliases (Multi-language Support)**
+   - Allow multiple names per product for localization
+   - Support for en, ru, sr languages
+   - Prepare infrastructure for future i18n
 
 ---
 
