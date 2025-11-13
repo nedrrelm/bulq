@@ -922,11 +922,12 @@ export default function RunPage() {
           />
         )}
 
-        {showCommentsPopup && selectedProduct && (
+        {showCommentsPopup && selectedProduct && run && (
           <CommentsPopup
             productName={selectedProduct.name}
             userBids={selectedProduct.user_bids}
             currentUserId={userId}
+            canEdit={run.state === 'planning' || run.state === 'active' || run.state === 'adjusting'}
             onClose={handleCloseComments}
             onEditOwnBid={handleEditOwnBid}
             onPlaceBid={handlePlaceBidFromComments}
