@@ -124,31 +124,6 @@ These items must be completed before production deployment.
 
 ---
 
-### Run Comments & Context
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Database schema, backend models/services, frontend RunPage
-
-**Features:**
-
-2. **Product Bid Comments**
-   - Each user can add notes to their bids
-   - Examples: "Granny Smith apples", "Organic preferred", "Any brand fine"
-   - Visible to all participants and leader during shopping
-   - Helps shopper make better choices
-
-**Schema Changes:**
-- Add `description` text field to Run table (nullable)
-- Add `comment` text field to ProductBid table (nullable)
-
-**Implementation:**
-- Add description field to run creation/edit form
-- Show description prominently on run page
-- Add comment textarea to BidPopup component
-- Display bid comments on shopping page and run detail view
-
----
-
 ### Seller Group Type
 **Status**: Future
 **Priority**: Low

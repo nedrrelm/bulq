@@ -52,19 +52,27 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
   // Count comments
   const commentCount = product.user_bids.filter(bid => bid.comment && bid.comment.trim().length > 0).length
 
+  // Show comments button logic:
+  // - Before confirmed: always show (can add/edit)
+  // - After confirmed: only show if there are comments (read-only)
+  const canEditComments = runState === 'planning' || runState === 'active' || runState === 'adjusting'
+  const showCommentsButton = canEditComments || commentCount > 0
+
   return (
     <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : notPurchasedAdjusting ? 'not-purchased-adjusting' : ''} ${fullyPurchased ? 'adjustment-ok' : partiallyPurchased ? 'needs-adjustment' : notPurchasedFinal ? 'not-purchased-adjusting' : ''}`}>
       <div className="product-header">
         <div className="product-title-row">
           <h4>{product.name}</h4>
-          <button
-            onClick={() => onViewComments(product)}
-            className="comments-button"
-            title={commentCount > 0 ? `View ${commentCount} comment${commentCount === 1 ? '' : 's'}` : 'Add or view comments'}
-          >
-            💬
-            {commentCount > 0 && <span className="comment-badge">{commentCount}</span>}
-          </button>
+          {showCommentsButton && (
+            <button
+              onClick={() => onViewComments(product)}
+              className="comments-button"
+              title={commentCount > 0 ? `View ${commentCount} comment${commentCount === 1 ? '' : 's'}` : 'Add or view comments'}
+            >
+              🗩️
+              {commentCount > 0 && <span className="comment-badge">{commentCount}</span>}
+            </button>
+          )}
         </div>
         {product.current_price && <span className="product-price">{product.current_price} RSD</span>}
       </div>

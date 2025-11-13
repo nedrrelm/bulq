@@ -7,12 +7,13 @@ interface CommentsPopupProps {
   productName: string
   userBids: UserBid[]
   currentUserId: string
+  canEdit: boolean
   onClose: () => void
   onEditOwnBid: () => void
   onPlaceBid: () => void
 }
 
-export default function CommentsPopup({ productName, userBids, currentUserId, onClose, onEditOwnBid, onPlaceBid }: CommentsPopupProps) {
+export default function CommentsPopup({ productName, userBids, currentUserId, canEdit, onClose, onEditOwnBid, onPlaceBid }: CommentsPopupProps) {
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef, true, onClose)
@@ -58,7 +59,7 @@ export default function CommentsPopup({ productName, userBids, currentUserId, on
                       <span className="user-name">{bid.user_name}</span>
                       <span className="user-quantity">({bid.quantity} {bid.quantity === 1 ? 'item' : 'items'})</span>
                     </div>
-                    {isCurrentUser && (
+                    {isCurrentUser && canEdit && (
                       <button
                         onClick={onEditOwnBid}
                         className="edit-comment-button"
@@ -76,16 +77,18 @@ export default function CommentsPopup({ productName, userBids, currentUserId, on
         )}
 
         <div className="button-group">
-          {currentUserBid ? (
-            !currentUserBid.comment && (
-              <button onClick={onEditOwnBid} className="btn btn-primary">
-                Add Your Comment
+          {canEdit && (
+            currentUserBid ? (
+              !currentUserBid.comment && (
+                <button onClick={onEditOwnBid} className="btn btn-primary">
+                  Add Your Comment
+                </button>
+              )
+            ) : (
+              <button onClick={onPlaceBid} className="btn btn-primary">
+                Place Bid & Add Comment
               </button>
             )
-          ) : (
-            <button onClick={onPlaceBid} className="btn btn-primary">
-              Place Bid & Add Comment
-            </button>
           )}
           <button onClick={onClose} className="btn btn-secondary">
             Close
