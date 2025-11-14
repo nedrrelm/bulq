@@ -1,0 +1,39 @@
+{
+  "fields": {
+    "name": "Store Name",
+    "namePlaceholder": "Enter store name"
+  },
+  "create": {
+    "title": "Create New Store"
+  },
+  "actions": {
+    "create": "Create Store",
+    "creating": "Creating..."
+  },
+  "validation": {
+    "nameRequired": "Store name is required",
+    "nameInvalid": "Invalid store name",
+    "nameInvalidCharacters": "Invalid characters in store name",
+    "nameHint": "2-100 characters, letters, numbers, and - _ & '",
+    "similarFound": "Similar stores found",
+    "alreadyExists": "Store '{{name}}' already exists"
+  },
+  "errors": {
+    "loadFailed": "Failed to load stores",
+    "createFailed": "Failed to create store",
+    "notFound": "Store not found"
+  },
+  "states": {
+    "loading": "Loading stores..."
+  },
+  "sections": {
+    "activeRuns": "Active Runs ({{count}})",
+    "activeRuns_one": "Active Run (1)",
+    "activeRuns_other": "Active Runs ({{count}})",
+    "products": "Products"
+  },
+  "emptyStates": {
+    "noProducts": "No products at this store yet",
+    "noProductsHint": "Click 'Add Product' to start tracking products from this store"
+  }
+}

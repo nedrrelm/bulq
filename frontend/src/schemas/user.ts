@@ -10,7 +10,8 @@ export const userSchema = z.object({
   name: z.string(),
   username: z.string(),
   is_admin: z.boolean().optional(),
-  dark_mode: z.boolean().optional()
+  dark_mode: z.boolean().optional(),
+  preferred_language: z.string().optional().default('en')
 })
 
 export type User = z.infer<typeof userSchema>

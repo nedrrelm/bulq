@@ -47,5 +47,8 @@ export const authApi = {
     }, userSchema),
 
   toggleDarkMode: () =>
-    api.post<User>('/auth/toggle-dark-mode', {}, userSchema)
+    api.post<User>('/auth/toggle-dark-mode', {}, userSchema),
+
+  changeLanguage: (language: string) =>
+    api.post<User>('/auth/change-language', { language }, userSchema)
 }

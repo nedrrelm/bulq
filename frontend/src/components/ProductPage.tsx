@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/ProductPage.css'
 import { productsApi } from '../api'
 import LoadingSpinner from './LoadingSpinner'
@@ -70,6 +71,7 @@ function CustomTooltip(props: any) {
 }
 
 function PriceGraph({ storesData }: { storesData: StoreData[] }) {
+  const { t } = useTranslation()
   // Transform data for Recharts - memoized to prevent recalculation
   const chartData = useMemo(() => {
     const storeDataArray = storesData.map((store, idx) => ({
@@ -93,7 +95,7 @@ function PriceGraph({ storesData }: { storesData: StoreData[] }) {
   }, [storesData])
 
   if (!chartData.hasData) {
-    return <p className="no-graph-data">No historical price data available</p>
+    return <p className="no-graph-data">{t('product.priceHistory.noData')}</p>
   }
 
   // Format timestamp for X-axis
@@ -104,7 +106,7 @@ function PriceGraph({ storesData }: { storesData: StoreData[] }) {
 
   return (
     <div className="price-graph">
-      <h4>Price History Across All Stores</h4>
+      <h4>{t('product.priceHistory.title')}</h4>
 
       <ResponsiveContainer width="100%" height={350}>
         <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -148,6 +150,7 @@ function PriceGraph({ storesData }: { storesData: StoreData[] }) {
 }
 
 export default function ProductPage({ productId, onBack }: ProductPageProps) {
+  const { t } = useTranslation()
   const [product, setProduct] = useState<ProductDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -160,7 +163,7 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
       const data = await productsApi.getProduct(productId)
       setProduct(data as any)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to load product'))
+      setError(getErrorMessage(err, t('product.errors.loadFailed')))
     } finally {
       setLoading(false)
     }
@@ -175,13 +178,13 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
   }
 
   if (error || !product) {
-    return <ErrorAlert message={error || 'Product not found'} onRetry={fetchProduct} />
+    return <ErrorAlert message={error || t('product.errors.notFound')} onRetry={fetchProduct} />
   }
 
   return (
     <div className="product-page">
       <div className="breadcrumb">
-        <span onClick={onBack} className="breadcrumb-link">Dashboard</span>
+        <span onClick={onBack} className="breadcrumb-link">{t('common.navigation.dashboard')}</span>
         <span className="breadcrumb-separator">›</span>
         <span>{product.name}</span>
       </div>
@@ -190,15 +193,15 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
         <h2>{product.name}</h2>
         {(product.brand || product.unit) && (
           <div className="product-meta">
-            {product.brand && <span className="meta-item">Brand: {product.brand}</span>}
-            {product.unit && <span className="meta-item">Unit: {product.unit}</span>}
+            {product.brand && <span className="meta-item">{t('product.fields.brand')}: {product.brand}</span>}
+            {product.unit && <span className="meta-item">{t('product.fields.unit')}: {product.unit}</span>}
           </div>
         )}
       </div>
 
       {product.stores.length === 0 && (
         <div className="empty-state">
-          <p>No store information available for this product.</p>
+          <p>{t('product.emptyStates.noStoreInfo')}</p>
         </div>
       )}
 
@@ -224,31 +227,31 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
                     <h3>{store.store_name}</h3>
                     {store.current_price && (
                       <div className="current-price">
-                        <span className="price-label">Current Price:</span>
+                        <span className="price-label">{t('product.priceHistory.currentPrice')}:</span>
                         <span className="price-value">${store.current_price.toFixed(2)}</span>
                       </div>
                     )}
                   </div>
 
                   {allPrices.length === 0 ? (
-                    <p className="no-price-data">No price history available</p>
+                    <p className="no-price-data">{t('product.priceHistory.noHistory')}</p>
                   ) : (
                     <div className="price-summary">
                       {minPrice !== null && (
                         <div className="price-stat">
-                          <span className="price-label">Lowest</span>
+                          <span className="price-label">{t('product.priceHistory.lowest')}</span>
                           <span className="price-value price-min">${minPrice.toFixed(2)}</span>
                         </div>
                       )}
                       {avgPrice !== null && (
                         <div className="price-stat">
-                          <span className="price-label">Average</span>
+                          <span className="price-label">{t('product.priceHistory.average')}</span>
                           <span className="price-value">${avgPrice.toFixed(2)}</span>
                         </div>
                       )}
                       {maxPrice !== null && maxPrice !== minPrice && (
                         <div className="price-stat">
-                          <span className="price-label">Highest</span>
+                          <span className="price-label">{t('product.priceHistory.highest')}</span>
                           <span className="price-value price-max">${maxPrice.toFixed(2)}</span>
                         </div>
                       )}

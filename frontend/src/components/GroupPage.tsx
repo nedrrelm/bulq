@@ -1,6 +1,7 @@
 import { useCallback, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/GroupPage.css'
 import { WS_BASE_URL } from '../config'
 import ErrorBoundary from './ErrorBoundary'
@@ -28,6 +29,7 @@ type RunSummary = {
 }
 
 export default function GroupPage() {
+  const { t } = useTranslation()
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
 
@@ -66,7 +68,7 @@ export default function GroupPage() {
     } else if (message.type === 'member_removed') {
       // If current user was removed, redirect to main page
       if (user && messageData.removed_user_id === user.id) {
-        showToast('You have been removed from this group', 'error')
+        showToast(t('group.messages.removed'), 'error')
         setTimeout(() => {
           navigate('/')
         }, 1500)
@@ -135,34 +137,34 @@ export default function GroupPage() {
 
       <div className="breadcrumb">
         <span className="breadcrumb-link" onClick={() => navigate('/')}>
-          {group?.name || 'Loading...'}
+          {group?.name || t('group.loading')}
         </span>
       </div>
 
       <div className="group-actions">
         <button onClick={handleNewRunClick} className="new-run-button">
-          + New Run
+          {t('group.actions.newRun')}
         </button>
         <button onClick={handleManageClick} className="btn btn-secondary">
-          ⚙️ Manage Group
+          {t('group.actions.manageGroup')}
         </button>
       </div>
 
-      {loading && <p>Loading runs...</p>}
+      {loading && <p>{t('group.loading')}</p>}
 
       {error && (
         <div className="error">
-          <p>❌ Failed to load runs: {error}</p>
+          <p>{t('group.errors.loadFailed')}: {error}</p>
         </div>
       )}
 
       {!loading && !error && (
         <>
           <div className="runs-section">
-            <h3>Current Runs ({currentRuns.length})</h3>
+            <h3>{t('group.sections.currentRuns')} ({currentRuns.length})</h3>
             {currentRuns.length === 0 ? (
               <div className="no-runs">
-                <p>No current runs. Click "New Run" to start one!</p>
+                <p>{t('group.empty.noCurrentRuns')}</p>
               </div>
             ) : (
               <div className="runs-list">
@@ -180,10 +182,10 @@ export default function GroupPage() {
           </div>
 
           <div className="runs-section">
-            <h3>Completed Runs ({completedRuns.length})</h3>
+            <h3>{t('group.sections.completedRuns')} ({completedRuns.length})</h3>
             {completedRuns.length === 0 ? (
               <div className="no-runs">
-                <p>No completed runs yet.</p>
+                <p>{t('group.empty.noCompletedRuns')}</p>
               </div>
             ) : (
               <div className="runs-list">
@@ -201,10 +203,10 @@ export default function GroupPage() {
           </div>
 
           <div className="runs-section">
-            <h3>Cancelled Runs ({cancelledRuns.length})</h3>
+            <h3>{t('group.sections.cancelledRuns')} ({cancelledRuns.length})</h3>
             {cancelledRuns.length === 0 ? (
               <div className="no-runs">
-                <p>No cancelled runs.</p>
+                <p>{t('group.empty.noCancelledRuns')}</p>
               </div>
             ) : (
               <div className="runs-list">

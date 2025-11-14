@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from app.api.schemas import (
+    ChangeLanguageRequest,
     ChangeNameRequest,
     ChangePasswordRequest,
     ChangeUsernameRequest,
@@ -121,6 +122,7 @@ async def register(
         username=new_user.username,
         is_admin=new_user.is_admin,
         dark_mode=new_user.dark_mode or False,
+        preferred_language=new_user.preferred_language or 'en',
     )
 
 
@@ -168,6 +170,7 @@ async def login(
         username=user.username,
         is_admin=user.is_admin,
         dark_mode=user.dark_mode or False,
+        preferred_language=user.preferred_language or 'en',
     )
 
 
@@ -194,6 +197,7 @@ async def get_current_user_info(current_user: User = Depends(require_auth)) -> U
         username=current_user.username,
         is_admin=current_user.is_admin,
         dark_mode=current_user.dark_mode or False,
+        preferred_language=current_user.preferred_language or 'en',
     )
 
 
@@ -287,6 +291,7 @@ async def change_username(
         username=updated_user.username,
         is_admin=updated_user.is_admin,
         dark_mode=updated_user.dark_mode or False,
+        preferred_language=updated_user.preferred_language or 'en',
     )
 
 
@@ -330,6 +335,7 @@ async def change_name(
         username=updated_user.username,
         is_admin=updated_user.is_admin,
         dark_mode=updated_user.dark_mode or False,
+        preferred_language=updated_user.preferred_language or 'en',
     )
 
 
@@ -358,4 +364,38 @@ async def toggle_dark_mode(
         username=updated_user.username,
         is_admin=updated_user.is_admin,
         dark_mode=updated_user.dark_mode or False,
+        preferred_language=updated_user.preferred_language or 'en',
+    )
+
+
+@router.post('/change-language', response_model=UserResponse)
+async def change_language(
+    request: ChangeLanguageRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    """Change preferred language for the current user."""
+    logger.info(
+        'Language change request',
+        extra={'user_id': str(current_user.id), 'new_language': request.language},
+    )
+    repo = get_repository(db)
+
+    # Update language preference
+    updated_user = repo.update_user(current_user.id, preferred_language=request.language)
+    if not updated_user:
+        raise BadRequestError(code=OPERATION_FAILED, message='Failed to change language')
+
+    logger.info(
+        f'Language changed to {request.language}',
+        extra={'user_id': str(current_user.id)},
+    )
+
+    return UserResponse(
+        id=str(updated_user.id),
+        name=updated_user.name,
+        username=updated_user.username,
+        is_admin=updated_user.is_admin,
+        dark_mode=updated_user.dark_mode or False,
+        preferred_language=updated_user.preferred_language or 'en',
     )

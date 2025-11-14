@@ -1,0 +1,133 @@
+{
+  "title": "Admin Panel",
+  "settings": {
+    "allowRegistration": "Allow Registration",
+    "allowRegistrationDescription": "When disabled, new users cannot register for the application"
+  },
+  "tabs": {
+    "users": "Users",
+    "products": "Products",
+    "stores": "Stores"
+  },
+  "search": {
+    "placeholder": "Search..."
+  },
+  "filters": {
+    "all": "All",
+    "verified": "Verified",
+    "unverified": "Unverified"
+  },
+  "actions": {
+    "verify": "Verify",
+    "unverify": "Unverify"
+  },
+  "users": {
+    "name": "Name",
+    "username": "Username",
+    "id": "ID",
+    "admin": "Admin",
+    "verified": "Verified",
+    "actions": "Actions"
+  },
+  "products": {
+    "name": "Name",
+    "brand": "Brand",
+    "unit": "Unit",
+    "id": "ID",
+    "verified": "Verified",
+    "actions": "Actions"
+  },
+  "stores": {
+    "name": "Name",
+    "address": "Address",
+    "chain": "Chain",
+    "id": "ID",
+    "verified": "Verified",
+    "actions": "Actions"
+  },
+  "edit": {
+    "dangerZone": "Danger Zone",
+    "affectedRecords": "Affected records",
+    "product": {
+      "title": "Edit Product",
+      "fields": {
+        "name": "Product Name",
+        "brand": "Brand",
+        "unit": "Unit"
+      },
+      "placeholders": {
+        "name": "Enter product name",
+        "brand": "Optional",
+        "unit": "e.g., kg, L, pieces..."
+      },
+      "mergeTitle": "Merge Products",
+      "mergeDescription": "Merge this product with another product. All data will be transferred to the target product.",
+      "mergePlaceholder": "Enter target product ID",
+      "mergeButton": "Merge",
+      "mergeConfirm": "Are you sure you want to merge '{{name}}' with another product? This cannot be undone.",
+      "deleteWarning": "Deleting this product will remove it from all runs and store associations.",
+      "deleteButton": "Delete Product",
+      "deleteConfirm": "Are you sure you want to delete '{{name}}'? This cannot be undone.",
+      "errors": {
+        "nameRequired": "Product name is required",
+        "invalidName": "Invalid product name",
+        "invalidCharacters": "Invalid characters in product name",
+        "mergeTargetRequired": "Please enter a target product ID",
+        "mergeFailed": "Failed to merge products"
+      }
+    },
+    "store": {
+      "title": "Edit Store",
+      "fields": {
+        "name": "Store Name",
+        "address": "Address",
+        "chain": "Chain"
+      },
+      "placeholders": {
+        "name": "Enter store name",
+        "address": "Enter store address",
+        "chain": "Enter chain name"
+      },
+      "mergeTitle": "Merge Stores",
+      "mergeDescription": "Merge this store with another store. All data will be transferred to the target store.",
+      "mergePlaceholder": "Enter target store ID",
+      "mergeButton": "Merge",
+      "mergeConfirm": "Are you sure you want to merge '{{name}}' with another store? This cannot be undone.",
+      "deleteWarning": "Deleting this store will remove it from all runs and product associations.",
+      "deleteButton": "Delete Store",
+      "deleteConfirm": "Are you sure you want to delete '{{name}}'? This cannot be undone.",
+      "errors": {
+        "nameRequired": "Store name is required",
+        "invalidName": "Invalid store name",
+        "invalidCharacters": "Invalid characters in store name",
+        "mergeTargetRequired": "Please enter a target store ID",
+        "mergeFailed": "Failed to merge stores"
+      }
+    },
+    "user": {
+      "title": "Edit User",
+      "fields": {
+        "name": "Name",
+        "username": "Username",
+        "verified": "Verified",
+        "admin": "Administrator"
+      },
+      "placeholders": {
+        "name": "Enter user name",
+        "username": "Enter username"
+      },
+      "usernameHint": "3-50 characters, only letters, numbers, _ and -",
+      "adminNote": "Administrators have full access to the admin panel",
+      "deleteWarning": "Deleting this user will remove them from all groups and cancel their runs.",
+      "deleteButton": "Delete User",
+      "deleteConfirm": "Are you sure you want to delete user '{{name}}'? This cannot be undone.",
+      "errors": {
+        "nameRequired": "Name is required",
+        "invalidName": "Invalid name",
+        "usernameRequired": "Username is required",
+        "invalidUsername": "Invalid username",
+        "usernameFormat": "Username can only contain letters, numbers, underscores, and hyphens"
+      }
+    }
+  }
+}

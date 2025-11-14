@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useNotifications } from '../contexts/NotificationContext'
 import { NotificationItem } from './NotificationItem'
 
@@ -7,6 +8,7 @@ interface NotificationDropdownProps {
 }
 
 export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { notifications, markAllAsRead, markAsRead } = useNotifications()
 
@@ -40,7 +42,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
           borderBottom: '1px solid #e5e7eb'
         }}
       >
-        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>Notifications</h3>
+        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{t('notifications.title')}</h3>
         {notifications.some(n => !n.read) && (
           <button
             onClick={handleMarkAllAsRead}
@@ -54,7 +56,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
               padding: '0.25rem 0.5rem'
             }}
           >
-            Mark all as read
+            {t('notifications.markAllAsRead')}
           </button>
         )}
       </div>
@@ -62,7 +64,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
       <div style={{ maxHeight: '24rem', overflowY: 'auto' }}>
         {recentNotifications.length === 0 ? (
           <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
-            No notifications yet
+            {t('notifications.noNotifications')}
           </div>
         ) : (
           <>
@@ -92,7 +94,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
             padding: '0.5rem'
           }}
         >
-          See all notifications
+          {t('notifications.seeAll')}
         </button>
       </div>
     </div>

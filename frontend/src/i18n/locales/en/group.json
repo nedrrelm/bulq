@@ -1,0 +1,109 @@
+{
+  "loading": "Loading group...",
+  "actions": {
+    "newRun": "New Run",
+    "manageGroup": "Manage Group"
+  },
+  "errors": {
+    "loadFailed": "Failed to load group"
+  },
+  "sections": {
+    "currentRuns": "Current Runs",
+    "completedRuns": "Completed Runs",
+    "cancelledRuns": "Cancelled Runs"
+  },
+  "empty": {
+    "noCurrentRuns": "No active runs",
+    "noCompletedRuns": "No completed runs yet",
+    "noCancelledRuns": "No cancelled runs"
+  },
+  "messages": {
+    "removed": "You have been removed from this group"
+  },
+  "join": {
+    "title": "Join Group",
+    "loading": "Loading group information...",
+    "actions": {
+      "submit": "Join Group",
+      "joining": "Joining..."
+    },
+    "preview": {
+      "createdBy": "Created by",
+      "members": "Members",
+      "inviteMessage": "You've been invited to join this group!"
+    },
+    "success": {
+      "title": "Welcome!",
+      "message": "You've successfully joined {{groupName}}",
+      "redirecting": "Redirecting to group page..."
+    },
+    "errors": {
+      "invalidInvite": "Invalid or expired invite link",
+      "loadFailed": "Failed to load group information",
+      "joinFailed": "Failed to join group"
+    }
+  },
+  "manage": {
+    "title": "Manage Group",
+    "loading": "Loading group members...",
+    "breadcrumb": "Manage",
+    "actions": {
+      "back": "Back to Group",
+      "copyInvite": "Copy Invite Link",
+      "regenerateInvite": "Regenerate Link",
+      "allowJoining": "Allow Joining",
+      "disallowJoining": "Disallow Joining",
+      "promote": "Promote to Admin",
+      "remove": "Remove from Group",
+      "leaveGroup": "Leave Group"
+    },
+    "labels": {
+      "admin": "Admin"
+    },
+    "sections": {
+      "inviteLink": "Invite Link",
+      "members": "Members",
+      "leaveGroup": "Leave Group"
+    },
+    "warnings": {
+      "joiningDisabled": "New members cannot currently join via invite link"
+    },
+    "messages": {
+      "inviteCopied": "Invite link copied to clipboard!",
+      "inviteRegenerated": "Invite link regenerated successfully",
+      "joiningEnabled": "Joining enabled - members can now use invite links",
+      "joiningDisabled": "Joining disabled - invite links will not work",
+      "memberRemoved": "{{memberName}} has been removed from the group",
+      "memberPromoted": "{{memberName}} has been promoted to admin",
+      "leftGroup": "You have left the group",
+      "youWereRemoved": "You have been removed from the group",
+      "youLeft": "You have left the group",
+      "memberLeft": "{{memberName}} has left the group",
+      "memberJoined": "{{memberName}} has joined the group"
+    },
+    "errors": {
+      "loadFailed": "Failed to load group members",
+      "copyFailed": "Failed to copy invite link",
+      "regenerateFailed": "Failed to regenerate invite link",
+      "toggleJoiningFailed": "Failed to update joining setting",
+      "removeFailed": "Failed to remove member",
+      "leaveFailed": "Failed to leave group",
+      "promoteFailed": "Failed to promote member",
+      "notFound": "Group not found"
+    },
+    "confirm": {
+      "regenerateInvite": "Are you sure you want to regenerate the invite link? The old link will stop working.",
+      "removeMember": "Are you sure you want to remove {{memberName}} from the group?",
+      "leaveGroup": "Are you sure you want to leave this group?",
+      "promoteMember": "Are you sure you want to promote {{memberName}} to admin?"
+    }
+  },
+  "card": {
+    "members": "member",
+    "members_one": "member",
+    "members_other": "members",
+    "completedRuns": "completed",
+    "completedRuns_one": "completed run",
+    "completedRuns_other": "completed runs"
+  }
+}

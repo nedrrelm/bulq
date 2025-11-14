@@ -1,0 +1,65 @@
+{
+  "fields": {
+    "name": "Product Name",
+    "namePlaceholder": "e.g., Milk, Bread, Eggs...",
+    "brand": "Brand",
+    "brandPlaceholder": "Optional",
+    "unit": "Unit",
+    "unitPlaceholder": "e.g., kg, L, pieces...",
+    "store": "Store",
+    "storeSelectPlaceholder": "Select a store (optional)",
+    "price": "Price",
+    "pricePlaceholder": "0.00",
+    "minimumQuantity": "Minimum Quantity",
+    "minimumQuantityPlaceholder": "Optional"
+  },
+  "create": {
+    "title": "Create New Product"
+  },
+  "actions": {
+    "create": "Create Product",
+    "creating": "Creating...",
+    "createNew": "Create New Product",
+    "addNew": "Add Product"
+  },
+  "validation": {
+    "nameRequired": "Product name is required",
+    "nameInvalid": "Invalid product name",
+    "nameInvalidCharacters": "Invalid characters in product name",
+    "priceInvalid": "Invalid price",
+    "similarFound": "Similar products found",
+    "alreadyExists": "Product '{{name}}' already exists",
+    "atStores": "at {{stores}}",
+    "noStoreWarning": "You haven't selected a store. Are you sure you want to continue?",
+    "noPriceWarning": "You've selected a store but haven't added a price. Are you sure you want to continue?"
+  },
+  "errors": {
+    "loadFailed": "Failed to load products",
+    "reloadFailed": "Failed to reload products",
+    "createFailed": "Failed to create product",
+    "notFound": "Product not found"
+  },
+  "states": {
+    "loading": "Loading products..."
+  },
+  "addToRun": {
+    "title": "Add Product to Run",
+    "description": "Search for a product or create a new one",
+    "searchPlaceholder": "Search products...",
+    "noMatch": "No products match '{{term}}'",
+    "allProductsHaveBids": "All available products already have bids in this run",
+    "keyboardHint": "Use ↑↓ arrows to navigate, Enter to select"
+  },
+  "priceHistory": {
+    "title": "Price History",
+    "noData": "No price history available",
+    "noHistory": "No price history for this store",
+    "currentPrice": "Current",
+    "lowest": "Lowest",
+    "average": "Average",
+    "highest": "Highest"
+  },
+  "emptyStates": {
+    "noStoreInfo": "No store information available for this product yet"
+  }
+}

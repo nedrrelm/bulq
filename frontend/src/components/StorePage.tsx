@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import '../styles/components/StorePage.css'
 import LoadingSpinner from './LoadingSpinner'
@@ -42,6 +43,7 @@ interface StorePageProps {
 }
 
 function StorePage({ storeId, onBack }: StorePageProps) {
+  const { t } = useTranslation()
   const [data, setData] = useState<StorePageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -62,15 +64,15 @@ function StorePage({ storeId, onBack }: StorePageProps) {
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('Store not found')
+          throw new Error(t('store.errors.notFound'))
         }
-        throw new Error('Failed to load store data')
+        throw new Error(t('store.errors.loadFailed'))
       }
 
       const storeData = await response.json()
       setData(storeData)
     } catch (err) {
-      setError(getErrorMessage(err, 'An error occurred'))
+      setError(getErrorMessage(err, t('common.errors.generic')))
     } finally {
       setLoading(false)
     }
@@ -84,7 +86,7 @@ function StorePage({ storeId, onBack }: StorePageProps) {
     return (
       <div className="store-page">
         <button className="btn btn-secondary back-btn" onClick={onBack}>
-          ← Back
+          {t('common.actions.back')}
         </button>
         <ErrorAlert message={error} />
       </div>
@@ -98,7 +100,7 @@ function StorePage({ storeId, onBack }: StorePageProps) {
   return (
     <div className="store-page">
       <button className="btn btn-secondary back-btn" onClick={onBack}>
-        ← Back
+        {t('common.actions.back')}
       </button>
 
       <div className="store-header">
@@ -107,7 +109,7 @@ function StorePage({ storeId, onBack }: StorePageProps) {
 
       {data.active_runs.length > 0 && (
         <section className="active-runs-section">
-          <h2>Active Runs ({data.active_runs.length})</h2>
+          <h2>{t('store.sections.activeRuns', { count: data.active_runs.length })}</h2>
           <div className="active-runs-list">
             {data.active_runs.map(run => (
               <RunCard key={run.id} run={run} showGroupName={true} />
@@ -118,19 +120,19 @@ function StorePage({ storeId, onBack }: StorePageProps) {
 
       <section className="products-section">
         <div className="section-header">
-          <h2>Products</h2>
+          <h2>{t('store.sections.products')}</h2>
           <button
             className="btn btn-primary"
             onClick={() => setShowNewProductPopup(true)}
           >
-            + New Product
+            {t('product.actions.addNew')}
           </button>
         </div>
         {data.products.length === 0 ? (
           <div className="empty-state">
-            <p>No products with recorded prices yet</p>
+            <p>{t('store.emptyStates.noProducts')}</p>
             <p className="empty-state-hint">
-              Products will appear here once availability is added during shopping runs
+              {t('store.emptyStates.noProductsHint')}
             </p>
           </div>
         ) : (

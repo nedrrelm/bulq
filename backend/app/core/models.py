@@ -43,6 +43,7 @@ class User(Base):
     is_admin = Column(Boolean, nullable=False, default=False)
     verified = Column(Boolean, nullable=False, default=False)
     dark_mode = Column(Boolean, nullable=False, default=False)
+    preferred_language = Column(String(5), nullable=False, default='en')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     groups = relationship('Group', secondary=group_membership, back_populates='members')

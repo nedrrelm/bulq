@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { formatDistanceToNow } from 'date-fns'
 import type { Notification } from '../types/notification'
 
@@ -9,26 +10,30 @@ interface NotificationItemProps {
 
 export function NotificationItem({ notification, onClick }: NotificationItemProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const getNotificationMessage = () => {
     if (notification.type === 'run_state_changed') {
       const { store_name, new_state } = notification.data
 
       const stateMessages: Record<string, string> = {
-        planning: 'is being planned',
-        active: 'is now active',
-        confirmed: 'has been confirmed',
-        shopping: 'shopping has started',
-        adjusting: 'needs bid adjustments',
-        distributing: 'is ready for distribution',
-        completed: 'has been completed',
-        cancelled: 'has been cancelled'
+        planning: t('notifications.states.planning'),
+        active: t('notifications.states.active'),
+        confirmed: t('notifications.states.confirmed'),
+        shopping: t('notifications.states.shopping'),
+        adjusting: t('notifications.states.adjusting'),
+        distributing: t('notifications.states.distributing'),
+        completed: t('notifications.states.completed'),
+        cancelled: t('notifications.states.cancelled')
       }
 
-      const message = `Run at ${store_name} ${new_state ? (stateMessages[new_state] || `changed to ${new_state}`) : 'changed state'}`
+      const message = t('notifications.runStateChanged', {
+        store_name,
+        state_message: new_state ? (stateMessages[new_state] || t('notifications.changedToState', { state: new_state })) : t('notifications.changedState')
+      })
 
       if (notification.grouped && notification.count) {
-        return `${notification.count} state changes for ${store_name} run`
+        return t('notifications.groupedStateChanges', { count: notification.count, store_name })
       }
 
       return message
@@ -36,20 +41,20 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
 
     if (notification.type === 'leader_reassignment_request') {
       const { from_user_name, store_name } = notification.data
-      return `${from_user_name} wants to transfer leadership of ${store_name} run to you`
+      return t('notifications.leadershipRequest', { from_user_name, store_name })
     }
 
     if (notification.type === 'leader_reassignment_accepted') {
       const { new_leader_name, store_name } = notification.data
-      return `${new_leader_name} accepted leadership of ${store_name} run`
+      return t('notifications.leadershipAccepted', { new_leader_name, store_name })
     }
 
     if (notification.type === 'leader_reassignment_declined') {
       const { declined_by_name, store_name } = notification.data
-      return `${declined_by_name} declined leadership of ${store_name} run`
+      return t('notifications.leadershipDeclined', { declined_by_name, store_name })
     }
 
-    return 'New notification'
+    return t('notifications.newNotification')
   }
 
   const handleClick = () => {
@@ -71,12 +76,12 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
 
   const timeAgo = (() => {
     try {
-      if (!notification.created_at) return 'Just now'
+      if (!notification.created_at) return t('common.justNow')
       const date = new Date(notification.created_at)
-      if (isNaN(date.getTime())) return 'Just now'
+      if (isNaN(date.getTime())) return t('common.justNow')
       return formatDistanceToNow(date, { addSuffix: true })
     } catch {
-      return 'Just now'
+      return t('common.justNow')
     }
   })()
 

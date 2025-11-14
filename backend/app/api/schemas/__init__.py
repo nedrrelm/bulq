@@ -12,6 +12,7 @@ from .admin_schemas import (
     VerificationToggleResponse,
 )
 from .auth_schemas import (
+    ChangeLanguageRequest,
     ChangeNameRequest,
     ChangePasswordRequest,
     ChangeUsernameRequest,
@@ -109,6 +110,7 @@ __all__ = [
     'ChangePasswordRequest',
     'ChangeUsernameRequest',
     'ChangeNameRequest',
+    'ChangeLanguageRequest',
     # Notification schemas
     'NotificationResponse',
     'UnreadCountResponse',

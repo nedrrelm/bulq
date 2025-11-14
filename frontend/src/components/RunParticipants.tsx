@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { RunDetail } from '../api'
 
 type Participant = RunDetail['participants'][0]
@@ -23,16 +24,18 @@ export default function RunParticipants({
   isToggling,
   canToggleReady
 }: RunParticipantsProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="participants-section">
-      <h3>Participants ({participants.length})</h3>
+      <h3>{t('run.participants.title', { count: participants.length })}</h3>
       <div className="participants-list">
         {participants.map((participant) => (
           <div key={participant.user_id} className="participant-item">
             <div className="participant-info">
               <span className="participant-name">{participant.user_name}</span>
               {participant.is_ready && (
-                <span className="ready-badge">✓ Ready</span>
+                <span className="ready-badge">✓ {t('run.participants.ready')}</span>
               )}
             </div>
           </div>
@@ -49,11 +52,11 @@ export default function RunParticipants({
               disabled={isToggling}
             />
             <span>
-              {isToggling ? 'Updating...' : "I'm ready (my order is complete)"}
+              {isToggling ? t('run.participants.updating') : t('run.participants.imReady')}
             </span>
           </label>
           <p className="ready-hint">
-            When all participants are ready, the run will automatically move to confirmed state.
+            {t('run.participants.readyHint')}
           </p>
         </div>
       )}

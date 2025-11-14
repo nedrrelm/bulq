@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/RunCard.css'
 import '../styles/run-states.css'
 import { getStateLabel } from '../utils/runStates'
@@ -22,6 +23,8 @@ interface RunCardProps {
 }
 
 const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGroupName = false }: RunCardProps) {
+  const { t } = useTranslation()
+
   const content = (
     <div className="run-card-content">
       <div className="run-card-header">
@@ -33,19 +36,19 @@ const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGro
       <div className="run-card-details">
         {showGroupName && run.group_name && (
           <div className="run-detail">
-            <span className="run-detail-label">Group:</span>
+            <span className="run-detail-label">{t('run.card.group')}:</span>
             <span className="run-detail-value">{run.group_name}</span>
           </div>
         )}
         <div className="run-detail">
-          <span className="run-detail-label">Leader:</span>
+          <span className="run-detail-label">{t('run.card.leader')}:</span>
           <span className={`run-detail-value ${run.leader_is_removed ? 'removed-user' : ''}`}>
             {run.leader_name}
           </span>
         </div>
         {run.planned_on && (
           <div className="run-detail">
-            <span className="run-detail-label">Planned:</span>
+            <span className="run-detail-label">{t('run.card.planned')}:</span>
             <span className="run-detail-value">
               {new Date(run.planned_on).toLocaleDateString()}
             </span>

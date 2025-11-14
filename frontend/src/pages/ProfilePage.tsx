@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../api/auth'
 import type { UserStats } from '../schemas/user'
@@ -10,6 +11,7 @@ import { logger } from '../utils/logger'
 import '../styles/pages/ProfilePage.css'
 
 export default function ProfilePage() {
+  const { t } = useTranslation()
   const { user, updateUser } = useAuth()
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
@@ -41,20 +43,20 @@ export default function ProfilePage() {
   const handleNameSuccess = (updatedUser: any) => {
     updateUser(updatedUser)
     setShowNamePopup(false)
-    setSuccessMessage('Name changed successfully')
+    setSuccessMessage(t('profile.messages.nameChanged'))
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
   const handleUsernameSuccess = (updatedUser: any) => {
     updateUser(updatedUser)
     setShowUsernamePopup(false)
-    setSuccessMessage('Username changed successfully')
+    setSuccessMessage(t('profile.messages.usernameChanged'))
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
   const handlePasswordSuccess = () => {
     setShowPasswordPopup(false)
-    setSuccessMessage('Password changed successfully')
+    setSuccessMessage(t('profile.messages.passwordChanged'))
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
@@ -73,11 +75,21 @@ export default function ProfilePage() {
     }
   }
 
+  const handleLanguageChange = async (newLanguage: string) => {
+    try {
+      const updatedUser = await authApi.changeLanguage(newLanguage)
+      updateUser(updatedUser)
+      // i18n language will be synced automatically via AuthContext useEffect
+    } catch (err) {
+      logger.error('Failed to change language:', err)
+    }
+  }
+
   if (!user) return null
 
   return (
     <div className="profile-page">
-      <h1>Profile</h1>
+      <h1>{t('profile.title')}</h1>
 
       {/* Success Message */}
       {successMessage && (
@@ -101,16 +113,16 @@ export default function ProfilePage() {
 
       {/* Statistics */}
       <div className="profile-section">
-        <h2>Statistics</h2>
+        <h2>{t('profile.sections.statistics')}</h2>
         {loadingStats ? (
-          <p>Loading statistics...</p>
+          <p>{t('profile.messages.loadingStats')}</p>
         ) : stats ? (
           <div className="stats-grid">
             <div className="stat-card">
               <Package className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.total_quantity_bought.toFixed(2)}</div>
-                <div className="stat-label">Total Quantity Bought</div>
+                <div className="stat-label">{t('profile.stats.totalQuantityBought')}</div>
               </div>
             </div>
 
@@ -118,7 +130,7 @@ export default function ProfilePage() {
               <DollarSign className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">${stats.total_money_spent.toFixed(2)}</div>
-                <div className="stat-label">Total Money Spent</div>
+                <div className="stat-label">{t('profile.stats.totalMoneySpent')}</div>
               </div>
             </div>
 
@@ -126,7 +138,7 @@ export default function ProfilePage() {
               <ShoppingCart className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.runs_participated}</div>
-                <div className="stat-label">Runs Participated</div>
+                <div className="stat-label">{t('profile.stats.runsParticipated')}</div>
               </div>
             </div>
 
@@ -134,7 +146,7 @@ export default function ProfilePage() {
               <HandHelping className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.runs_helped}</div>
-                <div className="stat-label">Runs Helped</div>
+                <div className="stat-label">{t('profile.stats.runsHelped')}</div>
               </div>
             </div>
 
@@ -142,7 +154,7 @@ export default function ProfilePage() {
               <Crown className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.runs_led}</div>
-                <div className="stat-label">Runs Led</div>
+                <div className="stat-label">{t('profile.stats.runsLed')}</div>
               </div>
             </div>
 
@@ -150,23 +162,39 @@ export default function ProfilePage() {
               <Users className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.groups_count}</div>
-                <div className="stat-label">Groups</div>
+                <div className="stat-label">{t('profile.stats.groups')}</div>
               </div>
             </div>
           </div>
         ) : (
-          <p>Failed to load statistics</p>
+          <p>{t('profile.errors.failedToLoadStats')}</p>
         )}
       </div>
 
       {/* Account Settings */}
       <div className="profile-section">
-        <h2>Account Settings</h2>
+        <h2>{t('profile.sections.accountSettings')}</h2>
         <div className="settings-actions">
           <div className="setting-item">
             <div>
-              <h3>Dark Mode</h3>
-              <p>Toggle dark mode theme</p>
+              <h3>{t('profile.fields.language')}</h3>
+              <p>{t('profile.descriptions.chooseLanguage')}</p>
+            </div>
+            <select
+              className="language-select"
+              value={user.preferred_language || 'en'}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+            >
+              <option value="en">English</option>
+              <option value="ru">Русский (Russian)</option>
+              <option value="sr">Српски (Serbian)</option>
+            </select>
+          </div>
+
+          <div className="setting-item">
+            <div>
+              <h3>{t('profile.fields.darkMode')}</h3>
+              <p>{t('profile.descriptions.toggleDarkMode')}</p>
             </div>
             <label className="toggle-switch">
               <input
@@ -180,40 +208,40 @@ export default function ProfilePage() {
 
           <div className="setting-item">
             <div>
-              <h3>Name</h3>
-              <p>Change your display name</p>
+              <h3>{t('profile.fields.name')}</h3>
+              <p>{t('profile.descriptions.changeName')}</p>
             </div>
             <button
               className="btn btn-secondary"
               onClick={() => setShowNamePopup(true)}
             >
-              Change Name
+              {t('profile.actions.changeName')}
             </button>
           </div>
 
           <div className="setting-item">
             <div>
-              <h3>Username</h3>
-              <p>Change your login username</p>
+              <h3>{t('profile.fields.username')}</h3>
+              <p>{t('profile.descriptions.changeUsername')}</p>
             </div>
             <button
               className="btn btn-secondary"
               onClick={() => setShowUsernamePopup(true)}
             >
-              Change Username
+              {t('profile.actions.changeUsername')}
             </button>
           </div>
 
           <div className="setting-item">
             <div>
-              <h3>Password</h3>
-              <p>Update your password</p>
+              <h3>{t('profile.fields.password')}</h3>
+              <p>{t('profile.descriptions.changePassword')}</p>
             </div>
             <button
               className="btn btn-secondary"
               onClick={() => setShowPasswordPopup(true)}
             >
-              Change Password
+              {t('profile.actions.changePassword')}
             </button>
           </div>
         </div>

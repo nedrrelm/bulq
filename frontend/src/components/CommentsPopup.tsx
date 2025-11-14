@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/CommentsPopup.css'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import type { UserBid } from '../schemas/run'
@@ -14,6 +15,7 @@ interface CommentsPopupProps {
 }
 
 export default function CommentsPopup({ productName, userBids, currentUserId, canEdit, onClose, onEditOwnBid, onPlaceBid }: CommentsPopupProps) {
+  const { t } = useTranslation()
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef, true, onClose)
@@ -42,11 +44,11 @@ export default function CommentsPopup({ productName, userBids, currentUserId, ca
         className="modal modal-md comments-popup"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3>Comments for {productName}</h3>
+        <h3>{t('run.comments.title', { product: productName })}</h3>
 
         {bidsWithComments.length === 0 ? (
           <div className="no-comments">
-            <p>No comments yet for this product.</p>
+            <p>{t('run.comments.noComments')}</p>
           </div>
         ) : (
           <div className="comments-list">
@@ -57,15 +59,15 @@ export default function CommentsPopup({ productName, userBids, currentUserId, ca
                   <div className="comment-header">
                     <div className="comment-user-info">
                       <span className="user-name">{bid.user_name}</span>
-                      <span className="user-quantity">({bid.quantity} {bid.quantity === 1 ? 'item' : 'items'})</span>
+                      <span className="user-quantity">({t('run.comments.itemCount', { count: bid.quantity })})</span>
                     </div>
                     {isCurrentUser && canEdit && (
                       <button
                         onClick={onEditOwnBid}
                         className="edit-comment-button"
-                        title="Edit your bid and comment"
+                        title={t('run.comments.editTooltip')}
                       >
-                        ✏️ Edit
+                        ✏️ {t('common.actions.edit')}
                       </button>
                     )}
                   </div>
@@ -81,17 +83,17 @@ export default function CommentsPopup({ productName, userBids, currentUserId, ca
             currentUserBid ? (
               !currentUserBid.comment && (
                 <button onClick={onEditOwnBid} className="btn btn-primary">
-                  Add Your Comment
+                  {t('run.comments.addYourComment')}
                 </button>
               )
             ) : (
               <button onClick={onPlaceBid} className="btn btn-primary">
-                Place Bid & Add Comment
+                {t('run.comments.placeBidAndComment')}
               </button>
             )
           )}
           <button onClick={onClose} className="btn btn-secondary">
-            Close
+            {t('common.actions.close')}
           </button>
         </div>
       </div>

@@ -1,0 +1,57 @@
+{
+  "navigation": {
+    "backToRun": "Back to Run"
+  },
+  "labels": {
+    "shoppingMode": "Shopping Mode",
+    "total": "Total",
+    "toBuy": "To Buy ({{count}})",
+    "toBuy_one": "To Buy ({{count}} item)",
+    "toBuy_other": "To Buy ({{count}} items)",
+    "purchased": "Purchased ({{count}})",
+    "purchased_one": "Purchased ({{count}} item)",
+    "purchased_other": "Purchased ({{count}} items)",
+    "pricesSeen": "Prices seen",
+    "today": "today",
+    "yesterday": "yesterday",
+    "on": "on",
+    "unknownDate": "unknown date",
+    "requested": "Requested",
+    "alreadyPurchased": "Already purchased"
+  },
+  "actions": {
+    "completeShopping": "Complete Shopping",
+    "addPrice": "Add Price",
+    "updatePrice": "Update Price",
+    "markPurchased": "Mark as Purchased",
+    "buyMore": "Buy More",
+    "confirmPurchase": "Confirm Purchase",
+    "addPurchase": "Add Purchase"
+  },
+  "fields": {
+    "price": "Price (RSD)",
+    "minimumQuantity": "Minimum Quantity",
+    "minimumQuantityPlaceholder": "e.g., 2",
+    "notes": "Notes",
+    "notesPlaceholder": "e.g., on sale, different brand...",
+    "quantityPurchased": "Quantity Purchased",
+    "pricePerUnit": "Price per Unit (RSD)",
+    "totalPrice": "Total Price (RSD)",
+    "additionalQuantity": "Additional Quantity"
+  },
+  "messages": {
+    "loadingShoppingList": "Loading shopping list..."
+  },
+  "prompts": {
+    "unpurchasedItems": "You still have {{count}} unpurchased item(s). Are you sure you want to complete shopping?",
+    "unpurchasedItems_one": "You still have 1 unpurchased item. Are you sure you want to complete shopping?",
+    "unpurchasedItems_other": "You still have {{count}} unpurchased items. Are you sure you want to complete shopping?"
+  },
+  "errors": {
+    "invalidPrice": "Invalid price",
+    "invalidQuantity": "Invalid quantity",
+    "invalidTotal": "Invalid total",
+    "quantityGreaterThanZero": "Quantity must be greater than zero",
+    "minimumQuantityRange": "Minimum quantity must be between 1 and 9999"
+  }
+}

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/auth'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { getErrorMessage } from '../utils/errorHandling'
@@ -9,6 +10,7 @@ interface ChangePasswordPopupProps {
 }
 
 export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswordPopupProps) {
+  const { t } = useTranslation()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -23,12 +25,12 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
     setError('')
 
     if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters')
+      setError(t('profile.validation.passwordMinLength'))
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match')
+      setError(t('profile.validation.passwordMismatch'))
       return
     }
 
@@ -46,7 +48,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Change Password</h2>
+          <h2>{t('profile.changePassword.title')}</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -57,7 +59,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           )}
 
           <div className="form-group">
-            <label htmlFor="current-password" className="form-label">Current Password *</label>
+            <label htmlFor="current-password" className="form-label">{t('profile.fields.currentPassword')} *</label>
             <input
               id="current-password"
               type="password"
@@ -67,7 +69,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
                 setCurrentPassword(e.target.value)
                 setError('')
               }}
-              placeholder="Enter current password"
+              placeholder={t('profile.fields.currentPassword')}
               disabled={submitting}
               required
               autoFocus
@@ -75,7 +77,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           </div>
 
           <div className="form-group">
-            <label htmlFor="new-password" className="form-label">New Password *</label>
+            <label htmlFor="new-password" className="form-label">{t('profile.fields.newPassword')} *</label>
             <input
               id="new-password"
               type="password"
@@ -85,7 +87,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
                 setNewPassword(e.target.value)
                 setError('')
               }}
-              placeholder="Enter new password (min 6 characters)"
+              placeholder={t('profile.fields.newPassword')}
               disabled={submitting}
               minLength={6}
               required
@@ -93,7 +95,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirm-password" className="form-label">Confirm New Password *</label>
+            <label htmlFor="confirm-password" className="form-label">{t('profile.fields.confirmPassword')} *</label>
             <input
               id="confirm-password"
               type="password"
@@ -103,7 +105,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
                 setConfirmPassword(e.target.value)
                 setError('')
               }}
-              placeholder="Confirm new password"
+              placeholder={t('profile.fields.confirmPassword')}
               disabled={submitting}
               required
             />
@@ -116,14 +118,14 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              {t('common.buttons.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Changing...' : 'Change Password'}
+              {submitting ? t('profile.changePassword.changing') : t('common.buttons.save')}
             </button>
           </div>
         </form>

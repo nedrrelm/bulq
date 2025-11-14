@@ -1,8 +1,9 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentUser, useLogout, authKeys } from '../hooks/queries'
 import type { User } from '../types/user'
 import { logger } from '../utils/logger'
+import i18n from '../i18n/config'
 
 interface AuthContextType {
   user: User | null | undefined
@@ -43,6 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem('just_logged_out')
     }
   }
+
+  // Sync i18n language when user loads or changes
+  useEffect(() => {
+    if (user?.preferred_language) {
+      i18n.changeLanguage(user.preferred_language)
+    }
+  }, [user?.preferred_language])
 
   return (
     <AuthContext.Provider value={{

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/JoinGroup.css'
 import { groupsApi } from '../api'
 import { API_BASE_URL } from '../config'
@@ -17,6 +18,7 @@ interface GroupInfo {
 }
 
 export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps) {
+  const { t } = useTranslation()
   const [groupPreview, setGroupPreview] = useState<GroupInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -32,13 +34,13 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
         const response = await fetch(`${API_BASE_URL}/groups/preview/${inviteToken}`)
 
         if (!response.ok) {
-          throw new Error('Invalid or expired invite link')
+          throw new Error(t('group.join.errors.invalidInvite'))
         }
 
         const data: GroupInfo = await response.json()
         setGroupPreview(data)
       } catch (err) {
-        setError(getErrorMessage(err, 'Failed to load group info'))
+        setError(getErrorMessage(err, t('group.join.errors.loadFailed')))
       } finally {
         setLoading(false)
       }
@@ -65,7 +67,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
         onJoinSuccess()
       }, 1500)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to join group'))
+      setError(getErrorMessage(err, t('group.join.errors.joinFailed')))
       setJoining(false)
     }
   }
@@ -74,7 +76,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
     return (
       <div className="join-group-page">
         <div className="join-group-card">
-          <p>Loading group information...</p>
+          <p>{t('group.join.loading')}</p>
         </div>
       </div>
     )
@@ -85,9 +87,9 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
       <div className="join-group-page">
         <div className="join-group-card">
           <div className="success-icon">✅</div>
-          <h2>Successfully Joined!</h2>
-          <p>You've joined the group: <strong>{joinedGroup.name}</strong></p>
-          <p className="redirect-message">Redirecting to your groups...</p>
+          <h2>{t('group.join.success.title')}</h2>
+          <p>{t('group.join.success.message', { groupName: joinedGroup.name })}</p>
+          <p className="redirect-message">{t('group.join.success.redirecting')}</p>
         </div>
       </div>
     )
@@ -96,7 +98,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
   return (
     <div className="join-group-page">
       <div className="join-group-card">
-        <h2>Join Group</h2>
+        <h2>{t('group.join.title')}</h2>
 
         {error && (
           <div className="alert alert-error">
@@ -108,10 +110,10 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
           <div className="group-preview">
             <h3>{groupPreview.name}</h3>
             <div className="group-details">
-              <p><strong>Created by:</strong> {groupPreview.creator_name}</p>
-              <p><strong>Members:</strong> {groupPreview.member_count}</p>
+              <p><strong>{t('group.join.preview.createdBy')}:</strong> {groupPreview.creator_name}</p>
+              <p><strong>{t('group.join.preview.members')}:</strong> {groupPreview.member_count}</p>
             </div>
-            <p className="invite-message">You've been invited to join this group!</p>
+            <p className="invite-message">{t('group.join.preview.inviteMessage')}</p>
           </div>
         )}
 
@@ -121,7 +123,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
             className="btn btn-primary"
             disabled={joining || !groupPreview}
           >
-            {joining ? 'Joining...' : 'Join Group'}
+            {joining ? t('group.join.actions.joining') : t('group.join.actions.submit')}
           </button>
         </div>
       </div>

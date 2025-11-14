@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/ConfirmDialog.css'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 
@@ -15,10 +16,11 @@ export default function ConfirmDialog({
   message,
   onConfirm,
   onCancel,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   danger = false
 }: ConfirmDialogProps) {
+  const { t } = useTranslation()
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef)
@@ -41,18 +43,18 @@ export default function ConfirmDialog({
         aria-describedby="confirm-dialog-message"
         aria-modal="true"
       >
-        <h3 id="confirm-dialog-title">Confirm Action</h3>
+        <h3 id="confirm-dialog-title">{t('common.buttons.confirmAction')}</h3>
         <p id="confirm-dialog-message" className="confirm-message">{message}</p>
         <div className="button-group">
           <button onClick={onCancel} className="btn btn-secondary">
-            {cancelText}
+            {cancelText || t('common.buttons.cancel')}
           </button>
           <button
             onClick={onConfirm}
             className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`}
             autoFocus
           >
-            {confirmText}
+            {confirmText || t('common.buttons.confirm')}
           </button>
         </div>
       </div>

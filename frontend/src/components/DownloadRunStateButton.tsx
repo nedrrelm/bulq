@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { runsApi } from '../api'
 import { getErrorMessage } from '../utils/errorHandling'
 import { logger } from '../utils/logger'
@@ -14,6 +15,7 @@ export default function DownloadRunStateButton({
   storeName,
   className = 'btn btn-secondary'
 }: DownloadRunStateButtonProps) {
+  const { t } = useTranslation()
   const [isDownloading, setIsDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -59,9 +61,9 @@ export default function DownloadRunStateButton({
         onClick={handleDownload}
         className={className}
         disabled={isDownloading}
-        title="Download current run state as JSON"
+        title={t('run.actions.downloadStateTooltip')}
       >
-        {isDownloading ? '⏳ Downloading...' : '📥 Download State'}
+        {isDownloading ? `⏳ ${t('run.actions.downloading')}` : `📥 ${t('run.actions.downloadState')}`}
       </button>
       {error && (
         <div style={{ color: 'var(--color-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
