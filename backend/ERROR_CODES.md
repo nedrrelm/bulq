@@ -258,6 +258,18 @@ BID_QUANTITY_NEGATIVE → errors.bid.quantity_negative
 
 ---
 
+### Configuration & System Errors (HTTP 500)
+
+| Code | Description | Details |
+|------|-------------|---------|
+| `DATABASE_SESSION_REQUIRED` | Database session not provided when required | `repo_mode` |
+| `INVALID_REPO_MODE` | Invalid repository mode configured | `repo_mode` |
+| `CONFIGURATION_ERROR` | Generic configuration error | Varies |
+
+**Note:** These are internal server errors that indicate misconfiguration. They should not occur in normal operation and usually require fixes to environment variables or application setup.
+
+---
+
 ## Validation Utilities
 
 The `app/utils/validation.py` module provides helper functions that automatically use error codes:
