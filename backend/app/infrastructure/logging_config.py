@@ -50,39 +50,54 @@ class StructuredFormatter(logging.Formatter):
     """Custom formatter that outputs structured log messages for development."""
 
     def format(self, record: logging.LogRecord) -> str:
-        # Base log data
-        log_data = {
-            'timestamp': datetime.utcfromtimestamp(record.created).isoformat() + 'Z',
-            'level': record.levelname,
-            'logger': record.name,
-            'message': record.getMessage(),
+        # Format timestamp in a more readable way
+        timestamp = datetime.utcfromtimestamp(record.created).strftime('%H:%M:%S')
+
+        # Determine level color (if terminal supports it)
+        level_colors = {
+            'DEBUG': '\033[36m',    # Cyan
+            'INFO': '\033[32m',     # Green
+            'WARNING': '\033[33m',  # Yellow
+            'ERROR': '\033[31m',    # Red
+            'CRITICAL': '\033[35m', # Magenta
         }
+        reset_color = '\033[0m'
+        level_color = level_colors.get(record.levelname, '')
+
+        # Build the log message
+        parts = [
+            f'{level_color}{record.levelname:8}{reset_color}',
+            timestamp,
+        ]
+
+        # Add request_id if present (important for tracing)
+        if hasattr(record, 'request_id'):
+            parts.append(f'[{record.request_id[:8]}]')
+
+        # Add the main message
+        parts.append(record.getMessage())
+
+        # Add important context (only if present and not redundant with message)
+        context_parts = []
+
+        # Add user_id if present
+        if hasattr(record, 'user_id') and record.user_id:
+            context_parts.append(f'user={record.user_id}')
+
+        # Add duration if present
+        if hasattr(record, 'duration_ms') and record.duration_ms:
+            context_parts.append(f'{record.duration_ms}ms')
+
+        # Add status code if present (and not 200)
+        if hasattr(record, 'status_code') and record.status_code != 200:
+            context_parts.append(f'status={record.status_code}')
+
+        if context_parts:
+            parts.append(f'({", ".join(context_parts)})')
 
         # Add exception info if present
         if record.exc_info:
-            log_data['exception'] = self.formatException(record.exc_info)
-
-        # Add extra context from record
-        for attr in [
-            'user_id',
-            'run_id',
-            'group_id',
-            'request_id',
-            'path',
-            'method',
-            'status_code',
-            'duration_ms',
-        ]:
-            if hasattr(record, attr):
-                log_data[attr] = getattr(record, attr)
-
-        # Format as key=value pairs for easy parsing
-        parts = []
-        for key, value in log_data.items():
-            if isinstance(value, str) and (' ' in value or '=' in value):
-                parts.append(f'{key}="{value}"')
-            else:
-                parts.append(f'{key}={value}')
+            parts.append('\n' + self.formatException(record.exc_info))
 
         return ' '.join(parts)
 
@@ -134,7 +149,10 @@ def setup_logging(level: str = 'INFO') -> None:
 
     # Reduce noise from third-party libraries
     logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
+    logging.getLogger('uvicorn.error').setLevel(logging.WARNING)
+    logging.getLogger('uvicorn').setLevel(logging.WARNING)
     logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+    logging.getLogger('watchfiles').setLevel(logging.WARNING)
 
 
 def get_logger(name: str) -> logging.Logger:

@@ -33,17 +33,6 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # Also store in request.state for easy access in route handlers
         request.state.request_id = request_id
 
-        # Log incoming request
-        logger.info(
-            f'{request.method} {request.url.path}',
-            extra={
-                'request_id': request_id,
-                'method': request.method,
-                'path': request.url.path,
-                'client_host': request.client.host if request.client else None,
-            },
-        )
-
         # Process request
         try:
             response: Response = await call_next(request)
@@ -51,17 +40,23 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             # Calculate duration
             duration_ms = int((time.time() - start_time) * 1000)
 
-            # Log response
-            logger.info(
-                f'{request.method} {request.url.path} - {response.status_code}',
-                extra={
-                    'request_id': request_id,
-                    'method': request.method,
-                    'path': request.url.path,
-                    'status_code': response.status_code,
-                    'duration_ms': duration_ms,
-                },
-            )
+            # Only log if status is not 200 (success) or if duration is slow (>500ms)
+            # This reduces noise for normal successful operations
+            is_slow = duration_ms > 500
+            is_error = response.status_code >= 400
+
+            if is_error or is_slow:
+                log_level = logger.warning if is_slow else logger.error if is_error else logger.info
+                log_level(
+                    f'{request.method} {request.url.path}',
+                    extra={
+                        'request_id': request_id,
+                        'method': request.method,
+                        'path': request.url.path,
+                        'status_code': response.status_code,
+                        'duration_ms': duration_ms,
+                    },
+                )
 
             # Add request ID to response headers for tracing
             response.headers['X-Request-ID'] = request_id
@@ -74,7 +69,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             # Log error
             logger.error(
-                f'{request.method} {request.url.path} - Error: {str(e)}',
+                f'{request.method} {request.url.path}',
                 extra={
                     'request_id': request_id,
                     'method': request.method,

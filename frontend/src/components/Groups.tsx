@@ -10,6 +10,7 @@ import GroupItem from './GroupItem'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useGroups, groupKeys } from '../hooks/queries'
 import { getErrorMessage } from '../utils/errorHandling'
+import { logger } from '../utils/logger'
 
 // Lazy load popup components for better code splitting
 const NewGroupPopup = lazy(() => import('./NewGroupPopup'))
@@ -42,7 +43,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
         const requests = await reassignmentApi.getMyRequests()
         setPendingReassignments(requests)
       } catch (err) {
-        console.error('Failed to fetch reassignment requests:', err)
+        logger.error('Failed to fetch reassignment requests:', err)
       }
     }
 

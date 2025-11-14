@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { WebSocketMessage } from '../types/websocket'
+import { logger } from '../utils/logger'
 
 // WebSocket configuration constants
 const WEBSOCKET_RECONNECT_INTERVAL_MS = 3000 // 3 seconds between reconnection attempts
@@ -77,7 +78,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
           setLastMessage(message)
           if (onMessageRef.current) onMessageRef.current(message)
         } catch (err) {
-          console.error('Failed to parse WebSocket message:', err)
+          logger.error('Failed to parse WebSocket message:', err)
         }
       }
 
@@ -87,7 +88,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
         if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSING) {
           return
         }
-        console.error('WebSocket error:', error)
+        logger.error('WebSocket error:', error)
       }
 
       ws.onclose = (event) => {
@@ -107,11 +108,11 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
           }, reconnectInterval)
         } else if (shouldNotReconnect) {
           // Log why we're not reconnecting
-          console.log(`WebSocket closed (code ${event.code}): ${event.reason || 'No reason provided'}. Not reconnecting.`)
+          logger.log(`WebSocket closed (code ${event.code}): ${event.reason || 'No reason provided'}. Not reconnecting.`)
         }
       }
     } catch (err) {
-      console.error('Failed to create WebSocket connection:', err)
+      logger.error('Failed to create WebSocket connection:', err)
     }
   }, [url, reconnectInterval, maxReconnectAttempts])
 
@@ -131,7 +132,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(typeof message === 'string' ? message : JSON.stringify(message))
     } else {
-      console.warn('WebSocket is not connected')
+      logger.warn('WebSocket is not connected')
     }
   }, [])
 

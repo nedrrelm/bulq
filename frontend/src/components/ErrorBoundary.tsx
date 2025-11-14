@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import '../styles/components/ErrorBoundary.css'
+import { logger } from '../utils/logger'
 
 interface Props {
   children: ReactNode
@@ -27,7 +28,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo)
+    logger.error('Error caught by boundary:', error, errorInfo)
   }
 
   handleReset = () => {

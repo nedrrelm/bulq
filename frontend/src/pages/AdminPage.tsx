@@ -4,6 +4,7 @@ import type { AdminUser, AdminProduct, AdminStore } from '../api/admin'
 import EditProductPopup from '../components/EditProductPopup'
 import EditStorePopup from '../components/EditStorePopup'
 import EditUserPopup from '../components/EditUserPopup'
+import { logger } from '../utils/logger'
 import '../styles/pages/AdminPage.css'
 
 type TabType = 'users' | 'products' | 'stores'
@@ -69,7 +70,7 @@ export default function AdminPage() {
       const data = await adminApi.getUsers(search || undefined, verifiedFilter, LIMIT, usersOffset)
       setUsers(data)
     } catch (err) {
-      console.error('Failed to fetch users:', err)
+      logger.error('Failed to fetch users:', err)
     } finally {
       setLoadingUsers(false)
     }
@@ -81,7 +82,7 @@ export default function AdminPage() {
       const data = await adminApi.getProducts(search || undefined, verifiedFilter, LIMIT, productsOffset)
       setProducts(data)
     } catch (err) {
-      console.error('Failed to fetch products:', err)
+      logger.error('Failed to fetch products:', err)
     } finally {
       setLoadingProducts(false)
     }
@@ -93,7 +94,7 @@ export default function AdminPage() {
       const data = await adminApi.getStores(search || undefined, verifiedFilter, LIMIT, storesOffset)
       setStores(data)
     } catch (err) {
-      console.error('Failed to fetch stores:', err)
+      logger.error('Failed to fetch stores:', err)
     } finally {
       setLoadingStores(false)
     }
@@ -107,7 +108,7 @@ export default function AdminPage() {
       ))
       await adminApi.toggleUserVerification(userId)
     } catch (err) {
-      console.error('Failed to toggle user verification:', err)
+      logger.error('Failed to toggle user verification:', err)
       // Revert on error
       fetchUsers()
     }
@@ -121,7 +122,7 @@ export default function AdminPage() {
       ))
       await adminApi.toggleProductVerification(productId)
     } catch (err) {
-      console.error('Failed to toggle product verification:', err)
+      logger.error('Failed to toggle product verification:', err)
       // Revert on error
       fetchProducts()
     }
@@ -135,7 +136,7 @@ export default function AdminPage() {
       ))
       await adminApi.toggleStoreVerification(storeId)
     } catch (err) {
-      console.error('Failed to toggle store verification:', err)
+      logger.error('Failed to toggle store verification:', err)
       // Revert on error
       fetchStores()
     }
@@ -147,7 +148,7 @@ export default function AdminPage() {
       const data = await adminApi.getRegistrationSetting()
       setAllowRegistration(data.allow_registration)
     } catch (err) {
-      console.error('Failed to fetch registration setting:', err)
+      logger.error('Failed to fetch registration setting:', err)
     } finally {
       setLoadingRegistrationSetting(false)
     }
@@ -159,7 +160,7 @@ export default function AdminPage() {
       setAllowRegistration(newValue)
       await adminApi.setRegistrationSetting(newValue)
     } catch (err) {
-      console.error('Failed to toggle registration:', err)
+      logger.error('Failed to toggle registration:', err)
       // Revert on error
       setAllowRegistration(!allowRegistration)
     }

@@ -6,6 +6,7 @@ import { Package, DollarSign, Users, ShoppingCart, HandHelping, Crown } from 'lu
 import ChangeNamePopup from '../components/ChangeNamePopup'
 import ChangeUsernamePopup from '../components/ChangeUsernamePopup'
 import ChangePasswordPopup from '../components/ChangePasswordPopup'
+import { logger } from '../utils/logger'
 import '../styles/pages/ProfilePage.css'
 
 export default function ProfilePage() {
@@ -31,7 +32,7 @@ export default function ProfilePage() {
       const data = await authApi.getProfileStats()
       setStats(data)
     } catch (err) {
-      console.error('Failed to fetch profile stats:', err)
+      logger.error('Failed to fetch profile stats:', err)
     } finally {
       setLoadingStats(false)
     }
@@ -68,7 +69,7 @@ export default function ProfilePage() {
         document.body.classList.remove('dark-mode')
       }
     } catch (err) {
-      console.error('Failed to toggle dark mode:', err)
+      logger.error('Failed to toggle dark mode:', err)
     }
   }
 

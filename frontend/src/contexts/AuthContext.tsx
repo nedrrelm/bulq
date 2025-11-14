@@ -2,6 +2,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentUser, useLogout, authKeys } from '../hooks/queries'
 import type { User } from '../types/user'
+import { logger } from '../utils/logger'
 
 interface AuthContextType {
   user: User | null | undefined
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Force a hard reload to clear all state
       window.location.href = '/'
     } catch (err) {
-      console.error('Logout failed:', err)
+      logger.error('Logout failed:', err)
       sessionStorage.removeItem('just_logged_out')
     }
   }

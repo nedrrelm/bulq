@@ -9,6 +9,7 @@ import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
 import ErrorBoundary from './ErrorBoundary'
 import { getErrorMessage } from '../utils/errorHandling'
+import { logger } from '../utils/logger'
 
 // Lazy load popup components for better code splitting
 const BidPopup = lazy(() => import('./BidPopup'))
@@ -350,17 +351,9 @@ export default function RunPage() {
 
   // Filter out users who have no purchased products
   const distributionUsers = useMemo(() => {
-    console.log('Distribution raw data:', { allUsers, count: allUsers.length })
     const result = allUsers
       .map((user) => {
         const filteredProducts = user.products.filter(p => {
-          console.log('Product filter:', {
-            user: user.user_name,
-            product: p.product_name,
-            distributed_quantity: p.distributed_quantity,
-            type: typeof p.distributed_quantity,
-            passes: p.distributed_quantity && p.distributed_quantity > 0
-          })
           return p.distributed_quantity && p.distributed_quantity > 0
         })
         return {
@@ -369,7 +362,6 @@ export default function RunPage() {
         }
       })
       .filter((user) => user.products.length > 0)
-    console.log('Distribution filtered result:', { result, count: result.length })
     return result
   }, [allUsers])
 

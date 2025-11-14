@@ -7,6 +7,7 @@ import { NotificationProvider } from './contexts/NotificationContext'
 import { searchApi } from './api'
 import type { SearchResults } from './api'
 import { debounce } from './utils/validation'
+import { logger } from './utils/logger'
 import Login from './components/Login'
 import Groups from './components/Groups'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -169,21 +170,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
     try {
       setSearching(true)
-      console.log('Searching for:', query)
       const results = await searchApi.searchAll(query)
-      console.log('Search results:', results)
-      console.log('Type of results:', typeof results)
-      console.log('Products:', results.products, 'Type:', typeof results.products, 'Is array:', Array.isArray(results.products))
-      console.log('Stores:', results.stores, 'Type:', typeof results.stores, 'Is array:', Array.isArray(results.stores))
-      console.log('Groups:', results.groups, 'Type:', typeof results.groups, 'Is array:', Array.isArray(results.groups))
       setSearchResults(results)
     } catch (err) {
-      console.error('=== SEARCH FAILED ===')
-      console.error('Error:', err)
-      console.error('Error type:', typeof err)
-      console.error('Error message:', err instanceof Error ? err.message : String(err))
-      console.error('Error stack:', err instanceof Error ? err.stack : 'N/A')
-      console.error('=====================')
+      logger.error('Search failed:', err)
       setSearchResults(null)
     } finally {
       setSearching(false)

@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import Toast from '../components/Toast'
 import { WS_BASE_URL } from '../config'
+import { logger } from '../utils/logger'
 
 /**
  * NotificationContext - Real-time notification management
@@ -131,7 +132,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const data = await notificationsApi.getNotifications({ limit, offset })
       setNotifications(data)
     } catch (err) {
-      console.error('Failed to fetch notifications:', err)
+      logger.error('Failed to fetch notifications:', err)
     } finally {
       setLoading(false)
     }
@@ -144,7 +145,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const data = await notificationsApi.getUnreadCount()
       setUnreadCount(data.count)
     } catch (err) {
-      console.error('Failed to fetch unread count:', err)
+      logger.error('Failed to fetch unread count:', err)
     }
   }, [user])
 
@@ -160,7 +161,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       // Decrement unread count locally
       setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (err) {
-      console.error('Failed to mark notification as read:', err)
+      logger.error('Failed to mark notification as read:', err)
     }
   }
 
@@ -175,7 +176,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       setUnreadCount(0)
     } catch (err) {
-      console.error('Failed to mark all notifications as read:', err)
+      logger.error('Failed to mark all notifications as read:', err)
     }
   }
 
