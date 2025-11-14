@@ -1,17 +1,34 @@
 """Bid service for managing bid operations."""
 
-from typing import Any
 from uuid import UUID
 
-from app.infrastructure.config import MAX_PRODUCTS_PER_RUN
-from app.events.domain_events import BidPlacedEvent, BidRetractedEvent
-from app.events.event_bus import event_bus
+from app.api.schemas import PlaceBidResponse, RetractBidResponse
+from app.core.error_codes import (
+    BID_NOT_FOUND,
+    BID_PRODUCT_NOT_IN_SHOPPING_LIST,
+    BID_QUANTITY_BELOW_DISTRIBUTED,
+    BID_QUANTITY_EXCEEDS_PURCHASED,
+    BID_QUANTITY_NEGATIVE,
+    CANNOT_BID_NEW_PRODUCT_IN_ADJUSTING,
+    CANNOT_JOIN_RUN_IN_ADJUSTING_STATE,
+    CANNOT_RETRACT_BID_IN_ADJUSTING,
+    INVALID_RUN_STATE_TRANSITION,
+    NOT_RUN_PARTICIPANT,
+    PARTICIPATION_NOT_FOUND,
+    PRODUCT_NOT_FOUND,
+    RUN_MAX_PRODUCTS_EXCEEDED,
+    RUN_NOT_FOUND,
+)
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import Product, ProductBid, Run, RunParticipation, User
-from app.infrastructure.request_context import get_logger
 from app.core.run_state import RunState, state_machine
-from app.api.schemas import PlaceBidResponse, RetractBidResponse
+from app.core.success_codes import BID_PLACED, BID_RETRACTED
+from app.events.domain_events import BidPlacedEvent, BidRetractedEvent
+from app.events.event_bus import event_bus
+from app.infrastructure.config import MAX_PRODUCTS_PER_RUN
+from app.infrastructure.request_context import get_logger
 from app.utils.validation import validate_uuid
+
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -21,7 +38,13 @@ class BidService(BaseService):
     """Service for managing bid operations."""
 
     def place_bid(
-        self, run_id: str, product_id: str, quantity: float, interested_only: bool, user: User, comment: str | None = None
+        self,
+        run_id: str,
+        product_id: str,
+        quantity: float,
+        interested_only: bool,
+        user: User,
+        comment: str | None = None,
     ) -> PlaceBidResponse:
         """Place or update a bid on a product in a run.
 
@@ -37,6 +60,7 @@ class BidService(BaseService):
             quantity: Quantity to bid
             interested_only: Whether this is an interest-only bid
             user: Current user placing the bid
+            comment: Optional comment to add to the bid
 
         Returns:
             PlaceBidResponse with status and calculated totals for broadcasting
@@ -66,7 +90,9 @@ class BidService(BaseService):
         self._validate_bid_for_state(run, product_uuid, quantity, participation)
 
         # Create or update the bid
-        self.repo.create_or_update_bid(participation.id, product_uuid, quantity, interested_only, comment)
+        self.repo.create_or_update_bid(
+            participation.id, product_uuid, quantity, interested_only, comment
+        )
 
         # Handle automatic state transition (planning → active)
         state_changed = self._check_planning_to_active_transition(
@@ -91,7 +117,7 @@ class BidService(BaseService):
         )
 
         return PlaceBidResponse(
-            message='Bid placed successfully',
+            code=BID_PLACED,
             product_id=str(product_uuid),
             user_id=str(user.id),
             user_name=user.name,
@@ -153,7 +179,7 @@ class BidService(BaseService):
         )
 
         return RetractBidResponse(
-            message='Bid retracted successfully',
+            code=BID_RETRACTED,
             run_id=str(run_uuid),
             product_id=str(product_uuid),
             user_id=str(user.id),
@@ -189,15 +215,20 @@ class BidService(BaseService):
         run_state = RunState(run.state)
         if not state_machine.can_place_bid(run_state):
             raise BadRequestError(
-                state_machine.get_action_error_message(
+                code=INVALID_RUN_STATE_TRANSITION,
+                message=state_machine.get_action_error_message(
                     'bidding', run_state, [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]
-                )
+                ),
+                current_state=run.state,
+                action='place_bid',
             )
 
         # Verify product exists (products don't need store availability to be bid on)
         product = self.repo.get_product_by_id(product_uuid)
         if not product:
-            raise NotFoundError('Product', product_id)
+            raise NotFoundError(
+                code=PRODUCT_NOT_FOUND, message='Product not found', product_id=product_id
+            )
 
         return run_uuid, product_uuid, run, product
 
@@ -205,12 +236,16 @@ class BidService(BaseService):
         """Get run and verify user has access to it."""
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', str(run_uuid))
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=str(run_uuid))
 
         # Verify user has access to this run (member of the group)
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to view this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT,
+                message='Not authorized to view this run',
+                run_id=str(run_uuid),
+            )
 
         return run
 
@@ -225,7 +260,12 @@ class BidService(BaseService):
             # Don't allow new participants in adjusting state - check using state machine
             run_state = RunState(run.state)
             if not state_machine.can_join_run(run_state):
-                raise BadRequestError('Cannot join run in adjusting state')
+                raise BadRequestError(
+                    code=CANNOT_JOIN_RUN_IN_ADJUSTING_STATE,
+                    message='Cannot join run in adjusting state',
+                    run_id=str(run_uuid),
+                    current_state=run.state,
+                )
             # Create participation (not as leader)
             participation = self.repo.create_participation(user.id, run_uuid, is_leader=False)
             is_new_participant = True
@@ -238,7 +278,9 @@ class BidService(BaseService):
         """Validate bid based on run state and return existing bid if any."""
         # Basic quantity validation
         if quantity < 0:
-            raise BadRequestError('Quantity cannot be negative')
+            raise BadRequestError(
+                code=BID_QUANTITY_NEGATIVE, message='Quantity cannot be negative', quantity=quantity
+            )
 
         # Check for existing bid
         existing_bid = self.repo.get_bid(participation.id, product_uuid)
@@ -250,7 +292,12 @@ class BidService(BaseService):
         # State-specific validation
         if run.state == RunState.ADJUSTING:
             if not existing_bid:
-                raise BadRequestError('Cannot bid on new products in adjusting state')
+                raise BadRequestError(
+                    code=CANNOT_BID_NEW_PRODUCT_IN_ADJUSTING,
+                    message='Cannot bid on new products in adjusting state',
+                    run_id=str(run.id),
+                    product_id=str(product_uuid),
+                )
             self._validate_adjusting_bid(run.id, product_uuid, quantity, existing_bid)
 
         return existing_bid
@@ -264,7 +311,13 @@ class BidService(BaseService):
                 'Run has reached maximum product limit',
                 extra={'run_id': str(run_id), 'unique_products': len(unique_products)},
             )
-            raise BadRequestError(f'Run has reached maximum of {MAX_PRODUCTS_PER_RUN} products')
+            raise BadRequestError(
+                code=RUN_MAX_PRODUCTS_EXCEEDED,
+                message=f'Run has reached maximum of {MAX_PRODUCTS_PER_RUN} products',
+                run_id=str(run_id),
+                max_products=MAX_PRODUCTS_PER_RUN,
+                current_products=len(unique_products),
+            )
 
     def _validate_adjusting_bid(
         self, run_id: UUID, product_uuid: UUID, quantity: float, existing_bid: ProductBid
@@ -277,7 +330,12 @@ class BidService(BaseService):
         )
 
         if not shopping_item:
-            raise BadRequestError('Product not in shopping list')
+            raise BadRequestError(
+                code=BID_PRODUCT_NOT_IN_SHOPPING_LIST,
+                message='Product not in shopping list',
+                product_id=str(product_uuid),
+                run_id=str(run_id),
+            )
 
         # Calculate shortage
         purchased_qty = shopping_item.purchased_quantity or 0
@@ -289,12 +347,20 @@ class BidService(BaseService):
 
         if quantity > existing_bid.quantity:
             raise BadRequestError(
-                f'Can only reduce bids in adjusting state (current: {existing_bid.quantity}, new: {quantity})'
+                code=BID_QUANTITY_EXCEEDS_PURCHASED,
+                message=f'Can only reduce bids in adjusting state (current: {existing_bid.quantity}, new: {quantity})',
+                current_quantity=existing_bid.quantity,
+                new_quantity=quantity,
             )
         if quantity < min_allowed:
             raise BadRequestError(
-                f'Cannot reduce bid below {min_allowed} '
-                f'(current: {existing_bid.quantity}, shortage: {shortage}, would remove more than needed)'
+                code=BID_QUANTITY_BELOW_DISTRIBUTED,
+                message=f'Cannot reduce bid below {min_allowed} '
+                f'(current: {existing_bid.quantity}, shortage: {shortage}, would remove more than needed)',
+                current_quantity=existing_bid.quantity,
+                new_quantity=quantity,
+                min_allowed=min_allowed,
+                shortage=shortage,
             )
 
     def _check_planning_to_active_transition(
@@ -321,19 +387,28 @@ class BidService(BaseService):
 
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to modify bids on this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT,
+                message='Not authorized to modify bids on this run',
+                run_id=run_id,
+            )
 
         # Check if run allows bid retraction using state machine
         run_state = RunState(run.state)
         if not state_machine.can_retract_bid(run_state):
             raise BadRequestError(
-                state_machine.get_action_error_message(
-                    'bid modification', run_state, [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]
-                )
+                code=CANNOT_RETRACT_BID_IN_ADJUSTING,
+                message=state_machine.get_action_error_message(
+                    'bid modification',
+                    run_state,
+                    [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING],
+                ),
+                current_state=run.state,
+                action='retract_bid',
             )
 
         return run_uuid, product_uuid, run
@@ -364,7 +439,10 @@ class BidService(BaseService):
         current_bid = self.repo.get_bid(participation.id, product_id)
         if current_bid and current_bid.quantity > shortage:
             raise BadRequestError(
-                f'Cannot fully retract bid. You can reduce it by at most {shortage} items.'
+                code=BID_QUANTITY_EXCEEDS_PURCHASED,
+                message=f'Cannot fully retract bid. You can reduce it by at most {shortage} items.',
+                current_quantity=current_bid.quantity,
+                max_reduction=shortage,
             )
 
     def _get_user_participation(
@@ -373,7 +451,12 @@ class BidService(BaseService):
         """Get user's participation in a run."""
         participation = self.repo.get_participation(user_id, run_id)
         if not participation:
-            raise NotFoundError('Participation', f'user_id: {user_id}, run_id: {run_id_str}')
+            raise NotFoundError(
+                code=PARTICIPATION_NOT_FOUND,
+                message='Participation not found',
+                user_id=str(user_id),
+                run_id=run_id_str,
+            )
         return participation
 
     def _remove_bid_and_recalculate(
@@ -382,6 +465,8 @@ class BidService(BaseService):
         """Remove bid from database."""
         bid = self.repo.get_bid(participation.id, product_id)
         if not bid:
-            raise NotFoundError('Bid', f'product_id: {product_id_str}')
+            raise NotFoundError(
+                code=BID_NOT_FOUND, message='Bid not found', product_id=product_id_str
+            )
 
         self.repo.delete_bid(participation.id, product_id)

@@ -1,18 +1,18 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.models import User
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     CreateStoreRequest,
     StorePageResponse,
-    StoreProductResponse,
     StoreResponse,
-    StoreRunResponse,
 )
+from app.core.error_codes import INVALID_ID_FORMAT
+from app.core.exceptions import BadRequestError
+from app.core.models import User
+from app.infrastructure.database import get_db
 from app.services import StoreService
 
 router = APIRouter(prefix='/stores', tags=['stores'])
@@ -56,7 +56,7 @@ async def get_store_page(
     try:
         store_uuid = UUID(store_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail='Invalid store ID format') from e
+        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
     service = StoreService(db)
     return service.get_store_page_data(store_uuid, current_user.id)

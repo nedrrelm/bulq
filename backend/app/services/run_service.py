@@ -7,7 +7,6 @@ from app.api.schemas import (
     AvailableProductResponse,
     CancelRunResponse,
     CreateRunResponse,
-    MessageResponse,
     ParticipantResponse,
     PlaceBidResponse,
     ProductResponse,
@@ -15,11 +14,28 @@ from app.api.schemas import (
     RetractBidResponse,
     RunDetailResponse,
     StateChangeResponse,
+    SuccessResponse,
     UserBidResponse,
+)
+from app.core.error_codes import (
+    CANNOT_ASSIGN_LEADER_AS_HELPER,
+    GROUP_NOT_FOUND,
+    HELPER_NOT_GROUP_MEMBER,
+    INVALID_ID_FORMAT,
+    NOT_GROUP_MEMBER,
+    NOT_RUN_LEADER,
+    NOT_RUN_LEADER_OR_HELPER,
+    NOT_RUN_PARTICIPANT,
+    RESOURCE_NOT_FOUND,
+    RUN_EXPORT_INVALID_STATE,
+    RUN_NOT_FOUND,
+    STORE_NOT_FOUND,
+    USER_NOT_FOUND,
 )
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import Product, ProductBid, Run, User
 from app.core.run_state import RunState, state_machine
+from app.core.success_codes import HELPER_ADDED, HELPER_REMOVED, RUN_COMMENT_UPDATED
 from app.events.domain_events import RunCreatedEvent
 from app.events.event_bus import event_bus
 from app.infrastructure.config import MAX_ACTIVE_RUNS_PER_GROUP
@@ -52,7 +68,9 @@ class RunService(BaseService):
         self.notification_service = RunNotificationService(db)
         self.state_service = RunStateService(db, self.notification_service)
 
-    def create_run(self, group_id: str, store_id: str, user: User, comment: str | None = None) -> CreateRunResponse:
+    def create_run(
+        self, group_id: str, store_id: str, user: User, comment: str | None = None
+    ) -> CreateRunResponse:
         """Create a new run for a group.
 
         Args:
@@ -81,17 +99,21 @@ class RunService(BaseService):
         # Verify group exists and user is a member
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_id)
+            raise NotFoundError(code=GROUP_NOT_FOUND, message='Group not found', group_id=group_id)
 
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == group_uuid for g in user_groups):
-            raise ForbiddenError('Not authorized to create runs for this group')
+            raise ForbiddenError(
+                code=NOT_GROUP_MEMBER,
+                message='Not authorized to create runs for this group',
+                group_id=group_id,
+            )
 
         # Verify store exists
         all_stores = self.repo.get_all_stores()
         store = next((s for s in all_stores if s.id == store_uuid), None)
         if not store:
-            raise NotFoundError('Store', store_id)
+            raise NotFoundError(code=STORE_NOT_FOUND, message='Store not found', store_id=store_id)
 
         # Check active runs limit for the group - use state machine
         group_runs = self.repo.get_runs_by_group(group_uuid)
@@ -106,7 +128,11 @@ class RunService(BaseService):
                 },
             )
             raise BadRequestError(
-                f'Group has reached maximum of {MAX_ACTIVE_RUNS_PER_GROUP} active runs'
+                code='GROUP_MAX_ACTIVE_RUNS_EXCEEDED',
+                message=f'Group has reached maximum of {MAX_ACTIVE_RUNS_PER_GROUP} active runs',
+                group_id=group_id,
+                max_active_runs=MAX_ACTIVE_RUNS_PER_GROUP,
+                current_active_runs=len(active_runs),
             )
 
         # Create the run with current user as leader
@@ -163,12 +189,22 @@ class RunService(BaseService):
         store = next((s for s in all_stores if s.id == run.store_id), None)
 
         if not group or not store:
-            raise NotFoundError('Group or Store', str(run.group_id) + ' or ' + str(run.store_id))
+            raise NotFoundError(
+                code=RESOURCE_NOT_FOUND,
+                message='Group or Store not found',
+                group_id=str(run.group_id),
+                store_id=str(run.store_id),
+            )
 
         # Get participants data
-        participants, current_user_is_ready, current_user_is_leader, current_user_is_helper, leader_name, helpers = (
-            self._get_participants_data(run.id, user.id)
-        )
+        (
+            participants,
+            current_user_is_ready,
+            current_user_is_leader,
+            current_user_is_helper,
+            leader_name,
+            helpers,
+        ) = self._get_participants_data(run.id, user.id)
 
         # Get products data
         products = self._get_products_data(run, user.id)
@@ -191,7 +227,13 @@ class RunService(BaseService):
         )
 
     def place_bid(
-        self, run_id: str, product_id: str, quantity: float, interested_only: bool, user: User, comment: str | None = None
+        self,
+        run_id: str,
+        product_id: str,
+        quantity: float,
+        interested_only: bool,
+        user: User,
+        comment: str | None = None,
     ) -> PlaceBidResponse:
         """Place or update a bid on a product in a run.
 
@@ -208,7 +250,9 @@ class RunService(BaseService):
         Returns:
             PlaceBidResponse with status and calculated totals for broadcasting
         """
-        return self.bid_service.place_bid(run_id, product_id, quantity, interested_only, user, comment)
+        return self.bid_service.place_bid(
+            run_id, product_id, quantity, interested_only, user, comment
+        )
 
     def retract_bid(self, run_id: str, product_id: str, user: User) -> RetractBidResponse:
         """Retract a user's bid on a product in a run.
@@ -310,7 +354,7 @@ class RunService(BaseService):
         """
         return self.state_service.cancel_run(run_id, user)
 
-    def update_run_comment(self, run_id: str, comment: str | None, user: User) -> MessageResponse:
+    def update_run_comment(self, run_id: str, comment: str | None, user: User) -> SuccessResponse:
         """Update the comment/description for a run.
 
         Args:
@@ -328,24 +372,31 @@ class RunService(BaseService):
         """
         # Validate and get run with authorization check
         run_uuid = self._validate_run_id(run_id)
-        run = self._get_run_with_auth_check(run_uuid, user)
+        self._get_run_with_auth_check(run_uuid, user)
 
         # Check if user is the leader
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can update the comment')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message='Only the run leader can update the comment',
+                run_id=run_id,
+            )
 
         # Update the comment
         updated_run = self.repo.update_run_comment(run_uuid, comment)
         if not updated_run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         logger.info(
             'Run comment updated',
             extra={'run_id': run_id, 'user_id': str(user.id)},
         )
 
-        return MessageResponse(message='Comment updated successfully')
+        return SuccessResponse(
+            code=RUN_COMMENT_UPDATED,
+            details={'run_id': run_id},
+        )
 
     def delete_run(self, run_id: str, user: User) -> CancelRunResponse:
         """Delete a run (alias for cancel_run for backward compatibility).
@@ -382,11 +433,13 @@ class RunService(BaseService):
         # Verify run exists and user has access
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to view this run')
+            raise ForbiddenError(
+                code=NOT_GROUP_MEMBER, message='Not authorized to view this run', run_id=run_id
+            )
 
         # Get all products
         all_products = self.repo.get_all_products()
@@ -431,12 +484,16 @@ class RunService(BaseService):
         """Get run and verify user has access to it."""
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', str(run_uuid))
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=str(run_uuid))
 
         # Verify user has access to this run (member of the group)
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to view this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT,
+                message='Not authorized to view this run',
+                run_id=str(run_uuid),
+            )
 
         return run
 
@@ -485,7 +542,14 @@ class RunService(BaseService):
                     )
                 )
 
-        return participants_data, current_user_is_ready, current_user_is_leader, current_user_is_helper, leader_name, helpers
+        return (
+            participants_data,
+            current_user_is_ready,
+            current_user_is_leader,
+            current_user_is_helper,
+            leader_name,
+            helpers,
+        )
 
     def _get_products_data(self, run: Run, current_user_id: UUID) -> list[ProductResponse]:
         """Get products data with bids for a run."""
@@ -597,7 +661,9 @@ class RunService(BaseService):
 
         return user_bids_data, current_user_bid
 
-    def toggle_helper(self, run_id: str, target_user_id: str, current_user: User) -> MessageResponse:
+    def toggle_helper(
+        self, run_id: str, target_user_id: str, current_user: User
+    ) -> SuccessResponse:
         """Toggle helper status for a run participant.
 
         Args:
@@ -621,41 +687,52 @@ class RunService(BaseService):
             run_uuid = UUID(run_id)
             target_user_uuid = UUID(target_user_id)
         except ValueError as e:
-            raise BadRequestError('Invalid ID format') from e
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify current user is the run leader
         current_participation = self.repo.get_participation(current_user.id, run_uuid)
         if not current_participation or not current_participation.is_leader:
-            raise ForbiddenError('Only the run leader can manage helpers')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER, message='Only the run leader can manage helpers', run_id=run_id
+            )
 
         # Verify target user is a member of the group
         target_user = self.repo.get_user_by_id(target_user_uuid)
         if not target_user:
-            raise NotFoundError('User', target_user_id)
+            raise NotFoundError(
+                code=USER_NOT_FOUND, message='User not found', user_id=target_user_id
+            )
 
         target_user_groups = self.repo.get_user_groups(target_user)
         if not any(g.id == run.group_id for g in target_user_groups):
-            raise BadRequestError('User is not a member of this group')
+            raise BadRequestError(
+                code=HELPER_NOT_GROUP_MEMBER,
+                message='User is not a member of this group',
+                user_id=target_user_id,
+                group_id=str(run.group_id),
+            )
 
         # Get or create target user's participation
         target_participation = self.repo.get_participation(target_user_uuid, run_uuid)
 
         # Cannot make leader a helper
         if target_participation and target_participation.is_leader:
-            raise BadRequestError('Cannot assign helper status to the run leader')
+            raise BadRequestError(
+                code=CANNOT_ASSIGN_LEADER_AS_HELPER,
+                message='Cannot assign helper status to the run leader',
+                user_id=target_user_id,
+                run_id=run_id,
+            )
 
         if not target_participation:
             # Create participation as helper for this user if they're not yet a participant
             target_participation = self.repo.create_participation(
-                user_id=target_user_uuid,
-                run_id=run_uuid,
-                is_leader=False,
-                is_helper=True
+                user_id=target_user_uuid, run_id=run_uuid, is_leader=False, is_helper=True
             )
             new_helper_status = True
         else:
@@ -663,8 +740,14 @@ class RunService(BaseService):
             new_helper_status = not target_participation.is_helper
             self.repo.update_participation_helper(target_user_uuid, run_uuid, new_helper_status)
 
-        action = 'added as' if new_helper_status else 'removed as'
-        return MessageResponse(message=f'User {action} helper')
+        return SuccessResponse(
+            code=HELPER_ADDED if new_helper_status else HELPER_REMOVED,
+            details={
+                'run_id': run_id,
+                'user_id': target_user_id,
+                'is_helper': new_helper_status,
+            },
+        )
 
     def export_run_state(self, run_id: str, user: User) -> dict[str, Any]:
         """Export the current state of a run as structured JSON.
@@ -691,12 +774,27 @@ class RunService(BaseService):
         # Check if user is leader or helper
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not (participation.is_leader or participation.is_helper):
-            raise ForbiddenError('Only run leader and helpers can export run state')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER_OR_HELPER,
+                message='Only run leader and helpers can export run state',
+                run_id=run_id,
+            )
 
         # Check if run is in an exportable state
-        exportable_states = [RunState.CONFIRMED, RunState.SHOPPING, RunState.ADJUSTING, RunState.DISTRIBUTING]
+        exportable_states = [
+            RunState.CONFIRMED,
+            RunState.SHOPPING,
+            RunState.ADJUSTING,
+            RunState.DISTRIBUTING,
+        ]
         if RunState(run.state) not in exportable_states:
-            raise BadRequestError(f'Run state export is only available in {", ".join(s.value for s in exportable_states)} states')
+            raise BadRequestError(
+                code=RUN_EXPORT_INVALID_STATE,
+                message=f'Run state export is only available in {", ".join(s.value for s in exportable_states)} states',
+                run_id=run_id,
+                current_state=run.state,
+                exportable_states=[s.value for s in exportable_states],
+            )
 
         # Get all bids with participations and users
         run_bids = self.repo.get_bids_by_run_with_participations(run.id)
@@ -732,8 +830,16 @@ class RunService(BaseService):
 
             # Get shopping list data if available
             shopping_item = shopping_list_map.get(product_id)
-            total_quantity_purchased = float(shopping_item.purchased_quantity) if shopping_item and shopping_item.purchased_quantity else None
-            purchased_price_per_unit = float(shopping_item.purchased_price_per_unit) if shopping_item and shopping_item.purchased_price_per_unit else None
+            total_quantity_purchased = (
+                float(shopping_item.purchased_quantity)
+                if shopping_item and shopping_item.purchased_quantity
+                else None
+            )
+            purchased_price_per_unit = (
+                float(shopping_item.purchased_price_per_unit)
+                if shopping_item and shopping_item.purchased_price_per_unit
+                else None
+            )
 
             # Build per-user data for this product
             per_user_product = {}
@@ -746,33 +852,42 @@ class RunService(BaseService):
 
                 # For distributing state, use distributed quantities and prices
                 if RunState(run.state) == RunState.DISTRIBUTING:
-                    quantity_purchased = float(bid.distributed_quantity) if bid.distributed_quantity else 0.0
-                    price_per_unit = float(bid.distributed_price_per_unit) if bid.distributed_price_per_unit else 0.0
+                    quantity_purchased = (
+                        float(bid.distributed_quantity) if bid.distributed_quantity else 0.0
+                    )
+                    price_per_unit = (
+                        float(bid.distributed_price_per_unit)
+                        if bid.distributed_price_per_unit
+                        else 0.0
+                    )
                     item_price = quantity_purchased * price_per_unit
                 else:
-                    quantity_purchased = quantity_requested if purchased_price_per_unit is not None else None
-                    item_price = (quantity_purchased * purchased_price_per_unit) if (quantity_purchased is not None and purchased_price_per_unit is not None) else None
+                    quantity_purchased = (
+                        quantity_requested if purchased_price_per_unit is not None else None
+                    )
+                    item_price = (
+                        (quantity_purchased * purchased_price_per_unit)
+                        if (quantity_purchased is not None and purchased_price_per_unit is not None)
+                        else None
+                    )
 
                 per_user_product[username] = {
                     'quantity_requested': quantity_requested,
                     'quantity_purchased': quantity_purchased,
                     'price': item_price,
-                    'is_picked_up': bid.is_picked_up
+                    'is_picked_up': bid.is_picked_up,
                 }
 
                 # Add to per-user total
                 if username not in per_user:
-                    per_user[username] = {
-                        'total_price': 0.0,
-                        'per_product': {}
-                    }
+                    per_user[username] = {'total_price': 0.0, 'per_product': {}}
 
                 per_user[username]['per_product'][str(product_id)] = {
                     'product_name': product.name,
                     'quantity_requested': quantity_requested,
                     'quantity_purchased': quantity_purchased,
                     'price': item_price,
-                    'is_picked_up': bid.is_picked_up
+                    'is_picked_up': bid.is_picked_up,
                 }
 
                 if item_price is not None:
@@ -785,16 +900,12 @@ class RunService(BaseService):
                 'total_quantity_requested': total_quantity_requested,
                 'total_quantity_purchased': total_quantity_purchased,
                 'purchased_price_per_unit': purchased_price_per_unit,
-                'per_user': per_user_product
+                'per_user': per_user_product,
             }
 
         logger.info(
             'Run state exported',
-            extra={'run_id': run_id, 'user_id': str(user.id), 'state': run.state}
+            extra={'run_id': run_id, 'user_id': str(user.id), 'state': run.state},
         )
 
-        return {
-            'total_price': total_price,
-            'per_product': per_product,
-            'per_user': per_user
-        }
+        return {'total_price': total_price, 'per_product': per_product, 'per_user': per_user}

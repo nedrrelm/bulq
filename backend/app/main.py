@@ -76,6 +76,7 @@ async def startup_event():
     create_tables()
 
     # Register event handlers for domain events
+    from .api.websocket_manager import manager
     from .events.domain_events import (
         BidPlacedEvent,
         BidRetractedEvent,
@@ -88,10 +89,9 @@ async def startup_event():
         RunStateChangedEvent,
     )
     from .events.event_bus import event_bus
-    from .api.websocket_manager import manager
-    from .repositories import get_repository
     from .events.handlers.notification_handler import NotificationEventHandler
     from .events.handlers.websocket_handler import WebSocketEventHandler
+    from .repositories import get_repository
 
     # Create event handlers
     ws_handler = WebSocketEventHandler(manager)
@@ -113,6 +113,7 @@ async def startup_event():
     async def handle_run_state_changed_notification(event: RunStateChangedEvent):
         """Handle run state changed event for notifications."""
         from .infrastructure.database import SessionLocal
+
         db = SessionLocal()
         try:
             repo = get_repository(db)
@@ -125,12 +126,13 @@ async def startup_event():
     event_bus.subscribe(RunStateChangedEvent, handle_run_state_changed_notification)
 
     from .infrastructure.request_context import get_logger
+
     logger = get_logger(__name__)
     logger.info('✅ Event handlers registered successfully')
 
     # Initialize default settings
-    from .infrastructure.runtime_settings import initialize_default_settings
     from .infrastructure.database import SessionLocal
+    from .infrastructure.runtime_settings import initialize_default_settings
 
     try:
         db = SessionLocal()

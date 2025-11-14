@@ -4,8 +4,9 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from app.utils.background_tasks import create_background_task
 from app.infrastructure.request_context import get_logger
+from app.utils.background_tasks import create_background_task
+
 from .domain_events import DomainEvent
 
 logger = get_logger(__name__)

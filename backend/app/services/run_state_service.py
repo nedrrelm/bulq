@@ -3,15 +3,36 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from app.events.domain_events import ReadyToggledEvent, RunCancelledEvent, RunStateChangedEvent
-from app.events.event_bus import event_bus
+from app.api.schemas import CancelRunResponse, ReadyToggleResponse, StateChangeResponse
+from app.core.error_codes import (
+    BID_QUANTITY_EXCEEDS_PURCHASED,
+    CANNOT_CANCEL_COMPLETED_RUN,
+    NOT_RUN_LEADER,
+    NOT_RUN_PARTICIPANT,
+    PARTICIPATION_NOT_FOUND,
+    RUN_ALREADY_CANCELLED,
+    RUN_NOT_FOUND,
+    RUN_NOT_IN_ACTIVE_STATE,
+    RUN_NOT_IN_ADJUSTING_STATE,
+    RUN_NOT_IN_CONFIRMED_STATE,
+)
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import Run, User
-from app.infrastructure.request_context import get_logger
 from app.core.run_state import RunState, state_machine
-from app.api.schemas import CancelRunResponse, ReadyToggleResponse, StateChangeResponse
+from app.core.success_codes import (
+    ADJUSTING_FINISHED,
+    READY_TOGGLED,
+    READY_TOGGLED_RUN_CONFIRMED,
+    RUN_CANCELLED,
+    RUN_FORCE_CONFIRMED,
+    SHOPPING_STARTED,
+)
+from app.events.domain_events import ReadyToggledEvent, RunCancelledEvent, RunStateChangedEvent
+from app.events.event_bus import event_bus
+from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transaction
 from app.utils.validation import validate_uuid
+
 from .base_service import BaseService
 
 if TYPE_CHECKING:
@@ -75,7 +96,7 @@ class RunStateService(BaseService):
         if self._check_all_participants_ready(run_uuid):
             self._transition_run_state(run, RunState.CONFIRMED)
             return ReadyToggleResponse(
-                message='All participants ready! Run confirmed.',
+                code=READY_TOGGLED_RUN_CONFIRMED,
                 is_ready=new_ready_status,
                 state_changed=True,
                 new_state=RunState.CONFIRMED,
@@ -85,7 +106,7 @@ class RunStateService(BaseService):
             )
 
         return ReadyToggleResponse(
-            message=f'Ready status updated to {new_ready_status}',
+            code=READY_TOGGLED,
             is_ready=new_ready_status,
             state_changed=False,
             new_state=None,
@@ -117,27 +138,39 @@ class RunStateService(BaseService):
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user has access to this run (member of the group)
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to modify this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT, message='Not authorized to modify this run', run_id=run_id
+            )
 
         # Check if user is the run leader
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can force confirm the run')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message='Only the run leader can force confirm the run',
+                run_id=run_id,
+            )
 
         # Check if run is in active state
         if run.state != RunState.ACTIVE:
-            raise BadRequestError(f'Run must be in active state to force confirm, currently in {run.state}')
+            raise BadRequestError(
+                code=RUN_NOT_IN_ACTIVE_STATE,
+                message=f'Run must be in active state to force confirm, currently in {run.state}',
+                run_id=run_id,
+                current_state=run.state,
+                required_state=RunState.ACTIVE.value,
+            )
 
         # Transition to confirmed state
         self._transition_run_state(run, RunState.CONFIRMED)
 
         return StateChangeResponse(
-            message='Run force confirmed successfully',
+            code=RUN_FORCE_CONFIRMED,
             state=RunState.CONFIRMED,
             run_id=str(run_uuid),
             group_id=str(run.group_id),
@@ -166,25 +199,35 @@ class RunStateService(BaseService):
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user has access to this run (member of the group)
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to modify this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT, message='Not authorized to modify this run', run_id=run_id
+            )
 
         # Only allow starting shopping from confirmed state - use state machine
         run_state = RunState(run.state)
         if not state_machine.can_start_shopping(run_state):
-            raise BadRequestError('Can only start shopping from confirmed state')
+            raise BadRequestError(
+                code=RUN_NOT_IN_CONFIRMED_STATE,
+                message='Can only start shopping from confirmed state',
+                run_id=run_id,
+                current_state=run.state,
+                required_state=RunState.CONFIRMED.value,
+            )
 
         # Check if user is the run leader
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can start shopping')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER, message='Only the run leader can start shopping', run_id=run_id
+            )
 
         # Wrap shopping list generation and state change in transaction
-        with transaction(self.db, "generate shopping list and start shopping"):
+        with transaction(self.db, 'generate shopping list and start shopping'):
             # Generate shopping list items from bids
             self._generate_shopping_list(run_uuid)
 
@@ -192,7 +235,7 @@ class RunStateService(BaseService):
             self._transition_run_state(run, RunState.SHOPPING)
 
         return StateChangeResponse(
-            message='Shopping started!',
+            code=SHOPPING_STARTED,
             state=RunState.SHOPPING,
             run_id=str(run_uuid),
             group_id=str(run.group_id),
@@ -220,15 +263,14 @@ class RunStateService(BaseService):
         run_uuid, run = self._validate_finish_adjusting_request(run_id, user)
 
         # Wrap verification, distribution, and state change in transaction
-        with transaction(self.db, "finish adjusting and distribute items"):
+        with transaction(self.db, 'finish adjusting and distribute items'):
             if not force:
                 self._verify_quantities_match(run_uuid)
             self._distribute_items_to_bidders(run_uuid)
             self._transition_run_state(run, RunState.DISTRIBUTING)
 
-        message = 'Distribution started!' if force else 'Adjustments complete! Moving to distribution.'
         return StateChangeResponse(
-            message=message,
+            code=ADJUSTING_FINISHED,
             state=RunState.DISTRIBUTING,
             run_id=str(run_uuid),
             group_id=str(run.group_id),
@@ -255,24 +297,34 @@ class RunStateService(BaseService):
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Check if run is already in a terminal state using state machine
         run_state = RunState(run.state)
         if state_machine.is_terminal_state(run_state):
             if run_state == RunState.COMPLETED:
-                raise BadRequestError('Cannot cancel a completed run')
-            raise BadRequestError('Run is already cancelled')
+                raise BadRequestError(
+                    code=CANNOT_CANCEL_COMPLETED_RUN,
+                    message='Cannot cancel a completed run',
+                    run_id=run_id,
+                )
+            raise BadRequestError(
+                code=RUN_ALREADY_CANCELLED, message='Run is already cancelled', run_id=run_id
+            )
 
         # Verify user has access to this run (member of the group)
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to cancel this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT, message='Not authorized to cancel this run', run_id=run_id
+            )
 
         # Check if user is the run leader
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can cancel the run')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER, message='Only the run leader can cancel the run', run_id=run_id
+            )
 
         # Transition to cancelled state
         old_state = run.state
@@ -294,7 +346,7 @@ class RunStateService(BaseService):
         )
 
         return CancelRunResponse(
-            message='Run cancelled successfully',
+            code=RUN_CANCELLED,
             run_id=str(run_uuid),
             group_id=str(run.group_id),
             state=RunState.CANCELLED.value,
@@ -315,7 +367,7 @@ class RunStateService(BaseService):
             old_state string for caller use
 
         Raises:
-            ValueError: If transition is invalid according to state machine
+            BadRequestError: If transition is invalid according to state machine
         """
         # Validate transition using state machine
         state_machine.validate_transition(RunState(run.state), new_state, str(run.id))
@@ -353,16 +405,24 @@ class RunStateService(BaseService):
 
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to modify this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT, message='Not authorized to modify this run', run_id=run_id
+            )
 
         # Check if toggling ready is allowed using state machine
         run_state = RunState(run.state)
         if not state_machine.can_toggle_ready(run_state):
-            raise BadRequestError('Can only mark ready in active state')
+            raise BadRequestError(
+                code=RUN_NOT_IN_ACTIVE_STATE,
+                message='Can only mark ready in active state',
+                run_id=run_id,
+                current_state=run.state,
+                required_state=RunState.ACTIVE.value,
+            )
 
         return run_uuid, run
 
@@ -370,7 +430,12 @@ class RunStateService(BaseService):
         """Get user's participation in a run."""
         participation = self.repo.get_participation(user_id, run_id)
         if not participation:
-            raise NotFoundError('Participation', f'user_id: {user_id}, run_id: {run_id_str}')
+            raise NotFoundError(
+                code=PARTICIPATION_NOT_FOUND,
+                message='Participation not found',
+                user_id=str(user_id),
+                run_id=run_id_str,
+            )
         return participation
 
     def _toggle_user_ready_status(self, participation) -> bool:
@@ -411,20 +476,32 @@ class RunStateService(BaseService):
 
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to modify this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT, message='Not authorized to modify this run', run_id=run_id
+            )
 
         # Check if finishing adjusting is allowed using state machine
         run_state = RunState(run.state)
         if not state_machine.can_finish_adjusting(run_state):
-            raise BadRequestError('Can only finish adjusting from adjusting state')
+            raise BadRequestError(
+                code=RUN_NOT_IN_ADJUSTING_STATE,
+                message='Can only finish adjusting from adjusting state',
+                run_id=run_id,
+                current_state=run.state,
+                required_state=RunState.ADJUSTING.value,
+            )
 
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can finish adjusting')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message='Only the run leader can finish adjusting',
+                run_id=run_id,
+            )
 
         return run_uuid, run
 
@@ -452,7 +529,10 @@ class RunStateService(BaseService):
             if total_requested != shopping_item.purchased_quantity:
                 shortage = total_requested - shopping_item.purchased_quantity
                 raise BadRequestError(
-                    f"Quantities still don't match. Need to reduce {shortage} more items across all bids."
+                    code=BID_QUANTITY_EXCEEDS_PURCHASED,
+                    message=f"Quantities still don't match. Need to reduce {shortage} more items across all bids.",
+                    shortage=shortage,
+                    product_id=str(shopping_item.product_id),
                 )
 
     def _distribute_items_to_bidders(self, run_id: UUID) -> None:
@@ -464,22 +544,30 @@ class RunStateService(BaseService):
         shopping_items = self.repo.get_shopping_list_items(run_id)
         all_bids = self.repo.get_bids_by_run(run_id)
 
-        logger.info(f"Distributing items: found {len(shopping_items)} shopping items and {len(all_bids)} bids",
-                   extra={'run_id': str(run_id)})
+        logger.info(
+            f'Distributing items: found {len(shopping_items)} shopping items and {len(all_bids)} bids',
+            extra={'run_id': str(run_id)},
+        )
 
         for shopping_item in shopping_items:
-            logger.info(f"Processing shopping item: product={shopping_item.product_id}, is_purchased={shopping_item.is_purchased}, purchased_qty={shopping_item.purchased_quantity}",
-                       extra={'run_id': str(run_id)})
+            logger.info(
+                f'Processing shopping item: product={shopping_item.product_id}, is_purchased={shopping_item.is_purchased}, purchased_qty={shopping_item.purchased_quantity}',
+                extra={'run_id': str(run_id)},
+            )
 
             if not shopping_item.is_purchased:
-                logger.info(f"Skipping unpurchased item: product={shopping_item.product_id}",
-                           extra={'run_id': str(run_id)})
+                logger.info(
+                    f'Skipping unpurchased item: product={shopping_item.product_id}',
+                    extra={'run_id': str(run_id)},
+                )
                 continue
 
             # Skip items with 0 purchased quantity (not actually bought)
             if not shopping_item.purchased_quantity or shopping_item.purchased_quantity == 0:
-                logger.info(f"Skipping item with 0 quantity: product={shopping_item.product_id}",
-                           extra={'run_id': str(run_id)})
+                logger.info(
+                    f'Skipping item with 0 quantity: product={shopping_item.product_id}',
+                    extra={'run_id': str(run_id)},
+                )
                 continue
 
             product_bids = [
@@ -488,8 +576,10 @@ class RunStateService(BaseService):
                 if bid.product_id == shopping_item.product_id and not bid.interested_only
             ]
             total_requested = sum(bid.quantity for bid in product_bids)
-            logger.info(f"Product {shopping_item.product_id}: {len(product_bids)} bids, total_requested={total_requested}, purchased={shopping_item.purchased_quantity}",
-                       extra={'run_id': str(run_id)})
+            logger.info(
+                f'Product {shopping_item.product_id}: {len(product_bids)} bids, total_requested={total_requested}, purchased={shopping_item.purchased_quantity}',
+                extra={'run_id': str(run_id)},
+            )
             self.repo.update_shopping_list_item_requested_quantity(
                 shopping_item.id, total_requested
             )

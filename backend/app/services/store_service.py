@@ -1,11 +1,12 @@
 """Store service for handling store-related business logic."""
 
-from typing import Any
 from uuid import UUID
 
+from app.api.schemas import StorePageResponse, StoreProductResponse, StoreResponse, StoreRunResponse
+from app.core.error_codes import STORE_NAME_EMPTY, STORE_NOT_FOUND
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.models import Store
-from app.api.schemas import StorePageResponse, StoreProductResponse, StoreResponse, StoreRunResponse
+
 from .base_service import BaseService
 
 
@@ -34,14 +35,16 @@ class StoreService(BaseService):
     def create_store(self, name: str) -> Store:
         """Create a new store."""
         if not name or not name.strip():
-            raise ValidationError('Store name cannot be empty')
+            raise ValidationError(code=STORE_NAME_EMPTY, message='Store name cannot be empty')
         return self.repo.create_store(name.strip())
 
     def get_store_by_id(self, store_id: UUID) -> Store:
         """Get store by ID."""
         store = self.repo.get_store_by_id(store_id)
         if not store:
-            raise NotFoundError('Store', store_id)
+            raise NotFoundError(
+                code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
+            )
         return store
 
     def get_store_page_data(self, store_id: UUID, user_id: UUID) -> StorePageResponse:

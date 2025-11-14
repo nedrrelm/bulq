@@ -2,6 +2,8 @@
 
 from enum import Enum
 
+from app.core import error_codes
+from app.core.exceptions import BadRequestError
 from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
@@ -97,7 +99,7 @@ class RunStateMachine:
             run_id: Optional run ID for logging context
 
         Raises:
-            ValueError: If transition is not valid
+            BadRequestError: If transition is not valid
         """
         if not self.can_transition(from_state, to_state):
             valid_states = self.get_valid_transitions(from_state)
@@ -120,7 +122,13 @@ class RunStateMachine:
                 },
             )
 
-            raise ValueError(error_msg)
+            raise BadRequestError(
+                code=error_codes.INVALID_RUN_STATE_TRANSITION,
+                message=error_msg,
+                current_state=from_state.value,
+                target_state=to_state.value,
+                allowed_states=valid_states_str,
+            )
 
     def is_terminal_state(self, state: RunState) -> bool:
         """Check if a state is terminal (no further transitions possible).
@@ -210,7 +218,12 @@ class RunStateMachine:
         Returns:
             True if viewing shopping list is allowed, False otherwise
         """
-        return state in [RunState.SHOPPING, RunState.ADJUSTING, RunState.DISTRIBUTING, RunState.COMPLETED]
+        return state in [
+            RunState.SHOPPING,
+            RunState.ADJUSTING,
+            RunState.DISTRIBUTING,
+            RunState.COMPLETED,
+        ]
 
     def can_complete_shopping(self, state: RunState) -> bool:
         """Check if completing shopping is allowed in the given state.
@@ -267,7 +280,9 @@ class RunStateMachine:
         """
         return state in [RunState.PLANNING, RunState.ACTIVE]
 
-    def get_action_error_message(self, action: str, current_state: RunState, allowed_states: list[RunState]) -> str:
+    def get_action_error_message(
+        self, action: str, current_state: RunState, allowed_states: list[RunState]
+    ) -> str:
         """Generate a consistent error message for invalid actions.
 
         Args:

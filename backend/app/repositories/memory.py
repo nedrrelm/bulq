@@ -18,8 +18,8 @@ from app.core.models import (
     Store,
     User,
 )
-from app.infrastructure.request_context import get_logger
 from app.core.run_state import RunState, state_machine
+from app.infrastructure.request_context import get_logger
 from app.repositories.abstract import AbstractRepository
 
 logger = get_logger(__name__)
@@ -335,7 +335,12 @@ class MemoryRepository(AbstractRepository):
         return list(self._products.values())
 
     def create_or_update_bid(
-        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool, comment: str | None = None
+        self,
+        participation_id: UUID,
+        product_id: UUID,
+        quantity: int,
+        interested_only: bool,
+        comment: str | None = None,
     ) -> ProductBid:
         """Create or update a product bid."""
         from datetime import datetime
@@ -556,10 +561,14 @@ class MemoryRepository(AbstractRepository):
         self._shopping_list_items[item.id] = item
         return item
 
-    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None) -> Run:
+    def create_run(
+        self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None
+    ) -> Run:
         from datetime import datetime
 
-        run = Run(id=uuid4(), group_id=group_id, store_id=store_id, state='planning', comment=comment)
+        run = Run(
+            id=uuid4(), group_id=group_id, store_id=store_id, state='planning', comment=comment
+        )
         run.planning_at = datetime.now()
         self._runs[run.id] = run
         # Create participation for the leader
@@ -728,7 +737,11 @@ class MemoryRepository(AbstractRepository):
         return None
 
     def add_more_purchased(
-        self, item_id: UUID, additional_quantity: float, additional_total: float, new_price_per_unit: float
+        self,
+        item_id: UUID,
+        additional_quantity: float,
+        additional_total: float,
+        new_price_per_unit: float,
     ) -> ShoppingListItem | None:
         """Add more purchased quantity to an already-purchased item."""
         item = self._shopping_list_items.get(item_id)
@@ -1081,16 +1094,19 @@ class MemoryRepository(AbstractRepository):
 
         for bid in self._bids.values():
             participation = self._participations.get(bid.participation_id)
-            if participation and participation.user_id == user_id and bid.is_picked_up:
-                if bid.distributed_quantity and bid.distributed_price_per_unit:
-                    total_quantity += float(bid.distributed_quantity)
-                    total_spent += float(bid.distributed_quantity * bid.distributed_price_per_unit)
+            if (
+                participation
+                and participation.user_id == user_id
+                and bid.is_picked_up
+                and bid.distributed_quantity
+                and bid.distributed_price_per_unit
+            ):
+                total_quantity += float(bid.distributed_quantity)
+                total_spent += float(bid.distributed_quantity * bid.distributed_price_per_unit)
 
         # Get runs participated count (distinct runs)
-        user_participations = [
-            p for p in self._participations.values() if p.user_id == user_id
-        ]
-        runs_participated = len(set(p.run_id for p in user_participations))
+        user_participations = [p for p in self._participations.values() if p.user_id == user_id]
+        runs_participated = len({p.run_id for p in user_participations})
 
         # Get runs where user was helper
         runs_helped = sum(1 for p in user_participations if p.is_helper)

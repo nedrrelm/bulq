@@ -1,12 +1,19 @@
 """Run notification service for managing notifications and WebSocket broadcasting."""
 
-from typing import Any
-
-from app.utils.background_tasks import create_background_task
-from app.core.models import Run
-from app.infrastructure.request_context import get_logger
-from app.core.run_state import RunState
+from app.api.schemas.notification_data import (
+    BidRetractedData,
+    BidUpdatedData,
+    ReadyToggledData,
+    RunCreatedData,
+    RunStateChangedData,
+    StateChangedData,
+)
 from app.api.websocket_manager import ConnectionManager
+from app.core.models import Run
+from app.core.run_state import RunState
+from app.infrastructure.request_context import get_logger
+from app.utils.background_tasks import create_background_task
+
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -57,18 +64,20 @@ class RunNotificationService(BaseService):
         if not self._ws_manager:
             return
 
+        data = BidUpdatedData(
+            product_id=product_id,
+            user_id=user_id,
+            user_name=user_name,
+            quantity=quantity,
+            interested_only=interested_only,
+            new_total=new_total,
+        )
+
         await self._ws_manager.broadcast(
             f'run:{run_id}',
             {
                 'type': 'bid_updated',
-                'data': {
-                    'product_id': product_id,
-                    'user_id': user_id,
-                    'user_name': user_name,
-                    'quantity': quantity,
-                    'interested_only': interested_only,
-                    'new_total': new_total,
-                },
+                'data': data.model_dump(mode='json'),
             },
         )
 
@@ -86,15 +95,17 @@ class RunNotificationService(BaseService):
         if not self._ws_manager:
             return
 
+        data = BidRetractedData(
+            product_id=product_id,
+            user_id=user_id,
+            new_total=new_total,
+        )
+
         await self._ws_manager.broadcast(
             f'run:{run_id}',
             {
                 'type': 'bid_retracted',
-                'data': {
-                    'product_id': product_id,
-                    'user_id': user_id,
-                    'new_total': new_total,
-                },
+                'data': data.model_dump(mode='json'),
             },
         )
 
@@ -109,9 +120,11 @@ class RunNotificationService(BaseService):
         if not self._ws_manager:
             return
 
+        data = ReadyToggledData(user_id=user_id, is_ready=is_ready)
+
         await self._ws_manager.broadcast(
             f'run:{run_id}',
-            {'type': 'ready_toggled', 'data': {'user_id': user_id, 'is_ready': is_ready}},
+            {'type': 'ready_toggled', 'data': data.model_dump(mode='json')},
         )
 
     async def broadcast_state_change(
@@ -131,19 +144,27 @@ class RunNotificationService(BaseService):
         state_str = new_state.value if isinstance(new_state, RunState) else new_state
 
         # Broadcast to run room
+        data_run = StateChangedData(run_id=run_id, new_state=state_str)
         await self._ws_manager.broadcast(
             f'run:{run_id}',
-            {'type': 'state_changed', 'data': {'run_id': run_id, 'new_state': state_str}},
+            {'type': 'state_changed', 'data': data_run.model_dump(mode='json')},
         )
 
         # Broadcast to group room
+        data_group = StateChangedData(run_id=run_id, new_state=state_str)
         await self._ws_manager.broadcast(
             f'group:{group_id}',
-            {'type': 'run_state_changed', 'data': {'run_id': run_id, 'new_state': state_str}},
+            {'type': 'run_state_changed', 'data': data_group.model_dump(mode='json')},
         )
 
     async def broadcast_run_created(
-        self, group_id: str, run_id: str, store_id: str, store_name: str, state: str, leader_name: str
+        self,
+        group_id: str,
+        run_id: str,
+        store_id: str,
+        store_name: str,
+        state: str,
+        leader_name: str,
     ) -> None:
         """Broadcast run creation to group participants.
 
@@ -158,17 +179,19 @@ class RunNotificationService(BaseService):
         if not self._ws_manager:
             return
 
+        data = RunCreatedData(
+            run_id=run_id,
+            store_id=store_id,
+            store_name=store_name,
+            state=state,
+            leader_name=leader_name,
+        )
+
         await self._ws_manager.broadcast(
             f'group:{group_id}',
             {
                 'type': 'run_created',
-                'data': {
-                    'run_id': run_id,
-                    'store_id': store_id,
-                    'store_name': store_name,
-                    'state': state,
-                    'leader_name': leader_name,
-                },
+                'data': data.model_dump(mode='json'),
             },
         )
 
@@ -188,19 +211,21 @@ class RunNotificationService(BaseService):
         # Get all participants of this run
         participations = self.repo.get_run_participations(run.id)
 
-        # Create notification data
-        notification_data = {
-            'run_id': str(run.id),
-            'store_name': store_name,
-            'old_state': old_state,
-            'new_state': new_state,
-            'group_id': str(run.group_id),
-        }
+        # Create notification data using Pydantic model for type safety
+        notification_data = RunStateChangedData(
+            run_id=str(run.id),
+            store_name=store_name,
+            old_state=old_state,
+            new_state=new_state,
+            group_id=str(run.group_id),
+        )
 
         # Create notification for each participant and broadcast via WebSocket
         for participation in participations:
             notification = self.repo.create_notification(
-                user_id=participation.user_id, type='run_state_changed', data=notification_data
+                user_id=participation.user_id,
+                type='run_state_changed',
+                data=notification_data.model_dump(mode='json'),
             )
 
             # Broadcast to user's WebSocket connection

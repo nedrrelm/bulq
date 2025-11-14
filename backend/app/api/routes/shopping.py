@@ -1,21 +1,21 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.models import User
-from app.infrastructure.request_context import get_logger
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     AddMorePurchaseRequest,
     CompleteShoppingResponse,
     MarkPurchasedRequest,
     MarkPurchasedResponse,
-    MessageResponse,
     ShoppingListItemResponse,
+    SuccessResponse,
     UpdateAvailabilityPriceRequest,
 )
-from app.services import ShoppingService
 from app.api.websocket_manager import manager
+from app.core.models import User
+from app.infrastructure.database import get_db
+from app.infrastructure.request_context import get_logger
+from app.services import ShoppingService
 
 router = APIRouter(prefix='/shopping', tags=['shopping'])
 logger = get_logger(__name__)
@@ -31,7 +31,7 @@ async def get_shopping_list(
     return await service.get_shopping_list(run_id, current_user)
 
 
-@router.post('/{run_id}/items/{item_id}/price', response_model=MessageResponse)
+@router.post('/{run_id}/items/{item_id}/price', response_model=SuccessResponse)
 async def update_availability_price(
     run_id: str,
     item_id: str,
@@ -51,12 +51,8 @@ async def update_availability_price(
         f'run:{run_id}',
         {
             'type': 'shopping_item_updated',
-            'data': {
-                'run_id': run_id,
-                'item_id': item_id,
-                'action': 'price_added'
-            }
-        }
+            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'price_added'},
+        },
     )
 
     return result
@@ -82,18 +78,14 @@ async def mark_purchased(
         f'run:{run_id}',
         {
             'type': 'shopping_item_updated',
-            'data': {
-                'run_id': run_id,
-                'item_id': item_id,
-                'action': 'marked_purchased'
-            }
-        }
+            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'marked_purchased'},
+        },
     )
 
     return result
 
 
-@router.post('/{run_id}/items/{item_id}/add-more', response_model=MessageResponse)
+@router.post('/{run_id}/items/{item_id}/add-more', response_model=SuccessResponse)
 async def add_more_purchase(
     run_id: str,
     item_id: str,
@@ -113,12 +105,8 @@ async def add_more_purchase(
         f'run:{run_id}',
         {
             'type': 'shopping_item_updated',
-            'data': {
-                'run_id': run_id,
-                'item_id': item_id,
-                'action': 'added_more'
-            }
-        }
+            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'added_more'},
+        },
     )
 
     return result

@@ -3,8 +3,6 @@
 from typing import Any
 from uuid import UUID
 
-from app.core.exceptions import NotFoundError, ValidationError
-from app.core.models import Product
 from app.api.schemas import (
     PricePoint,
     ProductDetailResponse,
@@ -12,6 +10,15 @@ from app.api.schemas import (
     StoreDetail,
     StoreInfo,
 )
+from app.core.error_codes import (
+    PRODUCT_NAME_EMPTY,
+    PRODUCT_PRICE_NEGATIVE,
+    PRODUCT_PRICE_ZERO,
+    STORE_NOT_FOUND,
+)
+from app.core.exceptions import NotFoundError, ValidationError
+from app.core.models import Product
+
 from .base_service import BaseService
 
 
@@ -166,19 +173,27 @@ class ProductService(BaseService):
         """
         # Validate inputs
         if not name or not name.strip():
-            raise ValidationError('Product name cannot be empty')
+            raise ValidationError(code=PRODUCT_NAME_EMPTY, message='Product name cannot be empty')
 
         if price is not None:
             if price < 0:
-                raise ValidationError('Product price cannot be negative')
+                raise ValidationError(
+                    code=PRODUCT_PRICE_NEGATIVE,
+                    message='Product price cannot be negative',
+                    price=price,
+                )
             if price == 0:
-                raise ValidationError('Product price cannot be zero')
+                raise ValidationError(
+                    code=PRODUCT_PRICE_ZERO, message='Product price cannot be zero'
+                )
 
         # Verify store exists if provided
         if store_id:
             store = self.repo.get_store_by_id(store_id)
             if not store:
-                raise NotFoundError('Store not found')
+                raise NotFoundError(
+                    code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
+                )
 
         # Create the product
         product = self.repo.create_product(name.strip(), brand, unit)
@@ -187,7 +202,11 @@ class ProductService(BaseService):
         availability = None
         if store_id:
             availability = self.repo.create_product_availability(
-                product.id, store_id, price=price, minimum_quantity=minimum_quantity, user_id=user_id
+                product.id,
+                store_id,
+                price=price,
+                minimum_quantity=minimum_quantity,
+                user_id=user_id,
             )
 
         return product, availability

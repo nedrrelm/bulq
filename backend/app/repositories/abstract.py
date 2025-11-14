@@ -10,7 +10,6 @@ from app.core.models import (
     LeaderReassignmentRequest,
     Notification,
     Product,
-    ProductAvailability,
     ProductBid,
     Run,
     RunParticipation,
@@ -200,7 +199,12 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def create_or_update_bid(
-        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool, comment: str | None = None
+        self,
+        participation_id: UUID,
+        product_id: UUID,
+        quantity: int,
+        interested_only: bool,
+        comment: str | None = None,
     ) -> ProductBid:
         """Create or update a product bid."""
         raise NotImplementedError('Subclass must implement create_or_update_bid')
@@ -247,7 +251,9 @@ class AbstractRepository(ABC):
     # ==================== Run & Participation Methods ====================
 
     @abstractmethod
-    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None) -> Run:
+    def create_run(
+        self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None
+    ) -> Run:
         """Create a new run with the leader as first participant."""
         raise NotImplementedError('Subclass must implement create_run')
 
@@ -340,7 +346,11 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def add_more_purchased(
-        self, item_id: UUID, additional_quantity: float, additional_total: float, new_price_per_unit: float
+        self,
+        item_id: UUID,
+        additional_quantity: float,
+        additional_total: float,
+        new_price_per_unit: float,
     ) -> ShoppingListItem | None:
         """Add more purchased quantity to an already-purchased item.
 

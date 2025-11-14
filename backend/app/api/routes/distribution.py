@@ -1,18 +1,20 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.models import User
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     DistributionUser,
-    MessageResponse,
     StateChangeResponse,
+    SuccessResponse,
 )
-from app.services import DistributionService
 from app.api.websocket_manager import manager
+from app.core.error_codes import INVALID_ID_FORMAT
+from app.core.exceptions import BadRequestError
+from app.core.models import User
+from app.infrastructure.database import get_db
+from app.services import DistributionService
 
 router = APIRouter(prefix='/distribution', tags=['distribution'])
 
@@ -28,12 +30,12 @@ async def get_distribution_data(
     try:
         run_uuid = UUID(run_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail='Invalid run ID format') from e
+        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
     return service.get_distribution_summary(run_uuid, current_user)
 
 
-@router.post('/{run_id}/pickup/{bid_id}', response_model=MessageResponse)
+@router.post('/{run_id}/pickup/{bid_id}', response_model=SuccessResponse)
 async def mark_picked_up(
     run_id: str,
     bid_id: str,
@@ -48,7 +50,7 @@ async def mark_picked_up(
         run_uuid = UUID(run_id)
         bid_uuid = UUID(bid_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail='Invalid ID format') from e
+        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
     result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
 
@@ -57,12 +59,8 @@ async def mark_picked_up(
         f'run:{run_id}',
         {
             'type': 'distribution_updated',
-            'data': {
-                'run_id': run_id,
-                'bid_id': bid_id,
-                'action': 'marked_picked_up'
-            }
-        }
+            'data': {'run_id': run_id, 'bid_id': bid_id, 'action': 'marked_picked_up'},
+        },
     )
 
     return result
@@ -79,7 +77,7 @@ async def complete_distribution(
     try:
         run_uuid = UUID(run_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail='Invalid run ID format') from e
+        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
     # Complete distribution via service (events are emitted by service)
     return service.complete_distribution(run_uuid, current_user)

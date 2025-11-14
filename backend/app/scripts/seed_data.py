@@ -1,5 +1,7 @@
 """Repository-agnostic seed data for development and testing."""
 
+from datetime import UTC
+
 
 def create_seed_data(repo):
     """Create test data using repository interface.
@@ -38,7 +40,9 @@ def create_seed_data(repo):
     olive_oil = repo._create_product('Test Olive Oil', brand='Kirkland', unit='L')
     quinoa = repo._create_product('Test Quinoa', brand='Organic', unit='kg')
     detergent = repo._create_product('Test Detergent', brand='Tide', unit='L')
-    paper_towels = repo._create_product('Kirkland Paper Towels 12-pack', brand='Kirkland', unit='pack')
+    paper_towels = repo._create_product(
+        'Kirkland Paper Towels 12-pack', brand='Kirkland', unit='pack'
+    )
     rotisserie_chicken = repo._create_product('Rotisserie Chicken', unit='each')
     almond_butter = repo._create_product('Kirkland Almond Butter', brand='Kirkland', unit='kg')
     frozen_berries = repo._create_product('Organic Frozen Berry Mix', brand='Organic', unit='kg')
@@ -59,10 +63,14 @@ def create_seed_data(repo):
 
     # Paper Towels - prices from 5 days ago (for confirmed run at Costco)
     repo._create_product_availability(paper_towels.id, costco.id, 19.99, 'household', days_ago=5)
-    repo._create_product_availability(paper_towels.id, costco.id, 21.49, 'regular price', days_ago=5)
+    repo._create_product_availability(
+        paper_towels.id, costco.id, 21.49, 'regular price', days_ago=5
+    )
 
     # Other Costco products
-    repo._create_product_availability(rotisserie_chicken.id, costco.id, 4.99, 'deli section', days_ago=1)
+    repo._create_product_availability(
+        rotisserie_chicken.id, costco.id, 4.99, 'deli section', days_ago=1
+    )
     repo._create_product_availability(almond_butter.id, costco.id, 9.99, '', days_ago=3)
     repo._create_product_availability(almond_butter.id, costco.id, 10.49, 'clearance', days_ago=3)
 
@@ -76,27 +84,43 @@ def create_seed_data(repo):
     repo._create_product_availability(detergent.id, sams.id, 15.98, 'on sale', days_ago=0)
     repo._create_product_availability(laundry_pods.id, sams.id, 18.98, '', days_ago=2)
     repo._create_product_availability(ground_beef.id, sams.id, 16.48, '', days_ago=2)
-    repo._create_product_availability(ground_beef.id, sams.id, 17.98, 'higher price today', days_ago=2)
+    repo._create_product_availability(
+        ground_beef.id, sams.id, 17.98, 'higher price today', days_ago=2
+    )
     repo._create_product_availability(bananas.id, sams.id, 4.98, '', days_ago=5)
     repo._create_product_availability(cheese_sticks.id, sams.id, 8.98, '', days_ago=5)
 
     # Create test runs - one for each state with test user as leader
-    run_planning = repo._create_run(friends_group.id, costco.id, 'planning', test_user.id, days_ago=7)
+    repo._create_run(friends_group.id, costco.id, 'planning', test_user.id, days_ago=7)
     run_active = repo._create_run(friends_group.id, sams.id, 'active', test_user.id, days_ago=5)
-    run_confirmed = repo._create_run(friends_group.id, costco.id, 'confirmed', test_user.id, days_ago=3)
+    run_confirmed = repo._create_run(
+        friends_group.id, costco.id, 'confirmed', test_user.id, days_ago=3
+    )
     run_shopping = repo._create_run(friends_group.id, sams.id, 'shopping', test_user.id, days_ago=2)
-    run_adjusting = repo._create_run(friends_group.id, costco.id, 'adjusting', test_user.id, days_ago=1.5)
-    run_distributing = repo._create_run(friends_group.id, costco.id, 'distributing', test_user.id, days_ago=1)
-    run_completed = repo._create_run(friends_group.id, sams.id, 'completed', test_user.id, days_ago=14)
+    run_adjusting = repo._create_run(
+        friends_group.id, costco.id, 'adjusting', test_user.id, days_ago=1.5
+    )
+    run_distributing = repo._create_run(
+        friends_group.id, costco.id, 'distributing', test_user.id, days_ago=1
+    )
+    run_completed = repo._create_run(
+        friends_group.id, sams.id, 'completed', test_user.id, days_ago=14
+    )
 
     # Add more completed runs with different dates for better price history
-    run_completed_2 = repo._create_run(friends_group.id, costco.id, 'completed', test_user.id, days_ago=30)
-    run_completed_3 = repo._create_run(friends_group.id, sams.id, 'completed', alice.id, days_ago=45)
-    run_completed_4 = repo._create_run(friends_group.id, costco.id, 'completed', bob.id, days_ago=60)
+    run_completed_2 = repo._create_run(
+        friends_group.id, costco.id, 'completed', test_user.id, days_ago=30
+    )
+    run_completed_3 = repo._create_run(
+        friends_group.id, sams.id, 'completed', alice.id, days_ago=45
+    )
+    run_completed_4 = repo._create_run(
+        friends_group.id, costco.id, 'completed', bob.id, days_ago=60
+    )
     run_completed_5 = repo._create_run(work_group.id, sams.id, 'completed', bob.id, days_ago=75)
 
     # Planning run - test user is leader (no other participants yet)
-    test_planning_p = repo.get_participation(test_user.id, run_planning.id)
+    # (no additional participants to create for planning run)
 
     # Active run - test user is leader, others have bid
     test_active_p = repo.get_participation(test_user.id, run_active.id)
@@ -122,9 +146,15 @@ def create_seed_data(repo):
     # Confirmed run - test user is leader, all are ready
     test_confirmed_p = repo.get_participation(test_user.id, run_confirmed.id)
     test_confirmed_p.is_ready = True
-    alice_confirmed_p = repo._create_participation(alice.id, run_confirmed.id, is_leader=False, is_ready=True)
-    bob_confirmed_p = repo._create_participation(bob.id, run_confirmed.id, is_leader=False, is_ready=True)
-    carol_confirmed_p = repo._create_participation(carol.id, run_confirmed.id, is_leader=False, is_ready=True)
+    alice_confirmed_p = repo._create_participation(
+        alice.id, run_confirmed.id, is_leader=False, is_ready=True
+    )
+    bob_confirmed_p = repo._create_participation(
+        bob.id, run_confirmed.id, is_leader=False, is_ready=True
+    )
+    carol_confirmed_p = repo._create_participation(
+        carol.id, run_confirmed.id, is_leader=False, is_ready=True
+    )
 
     # All users want olive oil
     repo._create_bid(test_confirmed_p.id, olive_oil.id, 1, False)
@@ -145,8 +175,12 @@ def create_seed_data(repo):
     # Shopping run - test user is leader, has shopping list items
     test_shopping_p = repo.get_participation(test_user.id, run_shopping.id)
     test_shopping_p.is_ready = True
-    alice_shopping_p = repo._create_participation(alice.id, run_shopping.id, is_leader=False, is_ready=True)
-    bob_shopping_p = repo._create_participation(bob.id, run_shopping.id, is_leader=False, is_ready=True)
+    alice_shopping_p = repo._create_participation(
+        alice.id, run_shopping.id, is_leader=False, is_ready=True
+    )
+    bob_shopping_p = repo._create_participation(
+        bob.id, run_shopping.id, is_leader=False, is_ready=True
+    )
 
     # Create bids for shopping run
     repo._create_bid(test_shopping_p.id, detergent.id, 1, False)
@@ -169,26 +203,36 @@ def create_seed_data(repo):
     # Adjusting run - quantities fell short, some users need to adjust bids
     test_adjusting_p = repo.get_participation(test_user.id, run_adjusting.id)
     test_adjusting_p.is_ready = True
-    alice_adjusting_p = repo._create_participation(alice.id, run_adjusting.id, is_leader=False, is_ready=True)
-    bob_adjusting_p = repo._create_participation(bob.id, run_adjusting.id, is_leader=False, is_ready=True)
-    carol_adjusting_p = repo._create_participation(carol.id, run_adjusting.id, is_leader=False, is_ready=True)
+    alice_adjusting_p = repo._create_participation(
+        alice.id, run_adjusting.id, is_leader=False, is_ready=True
+    )
+    bob_adjusting_p = repo._create_participation(
+        bob.id, run_adjusting.id, is_leader=False, is_ready=True
+    )
+    carol_adjusting_p = repo._create_participation(
+        carol.id, run_adjusting.id, is_leader=False, is_ready=True
+    )
 
     # Bids for adjusting run
-    bid1 = repo._create_bid(test_adjusting_p.id, almond_butter.id, 2, False)
-    bid2 = repo._create_bid(alice_adjusting_p.id, almond_butter.id, 1, False)
-    bid3 = repo._create_bid(bob_adjusting_p.id, almond_butter.id, 1, False)
+    repo._create_bid(test_adjusting_p.id, almond_butter.id, 2, False)
+    repo._create_bid(alice_adjusting_p.id, almond_butter.id, 1, False)
+    repo._create_bid(bob_adjusting_p.id, almond_butter.id, 1, False)
 
-    bid4 = repo._create_bid(test_adjusting_p.id, frozen_berries.id, 1, False)
-    bid5 = repo._create_bid(carol_adjusting_p.id, frozen_berries.id, 2, False)
+    repo._create_bid(test_adjusting_p.id, frozen_berries.id, 1, False)
+    repo._create_bid(carol_adjusting_p.id, frozen_berries.id, 2, False)
 
     # Shopping list items for adjusting run
-    shopping_item4 = repo._create_shopping_list_item(run_adjusting.id, almond_butter.id, 4)  # 2 + 1 + 1
+    shopping_item4 = repo._create_shopping_list_item(
+        run_adjusting.id, almond_butter.id, 4
+    )  # 2 + 1 + 1
     shopping_item4.is_purchased = True
     shopping_item4.purchased_price_per_unit = 9.99
     shopping_item4.purchased_quantity = 3
     shopping_item4.purchase_order = 1
 
-    shopping_item5 = repo._create_shopping_list_item(run_adjusting.id, frozen_berries.id, 3)  # 1 + 2
+    shopping_item5 = repo._create_shopping_list_item(
+        run_adjusting.id, frozen_berries.id, 3
+    )  # 1 + 2
     shopping_item5.is_purchased = True
     shopping_item5.purchased_price_per_unit = 12.99
     shopping_item5.purchased_quantity = 2
@@ -197,8 +241,12 @@ def create_seed_data(repo):
     # Distributing run - items purchased, being distributed
     test_distributing_p = repo.get_participation(test_user.id, run_distributing.id)
     test_distributing_p.is_ready = True
-    alice_distributing_p = repo._create_participation(alice.id, run_distributing.id, is_leader=False, is_ready=True)
-    bob_distributing_p = repo._create_participation(bob.id, run_distributing.id, is_leader=False, is_ready=True)
+    alice_distributing_p = repo._create_participation(
+        alice.id, run_distributing.id, is_leader=False, is_ready=True
+    )
+    bob_distributing_p = repo._create_participation(
+        bob.id, run_distributing.id, is_leader=False, is_ready=True
+    )
 
     # Bids with distributed quantities
     bid6 = repo._create_bid(test_distributing_p.id, rotisserie_chicken.id, 2, False)
@@ -218,7 +266,9 @@ def create_seed_data(repo):
     bid9.distributed_price_per_unit = 14.99
 
     # Shopping list items
-    shopping_item6 = repo._create_shopping_list_item(run_distributing.id, rotisserie_chicken.id, 3)  # 2 + 1
+    shopping_item6 = repo._create_shopping_list_item(
+        run_distributing.id, rotisserie_chicken.id, 3
+    )  # 2 + 1
     shopping_item6.is_purchased = True
     shopping_item6.purchased_price_per_unit = 4.99
     shopping_item6.purchased_quantity = 3
@@ -243,11 +293,14 @@ def create_seed_data(repo):
     # Completed run - all done
     test_completed_p = repo.get_participation(test_user.id, run_completed.id)
     test_completed_p.is_ready = True
-    from datetime import datetime, timedelta, timezone
-    test_completed_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=13)
+    from datetime import datetime, timedelta
 
-    alice_completed_p = repo._create_participation(alice.id, run_completed.id, is_leader=False, is_ready=True)
-    alice_completed_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=13)
+    test_completed_p.picked_up_at = datetime.now(UTC) - timedelta(days=13)
+
+    alice_completed_p = repo._create_participation(
+        alice.id, run_completed.id, is_leader=False, is_ready=True
+    )
+    alice_completed_p.picked_up_at = datetime.now(UTC) - timedelta(days=13)
 
     # Bids for completed run
     bid10 = repo._create_bid(test_completed_p.id, detergent.id, 1, False)
@@ -275,10 +328,12 @@ def create_seed_data(repo):
     # run_completed_2 (30 days ago)
     test_completed_2_p = repo.get_participation(test_user.id, run_completed_2.id)
     test_completed_2_p.is_ready = True
-    test_completed_2_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=29)
+    test_completed_2_p.picked_up_at = datetime.now(UTC) - timedelta(days=29)
 
-    bob_completed_2_p = repo._create_participation(bob.id, run_completed_2.id, is_leader=False, is_ready=True)
-    bob_completed_2_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=29)
+    bob_completed_2_p = repo._create_participation(
+        bob.id, run_completed_2.id, is_leader=False, is_ready=True
+    )
+    bob_completed_2_p.picked_up_at = datetime.now(UTC) - timedelta(days=29)
 
     bid12 = repo._create_bid(test_completed_2_p.id, olive_oil.id, 1, False)
     bid12.distributed_quantity = 1
@@ -303,10 +358,12 @@ def create_seed_data(repo):
     # run_completed_3 (45 days ago) - alice is leader
     alice_completed_3_p = repo.get_participation(alice.id, run_completed_3.id)
     alice_completed_3_p.is_ready = True
-    alice_completed_3_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=44)
+    alice_completed_3_p.picked_up_at = datetime.now(UTC) - timedelta(days=44)
 
-    carol_completed_3_p = repo._create_participation(carol.id, run_completed_3.id, is_leader=False, is_ready=True)
-    carol_completed_3_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=44)
+    carol_completed_3_p = repo._create_participation(
+        carol.id, run_completed_3.id, is_leader=False, is_ready=True
+    )
+    carol_completed_3_p.picked_up_at = datetime.now(UTC) - timedelta(days=44)
 
     bid14 = repo._create_bid(alice_completed_3_p.id, detergent.id, 2, False)
     bid14.distributed_quantity = 2
@@ -321,7 +378,7 @@ def create_seed_data(repo):
     # run_completed_4 (60 days ago) - bob is leader
     bob_completed_4_p = repo.get_participation(bob.id, run_completed_4.id)
     bob_completed_4_p.is_ready = True
-    bob_completed_4_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=59)
+    bob_completed_4_p.picked_up_at = datetime.now(UTC) - timedelta(days=59)
 
     shopping_item14 = repo._create_shopping_list_item(run_completed_4.id, olive_oil.id, 1)
     shopping_item14.is_purchased = True
@@ -336,10 +393,12 @@ def create_seed_data(repo):
     # run_completed_5 (75 days ago) - bob is leader, work group
     bob_completed_5_p = repo.get_participation(bob.id, run_completed_5.id)
     bob_completed_5_p.is_ready = True
-    bob_completed_5_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=74)
+    bob_completed_5_p.picked_up_at = datetime.now(UTC) - timedelta(days=74)
 
-    carol_completed_5_p = repo._create_participation(carol.id, run_completed_5.id, is_leader=False, is_ready=True)
-    carol_completed_5_p.picked_up_at = datetime.now(timezone.utc) - timedelta(days=74)
+    carol_completed_5_p = repo._create_participation(
+        carol.id, run_completed_5.id, is_leader=False, is_ready=True
+    )
+    carol_completed_5_p.picked_up_at = datetime.now(UTC) - timedelta(days=74)
 
     bid16 = repo._create_bid(bob_completed_5_p.id, ground_beef.id, 1, False)
     bid16.distributed_quantity = 1

@@ -39,12 +39,13 @@ if not ALLOWED_ORIGINS_RAW and not IS_PRODUCTION:
 # Production validation
 elif not ALLOWED_ORIGINS_RAW and IS_PRODUCTION:
     raise RuntimeError(
-        'ALLOWED_ORIGINS must be set in production! '
-        'Example: ALLOWED_ORIGINS=https://yourdomain.com'
+        'ALLOWED_ORIGINS must be set in production! Example: ALLOWED_ORIGINS=https://yourdomain.com'
     )
 # Parse comma-separated origins
 else:
-    ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_RAW.split(',') if origin.strip()]
+    ALLOWED_ORIGINS = [
+        origin.strip() for origin in ALLOWED_ORIGINS_RAW.split(',') if origin.strip()
+    ]
 
 # Business logic limits
 MAX_ACTIVE_RUNS_PER_GROUP = int(os.getenv('MAX_ACTIVE_RUNS_PER_GROUP', '100'))

@@ -1,5 +1,7 @@
 """Schemas for shopping-related requests and responses."""
 
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -37,11 +39,9 @@ class UpdateAvailabilityPriceRequest(BaseModel):
     @field_validator('price')
     @classmethod
     def validate_price(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Price must be greater than 0')
         # Check max 2 decimal places
         if round(v, 2) != v:
-            raise ValueError('Price can have at most 2 decimal places')
+            raise ValueError('INVALID_DECIMAL_PLACES')
         return v
 
     @field_validator('notes')
@@ -57,42 +57,22 @@ class MarkPurchasedRequest(BaseModel):
     price_per_unit: float = Field(gt=0, le=99999.99)
     total: float = Field(gt=0, le=999999.99)
 
-    @field_validator('quantity')
+    @field_validator('quantity', 'price_per_unit', 'total')
     @classmethod
-    def validate_quantity(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Quantity must be greater than 0')
+    def validate_decimal_places(cls, v: float) -> float:
         # Check max 2 decimal places
         if round(v, 2) != v:
-            raise ValueError('Quantity can have at most 2 decimal places')
-        return v
-
-    @field_validator('price_per_unit')
-    @classmethod
-    def validate_price_per_unit(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Price per unit must be greater than 0')
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('Price per unit can have at most 2 decimal places')
-        return v
-
-    @field_validator('total')
-    @classmethod
-    def validate_total(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Total must be greater than 0')
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('Total can have at most 2 decimal places')
+            raise ValueError('INVALID_DECIMAL_PLACES')
         return v
 
 
 class MarkPurchasedResponse(BaseModel):
     """Response model for marking an item as purchased."""
 
-    message: str
+    success: bool = True
+    code: str  # Success code for frontend localization
     purchase_order: int
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class AddMorePurchaseRequest(BaseModel):
@@ -102,39 +82,22 @@ class AddMorePurchaseRequest(BaseModel):
     price_per_unit: float = Field(gt=0, le=99999.99)
     total: float = Field(gt=0, le=999999.99)
 
-    @field_validator('quantity')
+    @field_validator('quantity', 'price_per_unit', 'total')
     @classmethod
-    def validate_quantity(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Quantity must be greater than 0')
+    def validate_decimal_places(cls, v: float) -> float:
         # Check max 2 decimal places
         if round(v, 2) != v:
-            raise ValueError('Quantity can have at most 2 decimal places')
-        return v
-
-    @field_validator('price_per_unit')
-    @classmethod
-    def validate_price_per_unit(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Price per unit must be greater than 0')
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('Price per unit can have at most 2 decimal places')
-        return v
-
-    @field_validator('total')
-    @classmethod
-    def validate_total(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Total must be greater than 0')
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('Total can have at most 2 decimal places')
+            raise ValueError('INVALID_DECIMAL_PLACES')
         return v
 
 
 class CompleteShoppingResponse(BaseModel):
-    """Response model for completing shopping."""
+    """Response model for completing shopping.
 
-    message: str
+    The 'code' field contains a machine-readable success code for frontend localization.
+    """
+
+    success: bool = True
+    code: str  # Success code for frontend localization
     state: str
+    details: dict = {}

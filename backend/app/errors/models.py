@@ -15,11 +15,19 @@ class ErrorDetail(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    """Standardized error response structure."""
+    """Standardized error response structure.
+
+    The 'code' field contains a machine-readable error code for frontend localization.
+    The 'message' field is kept for backward compatibility but should not be used
+    for user-facing text - the frontend should translate the code instead.
+    """
 
     success: bool = Field(False, description='Always false for errors')
     error: str = Field(..., description='Error type or category')
-    message: str = Field(..., description='Human-readable error message')
+    code: str = Field(..., description='Machine-readable error code for frontend localization')
+    message: str = Field(
+        ..., description='Human-readable error message (for logging/debugging only)'
+    )
     details: dict[str, Any] = Field(default_factory=dict, description='Additional error context')
     timestamp: datetime = Field(
         default_factory=datetime.utcnow, description='When the error occurred'
@@ -33,13 +41,13 @@ class ErrorResponse(BaseModel):
             'example': {
                 'success': False,
                 'error': 'NotFoundError',
+                'code': 'RUN_NOT_FOUND',
                 'message': 'Run not found',
                 'details': {
-                    'resource': 'Run',
-                    'identifier': '123e4567-e89b-12d3-a456-426614174000',
+                    'run_id': '123e4567-e89b-12d3-a456-426614174000',
                 },
                 'timestamp': '2025-10-06T12:34:56.789Z',
-                'path': '/runs/123e4567-e89b-12d3-a456-426614174000',
+                'path': '/api/runs/123e4567-e89b-12d3-a456-426614174000',
             }
         }
 

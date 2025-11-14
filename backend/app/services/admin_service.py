@@ -4,9 +4,40 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from app.api.schemas import (
+    AdminProductResponse,
+    AdminStoreResponse,
+    AdminUserResponse,
+    VerificationToggleResponse,
+)
+from app.core.error_codes import (
+    CANNOT_DELETE_ADMIN_USER,
+    CANNOT_DELETE_OWN_ACCOUNT,
+    CANNOT_MERGE_SAME_PRODUCT,
+    CANNOT_MERGE_SAME_STORE,
+    CANNOT_REMOVE_OWN_ADMIN_STATUS,
+    PRODUCT_HAS_ACTIVE_BIDS,
+    PRODUCT_NOT_FOUND,
+    STORE_HAS_ACTIVE_RUNS,
+    STORE_NOT_FOUND,
+    USER_NOT_FOUND,
+)
 from app.core.exceptions import NotFoundError
 from app.core.models import User
-from app.api.schemas import AdminProductResponse, AdminStoreResponse, AdminUserResponse, VerificationToggleResponse
+from app.core.success_codes import (
+    PRODUCT_DELETED,
+    PRODUCT_UNVERIFIED,
+    PRODUCT_VERIFIED,
+    PRODUCTS_MERGED,
+    STORE_DELETED,
+    STORE_UNVERIFIED,
+    STORE_VERIFIED,
+    STORES_MERGED,
+    USER_DELETED,
+    USER_UNVERIFIED,
+    USER_VERIFIED,
+)
+
 from .base_service import BaseService
 
 
@@ -68,7 +99,9 @@ class AdminService(BaseService):
             for u in paginated_users
         ]
 
-    def toggle_user_verification(self, user_id: UUID, admin_user: User) -> VerificationToggleResponse:
+    def toggle_user_verification(
+        self, user_id: UUID, admin_user: User
+    ) -> VerificationToggleResponse:
         """Toggle user verification status.
 
         Args:
@@ -83,15 +116,15 @@ class AdminService(BaseService):
         """
         user = self.repo.get_user_by_id(user_id)
         if not user:
-            raise NotFoundError('User', str(user_id))
+            raise NotFoundError(code=USER_NOT_FOUND, message='User not found', user_id=str(user_id))
 
         # Toggle verification
         user.verified = not user.verified
 
         return VerificationToggleResponse(
+            code=USER_VERIFIED if user.verified else USER_UNVERIFIED,
             id=str(user.id),
             verified=user.verified,
-            message=f'User verification {"enabled" if user.verified else "disabled"}',
         )
 
     def get_products(
@@ -149,7 +182,9 @@ class AdminService(BaseService):
             for p in paginated_products
         ]
 
-    def toggle_product_verification(self, product_id: UUID, admin_user: User) -> VerificationToggleResponse:
+    def toggle_product_verification(
+        self, product_id: UUID, admin_user: User
+    ) -> VerificationToggleResponse:
         """Toggle product verification status.
 
         Args:
@@ -164,7 +199,9 @@ class AdminService(BaseService):
         """
         product = self.repo.get_product_by_id(product_id)
         if not product:
-            raise NotFoundError('Product', str(product_id))
+            raise NotFoundError(
+                code=PRODUCT_NOT_FOUND, message='Product not found', product_id=str(product_id)
+            )
 
         # Toggle verification
         product.verified = not product.verified
@@ -176,9 +213,9 @@ class AdminService(BaseService):
             product.verified_at = None
 
         return VerificationToggleResponse(
+            code=PRODUCT_VERIFIED if product.verified else PRODUCT_UNVERIFIED,
             id=str(product.id),
             verified=product.verified,
-            message=f'Product verification {"enabled" if product.verified else "disabled"}',
         )
 
     def get_stores(
@@ -237,7 +274,9 @@ class AdminService(BaseService):
             for s in paginated_stores
         ]
 
-    def toggle_store_verification(self, store_id: UUID, admin_user: User) -> VerificationToggleResponse:
+    def toggle_store_verification(
+        self, store_id: UUID, admin_user: User
+    ) -> VerificationToggleResponse:
         """Toggle store verification status.
 
         Args:
@@ -252,7 +291,9 @@ class AdminService(BaseService):
         """
         store = self.repo.get_store_by_id(store_id)
         if not store:
-            raise NotFoundError('Store', str(store_id))
+            raise NotFoundError(
+                code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
+            )
 
         # Toggle verification
         store.verified = not store.verified
@@ -264,14 +305,16 @@ class AdminService(BaseService):
             store.verified_at = None
 
         return VerificationToggleResponse(
+            code=STORE_VERIFIED if store.verified else STORE_UNVERIFIED,
             id=str(store.id),
             verified=store.verified,
-            message=f'Store verification {"enabled" if store.verified else "disabled"}',
         )
 
     # ==================== Update Methods ====================
 
-    def update_product(self, product_id: UUID, data: dict, admin_user: User) -> AdminProductResponse:
+    def update_product(
+        self, product_id: UUID, data: dict, admin_user: User
+    ) -> AdminProductResponse:
         """Update product fields.
 
         Args:
@@ -287,7 +330,9 @@ class AdminService(BaseService):
         """
         product = self.repo.update_product(product_id, **data)
         if not product:
-            raise NotFoundError('Product', str(product_id))
+            raise NotFoundError(
+                code=PRODUCT_NOT_FOUND, message='Product not found', product_id=str(product_id)
+            )
 
         return AdminProductResponse(
             id=str(product.id),
@@ -314,7 +359,9 @@ class AdminService(BaseService):
         """
         store = self.repo.update_store(store_id, **data)
         if not store:
-            raise NotFoundError('Store', str(store_id))
+            raise NotFoundError(
+                code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
+            )
 
         return AdminStoreResponse(
             id=str(store.id),
@@ -343,11 +390,16 @@ class AdminService(BaseService):
         # Prevent admin from removing own admin status
         if user_id == admin_user.id and 'is_admin' in data and not data['is_admin']:
             from app.core.exceptions import ForbiddenError
-            raise ForbiddenError('Cannot remove your own admin status')
+
+            raise ForbiddenError(
+                code=CANNOT_REMOVE_OWN_ADMIN_STATUS,
+                message='Cannot remove your own admin status',
+                user_id=str(user_id),
+            )
 
         user = self.repo.update_user(user_id, **data)
         if not user:
-            raise NotFoundError('User', str(user_id))
+            raise NotFoundError(code=USER_NOT_FOUND, message='User not found', user_id=str(user_id))
 
         return AdminUserResponse(
             id=str(user.id),
@@ -360,9 +412,7 @@ class AdminService(BaseService):
 
     # ==================== Merge Methods ====================
 
-    def merge_products(
-        self, source_id: UUID, target_id: UUID, admin_user: User
-    ) -> dict[str, Any]:
+    def merge_products(self, source_id: UUID, target_id: UUID, admin_user: User) -> dict[str, Any]:
         """Merge one product into another.
 
         All bids, availabilities, and shopping list items from source will be moved to target.
@@ -387,11 +437,23 @@ class AdminService(BaseService):
         target = self.repo.get_product_by_id(target_id)
 
         if not source:
-            raise NotFoundError('Source product', str(source_id))
+            raise NotFoundError(
+                code=PRODUCT_NOT_FOUND,
+                message='Source product not found',
+                product_id=str(source_id),
+            )
         if not target:
-            raise NotFoundError('Target product', str(target_id))
+            raise NotFoundError(
+                code=PRODUCT_NOT_FOUND,
+                message='Target product not found',
+                product_id=str(target_id),
+            )
         if source_id == target_id:
-            raise BadRequestError('Cannot merge product into itself')
+            raise BadRequestError(
+                code=CANNOT_MERGE_SAME_PRODUCT,
+                message='Cannot merge product into itself',
+                product_id=str(source_id),
+            )
 
         # Move all references
         bids_count = self.repo.bulk_update_product_bids(source_id, target_id)
@@ -404,11 +466,13 @@ class AdminService(BaseService):
         total_affected = bids_count + avails_count + items_count
 
         from app.api.schemas import MergeResponse
+
         return MergeResponse(
-            message=f'Successfully merged product "{source.name}" into "{target.name}"',
+            code=PRODUCTS_MERGED,
             source_id=str(source_id),
             target_id=str(target_id),
             affected_records=total_affected,
+            details={'source_name': source.name, 'target_name': target.name},
         )
 
     def merge_stores(self, source_id: UUID, target_id: UUID, admin_user: User) -> dict[str, Any]:
@@ -436,11 +500,19 @@ class AdminService(BaseService):
         target = self.repo.get_store_by_id(target_id)
 
         if not source:
-            raise NotFoundError('Source store', str(source_id))
+            raise NotFoundError(
+                code=STORE_NOT_FOUND, message='Source store not found', store_id=str(source_id)
+            )
         if not target:
-            raise NotFoundError('Target store', str(target_id))
+            raise NotFoundError(
+                code=STORE_NOT_FOUND, message='Target store not found', store_id=str(target_id)
+            )
         if source_id == target_id:
-            raise BadRequestError('Cannot merge store into itself')
+            raise BadRequestError(
+                code=CANNOT_MERGE_SAME_STORE,
+                message='Cannot merge store into itself',
+                store_id=str(source_id),
+            )
 
         # Move all references
         runs_count = self.repo.bulk_update_runs(source_id, target_id)
@@ -452,11 +524,13 @@ class AdminService(BaseService):
         total_affected = runs_count + avails_count
 
         from app.api.schemas import MergeResponse
+
         return MergeResponse(
-            message=f'Successfully merged store "{source.name}" into "{target.name}"',
+            code=STORES_MERGED,
             source_id=str(source_id),
             target_id=str(target_id),
             affected_records=total_affected,
+            details={'source_name': source.name, 'target_name': target.name},
         )
 
     # ==================== Delete Methods ====================
@@ -479,22 +553,29 @@ class AdminService(BaseService):
 
         product = self.repo.get_product_by_id(product_id)
         if not product:
-            raise NotFoundError('Product', str(product_id))
+            raise NotFoundError(
+                code=PRODUCT_NOT_FOUND, message='Product not found', product_id=str(product_id)
+            )
 
         # Check if product has any bids
         bid_count = self.repo.count_product_bids(product_id)
         if bid_count > 0:
             raise BadRequestError(
-                f'Cannot delete product with {bid_count} associated bids. Consider merging instead.'
+                code=PRODUCT_HAS_ACTIVE_BIDS,
+                message=f'Cannot delete product with {bid_count} associated bids. Consider merging instead.',
+                bid_count=bid_count,
+                product_id=str(product_id),
             )
 
         # Delete the product
         self.repo.delete_product(product_id)
 
         from app.api.schemas import DeleteResponse
+
         return DeleteResponse(
-            message=f'Product "{product.name}" deleted successfully',
+            code=PRODUCT_DELETED,
             deleted_id=str(product_id),
+            details={'product_name': product.name},
         )
 
     def delete_store(self, store_id: UUID, admin_user: User) -> dict[str, str]:
@@ -515,22 +596,29 @@ class AdminService(BaseService):
 
         store = self.repo.get_store_by_id(store_id)
         if not store:
-            raise NotFoundError('Store', str(store_id))
+            raise NotFoundError(
+                code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
+            )
 
         # Check if store has any runs
         run_count = self.repo.count_store_runs(store_id)
         if run_count > 0:
             raise BadRequestError(
-                f'Cannot delete store with {run_count} associated runs. Consider merging instead.'
+                code=STORE_HAS_ACTIVE_RUNS,
+                message=f'Cannot delete store with {run_count} associated runs. Consider merging instead.',
+                run_count=run_count,
+                store_id=str(store_id),
             )
 
         # Delete the store
         self.repo.delete_store(store_id)
 
         from app.api.schemas import DeleteResponse
+
         return DeleteResponse(
-            message=f'Store "{store.name}" deleted successfully',
+            code=STORE_DELETED,
             deleted_id=str(store_id),
+            details={'store_name': store.name},
         )
 
     def delete_user(self, user_id: UUID, admin_user: User) -> dict[str, str]:
@@ -551,21 +639,31 @@ class AdminService(BaseService):
 
         user = self.repo.get_user_by_id(user_id)
         if not user:
-            raise NotFoundError('User', str(user_id))
+            raise NotFoundError(code=USER_NOT_FOUND, message='User not found', user_id=str(user_id))
 
         # Prevent self-deletion
         if user_id == admin_user.id:
-            raise ForbiddenError('Cannot delete your own account')
+            raise ForbiddenError(
+                code=CANNOT_DELETE_OWN_ACCOUNT,
+                message='Cannot delete your own account',
+                user_id=str(user_id),
+            )
 
         # Prevent deleting other admins
         if user.is_admin:
-            raise ForbiddenError('Cannot delete admin users')
+            raise ForbiddenError(
+                code=CANNOT_DELETE_ADMIN_USER,
+                message='Cannot delete admin users',
+                user_id=str(user_id),
+            )
 
         # Delete the user
         self.repo.delete_user(user_id)
 
         from app.api.schemas import DeleteResponse
+
         return DeleteResponse(
-            message=f'User "{user.name}" deleted successfully',
+            code=USER_DELETED,
             deleted_id=str(user_id),
+            details={'user_name': user.name},
         )

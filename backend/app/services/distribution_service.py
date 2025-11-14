@@ -3,22 +3,35 @@
 from typing import Any
 from uuid import UUID
 
-from app.utils.background_tasks import create_background_task
+from app.api.schemas import (
+    DistributionProduct,
+    DistributionUser,
+    StateChangeResponse,
+    SuccessResponse,
+)
+from app.api.schemas.notification_data import RunStateChangedData
+from app.core.error_codes import (
+    BID_NOT_FOUND,
+    CANNOT_COMPLETE_DISTRIBUTION_UNPURCHASED_ITEMS,
+    INVALID_RUN_STATE_TRANSITION,
+    NOT_RUN_LEADER,
+    NOT_RUN_LEADER_OR_HELPER,
+    NOT_RUN_PARTICIPANT,
+    RUN_NOT_FOUND,
+    RUN_NOT_IN_DISTRIBUTING_STATE,
+)
 from app.core.exceptions import (
     BadRequestError,
     ForbiddenError,
     NotFoundError,
 )
 from app.core.models import Product, ProductBid, User
-from app.infrastructure.request_context import get_logger
 from app.core.run_state import RunState, state_machine
-from app.api.schemas import (
-    DistributionProduct,
-    DistributionUser,
-    MessageResponse,
-    StateChangeResponse,
-)
+from app.core.success_codes import BID_MARKED_PICKED_UP
+from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transaction
+from app.utils.background_tasks import create_background_task
+
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -49,40 +62,49 @@ class DistributionService(BaseService):
         self._validate_distribution_access(run_id, current_user)
         all_bids = self.repo.get_bids_by_run_with_participations(run_id)
 
-        logger.info(f"Found {len(all_bids)} bids for distribution", extra={'run_id': str(run_id)})
+        logger.info(f'Found {len(all_bids)} bids for distribution', extra={'run_id': str(run_id)})
         for bid in all_bids:
             logger.info(
-                f"Bid: product={bid.product_id}, interested_only={bid.interested_only}, "
-                f"distributed_qty={bid.distributed_quantity}, type={type(bid.distributed_quantity).__name__}",
-                extra={'run_id': str(run_id), 'bid_id': str(bid.id)}
+                f'Bid: product={bid.product_id}, interested_only={bid.interested_only}, '
+                f'distributed_qty={bid.distributed_quantity}, type={type(bid.distributed_quantity).__name__}',
+                extra={'run_id': str(run_id), 'bid_id': str(bid.id)},
             )
 
         users_data = self._aggregate_bids_by_user(all_bids)
-        logger.info(f"Aggregated into {len(users_data)} users", extra={'run_id': str(run_id)})
+        logger.info(f'Aggregated into {len(users_data)} users', extra={'run_id': str(run_id)})
 
         distributions = []
         for user_data in users_data.values():
             # Skip users with no products (all bids were unpurchased)
             if not user_data['products']:
-                logger.info(f"Skipping user {user_data['user_name']}: no purchased products",
-                           extra={'run_id': str(run_id)})
+                logger.info(
+                    f'Skipping user {user_data["user_name"]}: no purchased products',
+                    extra={'run_id': str(run_id)},
+                )
                 continue
             try:
                 dist = self._build_user_distribution(user_data)
-                logger.info(f"Built distribution for user {user_data['user_name']}: {len(user_data['products'])} products",
-                           extra={'run_id': str(run_id)})
+                logger.info(
+                    f'Built distribution for user {user_data["user_name"]}: {len(user_data["products"])} products',
+                    extra={'run_id': str(run_id)},
+                )
                 distributions.append(dist)
             except Exception as e:
-                logger.error(f"Error building distribution for user {user_data.get('user_name', 'unknown')}: {e}",
-                            extra={'run_id': str(run_id)}, exc_info=True)
+                logger.error(
+                    f'Error building distribution for user {user_data.get("user_name", "unknown")}: {e}',
+                    extra={'run_id': str(run_id)},
+                    exc_info=True,
+                )
 
-        logger.info(f"Returning {len(distributions)} distributions", extra={'run_id': str(run_id)})
+        logger.info(f'Returning {len(distributions)} distributions', extra={'run_id': str(run_id)})
         sorted_distributions = self._sort_distributions(distributions)
 
         # Log the actual data being returned
         for dist in sorted_distributions:
-            logger.info(f"Distribution data: user={dist.user_name}, products={len(dist.products)}, total={dist.total_cost}",
-                       extra={'run_id': str(run_id)})
+            logger.info(
+                f'Distribution data: user={dist.user_name}, products={len(dist.products)}, total={dist.total_cost}',
+                extra={'run_id': str(run_id)},
+            )
 
         return sorted_distributions
 
@@ -90,19 +112,24 @@ class DistributionService(BaseService):
         """Validate user has access to view distribution."""
         run = self.repo.get_run_by_id(run_id)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         user_groups = self.repo.get_user_groups(current_user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to view this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT, message='Not authorized to view this run', run_id=run_id
+            )
 
         # Check if viewing distribution is allowed using state machine
         run_state = RunState(run.state)
         if not state_machine.can_view_distribution(run_state):
             raise BadRequestError(
-                state_machine.get_action_error_message(
+                code=INVALID_RUN_STATE_TRANSITION,
+                message=state_machine.get_action_error_message(
                     'distribution', run_state, [RunState.DISTRIBUTING, RunState.COMPLETED]
-                )
+                ),
+                current_state=run.state,
+                action='view_distribution',
             )
 
     def _aggregate_bids_by_user(self, all_bids: list[ProductBid]) -> dict[str, dict[str, Any]]:
@@ -176,7 +203,7 @@ class DistributionService(BaseService):
         distributions.sort(key=lambda x: (x.all_picked_up, x.user_name))
         return distributions
 
-    def mark_picked_up(self, run_id: UUID, bid_id: UUID, current_user: User) -> MessageResponse:
+    def mark_picked_up(self, run_id: UUID, bid_id: UUID, current_user: User) -> SuccessResponse:
         """Mark a product as picked up by a user.
 
         Args:
@@ -194,17 +221,23 @@ class DistributionService(BaseService):
         # Get the run
         run = self.repo.get_run_by_id(run_id)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
         participation = self.repo.get_participation(current_user.id, run_id)
         if not participation or not self._is_leader_or_helper(participation):
-            raise ForbiddenError('Only the run leader or helpers can mark items as picked up')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER_OR_HELPER,
+                message='Only the run leader or helpers can mark items as picked up',
+                run_id=run_id,
+            )
 
         # Mark as picked up
         bid = self._get_bid(bid_id)
         if not bid:
-            raise NotFoundError('Bid', bid_id)
+            raise NotFoundError(
+                code=BID_NOT_FOUND, message='Bid not found', bid_id=bid_id, run_id=run_id
+            )
 
         bid.is_picked_up = True
         self._commit_changes()
@@ -217,7 +250,14 @@ class DistributionService(BaseService):
                 'run_id': str(bid.participation.run_id),
             },
         )
-        return MessageResponse(message='Marked as picked up')
+        return SuccessResponse(
+            code=BID_MARKED_PICKED_UP,
+            details={
+                'run_id': str(run_id),
+                'bid_id': str(bid_id),
+                'user_id': str(bid.participation.user_id),
+            },
+        )
 
     def complete_distribution(self, run_id: UUID, current_user: User) -> StateChangeResponse:
         """Complete distribution - transition from distributing to completed state.
@@ -237,17 +277,27 @@ class DistributionService(BaseService):
         # Get the run
         run = self.repo.get_run_by_id(run_id)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader
         participation = self.repo.get_participation(current_user.id, run_id)
         if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can complete distribution')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message='Only the run leader can complete distribution',
+                run_id=run_id,
+            )
 
         # Only allow completing from distributing state - use state machine
         run_state = RunState(run.state)
         if not state_machine.can_complete_distribution(run_state):
-            raise BadRequestError('Can only complete distribution from distributing state')
+            raise BadRequestError(
+                code=RUN_NOT_IN_DISTRIBUTING_STATE,
+                message='Can only complete distribution from distributing state',
+                run_id=run_id,
+                current_state=run.state,
+                required_state=RunState.DISTRIBUTING.value,
+            )
 
         # Verify all items are picked up
         all_bids = self.repo.get_bids_by_run(run_id)
@@ -258,10 +308,14 @@ class DistributionService(BaseService):
         ]
 
         if unpicked_bids:
-            raise BadRequestError('Cannot complete distribution - some items not picked up')
+            raise BadRequestError(
+                code=CANNOT_COMPLETE_DISTRIBUTION_UNPURCHASED_ITEMS,
+                message='Cannot complete distribution - some items not picked up',
+                run_id=run_id,
+            )
 
         # Wrap state change and notifications in transaction
-        with transaction(self.db, "complete distribution and transition to completed state"):
+        with transaction(self.db, 'complete distribution and transition to completed state'):
             # Transition to completed state
             old_state = run.state
             self.repo.update_run_state(run_id, RunState.COMPLETED)
@@ -307,14 +361,14 @@ class DistributionService(BaseService):
         # Get all participants of this run
         participations = self.repo.get_run_participations(run.id)
 
-        # Create notification data
-        notification_data = {
-            'run_id': str(run.id),
-            'store_name': store_name,
-            'old_state': old_state,
-            'new_state': new_state,
-            'group_id': str(run.group_id),
-        }
+        # Create notification data using Pydantic model for type safety
+        notification_data = RunStateChangedData(
+            run_id=str(run.id),
+            store_name=store_name,
+            old_state=old_state,
+            new_state=new_state,
+            group_id=str(run.group_id),
+        )
 
         # Create notification for each participant and broadcast via WebSocket
 
@@ -322,7 +376,9 @@ class DistributionService(BaseService):
 
         for participation in participations:
             notification = self.repo.create_notification(
-                user_id=participation.user_id, type='run_state_changed', data=notification_data
+                user_id=participation.user_id,
+                type='run_state_changed',
+                data=notification_data.model_dump(mode='json'),
             )
 
             # Broadcast to user's WebSocket connection

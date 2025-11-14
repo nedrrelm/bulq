@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Cookie, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
+from app.api.websocket_manager import manager
 from app.infrastructure.auth import get_session
 from app.infrastructure.database import get_db
 from app.repositories import get_repository
-from app.api.websocket_manager import manager
 
 router = APIRouter()
 
