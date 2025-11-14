@@ -4,9 +4,10 @@ This module provides utilities for wrapping multi-step database operations
 in transactions to ensure atomicity and prevent partial state changes.
 """
 
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, Generator
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -16,7 +17,9 @@ logger = get_logger(__name__)
 
 
 @contextmanager
-def transaction(db: Session, description: str = "database operation") -> Generator[None, None, None]:
+def transaction(
+    db: Session, description: str = 'database operation'
+) -> Generator[None, None, None]:
     """Context manager for explicit transaction management.
 
     Wraps a block of code in a database transaction. Commits on success,
@@ -98,7 +101,7 @@ def transactional(description: str | None = None) -> Callable:
 
 
 @contextmanager
-def savepoint(db: Session, name: str = "savepoint") -> Generator[None, None, None]:
+def savepoint(db: Session, name: str = 'savepoint') -> Generator[None, None, None]:
     """Context manager for nested transactions using SAVEPOINTs.
 
     Use this for operations that need sub-transaction semantics within
@@ -148,7 +151,7 @@ def ensure_transaction_active(db: Session) -> bool:
     return db.in_transaction()
 
 
-def flush_and_check(db: Session, description: str = "operation") -> None:
+def flush_and_check(db: Session, description: str = 'operation') -> None:
     """Flush changes to database and log any errors without committing.
 
     Useful for intermediate validation of changes before committing the full transaction.

@@ -1,10 +1,8 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.models import User
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     AvailabilityInfo,
@@ -13,6 +11,10 @@ from app.api.schemas import (
     ProductDetailResponse,
     ProductSearchResult,
 )
+from app.core.error_codes import INVALID_ID_FORMAT, PRODUCT_NOT_FOUND
+from app.core.exceptions import BadRequestError, NotFoundError
+from app.core.models import User
+from app.infrastructure.database import get_db
 from app.services import ProductService
 
 router = APIRouter(prefix='/products', tags=['products'])
@@ -84,7 +86,7 @@ async def create_product(
             availability=availability_info,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
 
 @router.get('/{product_id}', response_model=ProductDetailResponse)
@@ -99,6 +101,8 @@ async def get_product_details(
 
     result = service.get_product_details(UUID(product_id))
     if not result:
-        raise HTTPException(status_code=404, detail='Product not found')
+        raise NotFoundError(
+            code=PRODUCT_NOT_FOUND, message='Product not found', product_id=product_id
+        )
 
     return result

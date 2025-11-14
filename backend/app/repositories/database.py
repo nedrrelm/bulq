@@ -1,6 +1,5 @@
 """Repository pattern with abstract base class and concrete implementations."""
 
-from datetime import UTC
 from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
@@ -20,8 +19,8 @@ from app.core.models import (
     Store,
     User,
 )
-from app.infrastructure.request_context import get_logger
 from app.core.run_state import RunState, state_machine
+from app.infrastructure.request_context import get_logger
 from app.repositories.abstract import AbstractRepository
 
 logger = get_logger(__name__)
@@ -175,7 +174,12 @@ class DatabaseRepository(AbstractRepository):
         ).all()
 
         return [
-            {'id': str(user.id), 'name': user.name, 'username': user.username, 'is_group_admin': is_admin}
+            {
+                'id': str(user.id),
+                'name': user.name,
+                'username': user.username,
+                'is_group_admin': is_admin,
+            }
             for user, is_admin in results
         ]
 
@@ -199,10 +203,7 @@ class DatabaseRepository(AbstractRepository):
 
         result = self.db.execute(
             update(group_membership)
-            .where(
-                group_membership.c.group_id == group_id,
-                group_membership.c.user_id == user_id
-            )
+            .where(group_membership.c.group_id == group_id, group_membership.c.user_id == user_id)
             .values(is_group_admin=is_admin)
         )
         self.db.commit()
@@ -361,7 +362,12 @@ class DatabaseRepository(AbstractRepository):
         )
 
     def create_or_update_bid(
-        self, participation_id: UUID, product_id: UUID, quantity: int, interested_only: bool, comment: str | None = None
+        self,
+        participation_id: UUID,
+        product_id: UUID,
+        quantity: int,
+        interested_only: bool,
+        comment: str | None = None,
     ) -> ProductBid:
         """Create or update a product bid."""
         # Check if bid already exists
@@ -424,9 +430,7 @@ class DatabaseRepository(AbstractRepository):
     def get_bids_by_participation(self, participation_id: UUID) -> list[ProductBid]:
         """Get all bids for a participation."""
         return (
-            self.db.query(ProductBid)
-            .filter(ProductBid.participation_id == participation_id)
-            .all()
+            self.db.query(ProductBid).filter(ProductBid.participation_id == participation_id).all()
         )
 
     def update_bid_distributed_quantities(
@@ -453,7 +457,9 @@ class DatabaseRepository(AbstractRepository):
 
     # ==================== Run & Participation Methods ====================
 
-    def create_run(self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None) -> Run:
+    def create_run(
+        self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None
+    ) -> Run:
         """Create a new run with the leader as first participant."""
         run = Run(group_id=group_id, store_id=store_id, state=RunState.PLANNING, comment=comment)
         self.db.add(run)
@@ -506,7 +512,11 @@ class DatabaseRepository(AbstractRepository):
     ) -> RunParticipation:
         """Create a participation record for a user in a run."""
         participation = RunParticipation(
-            user_id=user_id, run_id=run_id, is_leader=is_leader, is_helper=is_helper, is_removed=False
+            user_id=user_id,
+            run_id=run_id,
+            is_leader=is_leader,
+            is_helper=is_helper,
+            is_removed=False,
         )
         self.db.add(participation)
         self.db.commit()
@@ -626,7 +636,11 @@ class DatabaseRepository(AbstractRepository):
         return None
 
     def add_more_purchased(
-        self, item_id: UUID, additional_quantity: float, additional_total: float, new_price_per_unit: float
+        self,
+        item_id: UUID,
+        additional_quantity: float,
+        additional_total: float,
+        new_price_per_unit: float,
     ) -> ShoppingListItem | None:
         """Add more purchased quantity to an already-purchased item."""
         item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
@@ -943,7 +957,12 @@ class DatabaseRepository(AbstractRepository):
     ) -> RunParticipation:
         """Test helper to create participation with is_ready already set."""
         participation = RunParticipation(
-            user_id=user_id, run_id=run_id, is_leader=is_leader, is_helper=False, is_ready=is_ready, is_removed=False
+            user_id=user_id,
+            run_id=run_id,
+            is_leader=is_leader,
+            is_helper=False,
+            is_ready=is_ready,
+            is_removed=False,
         )
         self.db.add(participation)
         self.db.commit()
@@ -1110,6 +1129,7 @@ class DatabaseRepository(AbstractRepository):
     def get_user_stats(self, user_id: UUID) -> dict:
         """Get user statistics including runs, bids, and spending."""
         from sqlalchemy import func
+
         from app.core.models import group_membership
 
         # Get total quantity bought and money spent from picked-up bids
@@ -1117,11 +1137,14 @@ class DatabaseRepository(AbstractRepository):
             self.db.query(
                 func.coalesce(func.sum(ProductBid.distributed_quantity), 0).label('total_quantity'),
                 func.coalesce(
-                    func.sum(ProductBid.distributed_quantity * ProductBid.distributed_price_per_unit), 0
+                    func.sum(
+                        ProductBid.distributed_quantity * ProductBid.distributed_price_per_unit
+                    ),
+                    0,
                 ).label('total_spent'),
             )
             .join(RunParticipation, ProductBid.participation_id == RunParticipation.id)
-            .filter(RunParticipation.user_id == user_id, ProductBid.is_picked_up == True)
+            .filter(RunParticipation.user_id == user_id, ProductBid.is_picked_up)
             .first()
         )
 
@@ -1139,7 +1162,7 @@ class DatabaseRepository(AbstractRepository):
         # Get runs where user was helper
         runs_helped = (
             self.db.query(func.count(RunParticipation.id))
-            .filter(RunParticipation.user_id == user_id, RunParticipation.is_helper == True)
+            .filter(RunParticipation.user_id == user_id, RunParticipation.is_helper)
             .scalar()
             or 0
         )
@@ -1147,7 +1170,7 @@ class DatabaseRepository(AbstractRepository):
         # Get runs where user was leader
         runs_led = (
             self.db.query(func.count(RunParticipation.id))
-            .filter(RunParticipation.user_id == user_id, RunParticipation.is_leader == True)
+            .filter(RunParticipation.user_id == user_id, RunParticipation.is_leader)
             .scalar()
             or 0
         )

@@ -9,9 +9,11 @@ from app.api.schemas import (
     CreateRunResponse,
     MessageResponse,
     PlaceBidRequest,
+    PlaceBidResponse,
     ReadyToggleResponse,
     RunDetailResponse,
     StateChangeResponse,
+    SuccessResponse,
     UpdateRunCommentRequest,
 )
 from app.api.websocket_manager import manager
@@ -45,7 +47,7 @@ async def get_run_details(
     return service.get_run_details(run_id, current_user)
 
 
-@router.post('/{run_id}/bids', response_model=MessageResponse)
+@router.post('/{run_id}/bids', response_model=PlaceBidResponse)
 async def place_bid(
     run_id: str,
     bid_request: PlaceBidRequest,
@@ -62,10 +64,10 @@ async def place_bid(
         current_user,
         bid_request.comment,
     )
-    return MessageResponse(message=result.message)
+    return result
 
 
-@router.delete('/{run_id}/bids/{product_id}', response_model=MessageResponse)
+@router.delete('/{run_id}/bids/{product_id}', response_model=SuccessResponse)
 async def retract_bid(
     run_id: str,
     product_id: str,
@@ -130,7 +132,7 @@ async def finish_adjusting(
     run_id: str,
     force: bool = False,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Finish adjusting bids - transition from adjusting to distributing state (leader only).
 
@@ -151,7 +153,7 @@ async def finish_adjusting(
     return result
 
 
-@router.post('/{run_id}/helpers/{user_id}', response_model=MessageResponse)
+@router.post('/{run_id}/helpers/{user_id}', response_model=SuccessResponse)
 async def toggle_helper(
     run_id: str,
     user_id: str,
@@ -164,14 +166,7 @@ async def toggle_helper(
 
     # Broadcast helper status change to all participants
     await manager.broadcast(
-        f'run:{run_id}',
-        {
-            'type': 'helper_toggled',
-            'data': {
-                'run_id': run_id,
-                'user_id': user_id
-            }
-        }
+        f'run:{run_id}', {'type': 'helper_toggled', 'data': {'run_id': run_id, 'user_id': user_id}}
     )
 
     return result
@@ -222,7 +217,7 @@ async def cancel_run(
     return result
 
 
-@router.patch('/{run_id}/comment', response_model=MessageResponse)
+@router.patch('/{run_id}/comment', response_model=SuccessResponse)
 async def update_run_comment(
     run_id: str,
     request: UpdateRunCommentRequest,
@@ -236,19 +231,13 @@ async def update_run_comment(
     # Broadcast comment update to all participants
     await manager.broadcast(
         f'run:{run_id}',
-        {
-            'type': 'comment_updated',
-            'data': {
-                'run_id': run_id,
-                'comment': request.comment
-            }
-        }
+        {'type': 'comment_updated', 'data': {'run_id': run_id, 'comment': request.comment}},
     )
 
     return result
 
 
-@router.delete('/{run_id}', response_model=MessageResponse)
+@router.delete('/{run_id}', response_model=SuccessResponse)
 async def delete_run(
     run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
 ):

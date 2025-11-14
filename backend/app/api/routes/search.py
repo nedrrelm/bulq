@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.models import User
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     GroupSearchResult,
     SearchResponse,
     StoreSearchResult,
 )
+from app.core.models import User
+from app.infrastructure.database import get_db
 from app.services import ProductService
 
 router = APIRouter(prefix='/search', tags=['search'])

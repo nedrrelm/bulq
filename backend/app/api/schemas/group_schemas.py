@@ -16,16 +16,14 @@ class CreateGroupRequest(BaseModel):
         v = v.strip()
 
         if len(v) < 2:
-            raise ValueError('Group name must be at least 2 characters')
+            raise ValueError('GROUP_NAME_TOO_SHORT')
 
         if len(v) > 100:
-            raise ValueError('Group name must be at most 100 characters')
+            raise ValueError('GROUP_NAME_TOO_LONG')
 
         # Allow alphanumeric, spaces, and specific special characters: - _ & '
         if not re.match(r"^[a-zA-Z0-9\s\-_&']+$", v):
-            raise ValueError(
-                "Group name contains invalid characters. Use letters, numbers, spaces, and - _ & '"
-            )
+            raise ValueError('GROUP_NAME_INVALID_CHARACTERS')
 
         return v
 
@@ -114,9 +112,13 @@ class PreviewGroupResponse(BaseModel):
 
 
 class JoinGroupResponse(BaseModel):
-    """Response model for joining a group."""
+    """Response model for joining a group.
 
-    message: str
+    The 'code' field contains a machine-readable success code for frontend localization.
+    """
+
+    success: bool = True
+    code: str  # Success code for frontend localization
     group_id: str
     group_name: str
 
@@ -125,9 +127,3 @@ class ToggleJoiningResponse(BaseModel):
     """Response model for toggling group joining."""
 
     is_joining_allowed: bool
-
-
-class RemoveMemberResponse(BaseModel):
-    """Response model for removing a member."""
-
-    message: str

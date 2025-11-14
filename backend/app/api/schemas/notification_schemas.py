@@ -1,6 +1,8 @@
 """Schemas for notification-related requests and responses."""
 
-from pydantic import BaseModel
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 class NotificationResponse(BaseModel):
@@ -22,5 +24,7 @@ class UnreadCountResponse(BaseModel):
 class MarkAllReadResponse(BaseModel):
     """Response model for marking all notifications as read."""
 
-    message: str
+    success: bool = True
+    code: str  # Success code for frontend localization
     count: int
+    details: dict[str, Any] = Field(default_factory=dict)

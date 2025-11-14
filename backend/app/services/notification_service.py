@@ -2,13 +2,19 @@
 
 from collections import defaultdict
 from datetime import timedelta
-from typing import Any
 
+from app.api.schemas import MarkAllReadResponse, NotificationResponse, SuccessResponse
+from app.core.error_codes import (
+    NOT_NOTIFICATION_OWNER,
+    NOTIFICATION_MARK_READ_FAILED,
+    NOTIFICATION_NOT_FOUND,
+)
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import User
+from app.core.success_codes import NOTIFICATION_MARKED_READ, NOTIFICATIONS_MARKED_READ
 from app.infrastructure.request_context import get_logger
-from app.api.schemas import MarkAllReadResponse, MessageResponse, NotificationResponse
 from app.utils.validation import validate_uuid
+
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -67,7 +73,7 @@ class NotificationService(BaseService):
         """
         return self.repo.get_unread_count(user.id)
 
-    def mark_as_read(self, notification_id: str, user: User) -> MessageResponse:
+    def mark_as_read(self, notification_id: str, user: User) -> SuccessResponse:
         """Mark a notification as read (with authorization check).
 
         Args:
@@ -87,25 +93,40 @@ class NotificationService(BaseService):
         # Get notification and check ownership
         notification = self.repo.get_notification_by_id(notification_uuid)
         if not notification:
-            raise NotFoundError('Notification', notification_id)
+            raise NotFoundError(
+                code=NOTIFICATION_NOT_FOUND,
+                message='Notification not found',
+                notification_id=notification_id,
+            )
 
         if notification.user_id != user.id:
             logger.warning(
                 "User attempted to mark notification they don't own",
                 extra={'user_id': str(user.id), 'notification_id': notification_id},
             )
-            raise ForbiddenError('Not authorized to modify this notification')
+            raise ForbiddenError(
+                code=NOT_NOTIFICATION_OWNER,
+                message='Not authorized to modify this notification',
+                notification_id=notification_id,
+            )
 
         success = self.repo.mark_notification_as_read(notification_uuid)
         if not success:
-            raise BadRequestError('Failed to mark notification as read')
+            raise BadRequestError(
+                code=NOTIFICATION_MARK_READ_FAILED,
+                message='Failed to mark notification as read',
+                notification_id=notification_id,
+            )
 
         logger.info(
             'Notification marked as read',
             extra={'user_id': str(user.id), 'notification_id': notification_id},
         )
 
-        return MessageResponse(message='Notification marked as read')
+        return SuccessResponse(
+            code=NOTIFICATION_MARKED_READ,
+            details={'notification_id': notification_id},
+        )
 
     def mark_all_as_read(self, user: User) -> MarkAllReadResponse:
         """Mark all notifications as read for a user.
@@ -122,7 +143,11 @@ class NotificationService(BaseService):
             'Marked all notifications as read', extra={'user_id': str(user.id), 'count': count}
         )
 
-        return MarkAllReadResponse(message='All notifications marked as read', count=count)
+        return MarkAllReadResponse(
+            code=NOTIFICATIONS_MARKED_READ,
+            count=count,
+            details={'user_id': str(user.id)},
+        )
 
     def _notification_to_pydantic(self, notification) -> NotificationResponse:
         """Convert notification model to Pydantic response."""
@@ -195,7 +220,7 @@ class NotificationService(BaseService):
                                 'grouped': True,
                                 'count': len(group_notifs),
                                 'notification_ids': [str(n.id) for n in group_notifs],
-                            }
+                            },
                         )
                     )
                 else:

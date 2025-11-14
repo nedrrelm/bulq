@@ -204,7 +204,9 @@ class ProductBid(Base):
     comment = Column(Text, nullable=True)  # User's comment/note for this bid
 
     # Distribution fields
-    distributed_quantity = Column(DECIMAL(10, 2), nullable=True)  # Actual quantity allocated to user
+    distributed_quantity = Column(
+        DECIMAL(10, 2), nullable=True
+    )  # Actual quantity allocated to user
     distributed_price_per_unit = Column(DECIMAL(10, 2), nullable=True)  # Price we paid per unit
     is_picked_up = Column(
         Boolean, nullable=False, default=False

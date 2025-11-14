@@ -1,0 +1,332 @@
+"""Error code constants for API responses.
+
+This module defines all error codes used across the application.
+These codes are returned to the frontend for localization and
+should never contain human-readable messages.
+
+Error Code Naming Convention:
+- Use SCREAMING_SNAKE_CASE
+- Prefix with domain when appropriate (AUTH_, RUN_, GROUP_, etc.)
+- Be descriptive but concise
+- Avoid duplication with HTTP status codes
+
+Frontend Translation Keys:
+Error codes map directly to translation keys in the frontend.
+Example: ERROR_CODE.AUTH_INVALID_CREDENTIALS → "errors.auth.invalid_credentials"
+"""
+
+
+# ============================================================================
+# Authentication & Authorization Errors
+# ============================================================================
+
+# Authentication
+AUTH_REQUIRED = 'AUTH_REQUIRED'
+AUTH_INVALID_CREDENTIALS = 'AUTH_INVALID_CREDENTIALS'
+AUTH_SESSION_EXPIRED = 'AUTH_SESSION_EXPIRED'
+
+# Registration
+REGISTRATION_DISABLED = 'REGISTRATION_DISABLED'
+USERNAME_TAKEN = 'USERNAME_TAKEN'
+EMAIL_TAKEN = 'EMAIL_TAKEN'
+PASSWORD_TOO_SHORT = 'PASSWORD_TOO_SHORT'
+PASSWORD_TOO_WEAK = 'PASSWORD_TOO_WEAK'
+
+# Password Management
+PASSWORD_MISMATCH = 'PASSWORD_MISMATCH'
+PASSWORD_INCORRECT = 'PASSWORD_INCORRECT'
+PASSWORD_SAME_AS_OLD = 'PASSWORD_SAME_AS_OLD'
+
+# Permissions
+INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS'
+NOT_GROUP_MEMBER = 'NOT_GROUP_MEMBER'
+NOT_GROUP_ADMIN = 'NOT_GROUP_ADMIN'
+NOT_RUN_PARTICIPANT = 'NOT_RUN_PARTICIPANT'
+NOT_RUN_LEADER = 'NOT_RUN_LEADER'
+NOT_RUN_LEADER_OR_HELPER = 'NOT_RUN_LEADER_OR_HELPER'
+NOT_SYSTEM_ADMIN = 'NOT_SYSTEM_ADMIN'
+
+
+# ============================================================================
+# Resource Not Found Errors
+# ============================================================================
+
+USER_NOT_FOUND = 'USER_NOT_FOUND'
+GROUP_NOT_FOUND = 'GROUP_NOT_FOUND'
+RUN_NOT_FOUND = 'RUN_NOT_FOUND'
+STORE_NOT_FOUND = 'STORE_NOT_FOUND'
+PRODUCT_NOT_FOUND = 'PRODUCT_NOT_FOUND'
+BID_NOT_FOUND = 'BID_NOT_FOUND'
+PARTICIPATION_NOT_FOUND = 'PARTICIPATION_NOT_FOUND'
+SHOPPING_LIST_ITEM_NOT_FOUND = 'SHOPPING_LIST_ITEM_NOT_FOUND'
+NOTIFICATION_NOT_FOUND = 'NOTIFICATION_NOT_FOUND'
+REASSIGNMENT_REQUEST_NOT_FOUND = 'REASSIGNMENT_REQUEST_NOT_FOUND'
+PRODUCT_AVAILABILITY_NOT_FOUND = 'PRODUCT_AVAILABILITY_NOT_FOUND'
+
+
+# ============================================================================
+# Run State & Lifecycle Errors
+# ============================================================================
+
+# State Transitions
+INVALID_RUN_STATE_TRANSITION = 'INVALID_RUN_STATE_TRANSITION'
+RUN_NOT_IN_PLANNING_STATE = 'RUN_NOT_IN_PLANNING_STATE'
+RUN_NOT_IN_ACTIVE_STATE = 'RUN_NOT_IN_ACTIVE_STATE'
+RUN_NOT_IN_CONFIRMED_STATE = 'RUN_NOT_IN_CONFIRMED_STATE'
+RUN_NOT_IN_SHOPPING_STATE = 'RUN_NOT_IN_SHOPPING_STATE'
+RUN_NOT_IN_ADJUSTING_STATE = 'RUN_NOT_IN_ADJUSTING_STATE'
+RUN_NOT_IN_DISTRIBUTING_STATE = 'RUN_NOT_IN_DISTRIBUTING_STATE'
+RUN_ALREADY_CANCELLED = 'RUN_ALREADY_CANCELLED'
+RUN_ALREADY_COMPLETED = 'RUN_ALREADY_COMPLETED'
+CANNOT_CANCEL_COMPLETED_RUN = 'CANNOT_CANCEL_COMPLETED_RUN'
+
+# Run Actions
+CANNOT_JOIN_RUN_IN_ADJUSTING_STATE = 'CANNOT_JOIN_RUN_IN_ADJUSTING_STATE'
+CANNOT_MODIFY_CANCELLED_RUN = 'CANNOT_MODIFY_CANCELLED_RUN'
+CANNOT_MODIFY_COMPLETED_RUN = 'CANNOT_MODIFY_COMPLETED_RUN'
+RUN_MAX_PRODUCTS_EXCEEDED = 'RUN_MAX_PRODUCTS_EXCEEDED'
+RUN_EXPORT_INVALID_STATE = 'RUN_EXPORT_INVALID_STATE'
+
+
+# ============================================================================
+# Bid & Shopping List Errors
+# ============================================================================
+
+# Bid Validation
+BID_QUANTITY_NEGATIVE = 'BID_QUANTITY_NEGATIVE'
+BID_QUANTITY_EXCEEDS_PURCHASED = 'BID_QUANTITY_EXCEEDS_PURCHASED'
+BID_QUANTITY_BELOW_DISTRIBUTED = 'BID_QUANTITY_BELOW_DISTRIBUTED'
+BID_PRODUCT_NOT_IN_SHOPPING_LIST = 'BID_PRODUCT_NOT_IN_SHOPPING_LIST'
+CANNOT_BID_NEW_PRODUCT_IN_ADJUSTING = 'CANNOT_BID_NEW_PRODUCT_IN_ADJUSTING'
+CANNOT_RETRACT_BID_IN_ADJUSTING = 'CANNOT_RETRACT_BID_IN_ADJUSTING'
+
+# Shopping Actions
+SHOPPING_ITEM_ALREADY_PURCHASED = 'SHOPPING_ITEM_ALREADY_PURCHASED'
+SHOPPING_ITEM_NOT_PURCHASED = 'SHOPPING_ITEM_NOT_PURCHASED'
+CANNOT_ADD_MORE_TO_UNPURCHASED_ITEM = 'CANNOT_ADD_MORE_TO_UNPURCHASED_ITEM'
+
+
+# ============================================================================
+# Distribution Errors
+# ============================================================================
+
+DISTRIBUTION_TOTAL_EXCEEDS_PURCHASED = 'DISTRIBUTION_TOTAL_EXCEEDS_PURCHASED'
+BID_ALREADY_PICKED_UP = 'BID_ALREADY_PICKED_UP'
+BID_NOT_PICKED_UP = 'BID_NOT_PICKED_UP'
+CANNOT_COMPLETE_DISTRIBUTION_UNPURCHASED_ITEMS = 'CANNOT_COMPLETE_DISTRIBUTION_UNPURCHASED_ITEMS'
+
+
+# ============================================================================
+# Group Errors
+# ============================================================================
+
+# Group Membership
+GROUP_JOINING_DISABLED = 'GROUP_JOINING_DISABLED'
+ALREADY_GROUP_MEMBER = 'ALREADY_GROUP_MEMBER'
+NOT_A_GROUP_MEMBER = 'NOT_A_GROUP_MEMBER'
+USER_MAX_GROUPS_EXCEEDED = 'USER_MAX_GROUPS_EXCEEDED'
+GROUP_MAX_MEMBERS_EXCEEDED = 'GROUP_MAX_MEMBERS_EXCEEDED'
+CANNOT_REMOVE_GROUP_ADMIN = 'CANNOT_REMOVE_GROUP_ADMIN'
+CANNOT_REMOVE_SELF_AS_ADMIN = 'CANNOT_REMOVE_SELF_AS_ADMIN'
+LAST_ADMIN_CANNOT_LEAVE = 'LAST_ADMIN_CANNOT_LEAVE'
+USER_ALREADY_GROUP_ADMIN = 'USER_ALREADY_GROUP_ADMIN'
+
+# Group Operations
+GROUP_INVITE_TOKEN_REGENERATION_FAILED = 'GROUP_INVITE_TOKEN_REGENERATION_FAILED'
+GROUP_JOIN_FAILED = 'GROUP_JOIN_FAILED'
+GROUP_MEMBER_REMOVAL_FAILED = 'GROUP_MEMBER_REMOVAL_FAILED'
+GROUP_MEMBER_PROMOTION_FAILED = 'GROUP_MEMBER_PROMOTION_FAILED'
+GROUP_JOINING_SETTING_UPDATE_FAILED = 'GROUP_JOINING_SETTING_UPDATE_FAILED'
+
+
+# ============================================================================
+# Reassignment Errors
+# ============================================================================
+
+REASSIGNMENT_NOT_CURRENT_LEADER = 'REASSIGNMENT_NOT_CURRENT_LEADER'
+REASSIGNMENT_TARGET_NOT_PARTICIPANT = 'REASSIGNMENT_TARGET_NOT_PARTICIPANT'
+REASSIGNMENT_CANNOT_TRANSFER_TO_SELF = 'REASSIGNMENT_CANNOT_TRANSFER_TO_SELF'
+REASSIGNMENT_REQUEST_ALREADY_EXISTS = 'REASSIGNMENT_REQUEST_ALREADY_EXISTS'
+REASSIGNMENT_REQUEST_ALREADY_RESOLVED = 'REASSIGNMENT_REQUEST_ALREADY_RESOLVED'
+REASSIGNMENT_NOT_TARGET_USER = 'REASSIGNMENT_NOT_TARGET_USER'
+REASSIGNMENT_INVALID_ACTION = 'REASSIGNMENT_INVALID_ACTION'
+REASSIGNMENT_INVALID_RUN_STATE = 'REASSIGNMENT_INVALID_RUN_STATE'
+
+
+# ============================================================================
+# Product & Store Errors
+# ============================================================================
+
+# Product Validation
+PRODUCT_NAME_EMPTY = 'PRODUCT_NAME_EMPTY'
+PRODUCT_PRICE_NEGATIVE = 'PRODUCT_PRICE_NEGATIVE'
+PRODUCT_PRICE_ZERO = 'PRODUCT_PRICE_ZERO'
+
+# Store Validation
+STORE_NAME_EMPTY = 'STORE_NAME_EMPTY'
+
+# Admin Operations
+CANNOT_MERGE_SAME_PRODUCT = 'CANNOT_MERGE_SAME_PRODUCT'
+CANNOT_MERGE_SAME_STORE = 'CANNOT_MERGE_SAME_STORE'
+PRODUCT_HAS_ACTIVE_BIDS = 'PRODUCT_HAS_ACTIVE_BIDS'
+STORE_HAS_ACTIVE_RUNS = 'STORE_HAS_ACTIVE_RUNS'
+
+
+# ============================================================================
+# Admin & User Management Errors
+# ============================================================================
+
+CANNOT_DELETE_OWN_ACCOUNT = 'CANNOT_DELETE_OWN_ACCOUNT'
+CANNOT_DELETE_ADMIN_USER = 'CANNOT_DELETE_ADMIN_USER'
+CANNOT_REMOVE_OWN_ADMIN_STATUS = 'CANNOT_REMOVE_OWN_ADMIN_STATUS'
+
+
+# ============================================================================
+# Notification Errors
+# ============================================================================
+
+NOTIFICATION_MARK_READ_FAILED = 'NOTIFICATION_MARK_READ_FAILED'
+NOT_NOTIFICATION_OWNER = 'NOT_NOTIFICATION_OWNER'
+
+
+# ============================================================================
+# Validation & Format Errors
+# ============================================================================
+
+INVALID_ID_FORMAT = 'INVALID_ID_FORMAT'
+INVALID_UUID_FORMAT = 'INVALID_UUID_FORMAT'
+INVALID_DATE_FORMAT = 'INVALID_DATE_FORMAT'
+INVALID_REQUEST_FORMAT = 'INVALID_REQUEST_FORMAT'
+
+
+# ============================================================================
+# Helper Errors
+# ============================================================================
+
+CANNOT_ASSIGN_LEADER_AS_HELPER = 'CANNOT_ASSIGN_LEADER_AS_HELPER'
+HELPER_NOT_GROUP_MEMBER = 'HELPER_NOT_GROUP_MEMBER'
+
+
+# ============================================================================
+# Generic Errors (use sparingly, prefer specific codes)
+# ============================================================================
+
+OPERATION_FAILED = 'OPERATION_FAILED'
+RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND'
+VALIDATION_FAILED = 'VALIDATION_FAILED'
+
+
+# ============================================================================
+# Error Code Groups for Documentation
+# ============================================================================
+
+ERROR_CODE_GROUPS = {
+    'Authentication': [
+        AUTH_REQUIRED,
+        AUTH_INVALID_CREDENTIALS,
+        AUTH_SESSION_EXPIRED,
+    ],
+    'Registration': [
+        REGISTRATION_DISABLED,
+        USERNAME_TAKEN,
+        EMAIL_TAKEN,
+        PASSWORD_TOO_SHORT,
+        PASSWORD_TOO_WEAK,
+    ],
+    'Password Management': [
+        PASSWORD_MISMATCH,
+        PASSWORD_INCORRECT,
+        PASSWORD_SAME_AS_OLD,
+    ],
+    'Permissions': [
+        INSUFFICIENT_PERMISSIONS,
+        NOT_GROUP_MEMBER,
+        NOT_GROUP_ADMIN,
+        NOT_RUN_PARTICIPANT,
+        NOT_RUN_LEADER,
+        NOT_RUN_LEADER_OR_HELPER,
+        NOT_SYSTEM_ADMIN,
+    ],
+    'Resource Not Found': [
+        USER_NOT_FOUND,
+        GROUP_NOT_FOUND,
+        RUN_NOT_FOUND,
+        STORE_NOT_FOUND,
+        PRODUCT_NOT_FOUND,
+        BID_NOT_FOUND,
+        PARTICIPATION_NOT_FOUND,
+        SHOPPING_LIST_ITEM_NOT_FOUND,
+        NOTIFICATION_NOT_FOUND,
+        REASSIGNMENT_REQUEST_NOT_FOUND,
+        PRODUCT_AVAILABILITY_NOT_FOUND,
+    ],
+    'Run State': [
+        INVALID_RUN_STATE_TRANSITION,
+        RUN_NOT_IN_PLANNING_STATE,
+        RUN_NOT_IN_ACTIVE_STATE,
+        RUN_NOT_IN_CONFIRMED_STATE,
+        RUN_NOT_IN_SHOPPING_STATE,
+        RUN_NOT_IN_ADJUSTING_STATE,
+        RUN_NOT_IN_DISTRIBUTING_STATE,
+        RUN_ALREADY_CANCELLED,
+        RUN_ALREADY_COMPLETED,
+        CANNOT_CANCEL_COMPLETED_RUN,
+    ],
+    'Run Actions': [
+        CANNOT_JOIN_RUN_IN_ADJUSTING_STATE,
+        CANNOT_MODIFY_CANCELLED_RUN,
+        CANNOT_MODIFY_COMPLETED_RUN,
+        RUN_MAX_PRODUCTS_EXCEEDED,
+        RUN_EXPORT_INVALID_STATE,
+    ],
+    'Bids': [
+        BID_QUANTITY_NEGATIVE,
+        BID_QUANTITY_EXCEEDS_PURCHASED,
+        BID_QUANTITY_BELOW_DISTRIBUTED,
+        BID_PRODUCT_NOT_IN_SHOPPING_LIST,
+        CANNOT_BID_NEW_PRODUCT_IN_ADJUSTING,
+        CANNOT_RETRACT_BID_IN_ADJUSTING,
+    ],
+    'Shopping': [
+        SHOPPING_ITEM_ALREADY_PURCHASED,
+        SHOPPING_ITEM_NOT_PURCHASED,
+        CANNOT_ADD_MORE_TO_UNPURCHASED_ITEM,
+    ],
+    'Distribution': [
+        DISTRIBUTION_TOTAL_EXCEEDS_PURCHASED,
+        BID_ALREADY_PICKED_UP,
+        BID_NOT_PICKED_UP,
+        CANNOT_COMPLETE_DISTRIBUTION_UNPURCHASED_ITEMS,
+    ],
+    'Groups': [
+        GROUP_JOINING_DISABLED,
+        ALREADY_GROUP_MEMBER,
+        NOT_A_GROUP_MEMBER,
+        USER_MAX_GROUPS_EXCEEDED,
+        GROUP_MAX_MEMBERS_EXCEEDED,
+        CANNOT_REMOVE_GROUP_ADMIN,
+        CANNOT_REMOVE_SELF_AS_ADMIN,
+        LAST_ADMIN_CANNOT_LEAVE,
+        USER_ALREADY_GROUP_ADMIN,
+    ],
+    'Reassignment': [
+        REASSIGNMENT_NOT_CURRENT_LEADER,
+        REASSIGNMENT_TARGET_NOT_PARTICIPANT,
+        REASSIGNMENT_CANNOT_TRANSFER_TO_SELF,
+        REASSIGNMENT_REQUEST_ALREADY_EXISTS,
+        REASSIGNMENT_REQUEST_ALREADY_RESOLVED,
+        REASSIGNMENT_NOT_TARGET_USER,
+        REASSIGNMENT_INVALID_ACTION,
+        REASSIGNMENT_INVALID_RUN_STATE,
+    ],
+    'Products & Stores': [
+        PRODUCT_NAME_EMPTY,
+        PRODUCT_PRICE_NEGATIVE,
+        PRODUCT_PRICE_ZERO,
+        STORE_NAME_EMPTY,
+        CANNOT_MERGE_SAME_PRODUCT,
+        CANNOT_MERGE_SAME_STORE,
+        PRODUCT_HAS_ACTIVE_BIDS,
+        STORE_HAS_ACTIVE_RUNS,
+    ],
+}

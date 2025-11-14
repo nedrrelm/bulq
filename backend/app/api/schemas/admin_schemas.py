@@ -37,11 +37,15 @@ class AdminStoreResponse(BaseModel):
 
 
 class VerificationToggleResponse(BaseModel):
-    """Response for toggling verification status."""
+    """Response for toggling verification status.
 
+    The 'code' field contains a machine-readable success code for frontend localization.
+    """
+
+    success: bool = True
+    code: str  # Success code for frontend localization
     id: str
     verified: bool
-    message: str
 
 
 # Update/Edit Request Schemas
@@ -50,9 +54,9 @@ class VerificationToggleResponse(BaseModel):
 class UpdateProductRequest(BaseModel):
     """Request to update product fields."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Product name")
-    brand: str | None = Field(None, max_length=255, description="Product brand")
-    unit: str | None = Field(None, max_length=50, description="Product unit")
+    name: str = Field(..., min_length=1, max_length=255, description='Product name')
+    brand: str | None = Field(None, max_length=255, description='Product brand')
+    unit: str | None = Field(None, max_length=50, description='Product unit')
 
 
 class UpdateStoreRequest(BaseModel):
@@ -77,19 +81,29 @@ class UpdateUserRequest(BaseModel):
 
 
 class MergeResponse(BaseModel):
-    """Response for merge operations."""
+    """Response for merge operations.
 
-    message: str
+    The 'code' field contains a machine-readable success code for frontend localization.
+    """
+
+    success: bool = True
+    code: str  # Success code for frontend localization
     source_id: str
     target_id: str
     affected_records: int
+    details: dict = {}
 
 
 # Delete Response Schema
 
 
 class DeleteResponse(BaseModel):
-    """Response for delete operations."""
+    """Response for delete operations.
 
-    message: str
+    The 'code' field contains a machine-readable success code for frontend localization.
+    """
+
+    success: bool = True
+    code: str  # Success code for frontend localization
     deleted_id: str
+    details: dict = {}

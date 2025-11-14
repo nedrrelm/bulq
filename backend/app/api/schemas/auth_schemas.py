@@ -1,7 +1,5 @@
 """Schemas for authentication-related requests and responses."""
 
-import re
-
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -9,15 +7,13 @@ class UserRegister(BaseModel):
     """Request model for user registration."""
 
     name: str = Field(min_length=1, max_length=100)
-    username: str = Field(min_length=3, max_length=50)
+    username: str = Field(min_length=3, max_length=50, pattern=r'^[a-zA-Z0-9_-]+$')
     password: str = Field(min_length=6, max_length=100)
 
     @field_validator('username')
     @classmethod
-    def validate_username(cls, v: str) -> str:
-        """Validate username format."""
-        if not re.match(r'^[a-zA-Z0-9_-]+$', v):
-            raise ValueError('Username can only contain letters, numbers, hyphens, and underscores')
+    def lowercase_username(cls, v: str) -> str:
+        """Convert username to lowercase."""
         return v.lower()
 
 
@@ -60,14 +56,12 @@ class ChangeUsernameRequest(BaseModel):
     """Request model for changing username."""
 
     current_password: str = Field(min_length=1, max_length=100)
-    new_username: str = Field(min_length=3, max_length=50)
+    new_username: str = Field(min_length=3, max_length=50, pattern=r'^[a-zA-Z0-9_-]+$')
 
     @field_validator('new_username')
     @classmethod
-    def validate_new_username(cls, v: str) -> str:
-        """Validate username format."""
-        if not re.match(r'^[a-zA-Z0-9_-]+$', v):
-            raise ValueError('Username can only contain letters, numbers, hyphens, and underscores')
+    def lowercase_new_username(cls, v: str) -> str:
+        """Convert username to lowercase."""
         return v.lower()
 
 

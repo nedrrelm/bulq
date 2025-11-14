@@ -2,29 +2,49 @@
 
 from uuid import UUID
 
-from app.utils.background_tasks import create_background_task
-from app.infrastructure.config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
-from app.events.domain_events import MemberJoinedEvent, MemberLeftEvent, MemberRemovedEvent
-from app.events.event_bus import event_bus
-from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
-from app.core.models import Group, User
-from app.infrastructure.request_context import get_logger
-from app.core.run_state import RunState
 from app.api.schemas import (
     CreateGroupResponse,
     GroupDetailResponse,
     GroupResponse,
     JoinGroupResponse,
-    MessageResponse,
     PreviewGroupResponse,
     RegenerateTokenResponse,
     RunResponse,
     RunSummary,
+    SuccessResponse,
     ToggleJoiningResponse,
 )
-from app.infrastructure.transaction import transaction
-from app.utils.validation import validate_uuid
 from app.api.websocket_manager import manager
+from app.core.error_codes import (
+    ALREADY_GROUP_MEMBER,
+    CANNOT_REMOVE_GROUP_ADMIN,
+    GROUP_INVITE_TOKEN_REGENERATION_FAILED,
+    GROUP_JOIN_FAILED,
+    GROUP_JOINING_DISABLED,
+    GROUP_JOINING_SETTING_UPDATE_FAILED,
+    GROUP_MAX_MEMBERS_EXCEEDED,
+    GROUP_MEMBER_PROMOTION_FAILED,
+    GROUP_MEMBER_REMOVAL_FAILED,
+    GROUP_NOT_FOUND,
+    LAST_ADMIN_CANNOT_LEAVE,
+    NOT_A_GROUP_MEMBER,
+    NOT_GROUP_ADMIN,
+    NOT_GROUP_MEMBER,
+    USER_ALREADY_GROUP_ADMIN,
+    USER_MAX_GROUPS_EXCEEDED,
+)
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from app.core.models import Group, User
+from app.core.run_state import RunState
+from app.core.success_codes import GROUP_JOINED, GROUP_LEFT, MEMBER_PROMOTED, MEMBER_REMOVED
+from app.events.domain_events import MemberJoinedEvent, MemberRemovedEvent
+from app.events.event_bus import event_bus
+from app.infrastructure.config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
+from app.infrastructure.request_context import get_logger
+from app.infrastructure.transaction import transaction
+from app.utils.background_tasks import create_background_task
+from app.utils.validation import validate_uuid
+
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -155,7 +175,9 @@ class GroupService(BaseService):
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         # Check if user is a member of the group
         user_groups = self.repo.get_user_groups(user)
@@ -164,7 +186,11 @@ class GroupService(BaseService):
                 "User attempted to access group they're not a member of",
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
             )
-            raise ForbiddenError('Not a member of this group')
+            raise ForbiddenError(
+                code=NOT_GROUP_MEMBER,
+                message='Not a member of this group',
+                group_id=str(group_uuid),
+            )
 
         # Get members and admin status
         members = self.repo.get_group_members_with_admin_status(group_uuid)
@@ -200,12 +226,18 @@ class GroupService(BaseService):
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         # Check if user is a member of the group
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == group_uuid for g in user_groups):
-            raise ForbiddenError('Not a member of this group')
+            raise ForbiddenError(
+                code=NOT_GROUP_MEMBER,
+                message='Not a member of this group',
+                group_id=str(group_uuid),
+            )
 
         # Get runs for the group
         logger.debug(
@@ -265,12 +297,18 @@ class GroupService(BaseService):
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         # Check if user is a member of the group
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == group_uuid for g in user_groups):
-            raise ForbiddenError('Not a member of this group')
+            raise ForbiddenError(
+                code=NOT_GROUP_MEMBER,
+                message='Not a member of this group',
+                group_id=str(group_uuid),
+            )
 
         # Get paginated completed/cancelled runs for the group
         logger.debug(
@@ -331,7 +369,9 @@ class GroupService(BaseService):
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         # Check if user is the creator of the group
         if group.created_by != user.id:
@@ -339,7 +379,11 @@ class GroupService(BaseService):
                 "User attempted to regenerate invite token for group they don't own",
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
             )
-            raise ForbiddenError('Only the group creator can regenerate the invite token')
+            raise ForbiddenError(
+                code=NOT_GROUP_ADMIN,
+                message='Only the group creator can regenerate the invite token',
+                group_id=str(group_uuid),
+            )
 
         # Regenerate the token
         logger.info(
@@ -348,7 +392,11 @@ class GroupService(BaseService):
         )
         new_token = self.repo.regenerate_group_invite_token(group_uuid)
         if not new_token:
-            raise BadRequestError('Failed to regenerate invite token')
+            raise BadRequestError(
+                code=GROUP_INVITE_TOKEN_REGENERATION_FAILED,
+                message='Failed to regenerate invite token',
+                group_id=str(group_uuid),
+            )
 
         return RegenerateTokenResponse(invite_token=new_token)
 
@@ -372,7 +420,9 @@ class GroupService(BaseService):
             logger.warning(
                 'Invalid invite token used for preview', extra={'invite_token': invite_token}
             )
-            raise NotFoundError('Group', invite_token)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', invite_token=invite_token
+            )
 
         return PreviewGroupResponse(
             id=str(group.id),
@@ -410,9 +460,7 @@ class GroupService(BaseService):
             extra={'user_id': str(user.id), 'group_id': str(group.id)},
         )
 
-        return JoinGroupResponse(
-            message='Successfully joined group', group_id=str(group.id), group_name=group.name
-        )
+        return JoinGroupResponse(code=GROUP_JOINED, group_id=str(group.id), group_name=group.name)
 
     def _validate_group_invite(self, invite_token: str, user: User) -> Group:
         """Validate invite token and check if joining is allowed."""
@@ -422,14 +470,20 @@ class GroupService(BaseService):
                 'Invalid invite token used for join',
                 extra={'user_id': str(user.id), 'invite_token': invite_token},
             )
-            raise NotFoundError('Group', invite_token)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', invite_token=invite_token
+            )
 
         if not group.is_joining_allowed:
             logger.warning(
                 'Attempted to join group with joining disabled',
                 extra={'user_id': str(user.id), 'group_id': str(group.id)},
             )
-            raise ForbiddenError('This group is not accepting new members')
+            raise ForbiddenError(
+                code=GROUP_JOINING_DISABLED,
+                message='This group is not accepting new members',
+                group_id=str(group.id),
+            )
 
         return group
 
@@ -442,21 +496,35 @@ class GroupService(BaseService):
                 'User already a member of group',
                 extra={'user_id': str(user.id), 'group_id': str(group.id)},
             )
-            raise BadRequestError('Already a member of this group')
+            raise BadRequestError(
+                code=ALREADY_GROUP_MEMBER,
+                message='Already a member of this group',
+                group_id=str(group.id),
+            )
 
         if len(user_groups) >= MAX_GROUPS_PER_USER:
             logger.warning(
                 'User attempted to join group but already at maximum groups',
                 extra={'user_id': str(user.id), 'group_id': str(group.id)},
             )
-            raise BadRequestError(f'Cannot join more than {MAX_GROUPS_PER_USER} groups')
+            raise BadRequestError(
+                code=USER_MAX_GROUPS_EXCEEDED,
+                message=f'Cannot join more than {MAX_GROUPS_PER_USER} groups',
+                max_groups=MAX_GROUPS_PER_USER,
+                current_groups=len(user_groups),
+            )
 
         if len(group.members) >= MAX_MEMBERS_PER_GROUP:
             logger.warning(
                 'User attempted to join group but group is full',
                 extra={'user_id': str(user.id), 'group_id': str(group.id)},
             )
-            raise BadRequestError(f'Group is full (maximum {MAX_MEMBERS_PER_GROUP} members)')
+            raise BadRequestError(
+                code=GROUP_MAX_MEMBERS_EXCEEDED,
+                message=f'Group is full (maximum {MAX_MEMBERS_PER_GROUP} members)',
+                max_members=MAX_MEMBERS_PER_GROUP,
+                current_members=len(group.members),
+            )
 
     def _add_member_to_group_db(self, user: User, group: Group) -> None:
         """Add user to the group in the database."""
@@ -466,13 +534,13 @@ class GroupService(BaseService):
                 'Failed to add user to group',
                 extra={'user_id': str(user.id), 'group_id': str(group.id)},
             )
-            raise BadRequestError('Failed to join group')
+            raise BadRequestError(
+                code=GROUP_JOIN_FAILED, message='Failed to join group', group_id=str(group.id)
+            )
 
     def _broadcast_member_joined(self, user: User, group: Group) -> None:
         """Emit member_joined domain event."""
-        event_bus.emit(
-            MemberJoinedEvent(group_id=group.id, user_id=user.id, user_name=user.name)
-        )
+        event_bus.emit(MemberJoinedEvent(group_id=group.id, user_id=user.id, user_name=user.name))
 
     def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
         """Get all members of a group with their admin status.
@@ -495,12 +563,18 @@ class GroupService(BaseService):
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         # Check if user is a member of the group
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == group_uuid for g in user_groups):
-            raise ForbiddenError('Not a member of this group')
+            raise ForbiddenError(
+                code=NOT_GROUP_MEMBER,
+                message='Not a member of this group',
+                group_id=str(group_uuid),
+            )
 
         # Get members with admin status
         members = self.repo.get_group_members_with_admin_status(group_uuid)
@@ -517,7 +591,7 @@ class GroupService(BaseService):
             is_current_user_admin=is_current_user_admin,
         )
 
-    def remove_member(self, group_id: str, member_id: str, user: User) -> MessageResponse:
+    def remove_member(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
         """Remove a member from a group (admin only).
 
         This operation is wrapped in a transaction to ensure atomicity:
@@ -543,7 +617,7 @@ class GroupService(BaseService):
         group_uuid, member_uuid = self._validate_member_removal_request(group_id, member_id, user)
 
         # Wrap all database modifications in a transaction
-        with transaction(self.db, "remove group member and cancel runs"):
+        with transaction(self.db, 'remove group member and cancel runs'):
             affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(
                 group_uuid, member_uuid
             )
@@ -563,7 +637,13 @@ class GroupService(BaseService):
             },
         )
 
-        return MessageResponse(message='Member removed successfully')
+        return SuccessResponse(
+            code=MEMBER_REMOVED,
+            details={
+                'group_id': group_id,
+                'member_id': member_id,
+            },
+        )
 
     def _validate_member_removal_request(
         self, group_id: str, member_id: str, user: User
@@ -578,22 +658,38 @@ class GroupService(BaseService):
 
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         if not self.repo.is_user_group_admin(group_uuid, user.id):
             logger.warning(
                 'Non-admin user attempted to remove member',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
             )
-            raise ForbiddenError('Only group admins can remove members')
+            raise ForbiddenError(
+                code=NOT_GROUP_ADMIN,
+                message='Only group admins can remove members',
+                group_id=str(group_uuid),
+            )
 
         if self.repo.is_user_group_admin(group_uuid, member_uuid):
-            raise ForbiddenError('Cannot remove group admins')
+            raise ForbiddenError(
+                code=CANNOT_REMOVE_GROUP_ADMIN,
+                message='Cannot remove group admins',
+                group_id=str(group_uuid),
+                user_id=str(member_uuid),
+            )
 
         # Verify member exists in group
         members = self.repo.get_group_members_with_admin_status(group_uuid)
         if not any(m['id'] == str(member_uuid) for m in members):
-            raise BadRequestError('User is not a member of this group')
+            raise BadRequestError(
+                code=NOT_A_GROUP_MEMBER,
+                message='User is not a member of this group',
+                group_id=str(group_uuid),
+                user_id=str(member_uuid),
+            )
 
         return group_uuid, member_uuid
 
@@ -608,7 +704,12 @@ class GroupService(BaseService):
         # First, remove the member from the group
         success = self.repo.remove_group_member(group_id, member_id)
         if not success:
-            raise BadRequestError('Failed to remove member from group')
+            raise BadRequestError(
+                code=GROUP_MEMBER_REMOVAL_FAILED,
+                message='Failed to remove member from group',
+                group_id=str(group_id),
+                user_id=str(member_id),
+            )
 
         # Now handle run participations and cancellations
         runs = self.repo.get_runs_by_group(group_id)
@@ -631,7 +732,10 @@ class GroupService(BaseService):
                 affected_runs.append(str(run.id))
 
                 # Delete all bids for this user in active runs (not completed/cancelled)
-                if run.state not in [RunState.COMPLETED, RunState.CANCELLED] and user_participation_id:
+                if (
+                    run.state not in [RunState.COMPLETED, RunState.CANCELLED]
+                    and user_participation_id
+                ):
                     bids = self.repo.get_bids_by_participation(user_participation_id)
                     for bid in bids:
                         self.repo.delete_bid(user_participation_id, bid.product_id)
@@ -654,7 +758,12 @@ class GroupService(BaseService):
         return affected_runs, cancelled_runs
 
     def _broadcast_removal_notifications(
-        self, group_id: UUID, member_id: UUID, affected_runs: list[str], cancelled_runs: list[str], is_self_removal: bool = False
+        self,
+        group_id: UUID,
+        member_id: UUID,
+        affected_runs: list[str],
+        cancelled_runs: list[str],
+        is_self_removal: bool = False,
     ) -> None:
         """Emit member removal domain event and broadcast to group WebSocket."""
         # Get member info for the notification
@@ -664,7 +773,9 @@ class GroupService(BaseService):
         # Emit domain event
         event_bus.emit(
             MemberRemovedEvent(
-                group_id=group_id, user_id=member_id, removed_by_id=member_id  # Should be admin_id
+                group_id=group_id,
+                user_id=member_id,
+                removed_by_id=member_id,  # Should be admin_id
             )
         )
 
@@ -713,7 +824,7 @@ class GroupService(BaseService):
                 task_name=f'broadcast_run_cancelled_{run_id}',
             )
 
-    def leave_group(self, group_id: str, user: User) -> MessageResponse:
+    def leave_group(self, group_id: str, user: User) -> SuccessResponse:
         """Leave a group.
 
         This operation is similar to remove_member but initiated by the user themselves:
@@ -737,26 +848,33 @@ class GroupService(BaseService):
 
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         # Check if user is a member
         members = self.repo.get_group_members_with_admin_status(group_uuid)
         if not any(m['id'] == str(user.id) for m in members):
-            raise BadRequestError('You are not a member of this group')
+            raise BadRequestError(
+                code=NOT_A_GROUP_MEMBER,
+                message='You are not a member of this group',
+                group_id=str(group_uuid),
+            )
 
         # Count how many admins there are
         admin_count = sum(1 for m in members if m['is_group_admin'])
 
         # Prevent the last admin from leaving
-        if self.repo.is_user_group_admin(group_uuid, user.id):
-            if admin_count <= 1:
-                raise ForbiddenError('You are the only admin. Please promote another member to admin before leaving.')
+        if self.repo.is_user_group_admin(group_uuid, user.id) and admin_count <= 1:
+            raise ForbiddenError(
+                code=LAST_ADMIN_CANNOT_LEAVE,
+                message='You are the only admin. Please promote another member to admin before leaving.',
+                group_id=str(group_uuid),
+            )
 
         # Wrap all database modifications in a transaction
-        with transaction(self.db, "leave group and cancel runs"):
-            affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(
-                group_uuid, user.id
-            )
+        with transaction(self.db, 'leave group and cancel runs'):
+            affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(group_uuid, user.id)
 
         # Broadcast notifications after successful transaction
         self._broadcast_removal_notifications(
@@ -772,9 +890,12 @@ class GroupService(BaseService):
             },
         )
 
-        return MessageResponse(message='You have left the group successfully')
+        return SuccessResponse(
+            code=GROUP_LEFT,
+            details={'group_id': group_id},
+        )
 
-    def promote_member_to_admin(self, group_id: str, member_id: str, user: User) -> MessageResponse:
+    def promote_member_to_admin(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
         """Promote a member to group admin (admin only).
 
         Args:
@@ -795,7 +916,9 @@ class GroupService(BaseService):
 
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         # Check if requester is admin
         if not self.repo.is_user_group_admin(group_uuid, user.id):
@@ -803,24 +926,43 @@ class GroupService(BaseService):
                 'Non-admin user attempted to promote member',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
             )
-            raise ForbiddenError('Only group admins can promote members')
+            raise ForbiddenError(
+                code=NOT_GROUP_ADMIN,
+                message='Only group admins can promote members',
+                group_id=str(group_uuid),
+            )
 
         # Check if member exists in group
         members = self.repo.get_group_members_with_admin_status(group_uuid)
         member_exists = any(m['id'] == str(member_uuid) for m in members)
 
         if not member_exists:
-            raise BadRequestError('User is not a member of this group')
+            raise BadRequestError(
+                code=NOT_A_GROUP_MEMBER,
+                message='User is not a member of this group',
+                group_id=str(group_uuid),
+                user_id=str(member_uuid),
+            )
 
         # Check if member is already an admin
         if self.repo.is_user_group_admin(group_uuid, member_uuid):
-            raise BadRequestError('User is already a group admin')
+            raise BadRequestError(
+                code=USER_ALREADY_GROUP_ADMIN,
+                message='User is already a group admin',
+                group_id=str(group_uuid),
+                user_id=str(member_uuid),
+            )
 
         # Promote the member
         success = self.repo.set_group_member_admin(group_uuid, member_uuid, True)
 
         if not success:
-            raise BadRequestError('Failed to promote member')
+            raise BadRequestError(
+                code=GROUP_MEMBER_PROMOTION_FAILED,
+                message='Failed to promote member',
+                group_id=str(group_uuid),
+                user_id=str(member_uuid),
+            )
 
         # Get member info for logging
         member_info = next((m for m in members if m['id'] == str(member_uuid)), None)
@@ -851,7 +993,14 @@ class GroupService(BaseService):
             task_name=f'broadcast_member_promoted_{group_uuid}_{member_uuid}',
         )
 
-        return MessageResponse(message=f'{member_name} promoted to admin successfully')
+        return SuccessResponse(
+            code=MEMBER_PROMOTED,
+            details={
+                'group_id': group_id,
+                'member_id': member_id,
+                'member_name': member_name,
+            },
+        )
 
     def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
         """Toggle whether a group allows joining via invite link (admin only).
@@ -874,7 +1023,9 @@ class GroupService(BaseService):
         # Get the group
         group = self.repo.get_group_by_id(group_uuid)
         if not group:
-            raise NotFoundError('Group', group_uuid)
+            raise NotFoundError(
+                code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
+            )
 
         # Check if user is a group admin
         if not self.repo.is_user_group_admin(group_uuid, user.id):
@@ -882,13 +1033,21 @@ class GroupService(BaseService):
                 'Non-admin user attempted to toggle joining allowed',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
             )
-            raise ForbiddenError('Only group admins can change joining settings')
+            raise ForbiddenError(
+                code=NOT_GROUP_ADMIN,
+                message='Only group admins can change joining settings',
+                group_id=str(group_uuid),
+            )
 
         # Toggle the setting
         new_value = not group.is_joining_allowed
         updated_group = self.repo.update_group_joining_allowed(group_uuid, new_value)
         if not updated_group:
-            raise BadRequestError('Failed to update joining setting')
+            raise BadRequestError(
+                code=GROUP_JOINING_SETTING_UPDATE_FAILED,
+                message='Failed to update joining setting',
+                group_id=str(group_uuid),
+            )
 
         logger.info(
             'Group joining setting toggled',

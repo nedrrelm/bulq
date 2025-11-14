@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.models import User
-from app.infrastructure.request_context import get_logger
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     CreateGroupRequest,
@@ -11,12 +8,15 @@ from app.api.schemas import (
     GroupDetailResponse,
     GroupResponse,
     JoinGroupResponse,
-    MessageResponse,
     PreviewGroupResponse,
     RegenerateTokenResponse,
     RunResponse,
+    SuccessResponse,
     ToggleJoiningResponse,
 )
+from app.core.models import User
+from app.infrastructure.database import get_db
+from app.infrastructure.request_context import get_logger
 from app.services import GroupService
 
 router = APIRouter(prefix='/groups', tags=['groups'])
@@ -115,7 +115,7 @@ async def get_group_members(
     return service.get_group_members(group_id, current_user)
 
 
-@router.delete('/{group_id}/members/{member_id}', response_model=MessageResponse)
+@router.delete('/{group_id}/members/{member_id}', response_model=SuccessResponse)
 async def remove_group_member(
     group_id: str,
     member_id: str,
@@ -138,7 +138,7 @@ async def toggle_group_joining(
     return service.toggle_joining_allowed(group_id, current_user)
 
 
-@router.post('/{group_id}/leave', response_model=MessageResponse)
+@router.post('/{group_id}/leave', response_model=SuccessResponse)
 async def leave_group(
     group_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
 ):
@@ -148,7 +148,7 @@ async def leave_group(
     return service.leave_group(group_id, current_user)
 
 
-@router.post('/{group_id}/members/{member_id}/promote', response_model=MessageResponse)
+@router.post('/{group_id}/members/{member_id}/promote', response_model=SuccessResponse)
 async def promote_member_to_admin(
     group_id: str,
     member_id: str,

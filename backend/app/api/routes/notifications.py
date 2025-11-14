@@ -3,15 +3,15 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.models import User
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     MarkAllReadResponse,
-    MessageResponse,
     NotificationResponse,
+    SuccessResponse,
     UnreadCountResponse,
 )
+from app.core.models import User
+from app.infrastructure.database import get_db
 from app.services import NotificationService
 
 router = APIRouter(prefix='/notifications', tags=['notifications'])
@@ -49,7 +49,7 @@ async def get_unread_count(
     return UnreadCountResponse(count=count)
 
 
-@router.post('/{notification_id}/mark-read', response_model=MessageResponse)
+@router.post('/{notification_id}/mark-read', response_model=SuccessResponse)
 async def mark_notification_read(
     notification_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
 ):

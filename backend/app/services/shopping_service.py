@@ -4,20 +4,41 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from app.utils.background_tasks import create_background_task
-from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
-from app.core.models import User
-from app.infrastructure.request_context import get_logger
-from app.core.run_state import RunState, state_machine
 from app.api.schemas import (
     CompleteShoppingResponse,
     MarkPurchasedResponse,
-    MessageResponse,
     PriceObservation,
     ShoppingListItemResponse,
+    SuccessResponse,
 )
-from app.infrastructure.transaction import transaction
+from app.api.schemas.notification_data import RunStateChangedData
 from app.api.websocket_manager import manager
+from app.core.error_codes import (
+    INVALID_ID_FORMAT,
+    INVALID_RUN_STATE_TRANSITION,
+    NOT_RUN_LEADER,
+    NOT_RUN_LEADER_OR_HELPER,
+    NOT_RUN_PARTICIPANT,
+    RUN_NOT_FOUND,
+    RUN_NOT_IN_SHOPPING_STATE,
+    SHOPPING_ITEM_NOT_PURCHASED,
+    SHOPPING_LIST_ITEM_NOT_FOUND,
+)
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from app.core.models import User
+from app.core.run_state import RunState, state_machine
+from app.core.success_codes import (
+    ADDITIONAL_PURCHASE_ADDED,
+    ITEM_MARKED_PURCHASED,
+    PRICE_UPDATED,
+    SHOPPING_COMPLETED_ADJUSTING_REQUIRED,
+    SHOPPING_COMPLETED_DISTRIBUTING,
+    SHOPPING_COMPLETED_NO_PURCHASES,
+)
+from app.infrastructure.request_context import get_logger
+from app.infrastructure.transaction import transaction
+from app.utils.background_tasks import create_background_task
+
 from .base_service import BaseService
 
 logger = get_logger(__name__)
@@ -103,27 +124,37 @@ class ShoppingService(BaseService):
         try:
             run_uuid = UUID(run_id)
         except ValueError as e:
-            raise BadRequestError('Invalid run ID format') from e
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid run ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user has access to this run
         user_groups = self.repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError('Not authorized to view this run')
+            raise ForbiddenError(
+                code=NOT_RUN_PARTICIPANT, message='Not authorized to view this run', run_id=run_id
+            )
 
         # Only allow viewing shopping list in shopping or later states - use state machine
         run_state = RunState(run.state)
         if not state_machine.can_view_shopping_list(run_state):
             raise BadRequestError(
-                state_machine.get_action_error_message(
+                code=INVALID_RUN_STATE_TRANSITION,
+                message=state_machine.get_action_error_message(
                     'shopping list',
                     run_state,
-                    [RunState.SHOPPING, RunState.ADJUSTING, RunState.DISTRIBUTING, RunState.COMPLETED],
-                )
+                    [
+                        RunState.SHOPPING,
+                        RunState.ADJUSTING,
+                        RunState.DISTRIBUTING,
+                        RunState.COMPLETED,
+                    ],
+                ),
+                current_state=run.state,
+                action='view_shopping_list',
             )
 
         # Get shopping list items
@@ -209,8 +240,14 @@ class ShoppingService(BaseService):
         return response_items
 
     async def add_availability_price(
-        self, run_id: str, item_id: str, price: float, notes: str, minimum_quantity: int | None, user: User
-    ) -> MessageResponse:
+        self,
+        run_id: str,
+        item_id: str,
+        price: float,
+        notes: str,
+        minimum_quantity: int | None,
+        user: User,
+    ) -> SuccessResponse:
         """Update product availability price for a shopping list item.
 
         Args:
@@ -234,22 +271,31 @@ class ShoppingService(BaseService):
             run_uuid = UUID(run_id)
             item_uuid = UUID(item_id)
         except ValueError as e:
-            raise BadRequestError('Invalid ID format') from e
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not self._is_leader_or_helper(participation):
-            raise ForbiddenError('Only the run leader or helpers can add prices')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER_OR_HELPER,
+                message='Only the run leader or helpers can add prices',
+                run_id=run_id,
+            )
 
         # Get the shopping list item to find the product
         item = self.repo.get_shopping_list_item(item_uuid)
         if not item:
-            raise NotFoundError('Shopping list item', item_id)
+            raise NotFoundError(
+                code=SHOPPING_LIST_ITEM_NOT_FOUND,
+                message='Shopping list item not found',
+                item_id=item_id,
+                run_id=run_id,
+            )
 
         # Create or update product availability
         self.repo.create_product_availability(
@@ -261,7 +307,14 @@ class ShoppingService(BaseService):
             user_id=user.id,
         )
 
-        return MessageResponse(message='Price updated successfully')
+        return SuccessResponse(
+            code=PRICE_UPDATED,
+            details={
+                'run_id': str(run_id),
+                'item_id': str(item_id),
+                'product_id': str(item.product_id),
+            },
+        )
 
     async def mark_purchased(
         self,
@@ -295,17 +348,21 @@ class ShoppingService(BaseService):
             run_uuid = UUID(run_id)
             item_uuid = UUID(item_id)
         except ValueError as e:
-            raise BadRequestError('Invalid ID format') from e
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not self._is_leader_or_helper(participation):
-            raise ForbiddenError('Only the run leader or helpers can mark items as purchased')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER_OR_HELPER,
+                message='Only the run leader or helpers can mark items as purchased',
+                run_id=run_id,
+            )
 
         # Get next purchase order number
         existing_items = self.repo.get_shopping_list_items(run_uuid)
@@ -318,14 +375,27 @@ class ShoppingService(BaseService):
         # Mark as purchased
         item = self.repo.mark_item_purchased(item_uuid, quantity, price_per_unit, total, next_order)
         if not item:
-            raise NotFoundError('Shopping list item', item_id)
+            raise NotFoundError(
+                code=SHOPPING_LIST_ITEM_NOT_FOUND,
+                message='Shopping list item not found',
+                item_id=item_id,
+                run_id=run_id,
+            )
 
         # Update ProductAvailability if the price differs from today's prices
         await self._update_product_availability_if_needed(
             item.product_id, run.store_id, price_per_unit, user.id
         )
 
-        return MarkPurchasedResponse(message='Item marked as purchased', purchase_order=next_order)
+        return MarkPurchasedResponse(
+            code=ITEM_MARKED_PURCHASED,
+            purchase_order=next_order,
+            details={
+                'run_id': str(run_id),
+                'item_id': str(item_id),
+                'product_id': str(item.product_id),
+            },
+        )
 
     async def add_more_purchased(
         self,
@@ -335,7 +405,7 @@ class ShoppingService(BaseService):
         price_per_unit: float,
         total: float,
         user: User,
-    ) -> MessageResponse:
+    ) -> SuccessResponse:
         """Add more purchased quantity to an already-purchased item.
 
         This method:
@@ -365,25 +435,39 @@ class ShoppingService(BaseService):
             run_uuid = UUID(run_id)
             item_uuid = UUID(item_id)
         except ValueError as e:
-            raise BadRequestError('Invalid ID format') from e
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not self._is_leader_or_helper(participation):
-            raise ForbiddenError('Only the run leader or helpers can add more purchases')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER_OR_HELPER,
+                message='Only the run leader or helpers can add more purchases',
+                run_id=run_id,
+            )
 
         # Get the shopping list item
         item = self.repo.get_shopping_list_item(item_uuid)
         if not item:
-            raise NotFoundError('Shopping list item', item_id)
+            raise NotFoundError(
+                code=SHOPPING_LIST_ITEM_NOT_FOUND,
+                message='Shopping list item not found',
+                item_id=item_id,
+                run_id=run_id,
+            )
 
         if not item.is_purchased:
-            raise BadRequestError('Can only add more to already-purchased items')
+            raise BadRequestError(
+                code=SHOPPING_ITEM_NOT_PURCHASED,
+                message='Can only add more to already-purchased items',
+                item_id=item_id,
+                run_id=run_id,
+            )
 
         # Calculate new weighted average price per unit
         current_quantity = float(item.purchased_quantity or 0)
@@ -395,7 +479,12 @@ class ShoppingService(BaseService):
         # Update the shopping list item
         updated_item = self.repo.add_more_purchased(item_uuid, quantity, total, new_price_per_unit)
         if not updated_item:
-            raise NotFoundError('Shopping list item', item_id)
+            raise NotFoundError(
+                code=SHOPPING_LIST_ITEM_NOT_FOUND,
+                message='Shopping list item not found',
+                item_id=item_id,
+                run_id=run_id,
+            )
 
         # Update ProductAvailability if the price differs from today's prices
         await self._update_product_availability_if_needed(
@@ -415,7 +504,15 @@ class ShoppingService(BaseService):
             },
         )
 
-        return MessageResponse(message='Additional purchase added successfully')
+        return SuccessResponse(
+            code=ADDITIONAL_PURCHASE_ADDED,
+            details={
+                'run_id': str(run_id),
+                'item_id': str(item_id),
+                'product_id': str(item.product_id),
+                'additional_quantity': quantity,
+            },
+        )
 
     async def complete_shopping(
         self, run_id: str, user: User, db: Any = None
@@ -450,22 +547,32 @@ class ShoppingService(BaseService):
         try:
             run_uuid = UUID(run_id)
         except ValueError as e:
-            raise BadRequestError('Invalid run ID format') from e
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid run ID format') from e
 
         # Get the run
         run = self.repo.get_run_by_id(run_uuid)
         if not run:
-            raise NotFoundError('Run', run_id)
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader
         participation = self.repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
-            raise ForbiddenError('Only the run leader can complete shopping')
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message='Only the run leader can complete shopping',
+                run_id=run_id,
+            )
 
         # Only allow completing from shopping state - use state machine
         run_state = RunState(run.state)
         if not state_machine.can_complete_shopping(run_state):
-            raise BadRequestError('Can only complete shopping from shopping state')
+            raise BadRequestError(
+                code=RUN_NOT_IN_SHOPPING_STATE,
+                message='Can only complete shopping from shopping state',
+                run_id=run_id,
+                current_state=run.state,
+                required_state=RunState.SHOPPING.value,
+            )
 
         # Check if any items have insufficient quantities
         shopping_items = self.repo.get_shopping_list_items(run_uuid)
@@ -479,7 +586,7 @@ class ShoppingService(BaseService):
 
         # If nothing was purchased, skip directly to distributing then completed state
         if not anything_purchased:
-            with transaction(self.db, "transition to completed state (nothing purchased)"):
+            with transaction(self.db, 'transition to completed state (nothing purchased)'):
                 old_state = run.state
                 # First transition to distributing (required by state machine)
                 self.repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
@@ -489,15 +596,21 @@ class ShoppingService(BaseService):
 
             await manager.broadcast(
                 f'run:{run_uuid}',
-                {'type': 'state_changed', 'data': {'run_id': str(run_uuid), 'new_state': RunState.COMPLETED}},
+                {
+                    'type': 'state_changed',
+                    'data': {'run_id': str(run_uuid), 'new_state': RunState.COMPLETED},
+                },
             )
             await manager.broadcast(
                 f'group:{run.group_id}',
-                {'type': 'run_state_changed', 'data': {'run_id': str(run_uuid), 'new_state': RunState.COMPLETED}},
+                {
+                    'type': 'run_state_changed',
+                    'data': {'run_id': str(run_uuid), 'new_state': RunState.COMPLETED},
+                },
             )
 
             return CompleteShoppingResponse(
-                message='Shopping completed with no purchases. Run marked as completed.',
+                code=SHOPPING_COMPLETED_NO_PURCHASES,
                 state=RunState.COMPLETED,
             )
 
@@ -518,7 +631,7 @@ class ShoppingService(BaseService):
         # If we have insufficient quantities, transition to adjusting state
         if has_insufficient:
             # Wrap state change and notifications in transaction
-            with transaction(self.db, "transition to adjusting state"):
+            with transaction(self.db, 'transition to adjusting state'):
                 old_state = run.state
                 self.repo.update_run_state(run_uuid, RunState.ADJUSTING)
 
@@ -542,13 +655,13 @@ class ShoppingService(BaseService):
             )
 
             return CompleteShoppingResponse(
-                message='Some items have insufficient quantities. Participants need to adjust their bids.',
+                code=SHOPPING_COMPLETED_ADJUSTING_REQUIRED,
                 state=RunState.ADJUSTING,
             )
 
         # Otherwise, proceed with distribution
         # Wrap distribution and state change in transaction
-        with transaction(self.db, "distribute items and transition to distributing state"):
+        with transaction(self.db, 'distribute items and transition to distributing state'):
             # For each shopping item (purchased product), distribute to users who bid
             for shopping_item in shopping_items:
                 if not shopping_item.is_purchased:
@@ -595,7 +708,7 @@ class ShoppingService(BaseService):
         )
 
         return CompleteShoppingResponse(
-            message='Shopping completed! Moving to distribution.', state=RunState.DISTRIBUTING
+            code=SHOPPING_COMPLETED_DISTRIBUTING, state=RunState.DISTRIBUTING
         )
 
     def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
@@ -614,20 +727,22 @@ class ShoppingService(BaseService):
         # Get all participants of this run
         participations = self.repo.get_run_participations(run.id)
 
-        # Create notification data
-        notification_data = {
-            'run_id': str(run.id),
-            'store_name': store_name,
-            'old_state': old_state,
-            'new_state': new_state,
-            'group_id': str(run.group_id),
-        }
+        # Create notification data using Pydantic model for type safety
+        notification_data = RunStateChangedData(
+            run_id=str(run.id),
+            store_name=store_name,
+            old_state=old_state,
+            new_state=new_state,
+            group_id=str(run.group_id),
+        )
 
         # Create notification for each participant and broadcast via WebSocket
 
         for participation in participations:
             notification = self.repo.create_notification(
-                user_id=participation.user_id, type='run_state_changed', data=notification_data
+                user_id=participation.user_id,
+                type='run_state_changed',
+                data=notification_data.model_dump(mode='json'),
             )
 
             # Broadcast to user's WebSocket connection

@@ -8,8 +8,8 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.errors.models import ErrorDetail, ErrorResponse, ValidationErrorResponse
 from app.core.exceptions import AppException
+from app.errors.models import ErrorDetail, ErrorResponse, ValidationErrorResponse
 from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
@@ -18,17 +18,21 @@ logger = get_logger(__name__)
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     """Handle custom application exceptions.
 
+    Returns error codes for frontend localization instead of human-readable messages.
+    The message is logged internally but not sent to the client.
+
     Args:
         request: The FastAPI request
         exc: The application exception
 
     Returns:
-        JSONResponse with error details
+        JSONResponse with error code and details (no message)
     """
     logger.warning(
         f'Application error: {exc.message}',
         extra={
             'error_type': exc.__class__.__name__,
+            'error_code': exc.code,
             'status_code': exc.status_code,
             'path': request.url.path,
             'method': request.method,
@@ -38,7 +42,8 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
     error_response = ErrorResponse(
         error=exc.__class__.__name__,
-        message=exc.message,
+        code=exc.code,
+        message=exc.message,  # Still included for backward compatibility during transition
         details=exc.details,
         path=request.url.path,
     )

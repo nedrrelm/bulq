@@ -5,9 +5,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database import get_db
-from app.core.exceptions import ForbiddenError
-from app.core.models import User
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     AdminProductResponse,
@@ -20,6 +17,10 @@ from app.api.schemas import (
     UpdateUserRequest,
     VerificationToggleResponse,
 )
+from app.core.error_codes import NOT_SYSTEM_ADMIN
+from app.core.exceptions import ForbiddenError
+from app.core.models import User
+from app.infrastructure.database import get_db
 from app.services import AdminService
 
 router = APIRouter(prefix='/admin', tags=['admin'])
@@ -28,7 +29,9 @@ router = APIRouter(prefix='/admin', tags=['admin'])
 def require_admin(current_user: User = Depends(require_auth)) -> User:
     """Verify that the current user is an admin."""
     if not current_user.is_admin:
-        raise ForbiddenError('Admin access required')
+        raise ForbiddenError(
+            code=NOT_SYSTEM_ADMIN, message='Admin access required', user_id=str(current_user.id)
+        )
     return current_user
 
 
@@ -214,8 +217,8 @@ async def set_registration_setting(
     db: Session = Depends(get_db),
 ):
     """Enable or disable user registration."""
-    from app.infrastructure.runtime_settings import set_registration_allowed
     from app.infrastructure.request_context import get_logger
+    from app.infrastructure.runtime_settings import set_registration_allowed
 
     logger = get_logger(__name__)
 

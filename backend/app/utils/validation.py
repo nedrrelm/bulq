@@ -6,6 +6,7 @@ for consistent state validation across the application.
 
 from uuid import UUID
 
+from app.core import error_codes
 from app.core.exceptions import BadRequestError
 from app.core.models import Run
 from app.core.run_state import RunState, state_machine
@@ -27,7 +28,12 @@ def validate_uuid(id_str: str, resource_name: str = 'ID') -> UUID:
     try:
         return UUID(id_str)
     except ValueError as e:
-        raise BadRequestError(f'Invalid {resource_name} ID format') from e
+        raise BadRequestError(
+            code=error_codes.INVALID_UUID_FORMAT,
+            message=f'Invalid {resource_name} ID format',
+            field=resource_name.lower(),
+            value=id_str,
+        ) from e
 
 
 def validate_run_state_for_action(
@@ -48,46 +54,50 @@ def validate_run_state_for_action(
         BadRequestError: If the run is not in an allowed state
     """
     if run.state not in allowed_states:
+        # Determine the appropriate error code based on the allowed states
+        error_code = _get_state_error_code(RunState(run.state), allowed_states)
         error_msg = state_machine.get_action_error_message(
             action_name, RunState(run.state), allowed_states
         )
-        raise BadRequestError(error_msg)
+        raise BadRequestError(
+            code=error_code,
+            message=error_msg,
+            current_state=run.state,
+            allowed_states=[s.value for s in allowed_states],
+            action=action_name,
+        )
 
 
-def validate_state_transition(
-    current_state: RunState,
-    target_state: RunState,
-    allowed_transitions: dict[RunState, list[RunState]] | None = None,
-) -> None:
-    """Validate that a state transition is allowed.
+def _get_state_error_code(current_state: RunState, allowed_states: list[RunState]) -> str:
+    """Determine the appropriate error code based on the current state.
 
-    NOTE: This function is kept for backward compatibility but delegates to
-    the state machine. New code should use state_machine.validate_transition()
-    directly.
+    Helper function to map specific run states to their corresponding error codes.
 
     Args:
-        current_state: Current state
-        target_state: Desired target state
-        allowed_transitions: Optional dict of allowed transitions.
-                           If None, uses state machine rules (ignored if provided).
+        current_state: The current run state
+        allowed_states: List of allowed states for the action
 
-    Raises:
-        BadRequestError: If the transition is not allowed
+    Returns:
+        Error code string from error_codes module
     """
-    # If custom transitions provided, validate manually (legacy behavior)
-    if allowed_transitions is not None:
-        allowed = allowed_transitions.get(current_state, [])
-        if target_state not in allowed:
-            allowed_str = ', '.join([s.value for s in allowed]) if allowed else 'none'
-            raise BadRequestError(
-                f"Cannot transition from '{current_state}' to '{target_state}'. "
-                f'Allowed transitions: {allowed_str}'
-            )
-        return
+    # If only one allowed state, return a specific error for that state
+    if len(allowed_states) == 1:
+        allowed = allowed_states[0]
+        state_to_code = {
+            RunState.PLANNING: error_codes.RUN_NOT_IN_PLANNING_STATE,
+            RunState.ACTIVE: error_codes.RUN_NOT_IN_ACTIVE_STATE,
+            RunState.CONFIRMED: error_codes.RUN_NOT_IN_CONFIRMED_STATE,
+            RunState.SHOPPING: error_codes.RUN_NOT_IN_SHOPPING_STATE,
+            RunState.ADJUSTING: error_codes.RUN_NOT_IN_ADJUSTING_STATE,
+            RunState.DISTRIBUTING: error_codes.RUN_NOT_IN_DISTRIBUTING_STATE,
+        }
+        return state_to_code.get(allowed, error_codes.INVALID_RUN_STATE_TRANSITION)
 
-    # Delegate to state machine for standard validation
-    try:
-        state_machine.validate_transition(current_state, target_state)
-    except ValueError as e:
-        # Convert ValueError to BadRequestError for API consistency
-        raise BadRequestError(str(e)) from e
+    # Check for terminal states
+    if current_state == RunState.CANCELLED:
+        return error_codes.RUN_ALREADY_CANCELLED
+    if current_state == RunState.COMPLETED:
+        return error_codes.RUN_ALREADY_COMPLETED
+
+    # Default to generic state transition error
+    return error_codes.INVALID_RUN_STATE_TRANSITION

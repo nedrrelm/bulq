@@ -1,5 +1,7 @@
 """Schemas for run-related requests and responses."""
 
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -36,11 +38,9 @@ class PlaceBidRequest(BaseModel):
     @field_validator('quantity')
     @classmethod
     def validate_quantity(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Quantity must be greater than 0')
         # Check max 2 decimal places
         if round(v, 2) != v:
-            raise ValueError('Quantity can have at most 2 decimal places')
+            raise ValueError('INVALID_DECIMAL_PLACES')
         return v
 
 
@@ -112,18 +112,26 @@ class RunDetailResponse(BaseModel):
 
 
 class StateChangeResponse(BaseModel):
-    """Response model for state change operations."""
+    """Response model for state change operations.
 
-    message: str
+    The 'code' field contains a machine-readable success code for frontend localization.
+    """
+
+    success: bool = True
+    code: str  # Success code for frontend localization
     state: str
     run_id: str
     group_id: str
 
 
 class ReadyToggleResponse(BaseModel):
-    """Response model for toggling ready status."""
+    """Response model for toggling ready status.
 
-    message: str
+    The 'code' field contains a machine-readable success code for frontend localization.
+    """
+
+    success: bool = True
+    code: str  # Success code for frontend localization
     is_ready: bool
     state_changed: bool = False
     new_state: str | None = None
@@ -133,9 +141,13 @@ class ReadyToggleResponse(BaseModel):
 
 
 class CancelRunResponse(BaseModel):
-    """Response model for canceling a run."""
+    """Response model for canceling a run.
 
-    message: str
+    The 'code' field contains a machine-readable success code for frontend localization.
+    """
+
+    success: bool = True
+    code: str  # Success code for frontend localization
     run_id: str
     group_id: str
     state: str
@@ -157,7 +169,8 @@ class AvailableProductResponse(BaseModel):
 class PlaceBidResponse(BaseModel):
     """Response model for placing a bid."""
 
-    message: str
+    success: bool = True
+    code: str  # Success code for frontend localization
     product_id: str
     user_id: str
     user_name: str
@@ -165,6 +178,7 @@ class PlaceBidResponse(BaseModel):
     interested_only: bool
     new_total: float
     state_changed: bool
+    details: dict[str, Any] = Field(default_factory=dict)
     new_state: str
     run_id: str
     group_id: str
@@ -173,11 +187,13 @@ class PlaceBidResponse(BaseModel):
 class RetractBidResponse(BaseModel):
     """Response model for retracting a bid."""
 
-    message: str
+    success: bool = True
+    code: str  # Success code for frontend localization
     run_id: str
     product_id: str
     user_id: str
     new_total: float
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class UpdateRunCommentRequest(BaseModel):

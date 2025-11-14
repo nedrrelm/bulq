@@ -1,23 +1,32 @@
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from app.infrastructure.auth import create_session, delete_session, get_session, hash_password
-from app.infrastructure.config import SECURE_COOKIES, SESSION_EXPIRY_HOURS
-from app.infrastructure.database import get_db
-from app.core.exceptions import BadRequestError, UnauthorizedError
-from app.core.models import User
-from app.repositories import get_repository
-from app.infrastructure.request_context import get_logger
 from app.api.schemas import (
     ChangeNameRequest,
     ChangePasswordRequest,
     ChangeUsernameRequest,
-    MessageResponse,
+    SuccessResponse,
     UserLogin,
     UserRegister,
     UserResponse,
     UserStatsResponse,
 )
+from app.core.error_codes import (
+    AUTH_INVALID_CREDENTIALS,
+    AUTH_REQUIRED,
+    OPERATION_FAILED,
+    PASSWORD_INCORRECT,
+    REGISTRATION_DISABLED,
+    USERNAME_TAKEN,
+)
+from app.core.exceptions import BadRequestError, UnauthorizedError
+from app.core.models import User
+from app.core.success_codes import PASSWORD_CHANGED, USER_LOGGED_OUT
+from app.infrastructure.auth import create_session, delete_session, get_session, hash_password
+from app.infrastructure.config import SECURE_COOKIES, SESSION_EXPIRY_HOURS
+from app.infrastructure.database import get_db
+from app.infrastructure.request_context import get_logger
+from app.repositories import get_repository
 
 router = APIRouter(prefix='/auth', tags=['authentication'])
 logger = get_logger(__name__)
@@ -49,7 +58,7 @@ def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
             'Unauthorized access attempt',
             extra={'path': request.url.path, 'method': request.method},
         )
-        raise UnauthorizedError('Authentication required')
+        raise UnauthorizedError(code=AUTH_REQUIRED, message='Authentication required')
     return user
 
 
@@ -62,8 +71,13 @@ async def register(
 
     # Check if registration is allowed
     if not is_registration_allowed(db):
-        logger.warning('Registration attempt when registration is disabled', extra={'username': user_data.username})
-        raise BadRequestError('Registration is currently disabled')
+        logger.warning(
+            'Registration attempt when registration is disabled',
+            extra={'username': user_data.username},
+        )
+        raise BadRequestError(
+            code=REGISTRATION_DISABLED, message='Registration is currently disabled'
+        )
 
     logger.info('Registration attempt', extra={'username': user_data.username})
     repo = get_repository(db)
@@ -74,7 +88,9 @@ async def register(
         logger.warning(
             'Registration failed - username already exists', extra={'username': user_data.username}
         )
-        raise BadRequestError('Username already registered')
+        raise BadRequestError(
+            code=USERNAME_TAKEN, message='Username already registered', username=user_data.username
+        )
 
     # Create new user
     password_hash = hash_password(user_data.password)
@@ -95,7 +111,8 @@ async def register(
     )
 
     logger.info(
-        'User registered successfully', extra={'user_id': str(new_user.id), 'username': new_user.username}
+        'User registered successfully',
+        extra={'user_id': str(new_user.id), 'username': new_user.username},
     )
 
     return UserResponse(
@@ -119,7 +136,9 @@ async def login(
     user = repo.get_user_by_username(user_data.username)
     if not user or not repo.verify_password(user_data.password, user.password_hash):
         logger.warning('Failed login attempt', extra={'username': user_data.username})
-        raise UnauthorizedError('Invalid username or password')
+        raise UnauthorizedError(
+            code=AUTH_INVALID_CREDENTIALS, message='Invalid username or password'
+        )
 
     # Create session
     session_token = create_session(str(user.id))
@@ -152,8 +171,8 @@ async def login(
     )
 
 
-@router.post('/logout', response_model=MessageResponse)
-async def logout(request: Request, response: Response) -> MessageResponse:
+@router.post('/logout', response_model=SuccessResponse)
+async def logout(request: Request, response: Response) -> SuccessResponse:
     """Logout user."""
     session_token = request.cookies.get('session_token')
     if session_token:
@@ -163,7 +182,7 @@ async def logout(request: Request, response: Response) -> MessageResponse:
         )
 
     response.delete_cookie(key='session_token')
-    return MessageResponse(message='Logged out successfully')
+    return SuccessResponse(code=USER_LOGGED_OUT)
 
 
 @router.get('/me', response_model=UserResponse)
@@ -189,12 +208,12 @@ async def get_profile_stats(
     return UserStatsResponse(**stats)
 
 
-@router.post('/change-password', response_model=MessageResponse)
+@router.post('/change-password', response_model=SuccessResponse)
 async def change_password(
     request: ChangePasswordRequest,
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db),
-) -> MessageResponse:
+) -> SuccessResponse:
     """Change user password."""
     logger.info('Password change request', extra={'user_id': str(current_user.id)})
     repo = get_repository(db)
@@ -205,7 +224,7 @@ async def change_password(
             'Password change failed - incorrect current password',
             extra={'user_id': str(current_user.id)},
         )
-        raise UnauthorizedError('Current password is incorrect')
+        raise UnauthorizedError(code=PASSWORD_INCORRECT, message='Current password is incorrect')
 
     # Hash new password and update
     from app.infrastructure.auth import hash_password
@@ -214,7 +233,7 @@ async def change_password(
     repo.update_user(current_user.id, password_hash=new_password_hash)
 
     logger.info('Password changed successfully', extra={'user_id': str(current_user.id)})
-    return MessageResponse(message='Password changed successfully')
+    return SuccessResponse(code=PASSWORD_CHANGED, details={'user_id': str(current_user.id)})
 
 
 @router.post('/change-username', response_model=UserResponse)
@@ -235,7 +254,7 @@ async def change_username(
         logger.warning(
             'Username change failed - incorrect password', extra={'user_id': str(current_user.id)}
         )
-        raise UnauthorizedError('Current password is incorrect')
+        raise UnauthorizedError(code=PASSWORD_INCORRECT, message='Current password is incorrect')
 
     # Check if new username is already taken
     existing_user = repo.get_user_by_username(request.new_username)
@@ -244,12 +263,14 @@ async def change_username(
             'Username change failed - username already exists',
             extra={'user_id': str(current_user.id), 'new_username': request.new_username},
         )
-        raise BadRequestError('Username already taken')
+        raise BadRequestError(
+            code=USERNAME_TAKEN, message='Username already taken', username=request.new_username
+        )
 
     # Update username
     updated_user = repo.update_user(current_user.id, username=request.new_username)
     if not updated_user:
-        raise BadRequestError('Failed to update username')
+        raise BadRequestError(code=OPERATION_FAILED, message='Failed to update username')
 
     logger.info(
         'Username changed successfully',
@@ -287,12 +308,12 @@ async def change_name(
         logger.warning(
             'Name change failed - incorrect password', extra={'user_id': str(current_user.id)}
         )
-        raise UnauthorizedError('Current password is incorrect')
+        raise UnauthorizedError(code=PASSWORD_INCORRECT, message='Current password is incorrect')
 
     # Update name
     updated_user = repo.update_user(current_user.id, name=request.new_name)
     if not updated_user:
-        raise BadRequestError('Failed to update name')
+        raise BadRequestError(code=OPERATION_FAILED, message='Failed to update name')
 
     logger.info(
         'Name changed successfully',
@@ -324,7 +345,7 @@ async def toggle_dark_mode(
     new_dark_mode = not current_user.dark_mode
     updated_user = repo.update_user(current_user.id, dark_mode=new_dark_mode)
     if not updated_user:
-        raise BadRequestError('Failed to toggle dark mode')
+        raise BadRequestError(code=OPERATION_FAILED, message='Failed to toggle dark mode')
 
     logger.info(
         f'Dark mode {"enabled" if new_dark_mode else "disabled"}',
