@@ -1,5 +1,6 @@
 """Schemas for shopping-related requests and responses."""
 
+from decimal import Decimal
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
@@ -32,17 +33,9 @@ class ShoppingListItemResponse(BaseModel):
 class UpdateAvailabilityPriceRequest(BaseModel):
     """Request model for updating product availability price."""
 
-    price: float = Field(gt=0, le=99999.99)
+    price: Decimal = Field(gt=0, le=99999.99, decimal_places=2)
     notes: str = Field(default='', max_length=200)
     minimum_quantity: int | None = Field(default=None, ge=1, le=9999)
-
-    @field_validator('price')
-    @classmethod
-    def validate_price(cls, v: float) -> float:
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('INVALID_DECIMAL_PLACES')
-        return v
 
     @field_validator('notes')
     @classmethod
@@ -53,17 +46,9 @@ class UpdateAvailabilityPriceRequest(BaseModel):
 class MarkPurchasedRequest(BaseModel):
     """Request model for marking an item as purchased."""
 
-    quantity: float = Field(gt=0, le=9999)
-    price_per_unit: float = Field(gt=0, le=99999.99)
-    total: float = Field(gt=0, le=999999.99)
-
-    @field_validator('quantity', 'price_per_unit', 'total')
-    @classmethod
-    def validate_decimal_places(cls, v: float) -> float:
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('INVALID_DECIMAL_PLACES')
-        return v
+    quantity: Decimal = Field(gt=0, le=9999, decimal_places=2)
+    price_per_unit: Decimal = Field(gt=0, le=99999.99, decimal_places=2)
+    total: Decimal = Field(gt=0, le=999999.99, decimal_places=2)
 
 
 class MarkPurchasedResponse(BaseModel):
@@ -78,17 +63,9 @@ class MarkPurchasedResponse(BaseModel):
 class AddMorePurchaseRequest(BaseModel):
     """Request model for adding more quantity to an already-purchased item."""
 
-    quantity: float = Field(gt=0, le=9999)
-    price_per_unit: float = Field(gt=0, le=99999.99)
-    total: float = Field(gt=0, le=999999.99)
-
-    @field_validator('quantity', 'price_per_unit', 'total')
-    @classmethod
-    def validate_decimal_places(cls, v: float) -> float:
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('INVALID_DECIMAL_PLACES')
-        return v
+    quantity: Decimal = Field(gt=0, le=9999, decimal_places=2)
+    price_per_unit: Decimal = Field(gt=0, le=99999.99, decimal_places=2)
+    total: Decimal = Field(gt=0, le=999999.99, decimal_places=2)
 
 
 class CompleteShoppingResponse(BaseModel):

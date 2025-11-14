@@ -1,8 +1,9 @@
 """Schemas for run-related requests and responses."""
 
+from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 
 class CreateRunRequest(BaseModel):
@@ -31,17 +32,9 @@ class PlaceBidRequest(BaseModel):
     """Request model for placing a bid on a product."""
 
     product_id: str
-    quantity: float = Field(gt=0, le=9999)
+    quantity: Decimal = Field(gt=0, le=9999, decimal_places=2)
     interested_only: bool = False
     comment: str | None = Field(None, max_length=500)
-
-    @field_validator('quantity')
-    @classmethod
-    def validate_quantity(cls, v: float) -> float:
-        # Check max 2 decimal places
-        if round(v, 2) != v:
-            raise ValueError('INVALID_DECIMAL_PLACES')
-        return v
 
 
 class UserBidResponse(BaseModel):

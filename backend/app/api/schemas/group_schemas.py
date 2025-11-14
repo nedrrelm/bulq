@@ -1,31 +1,23 @@
 """Schemas for group-related requests and responses."""
 
-import re
-
 from pydantic import BaseModel, Field, field_validator
 
 
 class CreateGroupRequest(BaseModel):
     """Request model for creating a new group."""
 
-    name: str = Field(min_length=2, max_length=100)
+    name: str = Field(
+        min_length=2,
+        max_length=100,
+        pattern=r"^[a-zA-Z0-9\s\-_&']+$",
+        description="Group name (alphanumeric, spaces, and characters: - _ & ')",
+    )
 
-    @field_validator('name')
+    @field_validator('name', mode='before')
     @classmethod
-    def validate_name(cls, v: str) -> str:
-        v = v.strip()
-
-        if len(v) < 2:
-            raise ValueError('GROUP_NAME_TOO_SHORT')
-
-        if len(v) > 100:
-            raise ValueError('GROUP_NAME_TOO_LONG')
-
-        # Allow alphanumeric, spaces, and specific special characters: - _ & '
-        if not re.match(r"^[a-zA-Z0-9\s\-_&']+$", v):
-            raise ValueError('GROUP_NAME_INVALID_CHARACTERS')
-
-        return v
+    def strip_name(cls, v: str) -> str:
+        """Strip whitespace from name before validation."""
+        return v.strip() if isinstance(v, str) else v
 
 
 class RunSummary(BaseModel):
