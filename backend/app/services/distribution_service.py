@@ -125,11 +125,9 @@ class DistributionService(BaseService):
         if not state_machine.can_view_distribution(run_state):
             raise BadRequestError(
                 code=INVALID_RUN_STATE_TRANSITION,
-                message=state_machine.get_action_error_message(
-                    'distribution', run_state, [RunState.DISTRIBUTING, RunState.COMPLETED]
-                ),
                 current_state=run.state,
                 action='view_distribution',
+                allowed_states='distributing, completed',
             )
 
     def _aggregate_bids_by_user(self, all_bids: list[ProductBid]) -> dict[str, dict[str, Any]]:

@@ -7,10 +7,10 @@ from app.api.schemas import (
     CancelRunResponse,
     CreateRunRequest,
     CreateRunResponse,
-    MessageResponse,
     PlaceBidRequest,
     PlaceBidResponse,
     ReadyToggleResponse,
+    RetractBidResponse,
     RunDetailResponse,
     StateChangeResponse,
     SuccessResponse,
@@ -67,7 +67,7 @@ async def place_bid(
     return result
 
 
-@router.delete('/{run_id}/bids/{product_id}', response_model=SuccessResponse)
+@router.delete('/{run_id}/bids/{product_id}', response_model=RetractBidResponse)
 async def retract_bid(
     run_id: str,
     product_id: str,
@@ -76,8 +76,7 @@ async def retract_bid(
 ):
     """Retract a bid on a product in a run."""
     service = RunService(db)
-    result = service.retract_bid(run_id, product_id, current_user)
-    return MessageResponse(message=result.message)
+    return service.retract_bid(run_id, product_id, current_user)
 
 
 @router.post('/{run_id}/ready', response_model=ReadyToggleResponse)
