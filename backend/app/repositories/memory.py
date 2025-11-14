@@ -212,7 +212,14 @@ class MemoryRepository(AbstractRepository):
                 user_group_ids.append(group_id)
 
         # Get runs for those groups that target this store and are active
-        active_states = ['planning', 'active', 'confirmed', 'shopping', 'adjusting', 'distributing']
+        active_states = [
+            RunState.PLANNING,
+            RunState.ACTIVE,
+            RunState.CONFIRMED,
+            RunState.SHOPPING,
+            RunState.ADJUSTING,
+            RunState.DISTRIBUTING,
+        ]
         runs = []
         for run in self._runs.values():
             if (
@@ -236,15 +243,15 @@ class MemoryRepository(AbstractRepository):
         runs = [
             run
             for run in self._runs.values()
-            if run.group_id == group_id and run.state in ('completed', 'cancelled')
+            if run.group_id == group_id and run.state in (RunState.COMPLETED, RunState.CANCELLED)
         ]
 
         # Sort by completion/cancellation timestamp (most recent first)
         # Use completed_at for completed runs, cancelled_at for cancelled runs
         def get_timestamp(run):
-            if run.state == 'completed' and run.completed_at:
+            if run.state == RunState.COMPLETED and run.completed_at:
                 return run.completed_at
-            elif run.state == 'cancelled' and run.cancelled_at:
+            elif run.state == RunState.CANCELLED and run.cancelled_at:
                 return run.cancelled_at
             return datetime.min.replace(tzinfo=UTC)
 
@@ -483,15 +490,26 @@ class MemoryRepository(AbstractRepository):
         now = datetime.now()
         run.planning_at = now - timedelta(days=days_ago)  # Started X days ago
 
-        if state in ['active', 'confirmed', 'shopping', 'distributing', 'completed']:
+        if state in [
+            RunState.ACTIVE,
+            RunState.CONFIRMED,
+            RunState.SHOPPING,
+            RunState.DISTRIBUTING,
+            RunState.COMPLETED,
+        ]:
             run.active_at = now - timedelta(days=days_ago - 2)
-        if state in ['confirmed', 'shopping', 'distributing', 'completed']:
+        if state in [
+            RunState.CONFIRMED,
+            RunState.SHOPPING,
+            RunState.DISTRIBUTING,
+            RunState.COMPLETED,
+        ]:
             run.confirmed_at = now - timedelta(days=days_ago - 4)
-        if state in ['shopping', 'distributing', 'completed']:
+        if state in [RunState.SHOPPING, RunState.DISTRIBUTING, RunState.COMPLETED]:
             run.shopping_at = now - timedelta(days=days_ago - 5)
-        if state in ['distributing', 'completed']:
+        if state in [RunState.DISTRIBUTING, RunState.COMPLETED]:
             run.distributing_at = now - timedelta(days=days_ago - 6)
-        if state == 'completed':
+        if state == RunState.COMPLETED:
             run.completed_at = now - timedelta(days=days_ago - 7)
 
         self._runs[run.id] = run
@@ -567,7 +585,11 @@ class MemoryRepository(AbstractRepository):
         from datetime import datetime
 
         run = Run(
-            id=uuid4(), group_id=group_id, store_id=store_id, state='planning', comment=comment
+            id=uuid4(),
+            group_id=group_id,
+            store_id=store_id,
+            state=RunState.PLANNING,
+            comment=comment,
         )
         run.planning_at = datetime.now()
         self._runs[run.id] = run

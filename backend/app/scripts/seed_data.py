@@ -2,6 +2,8 @@
 
 from datetime import UTC
 
+from app.core.run_state import RunState
+
 
 def create_seed_data(repo):
     """Create test data using repository interface.
@@ -91,33 +93,39 @@ def create_seed_data(repo):
     repo._create_product_availability(cheese_sticks.id, sams.id, 8.98, '', days_ago=5)
 
     # Create test runs - one for each state with test user as leader
-    repo._create_run(friends_group.id, costco.id, 'planning', test_user.id, days_ago=7)
-    run_active = repo._create_run(friends_group.id, sams.id, 'active', test_user.id, days_ago=5)
-    run_confirmed = repo._create_run(
-        friends_group.id, costco.id, 'confirmed', test_user.id, days_ago=3
+    repo._create_run(friends_group.id, costco.id, RunState.PLANNING, test_user.id, days_ago=7)
+    run_active = repo._create_run(
+        friends_group.id, sams.id, RunState.ACTIVE, test_user.id, days_ago=5
     )
-    run_shopping = repo._create_run(friends_group.id, sams.id, 'shopping', test_user.id, days_ago=2)
+    run_confirmed = repo._create_run(
+        friends_group.id, costco.id, RunState.CONFIRMED, test_user.id, days_ago=3
+    )
+    run_shopping = repo._create_run(
+        friends_group.id, sams.id, RunState.SHOPPING, test_user.id, days_ago=2
+    )
     run_adjusting = repo._create_run(
-        friends_group.id, costco.id, 'adjusting', test_user.id, days_ago=1.5
+        friends_group.id, costco.id, RunState.ADJUSTING, test_user.id, days_ago=1.5
     )
     run_distributing = repo._create_run(
-        friends_group.id, costco.id, 'distributing', test_user.id, days_ago=1
+        friends_group.id, costco.id, RunState.DISTRIBUTING, test_user.id, days_ago=1
     )
     run_completed = repo._create_run(
-        friends_group.id, sams.id, 'completed', test_user.id, days_ago=14
+        friends_group.id, sams.id, RunState.COMPLETED, test_user.id, days_ago=14
     )
 
     # Add more completed runs with different dates for better price history
     run_completed_2 = repo._create_run(
-        friends_group.id, costco.id, 'completed', test_user.id, days_ago=30
+        friends_group.id, costco.id, RunState.COMPLETED, test_user.id, days_ago=30
     )
     run_completed_3 = repo._create_run(
-        friends_group.id, sams.id, 'completed', alice.id, days_ago=45
+        friends_group.id, sams.id, RunState.COMPLETED, alice.id, days_ago=45
     )
     run_completed_4 = repo._create_run(
-        friends_group.id, costco.id, 'completed', bob.id, days_ago=60
+        friends_group.id, costco.id, RunState.COMPLETED, bob.id, days_ago=60
     )
-    run_completed_5 = repo._create_run(work_group.id, sams.id, 'completed', bob.id, days_ago=75)
+    run_completed_5 = repo._create_run(
+        work_group.id, sams.id, RunState.COMPLETED, bob.id, days_ago=75
+    )
 
     # Planning run - test user is leader (no other participants yet)
     # (no additional participants to create for planning run)

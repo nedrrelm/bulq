@@ -73,12 +73,12 @@ class GroupService(BaseService):
 
         # State ordering for sorting (reverse order: distributing > adjusting > shopping > confirmed > active > planning)
         state_order = {
-            'distributing': 6,
-            'adjusting': 5,
-            'shopping': 4,
-            'confirmed': 3,
-            'active': 2,
-            'planning': 1,
+            RunState.DISTRIBUTING: 6,
+            RunState.ADJUSTING: 5,
+            RunState.SHOPPING: 4,
+            RunState.CONFIRMED: 3,
+            RunState.ACTIVE: 2,
+            RunState.PLANNING: 1,
         }
 
         # Convert to response format
@@ -818,7 +818,11 @@ class GroupService(BaseService):
                     f'run:{run_id}',
                     {
                         'type': 'run_cancelled',
-                        'data': {'run_id': run_id, 'state': 'cancelled', 'new_state': 'cancelled'},
+                        'data': {
+                            'run_id': run_id,
+                            'state': RunState.CANCELLED,
+                            'new_state': RunState.CANCELLED,
+                        },
                     },
                 ),
                 task_name=f'broadcast_run_cancelled_{run_id}',
