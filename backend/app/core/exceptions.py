@@ -173,3 +173,27 @@ class BadRequestError(AppException):
             **details: Additional context
         """
         super().__init__(code=code, message=message, **details)
+
+
+class ConfigurationError(AppException):
+    """Raised when application configuration is invalid (HTTP 500).
+
+    This is for internal configuration errors during app initialization or setup,
+    not user-facing errors.
+
+    Usage:
+        raise ConfigurationError(code='INVALID_REPO_MODE', repo_mode='invalid')
+        raise ConfigurationError(code='DATABASE_SESSION_REQUIRED')
+    """
+
+    default_status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    def __init__(self, code: str, message: str | None = None, **details: Any):
+        """Initialize ConfigurationError.
+
+        Args:
+            code: Error code (e.g., 'DATABASE_SESSION_REQUIRED', 'INVALID_REPO_MODE')
+            message: Optional message for logging
+            **details: Additional context
+        """
+        super().__init__(code=code, message=message, **details)

@@ -208,6 +208,15 @@ HELPER_NOT_GROUP_MEMBER = 'HELPER_NOT_GROUP_MEMBER'
 
 
 # ============================================================================
+# Configuration & System Errors
+# ============================================================================
+
+DATABASE_SESSION_REQUIRED = 'DATABASE_SESSION_REQUIRED'
+INVALID_REPO_MODE = 'INVALID_REPO_MODE'
+CONFIGURATION_ERROR = 'CONFIGURATION_ERROR'
+
+
+# ============================================================================
 # Generic Errors (use sparingly, prefer specific codes)
 # ============================================================================
 
