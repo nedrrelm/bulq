@@ -28,15 +28,19 @@ export interface AdminStore {
 }
 
 export interface MergeResponse {
-  message: string
+  success: boolean
+  code: string
   source_id: string
   target_id: string
   affected_records: number
+  details?: Record<string, any>
 }
 
 export interface DeleteResponse {
-  message: string
+  success: boolean
+  code: string
   deleted_id: string
+  details?: Record<string, any>
 }
 
 export const adminApi = {
