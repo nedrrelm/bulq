@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 from app.api.websocket_manager import manager
 from app.infrastructure.auth import get_session
 from app.infrastructure.database import get_db
+from app.infrastructure.request_context import get_logger
 from app.repositories import get_repository
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 
 async def get_current_user_ws(
@@ -43,9 +45,7 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
         # Try to get session token from cookie or query parameter
         session_token = None
 
-        # Debug: print headers
-        print(f'[GROUP WS] Headers: {dict(websocket.headers)}')
-        print(f'[GROUP WS] Query params: {dict(websocket.query_params)}')
+        logger.debug('WebSocket connection attempt', extra={'endpoint': 'group', 'group_id': group_id})
 
         # Try cookie first
         if 'cookie' in websocket.headers:
@@ -59,24 +59,20 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
         if not session_token and 'session_token' in websocket.query_params:
             session_token = websocket.query_params['session_token']
 
-        print(f'[GROUP WS] Extracted session_token: {session_token}')
-
         # Authenticate user
         if not session_token:
-            print('[GROUP WS] ERROR: No session token')
+            logger.warning('WebSocket auth failed: No session token', extra={'group_id': group_id})
             await websocket.close(code=1008, reason='Not authenticated - no session token')
             return
 
         session_data = get_session(session_token)
-        print(f'[GROUP WS] Session data: {session_data}')
         if not session_data:
-            print('[GROUP WS] ERROR: Invalid or expired session')
+            logger.warning('WebSocket auth failed: Invalid session', extra={'group_id': group_id})
             await websocket.close(code=1008, reason='Invalid or expired session')
             return
 
         repo = get_repository(db)
         user_id = session_data['user_id']
-        print(f'[GROUP WS] Looking up user_id: {user_id} (type: {type(user_id)})')
 
         # Convert to UUID if it's a string
         if isinstance(user_id, str):
@@ -85,9 +81,8 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
             user_id = UUID(user_id)
 
         user = repo.get_user_by_id(user_id)
-        print(f'[GROUP WS] User: {user}')
         if not user:
-            print('[GROUP WS] ERROR: User not found')
+            logger.warning('WebSocket auth failed: User not found', extra={'user_id': str(user_id), 'group_id': group_id})
             await websocket.close(code=1008, reason='User not found')
             return
 
@@ -101,22 +96,20 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
             group_id_uuid = group_id
 
         group = repo.get_group_by_id(group_id_uuid)
-        print(f'[GROUP WS] Group: {group}')
         if not group:
-            print('[GROUP WS] ERROR: Group not found')
+            logger.warning('WebSocket auth failed: Group not found', extra={'user_id': str(user_id), 'group_id': group_id})
             await websocket.close(code=1008, reason='Group not found')
             return
 
         # Check if user is member of group
         user_groups = repo.get_user_groups(user)
         is_member = any(g.id == group_id_uuid for g in user_groups)
-        print(f'[GROUP WS] Is member: {is_member}')
         if not is_member:
-            print('[GROUP WS] ERROR: Not a member of this group')
+            logger.warning('WebSocket auth failed: Not a member', extra={'user_id': str(user_id), 'group_id': group_id})
             await websocket.close(code=1008, reason='Not a member of this group')
             return
 
-        print('[GROUP WS] Authentication successful! Connecting to room...')
+        logger.info('WebSocket connected', extra={'user_id': str(user_id), 'group_id': group_id, 'endpoint': 'group'})
 
         # Connect to room
         room_id = f'group:{group_id}'
@@ -139,6 +132,7 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_id)
+        logger.debug('WebSocket disconnected', extra={'group_id': group_id, 'endpoint': 'group'})
     finally:
         db.close()
 
@@ -172,11 +166,13 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
         # Authenticate user
         if not session_token:
+            logger.warning('WebSocket auth failed: No session token', extra={'run_id': str(run_id)})
             await websocket.close(code=1008, reason='Not authenticated')
             return
 
         session_data = get_session(session_token)
         if not session_data:
+            logger.warning('WebSocket auth failed: Invalid session', extra={'run_id': str(run_id)})
             await websocket.close(code=1008, reason='Invalid or expired session')
             return
 
@@ -191,6 +187,7 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
         user = repo.get_user_by_id(user_id)
         if not user:
+            logger.warning('WebSocket auth failed: User not found', extra={'user_id': str(user_id), 'run_id': str(run_id)})
             await websocket.close(code=1008, reason='User not found')
             return
 
@@ -203,14 +200,18 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
         run = repo.get_run_by_id(run_id)
         if not run:
+            logger.warning('WebSocket auth failed: Run not found', extra={'user_id': str(user_id), 'run_id': str(run_id)})
             await websocket.close(code=1008, reason='Run not found')
             return
 
         # Check if user is in the group that owns this run
         user_groups = repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
+            logger.warning('WebSocket auth failed: Not authorized', extra={'user_id': str(user_id), 'run_id': str(run_id)})
             await websocket.close(code=1008, reason='Not authorized for this run')
             return
+
+        logger.info('WebSocket connected', extra={'user_id': str(user_id), 'run_id': str(run_id), 'endpoint': 'run'})
 
         # Connect to room
         room_id = f'run:{run_id}'
@@ -233,6 +234,7 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_id)
+        logger.debug('WebSocket disconnected', extra={'run_id': str(run_id), 'endpoint': 'run'})
     finally:
         db.close()
 
@@ -266,11 +268,13 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
 
         # Authenticate user
         if not session_token:
+            logger.warning('WebSocket auth failed: No session token', extra={'endpoint': 'user'})
             await websocket.close(code=1008, reason='Not authenticated')
             return
 
         session_data = get_session(session_token)
         if not session_data:
+            logger.warning('WebSocket auth failed: Invalid session', extra={'endpoint': 'user'})
             await websocket.close(code=1008, reason='Invalid or expired session')
             return
 
@@ -285,8 +289,11 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
 
         user = repo.get_user_by_id(user_id)
         if not user:
+            logger.warning('WebSocket auth failed: User not found', extra={'user_id': str(user_id), 'endpoint': 'user'})
             await websocket.close(code=1008, reason='User not found')
             return
+
+        logger.info('WebSocket connected', extra={'user_id': str(user_id), 'endpoint': 'user'})
 
         # Connect to user-specific room
         room_id = f'user:{user_id}'
@@ -309,5 +316,6 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
     except WebSocketDisconnect:
         room_id_disconnect = f'user:{user_id}'
         manager.disconnect(websocket, room_id_disconnect)
+        logger.debug('WebSocket disconnected', extra={'user_id': str(user_id), 'endpoint': 'user'})
     finally:
         db.close()

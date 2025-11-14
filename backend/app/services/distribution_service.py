@@ -62,29 +62,29 @@ class DistributionService(BaseService):
         self._validate_distribution_access(run_id, current_user)
         all_bids = self.repo.get_bids_by_run_with_participations(run_id)
 
-        logger.info(f'Found {len(all_bids)} bids for distribution', extra={'run_id': str(run_id)})
+        logger.debug(f'Found {len(all_bids)} bids for distribution', extra={'run_id': str(run_id)})
         for bid in all_bids:
-            logger.info(
+            logger.debug(
                 f'Bid: product={bid.product_id}, interested_only={bid.interested_only}, '
                 f'distributed_qty={bid.distributed_quantity}, type={type(bid.distributed_quantity).__name__}',
                 extra={'run_id': str(run_id), 'bid_id': str(bid.id)},
             )
 
         users_data = self._aggregate_bids_by_user(all_bids)
-        logger.info(f'Aggregated into {len(users_data)} users', extra={'run_id': str(run_id)})
+        logger.debug(f'Aggregated into {len(users_data)} users', extra={'run_id': str(run_id)})
 
         distributions = []
         for user_data in users_data.values():
             # Skip users with no products (all bids were unpurchased)
             if not user_data['products']:
-                logger.info(
+                logger.debug(
                     f'Skipping user {user_data["user_name"]}: no purchased products',
                     extra={'run_id': str(run_id)},
                 )
                 continue
             try:
                 dist = self._build_user_distribution(user_data)
-                logger.info(
+                logger.debug(
                     f'Built distribution for user {user_data["user_name"]}: {len(user_data["products"])} products',
                     extra={'run_id': str(run_id)},
                 )
@@ -96,12 +96,12 @@ class DistributionService(BaseService):
                     exc_info=True,
                 )
 
-        logger.info(f'Returning {len(distributions)} distributions', extra={'run_id': str(run_id)})
+        logger.debug(f'Returning {len(distributions)} distributions', extra={'run_id': str(run_id)})
         sorted_distributions = self._sort_distributions(distributions)
 
         # Log the actual data being returned
         for dist in sorted_distributions:
-            logger.info(
+            logger.debug(
                 f'Distribution data: user={dist.user_name}, products={len(dist.products)}, total={dist.total_cost}',
                 extra={'run_id': str(run_id)},
             )

@@ -12,6 +12,7 @@ import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { NAVIGATION_DELAY_AFTER_ACTION_MS } from '../constants'
 import { getErrorMessage } from '../utils/errorHandling'
+import { logger } from '../utils/logger'
 
 export default function ManageGroupPage() {
   const { groupId } = useParams<{ groupId: string }>()
@@ -124,7 +125,7 @@ export default function ManageGroupPage() {
         showToast('Invite link copied to clipboard!', 'success')
       })
       .catch(err => {
-        console.error('Failed to copy:', err)
+        logger.error('Failed to copy:', err)
         showToast('Failed to copy invite link', 'error')
       })
   }

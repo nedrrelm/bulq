@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { runsApi } from '../api'
 import { getErrorMessage } from '../utils/errorHandling'
+import { logger } from '../utils/logger'
 
 interface DownloadRunStateButtonProps {
   runId: string
@@ -45,7 +46,7 @@ export default function DownloadRunStateButton({
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Failed to download run state:', err)
+      logger.error('Failed to download run state:', err)
       setError(getErrorMessage(err, 'Failed to download'))
     } finally {
       setIsDownloading(false)

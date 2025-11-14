@@ -5,6 +5,7 @@ import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import NewStorePopup from './NewStorePopup'
 import { getErrorMessage } from '../utils/errorHandling'
+import { logger } from '../utils/logger'
 
 interface NewRunPopupProps {
   groupId: string
@@ -40,7 +41,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
         // Focus the select after stores are loaded
         setTimeout(() => selectRef.current?.focus(), 0)
       } catch (err) {
-        console.error('Error fetching stores:', err)
+        logger.error('Error fetching stores:', err)
         setError(getErrorMessage(err, 'Failed to load stores'))
         setStores([])
       }
