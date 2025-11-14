@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { reassignmentApi } from '../api'
 import '../styles/components/ReassignLeaderPopup.css'
 import { getErrorMessage } from '../utils/errorHandling'
@@ -24,6 +25,7 @@ export default function ReassignLeaderPopup({
   onSuccess,
   onCancelRun,
 }: ReassignLeaderPopupProps) {
+  const { t } = useTranslation()
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string>('')
@@ -47,7 +49,7 @@ export default function ReassignLeaderPopup({
     e.preventDefault()
 
     if (!selectedUserId) {
-      setError('Please select a participant')
+      setError(t('run.validation.participantRequired'))
       return
     }
 
@@ -58,7 +60,7 @@ export default function ReassignLeaderPopup({
       onSuccess()
       onClose()
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Failed to request reassignment'))
+      setError(getErrorMessage(err, t('run.errors.reassignmentFailed')))
     } finally {
       setSubmitting(false)
     }
@@ -67,15 +69,15 @@ export default function ReassignLeaderPopup({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-md" onClick={(e) => e.stopPropagation()}>
-        <h2>Reassign Leadership</h2>
+        <h2>{t('run.reassign.title')}</h2>
         <p className="text-sm" style={{ color: 'var(--color-text-light)', marginBottom: '1.5rem' }}>
-          Select a participant to transfer leadership to. They will receive a notification and must accept the request.
+          {t('run.reassign.description')}
         </p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="participant" className="form-label">
-              New Leader
+              {t('run.fields.newLeader')}
             </label>
             <select
               id="participant"
@@ -85,7 +87,7 @@ export default function ReassignLeaderPopup({
               disabled={submitting}
               required
             >
-              <option value="">Select a participant...</option>
+              <option value="">{t('run.reassign.selectParticipant')}</option>
               {eligibleParticipants.map((participant) => (
                 <option key={participant.user_id} value={participant.user_id}>
                   {participant.user_name}
@@ -102,7 +104,7 @@ export default function ReassignLeaderPopup({
 
           {eligibleParticipants.length === 0 && (
             <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
-              No other participants available to reassign to
+              {t('run.reassign.noParticipantsAvailable')}
             </div>
           )}
 
@@ -113,14 +115,14 @@ export default function ReassignLeaderPopup({
               className="btn btn-secondary"
               disabled={submitting}
             >
-              Cancel
+              {t('common.buttons.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting || eligibleParticipants.length === 0}
             >
-              {submitting ? 'Reassigning...' : 'Reassign'}
+              {submitting ? t('run.actions.reassigning') : t('run.actions.reassign')}
             </button>
             {onCancelRun && (
               <button
@@ -131,7 +133,7 @@ export default function ReassignLeaderPopup({
                 }}
                 className="btn btn-danger"
               >
-                ✕ Cancel Run
+                {t('run.actions.cancelRun')}
               </button>
             )}
           </div>

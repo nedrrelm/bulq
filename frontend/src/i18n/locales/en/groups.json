@@ -1,0 +1,37 @@
+{
+  "title": "Groups",
+  "actions": {
+    "newGroup": "New Group",
+    "newStore": "New Store",
+    "newProduct": "New Product"
+  },
+  "errors": {
+    "loadFailed": "Failed to load groups: {{error}}"
+  },
+  "empty": {
+    "noGroups": "You're not part of any groups yet.",
+    "invite": "Ask a friend to invite you or create your own group!"
+  },
+  "reassignment": {
+    "pendingTitle": "Pending Reassignment Requests:",
+    "pendingCount": "You have {{count}} pending leadership transfer request(s).",
+    "pendingCount_one": "You have 1 pending leadership transfer request.",
+    "pendingCount_other": "You have {{count}} pending leadership transfer requests.",
+    "waitingFor": "waiting for {{name}}"
+  },
+  "fields": {
+    "name": "Group Name"
+  },
+  "create": {
+    "title": "Create New Group",
+    "namePlaceholder": "Enter group name",
+    "submit": "Create Group",
+    "submitting": "Creating..."
+  },
+  "validation": {
+    "nameRequired": "Group name is required",
+    "invalidName": "Invalid group name",
+    "invalidCharacters": "Invalid characters in group name",
+    "nameHint": "2-100 characters, letters, numbers, and - _ & '"
+  }
+}

@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { RunDetail } from '../api'
 
 type Product = RunDetail['products'][0]
@@ -22,6 +23,8 @@ interface RunProductItemProps {
  * - Distributing/Completed: Show final purchase information
  */
 const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid, onViewComments, getUserInitials }: RunProductItemProps) => {
+  const { t } = useTranslation()
+
   const needsAdjustment = runState === 'adjusting' &&
                           product.purchased_quantity !== null &&
                           product.purchased_quantity > 0 &&
@@ -67,7 +70,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
             <button
               onClick={() => onViewComments(product)}
               className="comments-button"
-              title={commentCount > 0 ? `View ${commentCount} comment${commentCount === 1 ? '' : 's'}` : 'Add or view comments'}
+              title={commentCount > 0 ? t('run.product.viewComments', { count: commentCount }) : t('run.product.addOrViewComments')}
             >
               🗩️
               {commentCount > 0 && <span className="comment-badge">{commentCount}</span>}
@@ -81,23 +84,23 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
         <div>
           {product.purchased_quantity !== null && product.purchased_quantity > 0 ? (
             <div className={`adjustment-info ${needsAdjustment ? 'needs-adjustment' : 'adjustment-ok'}`}>
-              <strong>Purchased:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>Requested:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
+              <strong>{t('run.product.purchased')}:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>{t('run.product.requested')}:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
               {needsAdjustment && (
                 <span className="adjustment-warning">
-                  ⚠ Reduce by {product.total_quantity - product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''}
+                  ⚠ {t('run.product.reduceBy', { amount: product.total_quantity - product.purchased_quantity, unit: product.unit || '' })}
                 </span>
               )}
               {adjustmentOk && (
                 <span className="adjustment-ok-badge">
-                  ✓ OK
+                  ✓ {t('run.product.ok')}
                 </span>
               )}
             </div>
           ) : (
             <div className="adjustment-info not-purchased-info">
-              <strong>Not Purchased</strong>
+              <strong>{t('run.product.notPurchased')}</strong>
               <span className="not-purchased-badge">
-                ❌ Not Purchased
+                ❌ {t('run.product.notPurchased')}
               </span>
             </div>
           )}
@@ -108,24 +111,24 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
         <div>
           {(fullyPurchased || partiallyPurchased) && (
             <div className={`adjustment-info ${fullyPurchased ? 'adjustment-ok' : 'needs-adjustment'}`}>
-              <strong>Purchased:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>Requested:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
+              <strong>{t('run.product.purchased')}:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>{t('run.product.requested')}:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
               {fullyPurchased && (
                 <span className="adjustment-ok-badge">
-                  ✓ OK
+                  ✓ {t('run.product.ok')}
                 </span>
               )}
               {partiallyPurchased && (
                 <span className="adjustment-warning">
-                  ⚠️ Partially Purchased
+                  ⚠️ {t('run.product.partiallyPurchased')}
                 </span>
               )}
             </div>
           )}
           {notPurchasedFinal && (
             <div className="adjustment-info not-purchased-info">
-              <strong>Not Purchased</strong>
+              <strong>{t('run.product.notPurchased')}</strong>
               <span className="not-purchased-badge">
-                ❌ Not Purchased
+                ❌ {t('run.product.notPurchased')}
               </span>
             </div>
           )}
@@ -135,21 +138,21 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
       <div className="product-stats">
         <div className="stat">
           <span className="stat-value">{product.total_quantity}{product.unit ? ` ${product.unit}` : ''}</span>
-          <span className="stat-label">Total Quantity</span>
+          <span className="stat-label">{t('run.product.totalQuantity')}</span>
         </div>
         <div className="stat">
           <span className="stat-value">{product.interested_count}</span>
-          <span className="stat-label">People Interested</span>
+          <span className="stat-label">{t('run.product.peopleInterested')}</span>
         </div>
       </div>
 
       <div className="bid-users">
-        <h5>Bidders:</h5>
+        <h5>{t('run.product.bidders')}:</h5>
         <div className="user-avatars">
           {product.user_bids.map((bid, index) => {
             const allBidderNames = product.user_bids.map(b => b.user_name)
             return (
-            <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? 'Interested' : `${bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}`}>
+            <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? t('run.product.interested') : `${bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}`}>
               <span className="avatar-initials">{getUserInitials(bid.user_name, allBidderNames)}</span>
               <span className="bid-quantity">
                 {bid.interested_only ? '?' : bid.quantity}
@@ -168,13 +171,13 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               {needsAdjustment && product.current_user_bid ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
+                    {t('run.product.yourBid')}: {product.current_user_bid.interested_only ? t('run.product.interested') : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                   <div className="bid-buttons">
                     <button
                       onClick={() => onPlaceBid(product)}
                       className="edit-bid-button"
-                      title="Edit bid"
+                      title={t('run.product.editBid')}
                     >
                       ✏️
                     </button>
@@ -182,7 +185,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
                       <button
                         onClick={() => onRetractBid(product)}
                         className="retract-bid-button"
-                        title="Retract bid"
+                        title={t('run.product.retractBid')}
                       >
                         −
                       </button>
@@ -192,7 +195,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               ) : product.current_user_bid && (adjustmentOk || notPurchasedAdjusting) ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
+                    {t('run.product.yourBid')}: {product.current_user_bid.interested_only ? t('run.product.interested') : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                 </div>
               ) : null}
@@ -203,20 +206,20 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               {product.current_user_bid ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    Your bid: {product.current_user_bid.interested_only ? 'Interested' : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
+                    {t('run.product.yourBid')}: {product.current_user_bid.interested_only ? t('run.product.interested') : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                   <div className="bid-buttons">
                     <button
                       onClick={() => onPlaceBid(product)}
                       className="edit-bid-button"
-                      title="Edit bid"
+                      title={t('run.product.editBid')}
                     >
                       ✏️
                     </button>
                     <button
                       onClick={() => onRetractBid(product)}
                       className="retract-bid-button"
-                      title="Retract bid"
+                      title={t('run.product.retractBid')}
                     >
                       −
                     </button>
@@ -226,7 +229,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
                 <button
                   onClick={() => onPlaceBid(product)}
                   className="place-bid-button"
-                  title="Place bid"
+                  title={t('run.product.placeBid')}
                 >
                   +
                 </button>

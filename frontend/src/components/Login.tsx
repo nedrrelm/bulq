@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/Login.css'
 import { authApi } from '../api'
 import type { User } from '../types/user'
@@ -22,6 +23,7 @@ interface RegisterFormData {
 }
 
 export default function Login({ onLogin }: LoginProps) {
+  const { t } = useTranslation()
   const [isRegister, setIsRegister] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -71,7 +73,7 @@ export default function Login({ onLogin }: LoginProps) {
 
     // Validate password confirmation
     if (registerData.password !== registerData.confirmPassword) {
-      setError('Passwords do not match')
+      setError(t('auth.errors.passwordMismatch'))
       setLoading(false)
       return
     }
@@ -91,7 +93,7 @@ export default function Login({ onLogin }: LoginProps) {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h2>{isRegister ? 'Create Account' : 'Sign In'}</h2>
+        <h2>{isRegister ? t('auth.register.title') : t('auth.login.title')}</h2>
 
         {error && (
           <div className="error-message">
@@ -102,7 +104,7 @@ export default function Login({ onLogin }: LoginProps) {
         {isRegister ? (
           <form onSubmit={handleRegister} className="auth-form">
             <div className="form-group">
-              <label htmlFor="name" className="form-label">Name</label>
+              <label htmlFor="name" className="form-label">{t('auth.fields.name')}</label>
               <input
                 type="text"
                 id="name"
@@ -116,7 +118,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="username" className="form-label">Username</label>
+              <label htmlFor="username" className="form-label">{t('auth.fields.username')}</label>
               <input
                 type="text"
                 id="username"
@@ -128,14 +130,14 @@ export default function Login({ onLogin }: LoginProps) {
                 minLength={3}
                 maxLength={50}
                 pattern="[a-zA-Z0-9_-]+"
-                title="Username can only contain letters, numbers, hyphens, and underscores"
+                title={t('auth.validation.usernamePattern')}
               />
               <small className="input-hint">
-                Letters, numbers, hyphens, and underscores only (3-50 characters)
+                {t('auth.validation.usernameHint')}
               </small>
             </div>
             <div className="form-group">
-              <label htmlFor="password" className="form-label">Password</label>
+              <label htmlFor="password" className="form-label">{t('auth.fields.password')}</label>
               <input
                 type="password"
                 id="password"
@@ -149,7 +151,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+              <label htmlFor="confirmPassword" className="form-label">{t('auth.fields.confirmPassword')}</label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -163,13 +165,13 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <button type="submit" disabled={loading} className="auth-button">
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? t('auth.register.submitting') : t('auth.register.submit')}
             </button>
           </form>
         ) : (
           <form onSubmit={handleLogin} className="auth-form">
             <div className="form-group">
-              <label htmlFor="username" className="form-label">Username</label>
+              <label htmlFor="username" className="form-label">{t('auth.fields.username')}</label>
               <input
                 type="text"
                 id="username"
@@ -183,7 +185,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="password" className="form-label">Password</label>
+              <label htmlFor="password" className="form-label">{t('auth.fields.password')}</label>
               <input
                 type="password"
                 id="password"
@@ -196,7 +198,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <button type="submit" disabled={loading} className="auth-button">
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? t('auth.login.submitting') : t('auth.login.submit')}
             </button>
           </form>
         )}
@@ -204,26 +206,26 @@ export default function Login({ onLogin }: LoginProps) {
         <div className="auth-switch">
           {isRegister ? (
             <p>
-              Already have an account?{' '}
+              {t('auth.register.hasAccount')}{' '}
               <button
                 type="button"
                 onClick={() => setIsRegister(false)}
                 className="link-button"
                 disabled={loading}
               >
-                Sign In
+                {t('auth.login.submit')}
               </button>
             </p>
           ) : (
             <p>
-              Don't have an account?{' '}
+              {t('auth.login.noAccount')}{' '}
               <button
                 type="button"
                 onClick={() => setIsRegister(true)}
                 className="link-button"
                 disabled={loading}
               >
-                Create Account
+                {t('auth.register.submit')}
               </button>
             </p>
           )}

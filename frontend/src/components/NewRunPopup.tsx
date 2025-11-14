@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/NewRunPopup.css'
 import { storesApi, runsApi } from '../api'
 import type { Store } from '../api'
@@ -14,6 +15,7 @@ interface NewRunPopupProps {
 }
 
 export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopupProps) {
+  const { t } = useTranslation()
   const [stores, setStores] = useState<Store[]>([])
   const [selectedStoreId, setSelectedStoreId] = useState('')
   const [comment, setComment] = useState('')
@@ -42,7 +44,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
         setTimeout(() => selectRef.current?.focus(), 0)
       } catch (err) {
         logger.error('Error fetching stores:', err)
-        setError(getErrorMessage(err, 'Failed to load stores'))
+        setError(getErrorMessage(err, t('run.errors.loadStoresFailed')))
         setStores([])
       }
     }
@@ -54,7 +56,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     e.preventDefault()
 
     if (!selectedStoreId) {
-      setError('Please select a store')
+      setError(t('run.validation.storeRequired'))
       return
     }
 
@@ -69,7 +71,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
       })
       onSuccess()
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to create run'))
+      setError(getErrorMessage(err, t('run.errors.createFailed')))
     } finally {
       setLoading(false)
     }
@@ -91,14 +93,14 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   return (
     <div className="modal-overlay" onClick={handleOverlayClick} tabIndex={-1} ref={overlayRef}>
       <div ref={modalRef} className="modal modal-sm new-run-popup" onClick={(e) => e.stopPropagation()}>
-        <h3>Create New Run</h3>
-        <p className="popup-description">Select a store to start a new shopping run</p>
+        <h3>{t('run.create.title')}</h3>
+        <p className="popup-description">{t('run.create.description')}</p>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="store" className="form-label">Store</label>
+            <label htmlFor="store" className="form-label">{t('run.fields.store')}</label>
             <select
               id="store"
               className="form-input"
@@ -108,7 +110,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
               required
               ref={selectRef}
             >
-              {stores.length === 0 && <option value="">No stores available</option>}
+              {stores.length === 0 && <option value="">{t('run.create.noStoresAvailable')}</option>}
               {Array.isArray(stores) && stores.map(store => (
                 <option key={store.id} value={store.id}>
                   {store.name}
@@ -121,19 +123,19 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
                 onClick={() => setShowNewStorePopup(true)}
                 className="btn btn-primary btn-sm create-store-button"
               >
-                + Create New Store
+                {t('run.actions.createNewStore')}
               </button>
             )}
           </div>
 
           <div className="form-group">
-            <label htmlFor="comment" className="form-label">Comment (optional)</label>
+            <label htmlFor="comment" className="form-label">{t('run.fields.comment')}</label>
             <textarea
               id="comment"
               className="form-input"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="e.g., Bringing cooler, Meeting at 2pm"
+              placeholder={t('run.create.commentPlaceholder')}
               disabled={loading}
               maxLength={500}
               rows={2}
@@ -149,7 +151,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
                 className="btn btn-secondary btn-sm"
                 disabled={loading}
               >
-                + Create New Store
+                {t('run.actions.createNewStore')}
               </button>
             </div>
           )}
@@ -161,14 +163,14 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
               disabled={loading}
               className="btn btn-secondary btn-md cancel-button"
             >
-              Cancel
+              {t('common.buttons.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading || !selectedStoreId}
               className="btn btn-success btn-md submit-button"
             >
-              {loading ? 'Creating...' : 'Create Run'}
+              {loading ? t('run.actions.creating') : t('run.actions.createRun')}
             </button>
           </div>
         </form>

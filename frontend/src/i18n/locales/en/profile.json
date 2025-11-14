@@ -1,0 +1,66 @@
+{
+  "title": "Profile",
+  "sections": {
+    "statistics": "Statistics",
+    "accountSettings": "Account Settings"
+  },
+  "stats": {
+    "totalQuantityBought": "Total Items Bought",
+    "totalMoneySpent": "Total Money Spent",
+    "runsParticipated": "Runs Participated",
+    "runsHelped": "Runs Helped",
+    "runsLed": "Runs Led",
+    "groups": "Groups"
+  },
+  "fields": {
+    "name": "Name",
+    "username": "Username",
+    "password": "Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "language": "Language",
+    "darkMode": "Dark Mode"
+  },
+  "descriptions": {
+    "chooseLanguage": "Choose your preferred language",
+    "toggleDarkMode": "Toggle dark mode appearance",
+    "changeName": "Update your display name",
+    "changeUsername": "Update your username",
+    "changePassword": "Update your password"
+  },
+  "actions": {
+    "changeName": "Change Name",
+    "changeUsername": "Change Username",
+    "changePassword": "Change Password"
+  },
+  "messages": {
+    "loadingStats": "Loading statistics...",
+    "nameChanged": "Name changed successfully!",
+    "usernameChanged": "Username changed successfully!",
+    "passwordChanged": "Password changed successfully!"
+  },
+  "errors": {
+    "failedToLoadStats": "Failed to load statistics"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "usernameMinLength": "Username must be at least 3 characters",
+    "usernameInvalidChars": "Username can only contain letters, numbers, underscores, and hyphens",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "changeName": {
+    "title": "Change Name",
+    "changing": "Changing..."
+  },
+  "changeUsername": {
+    "title": "Change Username",
+    "hint": "3-50 characters, only letters, numbers, _ and -",
+    "changing": "Changing..."
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "changing": "Changing..."
+  }
+}

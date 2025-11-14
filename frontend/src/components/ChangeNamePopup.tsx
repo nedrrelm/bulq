@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/auth'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import type { User } from '../schemas/user'
@@ -10,6 +11,7 @@ interface ChangeNamePopupProps {
 }
 
 export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupProps) {
+  const { t } = useTranslation()
   const [newName, setNewName] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,7 +25,7 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
     setError('')
 
     if (newName.trim().length < 1) {
-      setError('Name cannot be empty')
+      setError(t('profile.validation.nameRequired'))
       return
     }
 
@@ -41,7 +43,7 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Change Name</h2>
+          <h2>{t('profile.changeName.title')}</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -52,7 +54,7 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
           )}
 
           <div className="form-group">
-            <label htmlFor="new-name" className="form-label">New Name *</label>
+            <label htmlFor="new-name" className="form-label">{t('profile.fields.name')} *</label>
             <input
               id="new-name"
               type="text"
@@ -62,7 +64,7 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
                 setNewName(e.target.value)
                 setError('')
               }}
-              placeholder="Enter new name"
+              placeholder={t('profile.fields.name')}
               disabled={submitting}
               required
               autoFocus
@@ -70,7 +72,7 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
           </div>
 
           <div className="form-group">
-            <label htmlFor="current-password" className="form-label">Current Password (for confirmation) *</label>
+            <label htmlFor="current-password" className="form-label">{t('profile.fields.currentPassword')} *</label>
             <input
               id="current-password"
               type="password"
@@ -80,7 +82,7 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
                 setCurrentPassword(e.target.value)
                 setError('')
               }}
-              placeholder="Enter your current password"
+              placeholder={t('profile.fields.currentPassword')}
               disabled={submitting}
               required
             />
@@ -93,14 +95,14 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              {t('common.buttons.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Changing...' : 'Change Name'}
+              {submitting ? t('profile.changeName.changing') : t('common.buttons.save')}
             </button>
           </div>
         </form>

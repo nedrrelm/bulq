@@ -1,0 +1,25 @@
+{
+  "title": "Notifications",
+  "markAllAsRead": "Mark All as Read",
+  "noNotifications": "No notifications",
+  "newNotification": "New notification",
+  "runStateChanged": "{{store_name}} {{state_message}}",
+  "changedState": "changed state",
+  "changedToState": "changed to {{state}}",
+  "groupedStateChanges": "{{count}} state changes for {{store_name}}",
+  "groupedStateChanges_one": "1 state change for {{store_name}}",
+  "groupedStateChanges_other": "{{count}} state changes for {{store_name}}",
+  "leadershipRequest": "{{from_user_name}} wants to transfer leadership of {{store_name}} to you",
+  "leadershipAccepted": "{{new_leader_name}} accepted leadership of {{store_name}}",
+  "leadershipDeclined": "{{declined_by_name}} declined leadership of {{store_name}}",
+  "states": {
+    "planning": "is in planning",
+    "active": "is active",
+    "confirmed": "is confirmed and ready",
+    "shopping": "shopping has started",
+    "adjusting": "needs adjustments",
+    "distributing": "is ready for distribution",
+    "completed": "has been completed",
+    "cancelled": "was cancelled"
+  }
+}

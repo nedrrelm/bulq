@@ -32,6 +32,7 @@ class UserResponse(BaseModel):
     username: str
     is_admin: bool = False
     dark_mode: bool = False
+    preferred_language: str = 'en'
 
 
 class UserStatsResponse(BaseModel):
@@ -70,3 +71,9 @@ class ChangeNameRequest(BaseModel):
 
     current_password: str = Field(min_length=1, max_length=100)
     new_name: str = Field(min_length=1, max_length=100)
+
+
+class ChangeLanguageRequest(BaseModel):
+    """Request model for changing preferred language."""
+
+    language: str = Field(min_length=2, max_length=5, pattern=r'^(en|ru|sr)$')

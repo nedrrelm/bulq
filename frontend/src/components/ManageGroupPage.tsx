@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/ManageGroupPage.css'
 import { groupsApi } from '../api'
 import type { GroupManageDetails, GroupMember } from '../schemas/group'
@@ -15,6 +16,7 @@ import { getErrorMessage } from '../utils/errorHandling'
 import { logger } from '../utils/logger'
 
 export default function ManageGroupPage() {
+  const { t } = useTranslation()
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
 
@@ -38,7 +40,7 @@ export default function ManageGroupPage() {
         const data = await groupsApi.getGroupMembers(groupId)
         setGroup(data)
       } catch (err) {
-        setError(getErrorMessage(err, 'Failed to load group members'))
+        setError(getErrorMessage(err, t('group.manage.errors.loadFailed')))
       } finally {
         setLoading(false)
       }
@@ -57,8 +59,10 @@ export default function ManageGroupPage() {
 
       // If current user was removed or left, redirect to main page
       if (user && userId === user.id) {
-        const action = message.type === 'member_removed' ? 'removed from' : 'left'
-        showToast(`You have ${action} this group`, 'error')
+        const messageKey = message.type === 'member_removed'
+          ? 'group.manage.messages.youWereRemoved'
+          : 'group.manage.messages.youLeft'
+        showToast(t(messageKey), 'error')
         setTimeout(() => {
           navigate(`/groups/${groupId}`)
         }, NAVIGATION_DELAY_AFTER_ACTION_MS)
@@ -74,7 +78,7 @@ export default function ManageGroupPage() {
 
         // Show toast for other members leaving
         if (message.type === 'member_left') {
-          showToast(`${message.data.user_name} left the group`, 'info')
+          showToast(t('group.manage.messages.memberLeft', { memberName: message.data.user_name }), 'info')
         }
       }
     } else if (message.type === 'member_joined') {
@@ -90,7 +94,7 @@ export default function ManageGroupPage() {
           ...group,
           members: [...group.members, newMember]
         })
-        showToast(`${message.data.user_name} joined the group`, 'success')
+        showToast(t('group.manage.messages.memberJoined', { memberName: message.data.user_name }), 'success')
       }
     } else if (message.type === 'member_promoted') {
       // Update member admin status
@@ -101,7 +105,7 @@ export default function ManageGroupPage() {
             m.id === message.data.promoted_user_id ? { ...m, is_group_admin: true } : m
           )
         })
-        showToast(`${message.data.promoted_user_name} promoted to admin`, 'success')
+        showToast(t('group.manage.messages.memberPromoted', { memberName: message.data.promoted_user_name }), 'success')
       }
     }
   }, [group, user, showToast])
@@ -122,11 +126,11 @@ export default function ManageGroupPage() {
     const inviteUrl = `${window.location.origin}/invite/${group.invite_token}`
     navigator.clipboard.writeText(inviteUrl)
       .then(() => {
-        showToast('Invite link copied to clipboard!', 'success')
+        showToast(t('group.manage.messages.inviteCopied'), 'success')
       })
       .catch(err => {
         logger.error('Failed to copy:', err)
-        showToast('Failed to copy invite link', 'error')
+        showToast(t('group.manage.errors.copyFailed'), 'error')
       })
   }
 
@@ -137,14 +141,14 @@ export default function ManageGroupPage() {
       try {
         const data = await groupsApi.regenerateInvite(groupId)
         setGroup({ ...group, invite_token: data.invite_token })
-        showToast('Invite link regenerated successfully!', 'success')
+        showToast(t('group.manage.messages.inviteRegenerated'), 'success')
       } catch (err) {
-        showToast(getErrorMessage(err, 'Failed to regenerate invite link'), 'error')
+        showToast(getErrorMessage(err, t('group.manage.errors.regenerateFailed')), 'error')
       }
     }
 
     showConfirm(
-      'Are you sure you want to regenerate the invite link? The old link will stop working.',
+      t('group.manage.confirm.regenerateInvite'),
       regenerateAction,
       { danger: true }
     )
@@ -157,11 +161,11 @@ export default function ManageGroupPage() {
       const data = await groupsApi.toggleJoiningAllowed(groupId)
       setGroup({ ...group, is_joining_allowed: data.is_joining_allowed })
       showToast(
-        data.is_joining_allowed ? 'Joining enabled' : 'Joining disabled',
+        t(data.is_joining_allowed ? 'group.manage.messages.joiningEnabled' : 'group.manage.messages.joiningDisabled'),
         'success'
       )
     } catch (err) {
-      showToast(getErrorMessage(err, 'Failed to update joining setting'), 'error')
+      showToast(getErrorMessage(err, t('group.manage.errors.toggleJoiningFailed')), 'error')
     }
   }
 
@@ -175,14 +179,14 @@ export default function ManageGroupPage() {
           ...group,
           members: group.members.filter(m => m.id !== member.id)
         })
-        showToast(`${member.name} removed from group`, 'success')
+        showToast(t('group.manage.messages.memberRemoved', { memberName: member.name }), 'success')
       } catch (err) {
-        showToast(getErrorMessage(err, 'Failed to remove member'), 'error')
+        showToast(getErrorMessage(err, t('group.manage.errors.removeFailed')), 'error')
       }
     }
 
     showConfirm(
-      `Are you sure you want to remove ${member.name} from the group?`,
+      t('group.manage.confirm.removeMember', { memberName: member.name }),
       removeAction,
       { danger: true }
     )
@@ -194,17 +198,17 @@ export default function ManageGroupPage() {
     const leaveAction = async () => {
       try {
         await groupsApi.leaveGroup(groupId)
-        showToast('You have left the group', 'success')
+        showToast(t('group.manage.messages.leftGroup'), 'success')
         setTimeout(() => {
           navigate(`/groups/${groupId}`)
         }, NAVIGATION_DELAY_AFTER_ACTION_MS)
       } catch (err) {
-        showToast(getErrorMessage(err, 'Failed to leave group'), 'error')
+        showToast(getErrorMessage(err, t('group.manage.errors.leaveFailed')), 'error')
       }
     }
 
     showConfirm(
-      'Are you sure you want to leave this group?',
+      t('group.manage.confirm.leaveGroup'),
       leaveAction,
       { danger: true }
     )
@@ -223,14 +227,14 @@ export default function ManageGroupPage() {
             m.id === member.id ? { ...m, is_group_admin: true } : m
           )
         })
-        showToast(`${member.name} promoted to admin`, 'success')
+        showToast(t('group.manage.messages.memberPromoted', { memberName: member.name }), 'success')
       } catch (err) {
-        showToast(getErrorMessage(err, 'Failed to promote member'), 'error')
+        showToast(getErrorMessage(err, t('group.manage.errors.promoteFailed')), 'error')
       }
     }
 
     showConfirm(
-      `Promote ${member.name} to admin?`,
+      t('group.manage.confirm.promoteMember', { memberName: member.name }),
       promoteAction
     )
   }
@@ -238,7 +242,7 @@ export default function ManageGroupPage() {
   if (loading) {
     return (
       <div className="manage-group-page">
-        <p>Loading group members...</p>
+        <p>{t('group.manage.loading')}</p>
       </div>
     )
   }
@@ -247,9 +251,9 @@ export default function ManageGroupPage() {
     return (
       <div className="manage-group-page">
         <div className="error">
-          <p>❌ {error}</p>
+          <p>{error}</p>
           <button onClick={onBack} className="btn btn-secondary">
-            Back
+            {t('group.manage.actions.back')}
           </button>
         </div>
       </div>
@@ -259,7 +263,7 @@ export default function ManageGroupPage() {
   if (!group) {
     return (
       <div className="manage-group-page">
-        <p>Group not found</p>
+        <p>{t('group.manage.errors.notFound')}</p>
       </div>
     )
   }
@@ -271,42 +275,42 @@ export default function ManageGroupPage() {
           {group.name}
         </span>
         <span className="breadcrumb-separator"> / </span>
-        <span>Manage</span>
+        <span>{t('group.manage.breadcrumb')}</span>
       </div>
 
-      <h2>Manage Group</h2>
+      <h2>{t('group.manage.title')}</h2>
 
       {/* Invite Link Section */}
       <section className="manage-section">
-        <h3>Invite Link</h3>
+        <h3>{t('group.manage.sections.inviteLink')}</h3>
         <div className="invite-controls">
           <button onClick={handleCopyInviteLink} className="btn btn-secondary">
-            📋 Copy Invite Link
+            {t('group.manage.actions.copyInvite')}
           </button>
           {group.is_current_user_admin && (
             <>
               <button onClick={handleRegenerateToken} className="btn btn-secondary">
-                🔄 Regenerate Link
+                {t('group.manage.actions.regenerateInvite')}
               </button>
               <button
                 onClick={handleToggleJoining}
                 className={`btn ${group.is_joining_allowed ? 'btn-danger' : 'btn-success'}`}
               >
-                {group.is_joining_allowed ? '🔒 Disallow Joining' : '🔓 Allow Joining'}
+                {t(group.is_joining_allowed ? 'group.manage.actions.disallowJoining' : 'group.manage.actions.allowJoining')}
               </button>
             </>
           )}
         </div>
         {!group.is_joining_allowed && (
           <div className="alert alert-warning">
-            ⚠️ Joining is currently disabled. New members cannot join via invite link.
+            {t('group.manage.warnings.joiningDisabled')}
           </div>
         )}
       </section>
 
       {/* Members Section */}
       <section className="manage-section">
-        <h3>Members ({group.members.length})</h3>
+        <h3>{t('group.manage.sections.members')} ({group.members.length})</h3>
         <div className="members-list">
           {group.members.map((member) => (
             <div key={member.id} className="member-item">
@@ -314,7 +318,7 @@ export default function ManageGroupPage() {
                 <div className="member-name">
                   {member.name}
                   {member.is_group_admin && (
-                    <span className="admin-badge">Admin</span>
+                    <span className="admin-badge">{t('group.manage.labels.admin')}</span>
                   )}
                 </div>
                 <div className="member-email">@{member.username}</div>
@@ -324,14 +328,14 @@ export default function ManageGroupPage() {
                   <button
                     onClick={() => handlePromoteMember(member)}
                     className="btn btn-secondary btn-small"
-                    title="Promote to admin"
+                    title={t('group.manage.actions.promote')}
                   >
                     ⬆
                   </button>
                   <button
                     onClick={() => handleRemoveMember(member)}
                     className="btn btn-danger btn-small"
-                    title="Remove member"
+                    title={t('group.manage.actions.remove')}
                   >
                     −
                   </button>
@@ -344,9 +348,9 @@ export default function ManageGroupPage() {
 
       {/* Leave Group Section */}
       <section className="manage-section">
-        <h3>Leave Group</h3>
+        <h3>{t('group.manage.sections.leaveGroup')}</h3>
         <button onClick={handleLeaveGroup} className="btn btn-danger">
-          🚪 Leave Group
+          {t('group.manage.actions.leaveGroup')}
         </button>
       </section>
 

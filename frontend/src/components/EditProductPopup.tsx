@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { adminApi, type AdminProduct } from '../api/admin'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
@@ -17,6 +18,7 @@ const MAX_NAME_LENGTH = 100
 const MIN_NAME_LENGTH = 2
 
 export default function EditProductPopup({ product, onClose, onSuccess }: EditProductPopupProps) {
+  const { t } = useTranslation()
   const [productName, setProductName] = useState(product.name)
   const [brand, setBrand] = useState(product.brand || '')
   const [unit, setUnit] = useState(product.unit || '')
@@ -32,19 +34,19 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
     const trimmed = value.trim()
 
     if (trimmed.length === 0) {
-      setError('Product name is required')
+      setError(t('admin.edit.product.errors.nameRequired'))
       return false
     }
 
     const lengthValidation = validateLength(trimmed, MIN_NAME_LENGTH, MAX_NAME_LENGTH, 'Product name')
     if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || 'Invalid product name')
+      setError(lengthValidation.error || t('admin.edit.product.errors.invalidName'))
       return false
     }
 
     const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'(),.', 'Product name', true)
     if (!alphanumericValidation.isValid) {
-      setError(alphanumericValidation.error || 'Product name contains invalid characters')
+      setError(alphanumericValidation.error || t('admin.edit.product.errors.invalidCharacters'))
       return false
     }
 
@@ -87,7 +89,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
   const handleMerge = async () => {
     if (!mergeTargetId.trim()) {
-      setError('Please enter a target product ID')
+      setError(t('admin.edit.product.errors.mergeTargetRequired'))
       return
     }
 
@@ -95,10 +97,10 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
       setSubmitting(true)
       const response = await adminApi.mergeProducts(product.id, mergeTargetId.trim())
       const successMsg = translateSuccess(response.code, response.details)
-      alert(`${successMsg}\nAffected records: ${response.affected_records}`)
+      alert(`${successMsg}\n${t('admin.edit.affectedRecords')}: ${response.affected_records}`)
       onSuccess()
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to merge products'))
+      setError(getErrorMessage(err, t('admin.edit.product.errors.mergeFailed')))
       setSubmitting(false)
     }
   }
@@ -119,7 +121,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Edit Product</h2>
+          <h2>{t('admin.edit.product.title')}</h2>
         </div>
 
         <form onSubmit={handleUpdate}>
@@ -130,14 +132,14 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
           )}
 
           <div className="form-group">
-            <label htmlFor="product-name" className="form-label">Product Name *</label>
+            <label htmlFor="product-name" className="form-label">{t('admin.edit.product.fields.name')} *</label>
             <input
               id="product-name"
               type="text"
               className={`form-input ${error ? 'input-error' : ''}`}
               value={productName}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="e.g., Organic Olive Oil"
+              placeholder={t('admin.edit.product.placeholders.name')}
               disabled={submitting}
               required
             />
@@ -145,7 +147,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="brand" className="form-label">Brand</label>
+              <label htmlFor="brand" className="form-label">{t('admin.edit.product.fields.brand')}</label>
               <input
                 id="brand"
                 type="text"
@@ -155,13 +157,13 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
                   setBrand(e.target.value)
                   setError('')
                 }}
-                placeholder="e.g., Kirkland"
+                placeholder={t('admin.edit.product.placeholders.brand')}
                 disabled={submitting}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="unit" className="form-label">Unit</label>
+              <label htmlFor="unit" className="form-label">{t('admin.edit.product.fields.unit')}</label>
               <input
                 id="unit"
                 type="text"
@@ -171,7 +173,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
                   setUnit(e.target.value)
                   setError('')
                 }}
-                placeholder="kg, lb, each"
+                placeholder={t('admin.edit.product.placeholders.unit')}
                 disabled={submitting}
               />
             </div>
@@ -184,14 +186,14 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Saving...' : 'Save Changes'}
+              {submitting ? t('common.saving') : t('common.saveChanges')}
             </button>
           </div>
         </form>
@@ -200,9 +202,9 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
         {/* Merge Section */}
         <div className="form-group">
-          <label htmlFor="merge-target" className="form-label">Merge with Product</label>
+          <label htmlFor="merge-target" className="form-label">{t('admin.edit.product.mergeTitle')}</label>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
-            Enter the ID of another product to merge this product into it. All bids and availabilities will be transferred.
+            {t('admin.edit.product.mergeDescription')}
           </p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input
@@ -214,19 +216,19 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
                 setMergeTargetId(e.target.value)
                 setError('')
               }}
-              placeholder="Target product ID"
+              placeholder={t('admin.edit.product.mergePlaceholder')}
               disabled={submitting}
             />
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => showConfirm(
-                `Merge "${product.name}" into another product? All bids will be transferred and this product will be deleted.`,
+                t('admin.edit.product.mergeConfirm', { name: product.name }),
                 handleMerge
               )}
               disabled={submitting || !mergeTargetId.trim()}
             >
-              Merge
+              {t('admin.edit.product.mergeButton')}
             </button>
           </div>
         </div>
@@ -235,22 +237,22 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
         {/* Delete Section */}
         <div className="form-group">
-          <label className="form-label" style={{ color: 'var(--color-danger)' }}>Danger Zone</label>
+          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin.edit.dangerZone')}</label>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
-            Delete this product permanently. This cannot be undone and will fail if the product has associated bids.
+            {t('admin.edit.product.deleteWarning')}
           </p>
           <button
             type="button"
             className="btn"
             style={{ backgroundColor: 'var(--color-danger)', color: 'white' }}
             onClick={() => showConfirm(
-              `Delete product "${product.name}"? This cannot be undone. The operation will fail if there are associated bids.`,
+              t('admin.edit.product.deleteConfirm', { name: product.name }),
               handleDelete,
               { danger: true }
             )}
             disabled={submitting}
           >
-            Delete Product
+            {t('admin.edit.product.deleteButton')}
           </button>
         </div>
       </div>

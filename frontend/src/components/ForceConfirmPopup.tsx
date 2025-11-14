@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { runsApi } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { getErrorMessage } from '../utils/errorHandling'
@@ -10,6 +11,7 @@ interface ForceConfirmPopupProps {
 }
 
 export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceConfirmPopupProps) {
+  const { t } = useTranslation()
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -26,7 +28,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
       await runsApi.forceConfirm(runId)
       onSuccess()
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to force confirm run'))
+      setError(getErrorMessage(err, t('run.errors.forceConfirmFailed')))
       setSubmitting(false)
     }
   }
@@ -35,7 +37,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Force Confirm Run</h2>
+          <h2>{t('run.forceConfirm.title')}</h2>
         </div>
 
         <form onSubmit={handleForceConfirm}>
@@ -47,18 +49,18 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
 
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem' }}>
-              <strong>Warning:</strong> This will move the run to the confirmed state without waiting for all participants to mark themselves as ready.
+              <strong>{t('run.forceConfirm.warning')}</strong> {t('run.forceConfirm.warningDescription')}
             </p>
             <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
-              Use this if:
+              {t('run.forceConfirm.useThisIf')}
             </p>
             <ul style={{ marginLeft: '1.5rem', color: 'var(--color-text-secondary)' }}>
-              <li>Some participants are not responding</li>
-              <li>You need to proceed with the run urgently</li>
-              <li>You've confirmed participation outside the app</li>
+              <li>{t('run.forceConfirm.reason1')}</li>
+              <li>{t('run.forceConfirm.reason2')}</li>
+              <li>{t('run.forceConfirm.reason3')}</li>
             </ul>
             <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-              Once confirmed, participants will not be able to change their bids.
+              {t('run.forceConfirm.consequence')}
             </p>
           </div>
 
@@ -69,7 +71,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              {t('common.buttons.cancel')}
             </button>
             <button
               type="submit"
@@ -77,7 +79,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
               style={{ backgroundColor: 'var(--color-warning)', color: 'white' }}
               disabled={submitting}
             >
-              {submitting ? 'Confirming...' : 'Force Confirm'}
+              {submitting ? t('run.actions.confirming') : t('run.actions.forceConfirm')}
             </button>
           </div>
         </form>

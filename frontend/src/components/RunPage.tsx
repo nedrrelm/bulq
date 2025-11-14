@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
@@ -9,7 +10,6 @@ import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
 import ErrorBoundary from './ErrorBoundary'
 import { getErrorMessage } from '../utils/errorHandling'
-import { logger } from '../utils/logger'
 
 // Lazy load popup components for better code splitting
 const BidPopup = lazy(() => import('./BidPopup'))
@@ -40,6 +40,7 @@ type Product = RunDetail['products'][0]
 // RunParticipants component extracted to RunParticipants.tsx
 
 export default function RunPage() {
+  const { t } = useTranslation()
   const { runId } = useParams<{ runId: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -99,7 +100,7 @@ export default function RunPage() {
     if (!reassignmentRequest) return
     try {
       await reassignmentApi.acceptReassignment(reassignmentRequest.id)
-      showToast('Leadership accepted!', 'success')
+      showToast(t('run.messages.leadershipAccepted'), 'success')
       setReassignmentRequest(null)
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
     } catch (err) {
@@ -111,7 +112,7 @@ export default function RunPage() {
     if (!reassignmentRequest) return
     try {
       await reassignmentApi.declineReassignment(reassignmentRequest.id)
-      showToast('Request declined', 'success')
+      showToast(t('run.messages.requestDeclined'), 'success')
       setReassignmentRequest(null)
     } catch (err) {
       showToast(formatErrorForDisplay(err, 'decline reassignment'), 'error')
@@ -136,20 +137,20 @@ export default function RunPage() {
       // Reassignment request created - fetch request for all participants
       fetchReassignmentRequest()
       if (message.data.to_user_id === userId) {
-        showToast('You have a new leadership transfer request', 'info')
+        showToast(t('run.messages.newLeadershipRequest'), 'info')
         refreshUnreadCount()
       }
     } else if (message.type === 'reassignment_accepted') {
       // Reassignment accepted - clear request and refresh run
       setReassignmentRequest(null)
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
-      showToast('Leadership has been transferred', 'success')
+      showToast(t('run.messages.leadershipTransferred'), 'success')
       refreshUnreadCount()
     } else if (message.type === 'reassignment_declined') {
       // Reassignment declined - clear request
       setReassignmentRequest(null)
       if (message.data.from_user_id === userId) {
-        showToast('Leadership transfer request was declined', 'info')
+        showToast(t('run.messages.leadershipRequestDeclined'), 'info')
         refreshUnreadCount()
       }
     }
@@ -303,14 +304,14 @@ export default function RunPage() {
     const forceFinishAction = async () => {
       try {
         await finishAdjustingMutation.mutateAsync(true)
-        showToast('Moved to distribution!', 'success')
+        showToast(t('run.messages.movedToDistribution'), 'success')
       } catch (err) {
         showToast(formatErrorForDisplay(err, 'force finish adjusting'), 'error')
       }
     }
 
     showConfirm(
-      'Not all quantities have been adjusted. Items will be distributed proportionally based on each user\'s bid. For example, if you purchased 10 units but users bid for 15 total, each user will receive 2/3 of their original bid. Are you sure you want to proceed?',
+      t('run.prompts.forceFinishAdjusting'),
       forceFinishAction,
       { danger: true }
     )
@@ -339,7 +340,7 @@ export default function RunPage() {
   const handleCompleteRun = async () => {
     try {
       await completeDistributionMutation.mutateAsync()
-      showToast('Run completed successfully!', 'success')
+      showToast(t('run.messages.runCompletedSuccessfully'), 'success')
     } catch (err) {
       showToast(formatErrorForDisplay(err, 'complete run'), 'error')
     }
@@ -372,7 +373,7 @@ export default function RunPage() {
     const cancelAction = async () => {
       try {
         await runsApi.cancelRun(runId)
-        showToast('Run cancelled successfully', 'success')
+        showToast(t('run.messages.runCancelledSuccessfully'), 'success')
         // Refresh the run data to show updated state
         queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
       } catch (err) {
@@ -381,7 +382,7 @@ export default function RunPage() {
     }
 
     showConfirm(
-      'Are you sure you want to cancel this run? This action cannot be undone.',
+      t('run.prompts.cancelRun'),
       cancelAction,
       { danger: true }
     )
@@ -392,9 +393,9 @@ export default function RunPage() {
       <div className="run-page">
         <div className="run-header">
           <button onClick={() => navigate('/')} className="back-button">
-            ← Back to Group
+            {t('common.navigation.backToGroup')}
           </button>
-          <h2>Loading run...</h2>
+          <h2>{t('run.messages.loadingRun')}</h2>
         </div>
       </div>
     )
@@ -405,12 +406,12 @@ export default function RunPage() {
       <div className="run-page">
         <div className="run-header">
           <button onClick={() => navigate('/')} className="back-button">
-            ← Back to Group
+            {t('common.navigation.backToGroup')}
           </button>
-          <h2>Error</h2>
+          <h2>{t('common.errors.error')}</h2>
         </div>
         <div className="error">
-          <p>❌ Failed to load run: {error}</p>
+          <p>{t('run.errors.failedToLoadRun', { error })}</p>
         </div>
       </div>
     )
@@ -421,9 +422,9 @@ export default function RunPage() {
       <div className="run-page">
         <div className="run-header">
           <button onClick={() => navigate('/')} className="back-button">
-            ← Back to Group
+            {t('common.navigation.backToGroup')}
           </button>
-          <h2>Run not found</h2>
+          <h2>{t('run.errors.runNotFound')}</h2>
         </div>
       </div>
     )
@@ -460,14 +461,14 @@ export default function RunPage() {
       {reassignmentRequest && reassignmentRequest.to_user_id === userId && (
         <div className="alert alert-warning reassignment-banner">
           <div className="reassignment-content">
-            <strong>{reassignmentRequest.from_user_name}</strong> wants to transfer leadership to you.
+            {t('run.messages.leadershipTransferRequest', { userName: reassignmentRequest.from_user_name })}
           </div>
           <div className="reassignment-actions">
             <button onClick={handleAcceptReassignment} className="btn btn-success btn-sm">
-              Accept
+              {t('run.actions.accept')}
             </button>
             <button onClick={handleDeclineReassignment} className="btn btn-secondary btn-sm">
-              Decline
+              {t('run.actions.decline')}
             </button>
           </div>
         </div>
@@ -475,13 +476,13 @@ export default function RunPage() {
 
       <div className="run-info">
         <div className="info-card">
-          <h3>Run Information</h3>
+          <h3>{t('run.labels.runInformation')}</h3>
           <div className="info-grid">
             <div className="info-item">
-              <label>Leader:</label>
+              <label>{t('run.labels.leader')}:</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span className={run.participants.find(p => p.is_leader)?.is_removed ? 'removed-user' : ''}>
-                  {run.participants.find(p => p.is_leader)?.user_name || 'Unknown'}
+                  {run.participants.find(p => p.is_leader)?.user_name || t('common.labels.unknown')}
                 </span>
                 {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && run.participants.length > 1 && (
                   <>
@@ -490,18 +491,18 @@ export default function RunPage() {
                       className="btn btn-ghost btn-sm"
                       style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                       disabled={reassignmentRequest !== null}
-                      title={reassignmentRequest ? 'Reassignment request pending' : 'Reassign leadership'}
+                      title={reassignmentRequest ? t('run.labels.reassignmentRequestPending') : t('run.actions.reassignLeadership')}
                     >
-                      {reassignmentRequest ? 'Pending...' : 'Reassign'}
+                      {reassignmentRequest ? t('run.labels.pending') : t('run.actions.reassign')}
                     </button>
                     {run.state === 'active' && (
                       <button
                         onClick={() => setShowForceConfirmPopup(true)}
                         className="btn btn-ghost btn-sm"
                         style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-                        title="Force confirm run without waiting for all participants"
+                        title={t('run.actions.forceConfirmTooltip')}
                       >
-                        Force Confirm
+                        {t('run.actions.forceConfirm')}
                       </button>
                     )}
                   </>
@@ -509,24 +510,24 @@ export default function RunPage() {
               </div>
             </div>
             <div className="info-item">
-              <label>Helpers:</label>
+              <label>{t('run.labels.helpers')}:</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>{run.helpers.length > 0 ? run.helpers.join(', ') : 'None'}</span>
+                <span>{run.helpers.length > 0 ? run.helpers.join(', ') : t('common.labels.none')}</span>
                 {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
                   <button
                     onClick={() => setShowManageHelpersPopup(true)}
                     className="btn btn-ghost btn-sm"
                     style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-                    title="Manage helpers"
+                    title={t('run.actions.manageHelpers')}
                   >
-                    Manage
+                    {t('run.actions.manage')}
                   </button>
                 )}
               </div>
             </div>
             {run.comment && (
               <div className="info-item" style={{ gridColumn: '1 / -1' }}>
-                <label>Comment:</label>
+                <label>{t('run.labels.comment')}:</label>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <span style={{ flex: 1 }}>{run.comment}</span>
                   {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
@@ -534,9 +535,9 @@ export default function RunPage() {
                       onClick={() => setShowEditCommentPopup(true)}
                       className="btn btn-ghost btn-sm"
                       style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-                      title="Edit comment"
+                      title={t('run.actions.editComment')}
                     >
-                      Edit
+                      {t('run.actions.edit')}
                     </button>
                   )}
                 </div>
@@ -549,12 +550,12 @@ export default function RunPage() {
                   className="btn btn-secondary btn-sm"
                   style={{ fontSize: '0.875rem' }}
                 >
-                  + Add Comment
+                  {t('run.actions.addComment')}
                 </button>
               </div>
             )}
             <div className="info-item">
-              <label>Status:</label>
+              <label>{t('run.labels.status')}:</label>
               <span>{stateDisplay.description}</span>
             </div>
           </div>
@@ -563,22 +564,22 @@ export default function RunPage() {
         {run.state === 'active' && (
           <ErrorBoundary>
             <div className="info-card">
-              <h3>Participants</h3>
+              <h3>{t('run.labels.participants')}</h3>
               <div className="participants-list">
                 {run.participants.map(participant => (
                   <div key={participant.user_id} className="participant-item">
                     <div className="participant-info">
                       <span className={`participant-name ${participant.is_removed ? 'removed-user' : ''}`}>
                         {participant.user_name}
-                        {participant.is_leader && <span className="leader-badge">Leader</span>}
-                        {participant.is_helper && <span className="helper-badge">Helper</span>}
+                        {participant.is_leader && <span className="leader-badge">{t('run.labels.leader')}</span>}
+                        {participant.is_helper && <span className="helper-badge">{t('run.labels.helper')}</span>}
                       </span>
                     </div>
                     <div className="participant-ready">
                       {participant.is_ready ? (
-                        <span className="ready-indicator ready">✓ Ready</span>
+                        <span className="ready-indicator ready">{t('run.labels.ready')}</span>
                       ) : (
-                        <span className="ready-indicator not-ready">⏳ Not Ready</span>
+                        <span className="ready-indicator not-ready">{t('run.labels.notReady')}</span>
                       )}
                     </div>
                   </div>
@@ -593,10 +594,10 @@ export default function RunPage() {
                     disabled={toggleReadyMutation.isPending}
                   />
                   <span>
-                    {toggleReadyMutation.isPending ? 'Updating...' : "I'm ready (my order is complete)"}
+                    {toggleReadyMutation.isPending ? t('run.labels.updating') : t('run.labels.imReady')}
                   </span>
                 </label>
-                <p className="ready-hint">When all participants are ready, the run will automatically move to confirmed state.</p>
+                <p className="ready-hint">{t('run.labels.readyHint')}</p>
               </div>
             </div>
           </ErrorBoundary>
@@ -604,15 +605,15 @@ export default function RunPage() {
 
         {run.state === 'confirmed' && run.current_user_is_leader && (
           <div className="info-card">
-            <h3>Ready to Shop</h3>
-            <p>All participants are ready! The shopping list is finalized.</p>
+            <h3>{t('run.labels.readyToShop')}</h3>
+            <p>{t('run.labels.allParticipantsReady')}</p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button
                 onClick={handleStartShopping}
                 className="btn btn-primary btn-lg"
                 disabled={startShoppingMutation.isPending}
               >
-                {startShoppingMutation.isPending ? '⏳ Starting...' : '🛒 Start Shopping'}
+                {startShoppingMutation.isPending ? t('run.labels.starting') : t('run.actions.startShopping')}
               </button>
               <DownloadRunStateButton
                 runId={runId}
@@ -621,21 +622,21 @@ export default function RunPage() {
               />
             </div>
             <p className="ready-hint">
-              Click this button when you're heading to the store to begin the shopping phase.
+              {t('run.labels.startShoppingHint')}
             </p>
           </div>
         )}
 
         {run.state === 'shopping' && (run.current_user_is_leader || run.current_user_is_helper) && (
           <div className="info-card">
-            <h3>Shopping in Progress</h3>
-            <p>You are currently shopping for this run.</p>
+            <h3>{t('run.labels.shoppingInProgress')}</h3>
+            <p>{t('run.labels.currentlyShopping')}</p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button
                 onClick={() => navigate(`/shopping/${runId}`)}
                 className="btn btn-success btn-lg"
               >
-                📝 Open Shopping List
+                {t('run.actions.openShoppingList')}
               </button>
               <DownloadRunStateButton
                 runId={runId}
@@ -644,29 +645,29 @@ export default function RunPage() {
               />
             </div>
             <p className="ready-hint">
-              Track prices and mark items as purchased.
+              {t('run.labels.trackPricesHint')}
             </p>
           </div>
         )}
 
         {run.state === 'adjusting' && run.current_user_is_leader && (
           <div className="info-card">
-            <h3>Adjusting Bids</h3>
-            <p>Some items had insufficient quantities. Participants need to reduce their bids until the total matches what was purchased.</p>
+            <h3>{t('run.labels.adjustingBids')}</h3>
+            <p>{t('run.labels.adjustingBidsDescription')}</p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button
                 onClick={handleFinishAdjusting}
                 className="btn btn-primary btn-lg"
                 disabled={finishAdjustingMutation.isPending}
               >
-                {finishAdjustingMutation.isPending ? '⏳ Processing...' : '✓ Finish Adjusting'}
+                {finishAdjustingMutation.isPending ? t('run.labels.processing') : t('run.actions.finishAdjusting')}
               </button>
               <button
                 onClick={handleForceFinishAdjusting}
                 className="btn btn-secondary btn-lg"
                 disabled={finishAdjustingMutation.isPending}
               >
-                Force Finish
+                {t('run.actions.forceFinish')}
               </button>
               <DownloadRunStateButton
                 runId={runId}
@@ -675,7 +676,7 @@ export default function RunPage() {
               />
             </div>
             <p className="ready-hint">
-              Click "Finish Adjusting" when all bid totals match purchased quantities, or "Force Finish" to proceed anyway.
+              {t('run.labels.finishAdjustingHint')}
             </p>
           </div>
         )}
@@ -686,7 +687,7 @@ export default function RunPage() {
       {shouldFetchDistribution && (
         <div className="distribution-section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>Distribution</h3>
+            <h3>{t('run.labels.distribution')}</h3>
             {(run.current_user_is_leader || run.current_user_is_helper) && (
               <DownloadRunStateButton
                 runId={runId}
@@ -697,7 +698,7 @@ export default function RunPage() {
           </div>
           {distributionUsers.length === 0 ? (
             <div className="empty-state">
-              <p>No items to distribute. Either no products were purchased or no users have allocated items.</p>
+              <p>{t('run.empty.noItemsToDistribute')}</p>
             </div>
           ) : (
             <div className="distribution-list">
@@ -712,7 +713,7 @@ export default function RunPage() {
                     <span className="user-total">{user.total_cost} RSD</span>
                   </div>
                   <div className="user-actions">
-                    {user.all_picked_up && <span className="pickup-badge">✓ Picked up</span>}
+                    {user.all_picked_up && <span className="pickup-badge">{t('run.labels.pickedUp')}</span>}
                     <span className="expand-icon">{expandedUserId === user.user_id ? '▼' : '▶'}</span>
                   </div>
                 </div>
@@ -729,7 +730,7 @@ export default function RunPage() {
                           className="mark-all-button"
                           disabled={markPickedUpMutation.isPending}
                         >
-                          {markPickedUpMutation.isPending ? '⏳ Updating...' : 'Mark All Picked Up'}
+                          {markPickedUpMutation.isPending ? t('run.labels.updating') : t('run.actions.markAllPickedUp')}
                         </button>
                       )}
                     </div>
@@ -739,12 +740,12 @@ export default function RunPage() {
                           <div className="product-name">
                             {product.product_name}
                             {product.distributed_quantity < product.requested_quantity && (
-                              <span className="shortage-badge" title="Quantity reduced due to shortage">⚠️</span>
+                              <span className="shortage-badge" title={t('run.labels.quantityReducedTooltip')}>⚠️</span>
                             )}
                           </div>
                           <div className="product-details">
-                            <span>Requested: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
-                            <span>Allocated: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                            <span>{t('run.labels.requested')}: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                            <span>{t('run.labels.allocated')}: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
                             <span>@{product.price_per_unit} RSD</span>
                             <span className="product-subtotal">{product.subtotal} RSD</span>
                           </div>
@@ -755,7 +756,7 @@ export default function RunPage() {
                             disabled={product.is_picked_up || markPickedUpMutation.isPending}
                             className={`pickup-button ${product.is_picked_up ? 'picked-up' : ''}`}
                           >
-                            {markPickedUpMutation.isPending ? '⏳ Updating...' : product.is_picked_up ? '✓ Picked up' : 'Mark Picked Up'}
+                            {markPickedUpMutation.isPending ? t('run.labels.updating') : product.is_picked_up ? t('run.labels.pickedUp') : t('run.actions.markPickedUp')}
                           </button>
                         )}
                       </div>
@@ -774,7 +775,7 @@ export default function RunPage() {
                 className="complete-button"
                 disabled={completeDistributionMutation.isPending}
               >
-                {completeDistributionMutation.isPending ? '⏳ Completing...' : 'Complete Run'}
+                {completeDistributionMutation.isPending ? t('run.labels.completing') : t('run.actions.completeRun')}
               </button>
             </div>
           )}
@@ -783,17 +784,17 @@ export default function RunPage() {
 
       <div className="products-section">
         <div className="products-header">
-          <h3>Products ({run.products.length})</h3>
+          <h3>{t('run.labels.products', { count: run.products.length })}</h3>
           {canBid && run.state !== 'adjusting' && (
             <button onClick={handleAddProduct} className="add-product-button">
-              + Add Product
+              {t('run.actions.addProduct')}
             </button>
           )}
         </div>
 
         {run.products.length === 0 ? (
           <div className="no-products">
-            <p>No products have been added to this run yet.</p>
+            <p>{t('run.empty.noProducts')}</p>
           </div>
         ) : (
           <div className="products-list">
@@ -830,7 +831,7 @@ export default function RunPage() {
       {run.state === 'active' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>💡 This run is currently active. Users can place bids and specify quantities for products they want.</p>
+            <p>{t('run.states.activeDescription')}</p>
           </div>
         </div>
       )}
@@ -838,7 +839,7 @@ export default function RunPage() {
       {run.state === 'planning' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>📋 This run is in planning phase. Users can express interest in products to help plan the shopping list.</p>
+            <p>{t('run.states.planningDescription')}</p>
           </div>
         </div>
       )}
@@ -846,7 +847,7 @@ export default function RunPage() {
       {run.state === 'confirmed' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>✅ This run has been confirmed! The shopping list is finalized and ready for execution.</p>
+            <p>{t('run.states.confirmedDescription')}</p>
           </div>
         </div>
       )}
@@ -854,7 +855,7 @@ export default function RunPage() {
       {run.state === 'shopping' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>🛒 Shopping is in progress! Designated shoppers are executing the run.</p>
+            <p>{t('run.states.shoppingDescription')}</p>
           </div>
         </div>
       )}
@@ -862,7 +863,7 @@ export default function RunPage() {
       {run.state === 'adjusting' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>⚠️ Some items had insufficient quantities. Please reduce your bids on highlighted products until totals match what was purchased.</p>
+            <p>{t('run.states.adjustingDescription')}</p>
           </div>
         </div>
       )}
@@ -870,7 +871,7 @@ export default function RunPage() {
       {run.state === 'completed' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>🎉 This run has been completed! Costs have been calculated and the run is finished.</p>
+            <p>{t('run.states.completedDescription')}</p>
           </div>
         </div>
       )}
@@ -937,7 +938,7 @@ export default function RunPage() {
             }))}
             onClose={() => setShowReassignPopup(false)}
             onSuccess={() => {
-              showToast('Reassignment request sent!', 'success')
+              showToast(t('run.messages.reassignmentRequestSent'), 'success')
               fetchReassignmentRequest()
             }}
             onCancelRun={run.state !== 'completed' && run.state !== 'cancelled' ? handleCancelRun : undefined}
@@ -957,7 +958,7 @@ export default function RunPage() {
             onClose={() => setShowForceConfirmPopup(false)}
             onSuccess={() => {
               setShowForceConfirmPopup(false)
-              showToast('Run force confirmed!', 'success')
+              showToast(t('run.messages.runForceConfirmed'), 'success')
               queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
             }}
           />
@@ -971,7 +972,7 @@ export default function RunPage() {
           onClose={() => setShowEditCommentPopup(false)}
           onSuccess={() => {
             setShowEditCommentPopup(false)
-            showToast('Comment updated!', 'success')
+            showToast(t('run.messages.commentUpdated'), 'success')
           }}
         />
       )}
@@ -1008,6 +1009,7 @@ function EditCommentPopup({
   onClose: () => void
   onSuccess: () => void
 }) {
+  const { t } = useTranslation()
   const [comment, setComment] = useState(currentComment)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -1032,17 +1034,17 @@ function EditCommentPopup({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
-        <h3>Edit Comment</h3>
+        <h3>{t('run.actions.editComment')}</h3>
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="comment" className="form-label">Comment</label>
+            <label htmlFor="comment" className="form-label">{t('run.labels.comment')}</label>
             <textarea
               id="comment"
               className="form-input"
               value={comment}
               onChange={e => setComment(e.target.value)}
-              placeholder="e.g., Bringing cooler, Meeting at 2pm"
+              placeholder={t('run.labels.commentPlaceholder')}
               disabled={loading}
               maxLength={500}
               rows={3}
@@ -1057,14 +1059,14 @@ function EditCommentPopup({
               disabled={loading}
               className="btn btn-secondary"
             >
-              Cancel
+              {t('common.actions.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="btn btn-primary"
             >
-              {loading ? 'Saving...' : 'Save'}
+              {loading ? t('common.actions.saving') : t('common.actions.save')}
             </button>
           </div>
         </form>

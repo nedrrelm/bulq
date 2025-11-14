@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../styles/components/AddProductPopup.css'
 import { runsApi } from '../api'
 import type { AvailableProduct } from '../types/product'
@@ -13,6 +14,7 @@ interface AddProductPopupProps {
 }
 
 export default function AddProductPopup({ runId, onProductSelected, onCancel }: AddProductPopupProps) {
+  const { t } = useTranslation()
   const [products, setProducts] = useState<AvailableProduct[]>([])
   const [filteredProducts, setFilteredProducts] = useState<AvailableProduct[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -35,7 +37,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
         setProducts(productsData as any)
         setFilteredProducts(productsData as any)
       } catch (err) {
-        setError(getErrorMessage(err, 'Failed to load products'))
+        setError(getErrorMessage(err, t('product.errors.loadFailed')))
       } finally {
         setLoading(false)
       }
@@ -77,7 +79,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
       setProducts(productsData as any)
       setFilteredProducts(productsData as any)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to reload products'))
+      setError(getErrorMessage(err, t('product.errors.reloadFailed')))
     } finally {
       setLoading(false)
     }
@@ -106,14 +108,14 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div ref={modalRef} className="modal modal-md add-product-popup" onClick={(e) => e.stopPropagation()}>
-        <h3>Add Product to Run</h3>
-        <p className="popup-description">Select a product to start bidding on</p>
+        <h3>{t('product.addToRun.title')}</h3>
+        <p className="popup-description">{t('product.addToRun.description')}</p>
 
         <div className="search-container">
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search products..."
+            placeholder={t('product.addToRun.searchPlaceholder')}
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
@@ -123,7 +125,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
 
         {loading && (
           <div className="loading-state">
-            <p>Loading products...</p>
+            <p>{t('product.states.loading')}</p>
           </div>
         )}
 
@@ -139,22 +141,22 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
               <div className="no-products-state">
                 {searchTerm ? (
                   <>
-                    <p>No products found matching "{searchTerm}"</p>
+                    <p>{t('product.addToRun.noMatch', { term: searchTerm })}</p>
                     <button
                       onClick={() => setShowNewProductPopup(true)}
                       className="btn btn-primary create-product-button"
                     >
-                      + Create New Product
+                      {t('product.actions.createNew')}
                     </button>
                   </>
                 ) : (
                   <>
-                    <p>All products from this store already have bids!</p>
+                    <p>{t('product.addToRun.allProductsHaveBids')}</p>
                     <button
                       onClick={() => setShowNewProductPopup(true)}
                       className="btn btn-primary create-product-button"
                     >
-                      + Create New Product
+                      {t('product.actions.createNew')}
                     </button>
                   </>
                 )}
@@ -184,7 +186,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
 
         <div className="popup-footer">
           <button onClick={onCancel} className="cancel-button">
-            Cancel
+            {t('common.buttons.cancel')}
           </button>
           {!loading && !error && filteredProducts.length === 0 ? null : (
             <>
@@ -192,11 +194,11 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
                 onClick={() => setShowNewProductPopup(true)}
                 className="btn btn-secondary"
               >
-                + Create New Product
+                {t('product.actions.createNew')}
               </button>
               {filteredProducts.length > 0 && (
                 <p className="keyboard-hint">
-                  Use ↑↓ arrow keys and Enter to select
+                  {t('product.addToRun.keyboardHint')}
                 </p>
               )}
             </>

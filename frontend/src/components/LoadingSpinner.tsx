@@ -1,8 +1,12 @@
+import { useTranslation } from 'react-i18next'
+
 export default function LoadingSpinner() {
+  const { t } = useTranslation()
+
   return (
     <div className="loading-spinner-container">
       <div className="loading-spinner"></div>
-      <p>Loading...</p>
+      <p>{t('common.states.loading')}</p>
     </div>
   );
 }

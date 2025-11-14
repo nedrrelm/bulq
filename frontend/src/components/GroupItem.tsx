@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import ErrorBoundary from './ErrorBoundary'
 import { getStateLabel } from '../utils/runStates'
 
@@ -19,6 +20,8 @@ interface GroupItemProps {
 }
 
 const GroupItem = memo(function GroupItem({ group, onGroupClick, onRunSelect }: GroupItemProps) {
+  const { t } = useTranslation()
+
   return (
     <ErrorBoundary>
       <div
@@ -31,11 +34,11 @@ const GroupItem = memo(function GroupItem({ group, onGroupClick, onRunSelect }: 
         <div className="group-stats">
           <span className="stat">
             <span className="stat-icon">👥</span>
-            {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
+            {group.member_count} {t('group.card.members', { count: group.member_count })}
           </span>
           <span className="stat">
             <span className="stat-icon">✅</span>
-            {group.completed_runs_count} completed {group.completed_runs_count === 1 ? 'run' : 'runs'}
+            {group.completed_runs_count} {t('group.card.completedRuns', { count: group.completed_runs_count })}
           </span>
         </div>
 
