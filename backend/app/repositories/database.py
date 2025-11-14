@@ -252,7 +252,14 @@ class DatabaseRepository(AbstractRepository):
 
         from app.core.models import group_membership
 
-        active_states = ['planning', 'active', 'confirmed', 'shopping', 'adjusting', 'distributing']
+        active_states = [
+            RunState.PLANNING,
+            RunState.ACTIVE,
+            RunState.CONFIRMED,
+            RunState.SHOPPING,
+            RunState.ADJUSTING,
+            RunState.DISTRIBUTING,
+        ]
 
         # Get user's group IDs
         user_group_ids = (
@@ -290,15 +297,15 @@ class DatabaseRepository(AbstractRepository):
 
         # Query runs that are completed or cancelled
         query = self.db.query(Run).filter(
-            Run.group_id == group_id, Run.state.in_(['completed', 'cancelled'])
+            Run.group_id == group_id, Run.state.in_([RunState.COMPLETED, RunState.CANCELLED])
         )
 
         # Order by the appropriate timestamp (completed_at or cancelled_at), most recent first
         query = query.order_by(
             desc(
                 case(
-                    (Run.state == 'completed', Run.completed_at),
-                    (Run.state == 'cancelled', Run.cancelled_at),
+                    (Run.state == RunState.COMPLETED, Run.completed_at),
+                    (Run.state == RunState.CANCELLED, Run.cancelled_at),
                     else_=None,
                 )
             )
@@ -929,15 +936,26 @@ class DatabaseRepository(AbstractRepository):
         now = datetime.now()
         run.planning_at = now - timedelta(days=days_ago)
 
-        if state in ['active', 'confirmed', 'shopping', 'distributing', 'completed']:
+        if state in [
+            RunState.ACTIVE,
+            RunState.CONFIRMED,
+            RunState.SHOPPING,
+            RunState.DISTRIBUTING,
+            RunState.COMPLETED,
+        ]:
             run.active_at = now - timedelta(days=days_ago - 2)
-        if state in ['confirmed', 'shopping', 'distributing', 'completed']:
+        if state in [
+            RunState.CONFIRMED,
+            RunState.SHOPPING,
+            RunState.DISTRIBUTING,
+            RunState.COMPLETED,
+        ]:
             run.confirmed_at = now - timedelta(days=days_ago - 4)
-        if state in ['shopping', 'distributing', 'completed']:
+        if state in [RunState.SHOPPING, RunState.DISTRIBUTING, RunState.COMPLETED]:
             run.shopping_at = now - timedelta(days=days_ago - 5)
-        if state in ['distributing', 'completed']:
+        if state in [RunState.DISTRIBUTING, RunState.COMPLETED]:
             run.distributing_at = now - timedelta(days=days_ago - 6)
-        if state == 'completed':
+        if state == RunState.COMPLETED:
             run.completed_at = now - timedelta(days=days_ago - 7)
 
         self.db.add(run)
