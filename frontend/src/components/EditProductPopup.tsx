@@ -5,6 +5,7 @@ import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/v
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
+import { translateSuccess } from '../utils/translation'
 
 interface EditProductPopupProps {
   product: AdminProduct
@@ -93,7 +94,8 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
     try {
       setSubmitting(true)
       const response = await adminApi.mergeProducts(product.id, mergeTargetId.trim())
-      alert(`${response.message}\nAffected records: ${response.affected_records}`)
+      const successMsg = translateSuccess(response.code, response.details)
+      alert(`${successMsg}\nAffected records: ${response.affected_records}`)
       onSuccess()
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to merge products'))
@@ -105,7 +107,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
     try {
       setSubmitting(true)
       const response = await adminApi.deleteProduct(product.id)
-      alert(response.message)
+      alert(translateSuccess(response.code, response.details))
       onSuccess()
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to delete product'))

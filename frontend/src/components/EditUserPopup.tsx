@@ -5,6 +5,7 @@ import { validateLength, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
+import { translateSuccess } from '../utils/translation'
 
 interface EditUserPopupProps {
   user: AdminUser
@@ -105,7 +106,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
     try {
       setSubmitting(true)
       const response = await adminApi.deleteUser(user.id)
-      alert(response.message)
+      alert(translateSuccess(response.code, response.details))
       onSuccess()
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to delete user'))

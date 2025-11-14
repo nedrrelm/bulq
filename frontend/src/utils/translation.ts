@@ -90,11 +90,6 @@ function successCodeToKey(code: string): string {
       return `auth.${parts.join('_')}`
     }
 
-    // Special handling for ADMIN operations
-    if (parts.includes('admin') && firstPart === 'user') {
-      return `admin.${parts.join('_')}`
-    }
-
     const prefix = firstPart
     const rest = parts.slice(1).join('_')
     return `${prefix}.${rest}`

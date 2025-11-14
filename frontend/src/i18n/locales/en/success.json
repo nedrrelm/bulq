@@ -73,7 +73,7 @@
   "product": {
     "created": "Product created",
     "updated": "Product updated",
-    "deleted": "Product deleted",
+    "deleted": "Product '{{source_name}}' deleted successfully",
     "verified": "Product verified",
     "unverified": "Product unverified",
     "merged": "Products merged successfully"
@@ -81,15 +81,19 @@
   "store": {
     "created": "Store created",
     "updated": "Store updated",
-    "deleted": "Store deleted",
+    "deleted": "Store '{{source_name}}' deleted successfully",
     "verified": "Store verified",
     "unverified": "Store unverified",
     "merged": "Stores merged successfully"
   },
+  "user": {
+    "deleted": "User deleted successfully"
+  },
   "admin": {
     "user_admin_status_updated": "User admin status updated",
-    "user_deleted": "User deleted",
     "user_verified": "User verified",
-    "user_unverified": "User unverified"
+    "user_unverified": "User unverified",
+    "products_merged": "Products merged: '{{source_name}}' → '{{target_name}}'",
+    "stores_merged": "Stores merged: '{{source_name}}' → '{{target_name}}'"
   }
 }
