@@ -7,6 +7,7 @@ import ErrorAlert from './ErrorAlert'
 import RunCard from './RunCard'
 import NewProductPopup from './NewProductPopup'
 import { API_BASE_URL } from '../config'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface Product {
   id: string
@@ -69,7 +70,7 @@ function StorePage({ storeId, onBack }: StorePageProps) {
       const storeData = await response.json()
       setData(storeData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(getErrorMessage(err, 'An error occurred'))
     } finally {
       setLoading(false)
     }

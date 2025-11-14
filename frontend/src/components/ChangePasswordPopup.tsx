@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { authApi } from '../api/auth'
-import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface ChangePasswordPopupProps {
   onClose: () => void
@@ -37,7 +37,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
       await authApi.changePassword(currentPassword, newPassword)
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to change password')
+      setError(getErrorMessage(err, 'Failed to change password'))
       setSubmitting(false)
     }
   }

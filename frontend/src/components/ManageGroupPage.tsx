@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import '../styles/components/ManageGroupPage.css'
-import { groupsApi, ApiError } from '../api'
+import { groupsApi } from '../api'
 import type { GroupManageDetails, GroupMember } from '../schemas/group'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
@@ -11,6 +11,7 @@ import { WS_BASE_URL } from '../config'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { NAVIGATION_DELAY_AFTER_ACTION_MS } from '../constants'
+import { getErrorMessage } from '../utils/errorHandling'
 
 export default function ManageGroupPage() {
   const { groupId } = useParams<{ groupId: string }>()
@@ -36,7 +37,7 @@ export default function ManageGroupPage() {
         const data = await groupsApi.getGroupMembers(groupId)
         setGroup(data)
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Failed to load group members')
+        setError(getErrorMessage(err, 'Failed to load group members'))
       } finally {
         setLoading(false)
       }
@@ -137,7 +138,7 @@ export default function ManageGroupPage() {
         setGroup({ ...group, invite_token: data.invite_token })
         showToast('Invite link regenerated successfully!', 'success')
       } catch (err) {
-        showToast(err instanceof ApiError ? err.message : 'Failed to regenerate invite link', 'error')
+        showToast(getErrorMessage(err, 'Failed to regenerate invite link'), 'error')
       }
     }
 
@@ -159,7 +160,7 @@ export default function ManageGroupPage() {
         'success'
       )
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Failed to update joining setting', 'error')
+      showToast(getErrorMessage(err, 'Failed to update joining setting'), 'error')
     }
   }
 
@@ -175,7 +176,7 @@ export default function ManageGroupPage() {
         })
         showToast(`${member.name} removed from group`, 'success')
       } catch (err) {
-        showToast(err instanceof ApiError ? err.message : 'Failed to remove member', 'error')
+        showToast(getErrorMessage(err, 'Failed to remove member'), 'error')
       }
     }
 
@@ -197,7 +198,7 @@ export default function ManageGroupPage() {
           navigate(`/groups/${groupId}`)
         }, NAVIGATION_DELAY_AFTER_ACTION_MS)
       } catch (err) {
-        showToast(err instanceof ApiError ? err.message : 'Failed to leave group', 'error')
+        showToast(getErrorMessage(err, 'Failed to leave group'), 'error')
       }
     }
 
@@ -223,7 +224,7 @@ export default function ManageGroupPage() {
         })
         showToast(`${member.name} promoted to admin`, 'success')
       } catch (err) {
-        showToast(err instanceof ApiError ? err.message : 'Failed to promote member', 'error')
+        showToast(getErrorMessage(err, 'Failed to promote member'), 'error')
       }
     }
 

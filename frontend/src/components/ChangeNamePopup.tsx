@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
 import { authApi } from '../api/auth'
-import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import type { User } from '../schemas/user'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface ChangeNamePopupProps {
   onClose: () => void
@@ -32,7 +32,7 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
       const updatedUser = await authApi.changeName(currentPassword, newName.trim())
       onSuccess(updatedUser)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to change name')
+      setError(getErrorMessage(err, 'Failed to change name'))
       setSubmitting(false)
     }
   }

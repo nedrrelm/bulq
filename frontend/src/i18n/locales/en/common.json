@@ -1,0 +1,38 @@
+{
+  "app": {
+    "name": "Bulq",
+    "tagline": "Organize group purchases together"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "retry": "Retry"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalid_email": "Invalid email address",
+    "invalid_format": "Invalid format",
+    "too_short": "Too short",
+    "too_long": "Too long",
+    "min_length": "Minimum {{count}} characters",
+    "max_length": "Maximum {{count}} characters"
+  },
+  "states": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "empty": "No items found",
+    "offline": "You are offline"
+  }
+}

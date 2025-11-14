@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
 import { adminApi, type AdminStore } from '../api/admin'
-import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface EditStorePopupProps {
   store: AdminStore
@@ -78,7 +78,7 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update store')
+      setError(getErrorMessage(err, 'Failed to update store'))
       setSubmitting(false)
     }
   }
@@ -95,7 +95,7 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
       alert(`${response.message}\nAffected records: ${response.affected_records}`)
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to merge stores')
+      setError(getErrorMessage(err, 'Failed to merge stores'))
       setSubmitting(false)
     }
   }
@@ -107,7 +107,7 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
       alert(response.message)
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to delete store')
+      setError(getErrorMessage(err, 'Failed to delete store'))
       setSubmitting(false)
     }
   }

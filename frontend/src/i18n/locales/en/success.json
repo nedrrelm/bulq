@@ -1,0 +1,95 @@
+{
+  "general": {
+    "operation_successful": "Operation completed successfully",
+    "resource_created": "Resource created",
+    "resource_updated": "Updated successfully",
+    "resource_deleted": "Deleted successfully"
+  },
+  "auth": {
+    "user_registered": "Welcome! Your account has been created",
+    "user_logged_in": "Logged in successfully",
+    "user_logged_out": "Logged out successfully",
+    "password_changed": "Password changed successfully",
+    "profile_updated": "Profile updated"
+  },
+  "run": {
+    "created": "Run created successfully",
+    "updated": "Run updated",
+    "deleted": "Run deleted",
+    "cancelled": "Run cancelled",
+    "state_changed": "Run status updated",
+    "comment_updated": "Comment updated",
+    "helper_added": "Helper added",
+    "helper_removed": "Helper removed",
+    "force_confirmed": "Run confirmed",
+    "shopping_started": "Shopping started",
+    "adjusting_finished": "Adjustment phase completed",
+    "ready_toggled_confirmed": "All participants ready - run confirmed!"
+  },
+  "bid": {
+    "placed": "Bid placed successfully",
+    "updated": "Bid updated",
+    "retracted": "Bid removed",
+    "ready_toggled": "Ready status updated"
+  },
+  "shopping": {
+    "item_marked_purchased": "Item marked as purchased",
+    "item_marked_unpurchased": "Item marked as not purchased",
+    "price_updated": "Price updated",
+    "additional_purchase_added": "Additional quantity added",
+    "completed": "Shopping completed",
+    "completed_no_purchases": "Shopping completed with no purchases",
+    "completed_adjusting_required": "Shopping completed - adjustment required",
+    "completed_distributing": "Shopping completed - ready for distribution"
+  },
+  "distribution": {
+    "bid_marked_picked_up": "Marked as picked up",
+    "bid_marked_not_picked_up": "Marked as not picked up",
+    "updated": "Distribution updated",
+    "completed": "Distribution completed successfully"
+  },
+  "group": {
+    "created": "Group created successfully",
+    "updated": "Group updated",
+    "deleted": "Group deleted",
+    "joined": "You joined the group",
+    "left": "You left the group",
+    "member_removed": "Member removed from group",
+    "member_promoted": "{{member_name}} is now a group admin",
+    "invite_token_regenerated": "Invite link regenerated",
+    "joining_toggled": "Group joining settings updated"
+  },
+  "notification": {
+    "marked_read": "Notification marked as read",
+    "all_marked_read": "All notifications marked as read",
+    "deleted": "Notification deleted"
+  },
+  "reassignment": {
+    "request_created": "Leadership transfer request sent",
+    "request_accepted": "Leadership transferred successfully",
+    "request_declined": "Leadership transfer declined",
+    "request_cancelled": "Leadership transfer request cancelled"
+  },
+  "product": {
+    "created": "Product created",
+    "updated": "Product updated",
+    "deleted": "Product deleted",
+    "verified": "Product verified",
+    "unverified": "Product unverified",
+    "merged": "Products merged successfully"
+  },
+  "store": {
+    "created": "Store created",
+    "updated": "Store updated",
+    "deleted": "Store deleted",
+    "verified": "Store verified",
+    "unverified": "Store unverified",
+    "merged": "Stores merged successfully"
+  },
+  "admin": {
+    "user_admin_status_updated": "User admin status updated",
+    "user_deleted": "User deleted",
+    "user_verified": "User verified",
+    "user_unverified": "User unverified"
+  }
+}

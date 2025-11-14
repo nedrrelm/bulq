@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import '../styles/components/NewRunPopup.css'
-import { storesApi, runsApi, ApiError } from '../api'
+import { storesApi, runsApi } from '../api'
 import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import NewStorePopup from './NewStorePopup'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface NewRunPopupProps {
   groupId: string
@@ -40,7 +41,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
         setTimeout(() => selectRef.current?.focus(), 0)
       } catch (err) {
         console.error('Error fetching stores:', err)
-        setError(err instanceof ApiError ? err.message : 'Failed to load stores')
+        setError(getErrorMessage(err, 'Failed to load stores'))
         setStores([])
       }
     }
@@ -67,7 +68,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
       })
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to create run')
+      setError(getErrorMessage(err, 'Failed to create run'))
     } finally {
       setLoading(false)
     }

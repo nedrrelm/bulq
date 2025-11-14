@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import '../styles/components/AddProductPopup.css'
-import { runsApi, ApiError } from '../api'
+import { runsApi } from '../api'
 import type { AvailableProduct } from '../types/product'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import NewProductPopup from './NewProductPopup'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface AddProductPopupProps {
   runId: string
@@ -34,7 +35,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
         setProducts(productsData as any)
         setFilteredProducts(productsData as any)
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Failed to load products')
+        setError(getErrorMessage(err, 'Failed to load products'))
       } finally {
         setLoading(false)
       }
@@ -76,7 +77,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
       setProducts(productsData as any)
       setFilteredProducts(productsData as any)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to reload products')
+      setError(getErrorMessage(err, 'Failed to reload products'))
     } finally {
       setLoading(false)
     }

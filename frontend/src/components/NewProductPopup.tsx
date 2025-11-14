@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { storesApi, productsApi, ApiError } from '../api'
+import { storesApi, productsApi } from '../api'
 import type { Store, ProductSearchResult } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, validateDecimal, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface NewProductPopupProps {
   onClose: () => void
@@ -38,7 +39,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
         const storesData = await storesApi.getStores()
         setStores(Array.isArray(storesData) ? storesData : [])
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Failed to load stores')
+        setError(getErrorMessage(err, 'Failed to load stores'))
         setStores([])
       } finally {
         setLoadingStores(false)
@@ -141,7 +142,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to create product')
+      setError(getErrorMessage(err, 'Failed to create product'))
       setSubmitting(false)
     }
   }

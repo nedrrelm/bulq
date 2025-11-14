@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
 import { adminApi, type AdminUser } from '../api/admin'
-import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface EditUserPopupProps {
   user: AdminUser
@@ -96,7 +96,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update user')
+      setError(getErrorMessage(err, 'Failed to update user'))
       setSubmitting(false)
     }
   }
@@ -108,7 +108,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
       alert(response.message)
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to delete user')
+      setError(getErrorMessage(err, 'Failed to delete user'))
       setSubmitting(false)
     }
   }

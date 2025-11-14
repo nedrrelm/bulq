@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { storesApi, ApiError } from '../api'
+import { storesApi } from '../api'
 import type { Store } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface NewStorePopupProps {
   onClose: () => void
@@ -108,7 +109,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
       const newStore = await storesApi.createStore({ name: storeName.trim() })
       onSuccess(newStore)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to create store')
+      setError(getErrorMessage(err, 'Failed to create store'))
       setSubmitting(false)
     }
   }
