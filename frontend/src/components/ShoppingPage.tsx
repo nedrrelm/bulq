@@ -13,7 +13,7 @@ import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { validateDecimal, parseDecimal, sanitizeString } from '../utils/validation'
 import { useShoppingList, shoppingKeys } from '../hooks/queries'
-import { formatErrorForDisplay } from '../utils/errorHandling'
+import { formatErrorForDisplay, getErrorMessage } from '../utils/errorHandling'
 import { MAX_NOTES_LENGTH } from '../constants'
 
 // Using ShoppingListItem type from API layer
@@ -59,7 +59,7 @@ export default function ShoppingPage() {
   const { data: items = [], isLoading: loading, error: queryError } = useShoppingList(runId)
   const queryClient = useQueryClient()
 
-  const error = queryError instanceof Error ? queryError.message : ''
+  const error = getErrorMessage(queryError, '')
 
   const [showPurchasePopup, setShowPurchasePopup] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ShoppingListItem | null>(null)

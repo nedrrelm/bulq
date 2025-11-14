@@ -9,6 +9,7 @@ import type { WebSocketMessage } from '../types/websocket'
 import GroupItem from './GroupItem'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useGroups, groupKeys } from '../hooks/queries'
+import { getErrorMessage } from '../utils/errorHandling'
 
 // Lazy load popup components for better code splitting
 const NewGroupPopup = lazy(() => import('./NewGroupPopup'))
@@ -33,7 +34,7 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
   const [pendingReassignments, setPendingReassignments] = useState<PendingReassignments>({ sent: [], received: [] })
 
   // Convert React Query error to string
-  const error = queryError instanceof Error ? queryError.message : ''
+  const error = getErrorMessage(queryError, '')
 
   useEffect(() => {
     const fetchReassignments = async () => {

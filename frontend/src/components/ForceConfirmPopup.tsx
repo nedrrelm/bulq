@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
-import { runsApi, ApiError } from '../api'
+import { runsApi } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface ForceConfirmPopupProps {
   runId: string
@@ -25,7 +26,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
       await runsApi.forceConfirm(runId)
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to force confirm run')
+      setError(getErrorMessage(err, 'Failed to force confirm run'))
       setSubmitting(false)
     }
   }

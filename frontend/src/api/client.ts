@@ -3,16 +3,22 @@ import { z } from 'zod'
 
 export class ApiError extends Error {
   status: number
+  code?: string
+  details?: any
   data?: any
 
   constructor(
     message: string,
     status: number,
+    code?: string,
+    details?: any,
     data?: any
   ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
+    this.details = details
     this.data = data
   }
 }
@@ -78,12 +84,18 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-      let errorData
+      let errorCode: string | undefined
+      let errorDetails: any
+      let errorData: any
 
       if (isJson) {
         try {
           errorData = await response.json()
-          errorMessage = errorData.detail || errorData.message || errorMessage
+          // Extract code and details from standardized error response
+          errorCode = errorData.code
+          errorDetails = errorData.details
+          // Fallback to message from response (for backward compatibility)
+          errorMessage = errorData.message || errorData.detail || errorMessage
         } catch {
           // Failed to parse error JSON
         }
@@ -95,7 +107,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         }
       }
 
-      throw new ApiError(errorMessage, response.status, errorData)
+      throw new ApiError(errorMessage, response.status, errorCode, errorDetails, errorData)
     }
 
     // Handle empty responses (204 No Content)

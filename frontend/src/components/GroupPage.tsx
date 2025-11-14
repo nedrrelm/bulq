@@ -16,6 +16,7 @@ import { useConfirm } from '../hooks/useConfirm'
 import { useModal } from '../hooks/useModal'
 import RunCard from './RunCard'
 import { useGroup, useGroupRuns, groupKeys } from '../hooks/queries'
+import { getErrorMessage } from '../utils/errorHandling'
 
 type RunSummary = {
   id: string
@@ -41,7 +42,7 @@ export default function GroupPage() {
   const queryClient = useQueryClient()
 
   const loading = groupLoading || runsLoading
-  const error = groupError instanceof Error ? groupError.message : runsError instanceof Error ? runsError.message : ''
+  const error = groupError ? getErrorMessage(groupError, '') : runsError ? getErrorMessage(runsError, '') : ''
 
   const newRunModal = useModal()
   const { toast, showToast, hideToast } = useToast()

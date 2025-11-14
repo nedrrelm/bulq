@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import '../styles/components/JoinGroup.css'
-import { groupsApi, ApiError } from '../api'
+import { groupsApi } from '../api'
 import { API_BASE_URL } from '../config'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface JoinGroupProps {
   inviteToken: string
@@ -37,7 +38,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
         const data: GroupInfo = await response.json()
         setGroupPreview(data)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load group info')
+        setError(getErrorMessage(err, 'Failed to load group info'))
       } finally {
         setLoading(false)
       }
@@ -64,7 +65,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
         onJoinSuccess()
       }, 1500)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to join group')
+      setError(getErrorMessage(err, 'Failed to join group'))
       setJoining(false)
     }
   }

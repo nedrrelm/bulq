@@ -4,6 +4,7 @@ import { productsApi } from '../api'
 import LoadingSpinner from './LoadingSpinner'
 import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from './ErrorAlert'
+import { getErrorMessage } from '../utils/errorHandling'
 import {
   ScatterChart,
   Scatter,
@@ -159,7 +160,7 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
       const data = await productsApi.getProduct(productId)
       setProduct(data as any)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load product')
+      setError(getErrorMessage(err, 'Failed to load product'))
     } finally {
       setLoading(false)
     }

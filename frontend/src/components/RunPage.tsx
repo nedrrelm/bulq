@@ -8,6 +8,7 @@ import { runsApi, reassignmentApi } from '../api'
 import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
 import ErrorBoundary from './ErrorBoundary'
+import { getErrorMessage } from '../utils/errorHandling'
 
 // Lazy load popup components for better code splitting
 const BidPopup = lazy(() => import('./BidPopup'))
@@ -64,7 +65,7 @@ export default function RunPage() {
   const completeDistributionMutation = useCompleteDistribution(runId)
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
 
-  const error = queryError instanceof Error ? queryError.message : ''
+  const error = getErrorMessage(queryError, '')
 
   const [showBidPopup, setShowBidPopup] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -1030,7 +1031,7 @@ function EditCommentPopup({
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update comment')
+      setError(getErrorMessage(err, 'Failed to update comment'))
     } finally {
       setLoading(false)
     }

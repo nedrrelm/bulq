@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react'
-import { groupsApi, ApiError } from '../api'
+import { groupsApi } from '../api'
 import type { Group } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface NewGroupPopupProps {
   onClose: () => void
@@ -72,7 +73,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
       const newGroup = await groupsApi.createGroup({ name: groupName.trim() })
       onSuccess(newGroup)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to create group')
+      setError(getErrorMessage(err, 'Failed to create group'))
       setSubmitting(false)
     }
   }

@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
 import { adminApi, type AdminProduct } from '../api/admin'
-import { ApiError } from '../api'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface EditProductPopupProps {
   product: AdminProduct
@@ -79,7 +79,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update product')
+      setError(getErrorMessage(err, 'Failed to update product'))
       setSubmitting(false)
     }
   }
@@ -96,7 +96,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
       alert(`${response.message}\nAffected records: ${response.affected_records}`)
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to merge products')
+      setError(getErrorMessage(err, 'Failed to merge products'))
       setSubmitting(false)
     }
   }
@@ -108,7 +108,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
       alert(response.message)
       onSuccess()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to delete product')
+      setError(getErrorMessage(err, 'Failed to delete product'))
       setSubmitting(false)
     }
   }

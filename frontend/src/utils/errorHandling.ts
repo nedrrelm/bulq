@@ -1,4 +1,5 @@
 import { ApiError } from '../api'
+import { translateError } from './translation'
 
 /**
  * Standardized error handling utilities
@@ -27,6 +28,11 @@ import { ApiError } from '../api'
  */
 export function getErrorMessage(error: unknown, fallback = 'An unexpected error occurred'): string {
   if (error instanceof ApiError) {
+    // Use translated error code if available
+    if (error.code) {
+      return translateError(error.code, error.details)
+    }
+    // Fallback to raw message for backward compatibility
     return error.message
   }
 

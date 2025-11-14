@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { reassignmentApi } from '../api'
 import '../styles/components/ReassignLeaderPopup.css'
+import { getErrorMessage } from '../utils/errorHandling'
 
 interface Participant {
   user_id: string
@@ -57,7 +58,7 @@ export default function ReassignLeaderPopup({
       onSuccess()
       onClose()
     } catch (err: any) {
-      setError(err.message || 'Failed to request reassignment')
+      setError(getErrorMessage(err, 'Failed to request reassignment'))
     } finally {
       setSubmitting(false)
     }

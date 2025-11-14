@@ -1,0 +1,147 @@
+{
+  "auth": {
+    "required": "Authentication required",
+    "invalid_credentials": "Invalid username or password",
+    "session_expired": "Your session has expired. Please log in again."
+  },
+  "registration": {
+    "disabled": "Registration is currently disabled",
+    "username_taken": "Username is already taken",
+    "email_taken": "Email is already registered",
+    "password_too_short": "Password must be at least {{min_length}} characters",
+    "password_too_weak": "Password doesn't meet security requirements"
+  },
+  "password": {
+    "mismatch": "Passwords do not match",
+    "incorrect": "Current password is incorrect",
+    "same_as_old": "New password must be different from the current password"
+  },
+  "permissions": {
+    "insufficient": "You don't have permission to perform this action",
+    "not_group_member": "You are not a member of this group",
+    "not_group_admin": "You are not a group administrator",
+    "not_run_participant": "You are not a participant in this run",
+    "not_run_leader": "Only the run leader can perform this action",
+    "not_run_leader_or_helper": "Only the run leader or helpers can perform this action",
+    "not_system_admin": "Administrator privileges required"
+  },
+  "not_found": {
+    "user": "User not found",
+    "group": "Group not found",
+    "run": "Run not found",
+    "store": "Store not found",
+    "product": "Product not found",
+    "bid": "Bid not found",
+    "participation": "Participation record not found",
+    "shopping_list_item": "Shopping list item not found",
+    "notification": "Notification not found",
+    "reassignment_request": "Reassignment request not found",
+    "product_availability": "Product availability not found"
+  },
+  "run_state": {
+    "invalid_transition": "Cannot transition from {{current_state}} to {{target_state}}",
+    "not_in_planning": "Run must be in planning state",
+    "not_in_active": "Run must be in active state",
+    "not_in_confirmed": "Run must be in confirmed state",
+    "not_in_shopping": "Run must be in shopping state",
+    "not_in_adjusting": "Run must be in adjusting state",
+    "not_in_distributing": "Run must be in distributing state",
+    "already_cancelled": "Run has been cancelled",
+    "already_completed": "Run is already completed",
+    "cannot_cancel_completed": "Cannot cancel a completed run"
+  },
+  "run_actions": {
+    "cannot_join_adjusting": "Cannot join run during adjustment phase",
+    "cannot_modify_cancelled": "Cannot modify a cancelled run",
+    "cannot_modify_completed": "Cannot modify a completed run",
+    "max_products_exceeded": "Maximum number of products ({{max_products}}) exceeded",
+    "export_invalid_state": "Cannot export run in current state"
+  },
+  "bid": {
+    "quantity_negative": "Bid quantity cannot be negative",
+    "quantity_exceeds_purchased": "Bid quantity cannot exceed purchased quantity ({{purchased_quantity}})",
+    "quantity_below_distributed": "Cannot reduce bid below distributed amount ({{distributed_quantity}})",
+    "product_not_in_shopping_list": "Product is not on the shopping list",
+    "cannot_bid_new_product_adjusting": "Cannot add new products during adjustment phase",
+    "cannot_retract_adjusting": "Cannot retract bids during adjustment phase"
+  },
+  "shopping": {
+    "item_already_purchased": "Item is already marked as purchased",
+    "item_not_purchased": "Item has not been purchased yet",
+    "cannot_add_more_unpurchased": "Cannot add more to an unpurchased item"
+  },
+  "distribution": {
+    "total_exceeds_purchased": "Total distribution ({{total_distributed}}) exceeds purchased quantity ({{purchased_quantity}})",
+    "bid_already_picked_up": "Bid has already been picked up",
+    "bid_not_picked_up": "Bid has not been picked up yet",
+    "cannot_complete_unpurchased": "Cannot complete distribution with {{unpurchased_count}} unpurchased items"
+  },
+  "group": {
+    "joining_disabled": "This group is not accepting new members",
+    "already_member": "You are already a member of this group",
+    "not_member": "You are not a member of this group",
+    "max_groups_exceeded": "You have reached the maximum number of groups ({{max_groups}})",
+    "max_members_exceeded": "Group has reached maximum capacity ({{max_members}} members)",
+    "cannot_remove_admin": "Cannot remove group administrators",
+    "cannot_remove_self_admin": "Cannot remove your own admin status",
+    "last_admin_cannot_leave": "The last admin cannot leave the group",
+    "already_admin": "User is already a group administrator",
+    "invite_token_regeneration_failed": "Failed to regenerate invite token",
+    "join_failed": "Failed to join group",
+    "member_removal_failed": "Failed to remove member",
+    "member_promotion_failed": "Failed to promote member",
+    "joining_setting_update_failed": "Failed to update joining settings"
+  },
+  "reassignment": {
+    "not_current_leader": "Only the current run leader can reassign leadership",
+    "target_not_participant": "Target user is not a participant in this run",
+    "cannot_transfer_to_self": "Cannot transfer leadership to yourself",
+    "request_already_exists": "A pending reassignment request already exists",
+    "request_already_resolved": "This reassignment request has already been resolved",
+    "not_target_user": "Only the target user can respond to this request",
+    "invalid_action": "Invalid action for this reassignment request",
+    "invalid_run_state": "Cannot reassign leadership in current run state"
+  },
+  "product": {
+    "name_empty": "Product name cannot be empty",
+    "price_negative": "Product price cannot be negative",
+    "price_zero": "Product price cannot be zero",
+    "merge_same_product": "Cannot merge a product with itself",
+    "has_active_bids": "Cannot delete product with {{bid_count}} active bids"
+  },
+  "store": {
+    "name_empty": "Store name cannot be empty",
+    "merge_same_store": "Cannot merge a store with itself",
+    "has_active_runs": "Cannot delete store with {{run_count}} active runs"
+  },
+  "admin": {
+    "cannot_delete_own_account": "Cannot delete your own account",
+    "cannot_delete_admin_user": "Cannot delete administrator accounts",
+    "cannot_remove_own_admin_status": "Cannot remove your own admin status"
+  },
+  "notification": {
+    "mark_read_failed": "Failed to mark notification as read",
+    "not_owner": "You don't own this notification"
+  },
+  "validation": {
+    "invalid_id_format": "Invalid ID format",
+    "invalid_uuid_format": "Invalid UUID format for {{field}}",
+    "invalid_date_format": "Invalid date format",
+    "invalid_request_format": "Invalid request format"
+  },
+  "helper": {
+    "cannot_assign_leader": "Leader cannot be assigned as helper",
+    "not_group_member": "Helper must be a group member"
+  },
+  "config": {
+    "database_session_required": "Database session required",
+    "invalid_repo_mode": "Invalid repository mode: {{repo_mode}}",
+    "configuration_error": "Configuration error"
+  },
+  "generic": {
+    "operation_failed": "Operation failed",
+    "resource_not_found": "Resource not found",
+    "validation_failed": "Validation failed",
+    "unknown_error": "An unexpected error occurred"
+  }
+}
