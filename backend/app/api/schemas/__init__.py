@@ -20,7 +20,7 @@ from .auth_schemas import (
     UserResponse,
     UserStatsResponse,
 )
-from .common import MessageResponse, SuccessResponse
+from .common import SuccessResponse
 from .distribution_schemas import (
     DistributionProduct,
     DistributionUser,
@@ -100,7 +100,6 @@ from .store_schemas import (
 
 __all__ = [
     # Common
-    'MessageResponse',
     'SuccessResponse',
     # Auth schemas
     'UserRegister',

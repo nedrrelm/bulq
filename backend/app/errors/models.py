@@ -18,8 +18,8 @@ class ErrorResponse(BaseModel):
     """Standardized error response structure.
 
     The 'code' field contains a machine-readable error code for frontend localization.
-    The 'message' field is kept for backward compatibility but should not be used
-    for user-facing text - the frontend should translate the code instead.
+    The 'message' field is for internal logging and debugging only - the frontend
+    should translate the code into user-facing text.
     """
 
     success: bool = Field(False, description='Always false for errors')

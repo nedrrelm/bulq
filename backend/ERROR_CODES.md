@@ -280,40 +280,6 @@ from app.utils.validation import validate_uuid
 run_uuid = validate_uuid(run_id, 'Run')  # Raises INVALID_UUID_FORMAT if invalid
 ```
 
-### `validate_run_state_for_action(run: Run, allowed_states: list[RunState], action_name: str)`
-
-Validates that a run is in one of the allowed states for a specific action.
-
-**Raises:**
-- `RUN_NOT_IN_PLANNING_STATE` (HTTP 422) - When planning state required
-- `RUN_NOT_IN_ACTIVE_STATE` (HTTP 422) - When active state required
-- `RUN_NOT_IN_CONFIRMED_STATE` (HTTP 422) - When confirmed state required
-- `RUN_NOT_IN_SHOPPING_STATE` (HTTP 422) - When shopping state required
-- `RUN_NOT_IN_ADJUSTING_STATE` (HTTP 422) - When adjusting state required
-- `RUN_NOT_IN_DISTRIBUTING_STATE` (HTTP 422) - When distributing state required
-- `RUN_ALREADY_CANCELLED` (HTTP 422) - When run is in cancelled state
-- `RUN_ALREADY_COMPLETED` (HTTP 422) - When run is in completed state
-- `INVALID_RUN_STATE_TRANSITION` (HTTP 422) - For other state validation failures
-
-**Details returned:**
-- `current_state`: The run's current state
-- `allowed_states`: List of states that would allow this action
-- `action`: Name of the action being attempted
-
-**Example usage:**
-```python
-from app.utils.validation import validate_run_state_for_action
-from app.core.run_state import RunState
-
-validate_run_state_for_action(
-    run,
-    [RunState.ACTIVE, RunState.CONFIRMED],
-    'place bid'
-)
-```
-
-**Note:** These validation utilities automatically include proper error codes and structured details, making them safe for frontend consumption and localization.
-
 ### State Machine Validation
 
 For state transition validation, use the state machine directly:
