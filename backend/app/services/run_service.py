@@ -398,18 +398,6 @@ class RunService(BaseService):
             details={'run_id': run_id},
         )
 
-    def delete_run(self, run_id: str, user: User) -> CancelRunResponse:
-        """Delete a run (alias for cancel_run for backward compatibility).
-
-        Args:
-            run_id: Run ID as string
-            user: Current user (must be leader)
-
-        Returns:
-            CancelRunResponse with success message
-        """
-        return self.cancel_run(run_id, user)
-
     def get_available_products(self, run_id: str, user: User) -> list[AvailableProductResponse]:
         """Get products available for bidding (all products without bids yet).
 

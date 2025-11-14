@@ -5,16 +5,6 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-class MessageResponse(BaseModel):
-    """Generic message response.
-
-    DEPRECATED: Use SuccessResponse instead for language-agnostic responses.
-    Kept for backward compatibility only.
-    """
-
-    message: str
-
-
 class SuccessResponse(BaseModel):
     """Standardized success response structure.
 

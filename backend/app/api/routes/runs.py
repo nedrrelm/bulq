@@ -237,22 +237,6 @@ async def update_run_comment(
     return result
 
 
-@router.delete('/{run_id}', response_model=SuccessResponse)
-async def delete_run(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
-):
-    """Delete a run (cancels it). Alias for cancel_run for backward compatibility."""
-    service = RunService(db)
-    # Set WebSocket manager for broadcasting (state service handles state change notifications)
-    service.notification_service.set_websocket_manager(manager)
-
-    result = service.delete_run(run_id, current_user)
-
-    # No additional broadcast needed - state service handles notifications
-
-    return MessageResponse(message=result.message)
-
-
 @router.get('/{run_id}/export')
 async def export_run_state(
     run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)

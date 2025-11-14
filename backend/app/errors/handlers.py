@@ -43,7 +43,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     error_response = ErrorResponse(
         error=exc.__class__.__name__,
         code=exc.code,
-        message=exc.message,  # Still included for backward compatibility during transition
+        message=exc.message,  # For internal logging/debugging only
         details=exc.details,
         path=request.url.path,
     )
