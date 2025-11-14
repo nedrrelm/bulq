@@ -143,18 +143,9 @@ class ShoppingService(BaseService):
         if not state_machine.can_view_shopping_list(run_state):
             raise BadRequestError(
                 code=INVALID_RUN_STATE_TRANSITION,
-                message=state_machine.get_action_error_message(
-                    'shopping list',
-                    run_state,
-                    [
-                        RunState.SHOPPING,
-                        RunState.ADJUSTING,
-                        RunState.DISTRIBUTING,
-                        RunState.COMPLETED,
-                    ],
-                ),
                 current_state=run.state,
                 action='view_shopping_list',
+                allowed_states='shopping, adjusting, distributing, completed',
             )
 
         # Get shopping list items

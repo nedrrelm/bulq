@@ -1,5 +1,6 @@
 """Product service for handling product-related business logic."""
 
+from collections import defaultdict
 from typing import Any
 from uuid import UUID
 
@@ -81,8 +82,6 @@ class ProductService(BaseService):
         availabilities = self.repo.get_product_availabilities(product_id)
 
         # Group availabilities by store
-        from collections import defaultdict
-
         stores_map = defaultdict(list)
         for avail in availabilities:
             stores_map[avail.store_id].append(avail)

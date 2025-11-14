@@ -216,11 +216,9 @@ class BidService(BaseService):
         if not state_machine.can_place_bid(run_state):
             raise BadRequestError(
                 code=INVALID_RUN_STATE_TRANSITION,
-                message=state_machine.get_action_error_message(
-                    'bidding', run_state, [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING]
-                ),
                 current_state=run.state,
                 action='place_bid',
+                allowed_states='planning, active, adjusting',
             )
 
         # Verify product exists (products don't need store availability to be bid on)
@@ -402,13 +400,9 @@ class BidService(BaseService):
         if not state_machine.can_retract_bid(run_state):
             raise BadRequestError(
                 code=CANNOT_RETRACT_BID_IN_ADJUSTING,
-                message=state_machine.get_action_error_message(
-                    'bid modification',
-                    run_state,
-                    [RunState.PLANNING, RunState.ACTIVE, RunState.ADJUSTING],
-                ),
                 current_state=run.state,
                 action='retract_bid',
+                allowed_states='planning, active, adjusting',
             )
 
         return run_uuid, product_uuid, run
