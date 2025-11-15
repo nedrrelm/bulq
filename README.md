@@ -263,10 +263,7 @@ For detailed testing documentation, see [`backend/tests/README.md`](backend/test
 - ✅ Testing: Comprehensive test suite with 100+ tests
 
 📋 **Before production deployment:**
-- ⏳ Database migrations with Alembic (critical)
-- ⏳ Rate limiting implementation
-- ⏳ Monitoring and log aggregation
-- ⏳ Automated backups to cloud storage
+- check backlog
 
 See [docs/production_deployment.md](docs/production_deployment.md) for deployment guide.
 

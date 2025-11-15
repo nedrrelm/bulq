@@ -52,24 +52,6 @@ These items must be completed before production deployment.
 
 ---
 
-### Localization
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Frontend i18n, backend translations, database
-
-**Languages:**
-- English (en)
-- Russian (ru)
-- Serbian (sr)
-
-**Implementation:**
-- Use i18next or similar library for frontend
-- Store user language preference
-- Translate UI strings, labels, messages
-- Consider product name translations (via multiple names feature)
-
----
-
 ### Progressive Web App (PWA)
 **Status**: Future
 **Priority**: Medium
