@@ -16,7 +16,7 @@ interface BidPopupProps {
 }
 
 export default function BidPopup({ productName, currentQuantity, currentComment, onSubmit, onCancel, adjustingMode, minAllowed, maxAllowed }: BidPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'run'])
   const [quantity, setQuantity] = useState(currentQuantity?.toString() || '1')
   const [interestedOnly, setInterestedOnly] = useState(false)
   const [comment, setComment] = useState(currentComment || '')
@@ -44,16 +44,16 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
     const min = adjustingMode && minAllowed !== undefined ? minAllowed : 0
     const max = adjustingMode && maxAllowed !== undefined ? maxAllowed : 9999
 
-    const validation = validateDecimal(value, min, max, 2, t('run.fields.quantity'))
+    const validation = validateDecimal(value, min, max, 2, t('run:fields.quantity'))
 
     if (!validation.isValid) {
-      setError(validation.error || t('run.validation.quantityInvalid'))
+      setError(validation.error || t('run:validation.quantityInvalid'))
       return false
     }
 
     const qty = parseDecimal(value)
     if (qty === 0) {
-      setError(t('run.validation.quantityGreaterThanZero'))
+      setError(t('run:validation.quantityGreaterThanZero'))
       return false
     }
 
@@ -86,16 +86,16 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div ref={modalRef} className="modal modal-sm" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
-        <h3>{adjustingMode ? t('run.bid.adjustTitle') : t('run.bid.title')}</h3>
+        <h3>{adjustingMode ? t('run:bid.adjustTitle') : t('run:bid.title')}</h3>
         <p className="product-name">{productName}</p>
 
         {adjustingMode && (
           <div className="adjusting-mode-notice">
-            <strong>{t('run.bid.adjustingModeWarning')}</strong>
+            <strong>{t('run:bid.adjustingModeWarning')}</strong>
             <p>
-              {t('run.bid.adjustingModeDescription')}
+              {t('run:bid.adjustingModeDescription')}
               {minAllowed !== undefined && maxAllowed !== undefined && (
-                <> {t('run.bid.range', { min: minAllowed, max: maxAllowed })}</>
+                <> {t('run:bid.range', { min: minAllowed, max: maxAllowed })}</>
               )}
             </p>
           </div>
@@ -103,7 +103,7 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="quantity">{t('run.fields.quantity')}:</label>
+            <label htmlFor="quantity">{t('run:fields.quantity')}:</label>
             <input
               ref={inputRef}
               id="quantity"
@@ -117,7 +117,7 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
               disabled={interestedOnly}
             />
             {error && <span className="error-message">{error}</span>}
-            <small className="input-hint">{t('run.bid.decimalHint')}</small>
+            <small className="input-hint">{t('run:bid.decimalHint')}</small>
           </div>
 
           <div className="form-group">
@@ -127,30 +127,30 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
                 checked={interestedOnly}
                 onChange={(e) => setInterestedOnly(e.target.checked)}
               />
-              {t('run.bid.interestedOnly')}
+              {t('run:bid.interestedOnly')}
             </label>
           </div>
 
           <div className="form-group">
-            <label htmlFor="comment">{t('run.fields.comment')}:</label>
+            <label htmlFor="comment">{t('run:fields.comment')}:</label>
             <textarea
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder={t('run.bid.commentPlaceholder')}
+              placeholder={t('run:bid.commentPlaceholder')}
               maxLength={500}
               rows={3}
               className="comment-textarea"
             />
-            <small className="input-hint">{t('run.bid.commentCounter', { count: comment.length })}</small>
+            <small className="input-hint">{t('run:bid.commentCounter', { count: comment.length })}</small>
           </div>
 
           <div className="button-group">
             <button type="button" onClick={onCancel} className="cancel-button">
-              {t('common.buttons.cancel')}
+              {t('common:buttons.cancel')}
             </button>
             <button type="submit" className="submit-button">
-              {currentQuantity !== undefined ? t('run.actions.updateBid') : t('run.actions.placeBid')}
+              {currentQuantity !== undefined ? t('run:actions.updateBid') : t('run:actions.placeBid')}
             </button>
           </div>
         </form>

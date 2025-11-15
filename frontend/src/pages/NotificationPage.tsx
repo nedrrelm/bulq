@@ -7,7 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 const LIMIT = 100
 
 export default function NotificationPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'notifications'])
   const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading } = useNotifications()
   const [offset, setOffset] = useState(0)
 
@@ -41,13 +41,13 @@ export default function NotificationPage() {
     <div className="page-container">
       <div className="card card-lg">
         <div className="card-header">
-          <h2>{t('notifications.title')}</h2>
+          <h2>{t('notifications:title')}</h2>
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllAsRead}
               className="btn btn-ghost"
             >
-              {t('notifications.markAllAsRead')}
+              {t('notifications:markAllAsRead')}
             </button>
           )}
         </div>
@@ -56,7 +56,7 @@ export default function NotificationPage() {
           <LoadingSpinner />
         ) : notifications.length === 0 ? (
           <div className="empty-state">
-            <p>{t('notifications.noNotifications')}</p>
+            <p>{t('notifications:noNotifications')}</p>
           </div>
         ) : (
           <>
@@ -77,17 +77,17 @@ export default function NotificationPage() {
                   disabled={offset === 0}
                   className="btn btn-secondary"
                 >
-                  {t('common.previous')}
+                  {t('common:previous')}
                 </button>
                 <span className="pagination-info">
-                  {t('common.showing')} {offset + 1}-{offset + notifications.length}
+                  {t('common:showing')} {offset + 1}-{offset + notifications.length}
                 </span>
                 <button
                   onClick={handleNextPage}
                   disabled={!hasMorePages}
                   className="btn btn-secondary"
                 >
-                  {t('common.next')}
+                  {t('common:next')}
                 </button>
               </div>
             )}

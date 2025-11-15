@@ -11,7 +11,7 @@ interface ForceConfirmPopupProps {
 }
 
 export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceConfirmPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'run'])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -28,7 +28,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
       await runsApi.forceConfirm(runId)
       onSuccess()
     } catch (err) {
-      setError(getErrorMessage(err, t('run.errors.forceConfirmFailed')))
+      setError(getErrorMessage(err, t('run:errors.forceConfirmFailed')))
       setSubmitting(false)
     }
   }
@@ -37,7 +37,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('run.forceConfirm.title')}</h2>
+          <h2>{t('run:forceConfirm.title')}</h2>
         </div>
 
         <form onSubmit={handleForceConfirm}>
@@ -49,18 +49,18 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
 
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem' }}>
-              <strong>{t('run.forceConfirm.warning')}</strong> {t('run.forceConfirm.warningDescription')}
+              <strong>{t('run:forceConfirm.warning')}</strong> {t('run:forceConfirm.warningDescription')}
             </p>
             <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
-              {t('run.forceConfirm.useThisIf')}
+              {t('run:forceConfirm.useThisIf')}
             </p>
             <ul style={{ marginLeft: '1.5rem', color: 'var(--color-text-secondary)' }}>
-              <li>{t('run.forceConfirm.reason1')}</li>
-              <li>{t('run.forceConfirm.reason2')}</li>
-              <li>{t('run.forceConfirm.reason3')}</li>
+              <li>{t('run:forceConfirm.reason1')}</li>
+              <li>{t('run:forceConfirm.reason2')}</li>
+              <li>{t('run:forceConfirm.reason3')}</li>
             </ul>
             <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-              {t('run.forceConfirm.consequence')}
+              {t('run:forceConfirm.consequence')}
             </p>
           </div>
 
@@ -71,7 +71,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
               onClick={onClose}
               disabled={submitting}
             >
-              {t('common.buttons.cancel')}
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
@@ -79,7 +79,7 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
               style={{ backgroundColor: 'var(--color-warning)', color: 'white' }}
               disabled={submitting}
             >
-              {submitting ? t('run.actions.confirming') : t('run.actions.forceConfirm')}
+              {submitting ? t('run:actions.confirming') : t('run:actions.forceConfirm')}
             </button>
           </div>
         </form>

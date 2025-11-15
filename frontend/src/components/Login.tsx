@@ -23,7 +23,7 @@ interface RegisterFormData {
 }
 
 export default function Login({ onLogin }: LoginProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['auth'])
   const [isRegister, setIsRegister] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -73,7 +73,7 @@ export default function Login({ onLogin }: LoginProps) {
 
     // Validate password confirmation
     if (registerData.password !== registerData.confirmPassword) {
-      setError(t('auth.errors.passwordMismatch'))
+      setError(t('auth:errors.passwordMismatch'))
       setLoading(false)
       return
     }
@@ -93,7 +93,7 @@ export default function Login({ onLogin }: LoginProps) {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h2>{isRegister ? t('auth.register.title') : t('auth.login.title')}</h2>
+        <h2>{isRegister ? t('auth:register.title') : t('auth:login.title')}</h2>
 
         {error && (
           <div className="error-message">
@@ -104,7 +104,7 @@ export default function Login({ onLogin }: LoginProps) {
         {isRegister ? (
           <form onSubmit={handleRegister} className="auth-form">
             <div className="form-group">
-              <label htmlFor="name" className="form-label">{t('auth.fields.name')}</label>
+              <label htmlFor="name" className="form-label">{t('auth:fields.name')}</label>
               <input
                 type="text"
                 id="name"
@@ -118,7 +118,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="username" className="form-label">{t('auth.fields.username')}</label>
+              <label htmlFor="username" className="form-label">{t('auth:fields.username')}</label>
               <input
                 type="text"
                 id="username"
@@ -130,14 +130,14 @@ export default function Login({ onLogin }: LoginProps) {
                 minLength={3}
                 maxLength={50}
                 pattern="[a-zA-Z0-9_-]+"
-                title={t('auth.validation.usernamePattern')}
+                title={t('auth:validation.usernamePattern')}
               />
               <small className="input-hint">
-                {t('auth.validation.usernameHint')}
+                {t('auth:validation.usernameHint')}
               </small>
             </div>
             <div className="form-group">
-              <label htmlFor="password" className="form-label">{t('auth.fields.password')}</label>
+              <label htmlFor="password" className="form-label">{t('auth:fields.password')}</label>
               <input
                 type="password"
                 id="password"
@@ -151,7 +151,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="confirmPassword" className="form-label">{t('auth.fields.confirmPassword')}</label>
+              <label htmlFor="confirmPassword" className="form-label">{t('auth:fields.confirmPassword')}</label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -165,13 +165,13 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <button type="submit" disabled={loading} className="auth-button">
-              {loading ? t('auth.register.submitting') : t('auth.register.submit')}
+              {loading ? t('auth:register.submitting') : t('auth:register.submit')}
             </button>
           </form>
         ) : (
           <form onSubmit={handleLogin} className="auth-form">
             <div className="form-group">
-              <label htmlFor="username" className="form-label">{t('auth.fields.username')}</label>
+              <label htmlFor="username" className="form-label">{t('auth:fields.username')}</label>
               <input
                 type="text"
                 id="username"
@@ -185,7 +185,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="password" className="form-label">{t('auth.fields.password')}</label>
+              <label htmlFor="password" className="form-label">{t('auth:fields.password')}</label>
               <input
                 type="password"
                 id="password"
@@ -198,7 +198,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             <button type="submit" disabled={loading} className="auth-button">
-              {loading ? t('auth.login.submitting') : t('auth.login.submit')}
+              {loading ? t('auth:login.submitting') : t('auth:login.submit')}
             </button>
           </form>
         )}
@@ -206,26 +206,26 @@ export default function Login({ onLogin }: LoginProps) {
         <div className="auth-switch">
           {isRegister ? (
             <p>
-              {t('auth.register.hasAccount')}{' '}
+              {t('auth:register.hasAccount')}{' '}
               <button
                 type="button"
                 onClick={() => setIsRegister(false)}
                 className="link-button"
                 disabled={loading}
               >
-                {t('auth.login.submit')}
+                {t('auth:login.submit')}
               </button>
             </p>
           ) : (
             <p>
-              {t('auth.login.noAccount')}{' '}
+              {t('auth:login.noAccount')}{' '}
               <button
                 type="button"
                 onClick={() => setIsRegister(true)}
                 className="link-button"
                 disabled={loading}
               >
-                {t('auth.register.submit')}
+                {t('auth:register.submit')}
               </button>
             </p>
           )}

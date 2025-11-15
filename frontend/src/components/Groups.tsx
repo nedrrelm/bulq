@@ -26,7 +26,7 @@ interface GroupsProps {
 }
 
 export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['groups', 'common'])
   // Use React Query for groups data
   const { data: groups = [], isLoading: loading, error: queryError } = useGroups()
   const queryClient = useQueryClient()
@@ -133,42 +133,42 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
         {/* Pending reassignment requests banner */}
         {pendingReassignments.sent.length > 0 && (
           <div className="alert alert-info reassignment-pending-banner">
-            <strong>{t('groups.reassignment.pendingTitle')}</strong> {t('groups.reassignment.pendingCount', { count: pendingReassignments.sent.length })}
+            <strong>{t('groups:reassignment.pendingTitle')}</strong> {t('groups:reassignment.pendingCount', { count: pendingReassignments.sent.length })}
             {pendingReassignments.sent.map(req => (
               <div key={req.id} style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
-                → {req.store_name} ({t('groups.reassignment.waitingFor', { name: req.to_user_name })})
+                → {req.store_name} ({t('groups:reassignment.waitingFor', { name: req.to_user_name })})
               </div>
             ))}
           </div>
         )}
 
         <div className="groups-header">
-          <h3>{t('groups.title')}</h3>
+          <h3>{t('groups:title')}</h3>
           <div className="header-buttons">
             <button onClick={() => setShowNewProductPopup(true)} className="btn btn-secondary">
-              {t('groups.actions.newProduct')}
+              {t('groups:actions.newProduct')}
             </button>
             <button onClick={() => setShowNewStorePopup(true)} className="btn btn-secondary">
-              {t('groups.actions.newStore')}
+              {t('groups:actions.newStore')}
             </button>
             <button onClick={() => setShowNewGroupPopup(true)} className="btn btn-primary">
-              {t('groups.actions.newGroup')}
+              {t('groups:actions.newGroup')}
             </button>
           </div>
         </div>
 
-      {loading && <p>{t('common.states.loading')}</p>}
+      {loading && <p>{t('common:states.loading')}</p>}
 
       {error && (
         <div className="error">
-          <p>❌ {t('groups.errors.loadFailed', { error })}</p>
+          <p>❌ {t('groups:errors.loadFailed', { error })}</p>
         </div>
       )}
 
       {!loading && !error && groups.length === 0 && (
         <div className="no-groups">
-          <p>{t('groups.empty.noGroups')}</p>
-          <p>{t('groups.empty.invite')}</p>
+          <p>{t('groups:empty.noGroups')}</p>
+          <p>{t('groups:empty.invite')}</p>
         </div>
       )}
 

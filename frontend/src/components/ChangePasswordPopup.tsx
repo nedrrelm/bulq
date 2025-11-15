@@ -10,7 +10,7 @@ interface ChangePasswordPopupProps {
 }
 
 export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswordPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'profile'])
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -25,12 +25,12 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
     setError('')
 
     if (newPassword.length < 6) {
-      setError(t('profile.validation.passwordMinLength'))
+      setError(t('profile:validation.passwordMinLength'))
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError(t('profile.validation.passwordMismatch'))
+      setError(t('profile:validation.passwordMismatch'))
       return
     }
 
@@ -48,7 +48,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('profile.changePassword.title')}</h2>
+          <h2>{t('profile:changePassword.title')}</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -59,7 +59,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           )}
 
           <div className="form-group">
-            <label htmlFor="current-password" className="form-label">{t('profile.fields.currentPassword')} *</label>
+            <label htmlFor="current-password" className="form-label">{t('profile:fields.currentPassword')} *</label>
             <input
               id="current-password"
               type="password"
@@ -69,7 +69,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
                 setCurrentPassword(e.target.value)
                 setError('')
               }}
-              placeholder={t('profile.fields.currentPassword')}
+              placeholder={t('profile:fields.currentPassword')}
               disabled={submitting}
               required
               autoFocus
@@ -77,7 +77,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           </div>
 
           <div className="form-group">
-            <label htmlFor="new-password" className="form-label">{t('profile.fields.newPassword')} *</label>
+            <label htmlFor="new-password" className="form-label">{t('profile:fields.newPassword')} *</label>
             <input
               id="new-password"
               type="password"
@@ -87,7 +87,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
                 setNewPassword(e.target.value)
                 setError('')
               }}
-              placeholder={t('profile.fields.newPassword')}
+              placeholder={t('profile:fields.newPassword')}
               disabled={submitting}
               minLength={6}
               required
@@ -95,7 +95,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirm-password" className="form-label">{t('profile.fields.confirmPassword')} *</label>
+            <label htmlFor="confirm-password" className="form-label">{t('profile:fields.confirmPassword')} *</label>
             <input
               id="confirm-password"
               type="password"
@@ -105,7 +105,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
                 setConfirmPassword(e.target.value)
                 setError('')
               }}
-              placeholder={t('profile.fields.confirmPassword')}
+              placeholder={t('profile:fields.confirmPassword')}
               disabled={submitting}
               required
             />
@@ -118,14 +118,14 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
               onClick={onClose}
               disabled={submitting}
             >
-              {t('common.buttons.cancel')}
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? t('profile.changePassword.changing') : t('common.buttons.save')}
+              {submitting ? t('profile:changePassword.changing') : t('common:buttons.save')}
             </button>
           </div>
         </form>

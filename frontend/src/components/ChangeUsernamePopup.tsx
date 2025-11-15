@@ -11,7 +11,7 @@ interface ChangeUsernamePopupProps {
 }
 
 export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUsernamePopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'profile'])
   const [newUsername, setNewUsername] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,12 +25,12 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
     setError('')
 
     if (newUsername.length < 3) {
-      setError(t('profile.validation.usernameMinLength'))
+      setError(t('profile:validation.usernameMinLength'))
       return
     }
 
     if (!/^[a-zA-Z0-9_-]+$/.test(newUsername)) {
-      setError(t('profile.validation.usernameInvalidChars'))
+      setError(t('profile:validation.usernameInvalidChars'))
       return
     }
 
@@ -48,7 +48,7 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('profile.changeUsername.title')}</h2>
+          <h2>{t('profile:changeUsername.title')}</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -59,7 +59,7 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
           )}
 
           <div className="form-group">
-            <label htmlFor="new-username" className="form-label">{t('profile.fields.username')} *</label>
+            <label htmlFor="new-username" className="form-label">{t('profile:fields.username')} *</label>
             <input
               id="new-username"
               type="text"
@@ -69,7 +69,7 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
                 setNewUsername(e.target.value)
                 setError('')
               }}
-              placeholder={t('profile.fields.username')}
+              placeholder={t('profile:fields.username')}
               disabled={submitting}
               minLength={3}
               maxLength={50}
@@ -77,12 +77,12 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
               autoFocus
             />
             <small style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem', display: 'block' }}>
-              {t('profile.changeUsername.hint')}
+              {t('profile:changeUsername.hint')}
             </small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="current-password" className="form-label">{t('profile.fields.currentPassword')} *</label>
+            <label htmlFor="current-password" className="form-label">{t('profile:fields.currentPassword')} *</label>
             <input
               id="current-password"
               type="password"
@@ -92,7 +92,7 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
                 setCurrentPassword(e.target.value)
                 setError('')
               }}
-              placeholder={t('profile.fields.currentPassword')}
+              placeholder={t('profile:fields.currentPassword')}
               disabled={submitting}
               required
             />
@@ -105,14 +105,14 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
               onClick={onClose}
               disabled={submitting}
             >
-              {t('common.buttons.cancel')}
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? t('profile.changeUsername.changing') : t('common.buttons.save')}
+              {submitting ? t('profile:changeUsername.changing') : t('common:buttons.save')}
             </button>
           </div>
         </form>

@@ -20,7 +20,7 @@ const MAX_USERNAME_LENGTH = 50
 const MIN_USERNAME_LENGTH = 3
 
 export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['admin', 'common'])
   const [userName, setUserName] = useState(user.name)
   const [username, setUsername] = useState(user.username)
   const [isAdmin, setIsAdmin] = useState(user.is_admin)
@@ -36,13 +36,13 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
     const trimmed = value.trim()
 
     if (trimmed.length === 0) {
-      setError(t('admin.edit.user.errors.nameRequired'))
+      setError(t('admin:edit.user.errors.nameRequired'))
       return false
     }
 
     const lengthValidation = validateLength(trimmed, MIN_NAME_LENGTH, MAX_NAME_LENGTH, 'Name')
     if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || t('admin.edit.user.errors.invalidName'))
+      setError(lengthValidation.error || t('admin:edit.user.errors.invalidName'))
       return false
     }
 
@@ -53,19 +53,19 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
     const trimmed = value.trim()
 
     if (trimmed.length === 0) {
-      setError(t('admin.edit.user.errors.usernameRequired'))
+      setError(t('admin:edit.user.errors.usernameRequired'))
       return false
     }
 
     const lengthValidation = validateLength(trimmed, MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH, 'Username')
     if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || t('admin.edit.user.errors.invalidUsername'))
+      setError(lengthValidation.error || t('admin:edit.user.errors.invalidUsername'))
       return false
     }
 
     // Check username format
     if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
-      setError(t('admin.edit.user.errors.usernameFormat'))
+      setError(t('admin:edit.user.errors.usernameFormat'))
       return false
     }
 
@@ -120,7 +120,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('admin.edit.user.title')}</h2>
+          <h2>{t('admin:edit.user.title')}</h2>
         </div>
 
         <form onSubmit={handleUpdate}>
@@ -131,21 +131,21 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
           )}
 
           <div className="form-group">
-            <label htmlFor="user-name" className="form-label">{t('admin.edit.user.fields.name')} *</label>
+            <label htmlFor="user-name" className="form-label">{t('admin:edit.user.fields.name')} *</label>
             <input
               id="user-name"
               type="text"
               className={`form-input ${error ? 'input-error' : ''}`}
               value={userName}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={t('admin.edit.user.placeholders.name')}
+              placeholder={t('admin:edit.user.placeholders.name')}
               disabled={submitting}
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="username" className="form-label">{t('admin.edit.user.fields.username')} *</label>
+            <label htmlFor="username" className="form-label">{t('admin:edit.user.fields.username')} *</label>
             <input
               id="username"
               type="text"
@@ -155,7 +155,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
                 setUsername(e.target.value)
                 setError('')
               }}
-              placeholder={t('admin.edit.user.placeholders.username')}
+              placeholder={t('admin:edit.user.placeholders.username')}
               disabled={submitting}
               minLength={MIN_USERNAME_LENGTH}
               maxLength={MAX_USERNAME_LENGTH}
@@ -163,7 +163,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
               required
             />
             <small style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
-              {t('admin.edit.user.usernameHint')}
+              {t('admin:edit.user.usernameHint')}
             </small>
           </div>
 
@@ -178,7 +178,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
                 }}
                 disabled={submitting}
               />
-              <span>{t('admin.edit.user.fields.verified')}</span>
+              <span>{t('admin:edit.user.fields.verified')}</span>
             </label>
           </div>
 
@@ -193,10 +193,10 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
                 }}
                 disabled={submitting}
               />
-              <span>{t('admin.edit.user.fields.admin')}</span>
+              <span>{t('admin:edit.user.fields.admin')}</span>
             </label>
             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem', marginLeft: '1.5rem' }}>
-              {t('admin.edit.user.adminNote')}
+              {t('admin:edit.user.adminNote')}
             </p>
           </div>
 
@@ -207,14 +207,14 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
               onClick={onClose}
               disabled={submitting}
             >
-              {t('common.cancel')}
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? t('common.saving') : t('common.saveChanges')}
+              {submitting ? t('common:saving') : t('common:saveChanges')}
             </button>
           </div>
         </form>
@@ -223,22 +223,22 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
 
         {/* Delete Section */}
         <div className="form-group">
-          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin.edit.dangerZone')}</label>
+          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin:edit.dangerZone')}</label>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
-            {t('admin.edit.user.deleteWarning')}
+            {t('admin:edit.user.deleteWarning')}
           </p>
           <button
             type="button"
             className="btn"
             style={{ backgroundColor: 'var(--color-danger)', color: 'white' }}
             onClick={() => showConfirm(
-              t('admin.edit.user.deleteConfirm', { name: user.name }),
+              t('admin:edit.user.deleteConfirm', { name: user.name }),
               handleDelete,
               { danger: true }
             )}
             disabled={submitting}
           >
-            {t('admin.edit.user.deleteButton')}
+            {t('admin:edit.user.deleteButton')}
           </button>
         </div>
       </div>

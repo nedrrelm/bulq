@@ -29,7 +29,7 @@ type RunSummary = {
 }
 
 export default function GroupPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['group'])
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
 
@@ -68,7 +68,7 @@ export default function GroupPage() {
     } else if (message.type === 'member_removed') {
       // If current user was removed, redirect to main page
       if (user && messageData.removed_user_id === user.id) {
-        showToast(t('group.messages.removed'), 'error')
+        showToast(t('group:messages.removed'), 'error')
         setTimeout(() => {
           navigate('/')
         }, 1500)
@@ -137,34 +137,34 @@ export default function GroupPage() {
 
       <div className="breadcrumb">
         <span className="breadcrumb-link" onClick={() => navigate('/')}>
-          {group?.name || t('group.loading')}
+          {group?.name || t('group:loading')}
         </span>
       </div>
 
       <div className="group-actions">
         <button onClick={handleNewRunClick} className="new-run-button">
-          {t('group.actions.newRun')}
+          {t('group:actions.newRun')}
         </button>
         <button onClick={handleManageClick} className="btn btn-secondary">
-          {t('group.actions.manageGroup')}
+          {t('group:actions.manageGroup')}
         </button>
       </div>
 
-      {loading && <p>{t('group.loading')}</p>}
+      {loading && <p>{t('group:loading')}</p>}
 
       {error && (
         <div className="error">
-          <p>{t('group.errors.loadFailed')}: {error}</p>
+          <p>{t('group:errors.loadFailed')}: {error}</p>
         </div>
       )}
 
       {!loading && !error && (
         <>
           <div className="runs-section">
-            <h3>{t('group.sections.currentRuns')} ({currentRuns.length})</h3>
+            <h3>{t('group:sections.currentRuns')} ({currentRuns.length})</h3>
             {currentRuns.length === 0 ? (
               <div className="no-runs">
-                <p>{t('group.empty.noCurrentRuns')}</p>
+                <p>{t('group:empty.noCurrentRuns')}</p>
               </div>
             ) : (
               <div className="runs-list">
@@ -182,10 +182,10 @@ export default function GroupPage() {
           </div>
 
           <div className="runs-section">
-            <h3>{t('group.sections.completedRuns')} ({completedRuns.length})</h3>
+            <h3>{t('group:sections.completedRuns')} ({completedRuns.length})</h3>
             {completedRuns.length === 0 ? (
               <div className="no-runs">
-                <p>{t('group.empty.noCompletedRuns')}</p>
+                <p>{t('group:empty.noCompletedRuns')}</p>
               </div>
             ) : (
               <div className="runs-list">
@@ -203,10 +203,10 @@ export default function GroupPage() {
           </div>
 
           <div className="runs-section">
-            <h3>{t('group.sections.cancelledRuns')} ({cancelledRuns.length})</h3>
+            <h3>{t('group:sections.cancelledRuns')} ({cancelledRuns.length})</h3>
             {cancelledRuns.length === 0 ? (
               <div className="no-runs">
-                <p>{t('group.empty.noCancelledRuns')}</p>
+                <p>{t('group:empty.noCancelledRuns')}</p>
               </div>
             ) : (
               <div className="runs-list">

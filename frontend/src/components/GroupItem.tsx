@@ -20,7 +20,7 @@ interface GroupItemProps {
 }
 
 const GroupItem = memo(function GroupItem({ group, onGroupClick, onRunSelect }: GroupItemProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['group'])
 
   return (
     <ErrorBoundary>
@@ -34,11 +34,11 @@ const GroupItem = memo(function GroupItem({ group, onGroupClick, onRunSelect }: 
         <div className="group-stats">
           <span className="stat">
             <span className="stat-icon">👥</span>
-            {group.member_count} {t('group.card.members', { count: group.member_count })}
+            {group.member_count} {t('group:card.members', { count: group.member_count })}
           </span>
           <span className="stat">
             <span className="stat-icon">✅</span>
-            {group.completed_runs_count} {t('group.card.completedRuns', { count: group.completed_runs_count })}
+            {group.completed_runs_count} {t('group:card.completedRuns', { count: group.completed_runs_count })}
           </span>
         </div>
 

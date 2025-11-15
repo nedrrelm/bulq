@@ -25,7 +25,7 @@ export default function ReassignLeaderPopup({
   onSuccess,
   onCancelRun,
 }: ReassignLeaderPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'run'])
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string>('')
@@ -49,7 +49,7 @@ export default function ReassignLeaderPopup({
     e.preventDefault()
 
     if (!selectedUserId) {
-      setError(t('run.validation.participantRequired'))
+      setError(t('run:validation.participantRequired'))
       return
     }
 
@@ -60,7 +60,7 @@ export default function ReassignLeaderPopup({
       onSuccess()
       onClose()
     } catch (err: any) {
-      setError(getErrorMessage(err, t('run.errors.reassignmentFailed')))
+      setError(getErrorMessage(err, t('run:errors.reassignmentFailed')))
     } finally {
       setSubmitting(false)
     }
@@ -69,15 +69,15 @@ export default function ReassignLeaderPopup({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-md" onClick={(e) => e.stopPropagation()}>
-        <h2>{t('run.reassign.title')}</h2>
+        <h2>{t('run:reassign.title')}</h2>
         <p className="text-sm" style={{ color: 'var(--color-text-light)', marginBottom: '1.5rem' }}>
-          {t('run.reassign.description')}
+          {t('run:reassign.description')}
         </p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="participant" className="form-label">
-              {t('run.fields.newLeader')}
+              {t('run:fields.newLeader')}
             </label>
             <select
               id="participant"
@@ -87,7 +87,7 @@ export default function ReassignLeaderPopup({
               disabled={submitting}
               required
             >
-              <option value="">{t('run.reassign.selectParticipant')}</option>
+              <option value="">{t('run:reassign.selectParticipant')}</option>
               {eligibleParticipants.map((participant) => (
                 <option key={participant.user_id} value={participant.user_id}>
                   {participant.user_name}
@@ -104,7 +104,7 @@ export default function ReassignLeaderPopup({
 
           {eligibleParticipants.length === 0 && (
             <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
-              {t('run.reassign.noParticipantsAvailable')}
+              {t('run:reassign.noParticipantsAvailable')}
             </div>
           )}
 
@@ -115,14 +115,14 @@ export default function ReassignLeaderPopup({
               className="btn btn-secondary"
               disabled={submitting}
             >
-              {t('common.buttons.cancel')}
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting || eligibleParticipants.length === 0}
             >
-              {submitting ? t('run.actions.reassigning') : t('run.actions.reassign')}
+              {submitting ? t('run:actions.reassigning') : t('run:actions.reassign')}
             </button>
             {onCancelRun && (
               <button
@@ -133,7 +133,7 @@ export default function ReassignLeaderPopup({
                 }}
                 className="btn btn-danger"
               >
-                {t('run.actions.cancelRun')}
+                {t('run:actions.cancelRun')}
               </button>
             )}
           </div>

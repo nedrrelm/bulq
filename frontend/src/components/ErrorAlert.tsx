@@ -6,14 +6,14 @@ interface ErrorAlertProps {
 }
 
 export default function ErrorAlert({ message, onRetry }: ErrorAlertProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common'])
 
   return (
     <div className="alert alert-error">
       <p>{message}</p>
       {onRetry && (
         <button className="btn btn-secondary" onClick={onRetry}>
-          {t('common.buttons.retry')}
+          {t('common:buttons.retry')}
         </button>
       )}
     </div>

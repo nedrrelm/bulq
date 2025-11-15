@@ -14,7 +14,7 @@ interface AddProductPopupProps {
 }
 
 export default function AddProductPopup({ runId, onProductSelected, onCancel }: AddProductPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'product'])
   const [products, setProducts] = useState<AvailableProduct[]>([])
   const [filteredProducts, setFilteredProducts] = useState<AvailableProduct[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -37,7 +37,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
         setProducts(productsData as any)
         setFilteredProducts(productsData as any)
       } catch (err) {
-        setError(getErrorMessage(err, t('product.errors.loadFailed')))
+        setError(getErrorMessage(err, t('product:errors.loadFailed')))
       } finally {
         setLoading(false)
       }
@@ -79,7 +79,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
       setProducts(productsData as any)
       setFilteredProducts(productsData as any)
     } catch (err) {
-      setError(getErrorMessage(err, t('product.errors.reloadFailed')))
+      setError(getErrorMessage(err, t('product:errors.reloadFailed')))
     } finally {
       setLoading(false)
     }
@@ -108,14 +108,14 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div ref={modalRef} className="modal modal-md add-product-popup" onClick={(e) => e.stopPropagation()}>
-        <h3>{t('product.addToRun.title')}</h3>
-        <p className="popup-description">{t('product.addToRun.description')}</p>
+        <h3>{t('product:addToRun.title')}</h3>
+        <p className="popup-description">{t('product:addToRun.description')}</p>
 
         <div className="search-container">
           <input
             ref={inputRef}
             type="text"
-            placeholder={t('product.addToRun.searchPlaceholder')}
+            placeholder={t('product:addToRun.searchPlaceholder')}
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
@@ -125,7 +125,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
 
         {loading && (
           <div className="loading-state">
-            <p>{t('product.states.loading')}</p>
+            <p>{t('product:states.loading')}</p>
           </div>
         )}
 
@@ -141,22 +141,22 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
               <div className="no-products-state">
                 {searchTerm ? (
                   <>
-                    <p>{t('product.addToRun.noMatch', { term: searchTerm })}</p>
+                    <p>{t('product:addToRun.noMatch', { term: searchTerm })}</p>
                     <button
                       onClick={() => setShowNewProductPopup(true)}
                       className="btn btn-primary create-product-button"
                     >
-                      {t('product.actions.createNew')}
+                      {t('product:actions.createNew')}
                     </button>
                   </>
                 ) : (
                   <>
-                    <p>{t('product.addToRun.allProductsHaveBids')}</p>
+                    <p>{t('product:addToRun.allProductsHaveBids')}</p>
                     <button
                       onClick={() => setShowNewProductPopup(true)}
                       className="btn btn-primary create-product-button"
                     >
-                      {t('product.actions.createNew')}
+                      {t('product:actions.createNew')}
                     </button>
                   </>
                 )}
@@ -186,7 +186,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
 
         <div className="popup-footer">
           <button onClick={onCancel} className="cancel-button">
-            {t('common.buttons.cancel')}
+            {t('common:buttons.cancel')}
           </button>
           {!loading && !error && filteredProducts.length === 0 ? null : (
             <>
@@ -194,11 +194,11 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
                 onClick={() => setShowNewProductPopup(true)}
                 className="btn btn-secondary"
               >
-                {t('product.actions.createNew')}
+                {t('product:actions.createNew')}
               </button>
               {filteredProducts.length > 0 && (
                 <p className="keyboard-hint">
-                  {t('product.addToRun.keyboardHint')}
+                  {t('product:addToRun.keyboardHint')}
                 </p>
               )}
             </>

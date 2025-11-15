@@ -20,7 +20,7 @@ interface GroupMember {
 }
 
 export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'run'])
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null)
   const [error, setError] = useState<string>('')
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([])
@@ -87,9 +87,9 @@ export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupP
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-md" onClick={(e) => e.stopPropagation()}>
-        <h2>{t('run.helpers.title')}</h2>
+        <h2>{t('run:helpers.title')}</h2>
         <p className="text-sm" style={{ color: 'var(--color-text-light)', marginBottom: '1.5rem' }}>
-          {t('run.helpers.description')}
+          {t('run:helpers.description')}
         </p>
 
         {error && (
@@ -100,11 +100,11 @@ export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupP
 
         {loadingMembers ? (
           <p className="text-center" style={{ color: 'var(--color-text-light)', padding: '2rem 0' }}>
-            {t('run.helpers.loadingMembers')}
+            {t('run:helpers.loadingMembers')}
           </p>
         ) : eligibleMembers.length === 0 ? (
           <p className="text-center" style={{ color: 'var(--color-text-light)', padding: '2rem 0' }}>
-            {t('run.helpers.noMembersAvailable')}
+            {t('run:helpers.noMembersAvailable')}
           </p>
         ) : (
           <div className="helpers-list">
@@ -114,7 +114,7 @@ export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupP
                 <div key={member.id} className="helper-item">
                   <div className="helper-info">
                     <span className="helper-name">{member.name}</span>
-                    {memberIsHelper && <span className="helper-badge-small">{t('run.helpers.helperBadge')}</span>}
+                    {memberIsHelper && <span className="helper-badge-small">{t('run:helpers.helperBadge')}</span>}
                   </div>
                   <button
                     type="button"
@@ -125,8 +125,8 @@ export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupP
                     {loadingUserId === member.id
                       ? '...'
                       : memberIsHelper
-                      ? t('run.actions.removeHelper')
-                      : t('run.actions.addHelper')}
+                      ? t('run:actions.removeHelper')
+                      : t('run:actions.addHelper')}
                   </button>
                 </div>
               )
@@ -141,7 +141,7 @@ export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupP
             className="btn btn-secondary"
             disabled={!!loadingUserId}
           >
-            {t('common.buttons.close')}
+            {t('common:buttons.close')}
           </button>
         </div>
       </div>

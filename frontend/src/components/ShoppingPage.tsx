@@ -21,7 +21,7 @@ import { MAX_NOTES_LENGTH } from '../constants'
 
 // Helper function to format price observation date
 function formatPriceDate(dateStr: string | null, t: (key: string) => string): string {
-  if (!dateStr) return t('shopping.labels.unknownDate')
+  if (!dateStr) return t('shopping:labels.unknownDate')
 
   const date = new Date(dateStr)
   const today = new Date()
@@ -34,21 +34,21 @@ function formatPriceDate(dateStr: string | null, t: (key: string) => string): st
   const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
 
   if (dateOnly.getTime() === todayOnly.getTime()) {
-    return t('shopping.labels.today')
+    return t('shopping:labels.today')
   } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
-    return t('shopping.labels.yesterday')
+    return t('shopping:labels.yesterday')
   } else {
     // Format as "on Mar 15" or "on Mar 15, 2024" if different year
     const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
     if (date.getFullYear() !== today.getFullYear()) {
       options.year = 'numeric'
     }
-    return t('shopping.labels.on') + ' ' + date.toLocaleDateString('en-US', options)
+    return t('shopping:labels.on') + ' ' + date.toLocaleDateString('en-US', options)
   }
 }
 
 export default function ShoppingPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'shopping'])
   const { runId } = useParams<{ runId: string }>()
   const navigate = useNavigate()
 
@@ -167,7 +167,7 @@ export default function ShoppingPage() {
 
     if (unpurchasedItems.length > 0) {
       showConfirm(
-        t('shopping.prompts.unpurchasedItems', { count: unpurchasedItems.length }),
+        t('shopping:prompts.unpurchasedItems', { count: unpurchasedItems.length }),
         completeShoppingAction
       )
     } else {
@@ -184,8 +184,8 @@ export default function ShoppingPage() {
   if (loading) {
     return (
       <div className="shopping-page">
-        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">{t('shopping.navigation.backToRun')}</button>
-        <p>{t('shopping.messages.loadingShoppingList')}</p>
+        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">{t('shopping:navigation.backToRun')}</button>
+        <p>{t('shopping:messages.loadingShoppingList')}</p>
       </div>
     )
   }
@@ -193,7 +193,7 @@ export default function ShoppingPage() {
   if (error) {
     return (
       <div className="shopping-page">
-        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">{t('shopping.navigation.backToRun')}</button>
+        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">{t('shopping:navigation.backToRun')}</button>
         <div className="error">
           <p>{error}</p>
         </div>
@@ -204,14 +204,14 @@ export default function ShoppingPage() {
   return (
     <div className="shopping-page">
       <div className="shopping-header">
-        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">{t('shopping.navigation.backToRun')}</button>
-        <h2>{t('shopping.labels.shoppingMode')}</h2>
+        <button onClick={() => navigate(`/runs/${runId}`)} className="back-button">{t('shopping:navigation.backToRun')}</button>
+        <h2>{t('shopping:labels.shoppingMode')}</h2>
         <div className="header-actions">
           <div className="total-display">
-            {t('shopping.labels.total')}: {totalSpent.toFixed(2)} RSD
+            {t('shopping:labels.total')}: {totalSpent.toFixed(2)} RSD
           </div>
           <button onClick={handleCompleteShopping} className="btn btn-success btn-lg">
-            {t('shopping.actions.completeShopping')}
+            {t('shopping:actions.completeShopping')}
           </button>
         </div>
       </div>
@@ -219,7 +219,7 @@ export default function ShoppingPage() {
       <div className="shopping-content">
         {unpurchasedItems.length > 0 && (
           <div className="shopping-section">
-            <h3>{t('shopping.labels.toBuy', { count: unpurchasedItems.length })}</h3>
+            <h3>{t('shopping:labels.toBuy', { count: unpurchasedItems.length })}</h3>
             <div className="shopping-list">
               {unpurchasedItems.map(item => (
                 <ShoppingItem
@@ -235,7 +235,7 @@ export default function ShoppingPage() {
 
         {purchasedItems.length > 0 && (
           <div className="shopping-section purchased-section">
-            <h3>{t('shopping.labels.purchased', { count: purchasedItems.length })}</h3>
+            <h3>{t('shopping:labels.purchased', { count: purchasedItems.length })}</h3>
             <div className="shopping-list">
               {purchasedItems.map(item => (
                 <ShoppingItem key={item.id} item={item} onBuyMore={handleBuyMore} />
@@ -308,7 +308,7 @@ function ShoppingItem({
   onMarkPurchased?: (item: ShoppingListItem) => void
   onBuyMore?: (item: ShoppingListItem) => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'shopping'])
   const isPurchased = item.is_purchased
   const quantityDiffers = isPurchased && item.purchased_quantity !== item.requested_quantity
 
@@ -332,7 +332,7 @@ function ShoppingItem({
       {item.recent_prices.length > 0 && item.recent_prices[0] && (
         <div className="availability-info">
           <small>
-            {t('shopping.labels.pricesSeen')} {formatPriceDate(item.recent_prices[0].created_at, t)}:
+            {t('shopping:labels.pricesSeen')} {formatPriceDate(item.recent_prices[0].created_at, t)}:
           </small>
           {item.recent_prices.map((priceObs, idx) => (
             <div key={idx} className="price-tag">
@@ -351,7 +351,7 @@ function ShoppingItem({
           {onBuyMore && (
             <div className="item-actions">
               <button onClick={() => onBuyMore(item)} className="btn btn-primary btn-sm">
-                {t('shopping.actions.buyMore')}
+                {t('shopping:actions.buyMore')}
               </button>
             </div>
           )}
@@ -360,12 +360,12 @@ function ShoppingItem({
         <div className="item-actions">
           {onAddPrice && (
             <button onClick={() => onAddPrice(item)} className="btn btn-secondary btn-sm">
-              {t('shopping.actions.addPrice')}
+              {t('shopping:actions.addPrice')}
             </button>
           )}
           {onMarkPurchased && (
             <button onClick={() => onMarkPurchased(item)} className="btn btn-success btn-sm">
-              {t('shopping.actions.markPurchased')}
+              {t('shopping:actions.markPurchased')}
             </button>
           )}
         </div>
@@ -385,7 +385,7 @@ function PricePopup({
   onSubmit: (price: number, notes: string, minimumQuantity?: number) => void
   onClose: () => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'shopping'])
   const [price, setPrice] = useState('')
   const [notes, setNotes] = useState('')
   const [minimumQuantity, setMinimumQuantity] = useState('')
@@ -400,7 +400,7 @@ function PricePopup({
 
     const validation = validateDecimal(value, 0.01, 99999.99, 2, 'Price')
     if (!validation.isValid) {
-      setPriceError(validation.error || t('shopping.errors.invalidPrice'))
+      setPriceError(validation.error || t('shopping:errors.invalidPrice'))
       return false
     }
 
@@ -414,7 +414,7 @@ function PricePopup({
 
     const num = parseInt(value, 10)
     if (isNaN(num) || num < 1 || num > 9999) {
-      setMinQtyError(t('shopping.errors.minimumQuantityRange'))
+      setMinQtyError(t('shopping:errors.minimumQuantityRange'))
       return false
     }
 
@@ -456,11 +456,11 @@ function PricePopup({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
-        <h3>{t('shopping.actions.updatePrice')}</h3>
+        <h3>{t('shopping:actions.updatePrice')}</h3>
         <p><strong>{item.product_name}</strong></p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>{t('shopping.fields.price')}</label>
+            <label>{t('shopping:fields.price')}</label>
             <input
               type="number"
               step="0.01"
@@ -475,12 +475,12 @@ function PricePopup({
             {priceError && <span className="error-message">{priceError}</span>}
           </div>
           <div className="form-group">
-            <label>{t('shopping.fields.minimumQuantity')}</label>
+            <label>{t('shopping:fields.minimumQuantity')}</label>
             <input
               type="number"
               value={minimumQuantity}
               onChange={e => handleMinimumQuantityChange(e.target.value)}
-              placeholder={t('shopping.fields.minimumQuantityPlaceholder')}
+              placeholder={t('shopping:fields.minimumQuantityPlaceholder')}
               className={`form-input ${minQtyError ? 'input-error' : ''}`}
               min="1"
               max="9999"
@@ -488,22 +488,22 @@ function PricePopup({
             {minQtyError && <span className="error-message">{minQtyError}</span>}
           </div>
           <div className="form-group">
-            <label>{t('shopping.fields.notes')}</label>
+            <label>{t('shopping:fields.notes')}</label>
             <input
               type="text"
               value={notes}
               onChange={e => handleNotesChange(e.target.value)}
-              placeholder={t('shopping.fields.notesPlaceholder')}
+              placeholder={t('shopping:fields.notesPlaceholder')}
               className="form-input"
             />
             <span className="char-counter">{notesCharCount}/{MAX_NOTES_LENGTH}</span>
           </div>
           <div className="button-group">
             <button type="button" onClick={onClose} className="btn btn-secondary">
-              {t('common.actions.cancel')}
+              {t('common:actions.cancel')}
             </button>
             <button type="submit" className="btn btn-primary">
-              {t('shopping.actions.addPrice')}
+              {t('shopping:actions.addPrice')}
             </button>
           </div>
         </form>
@@ -521,7 +521,7 @@ function BuyMorePopup({
   onSubmit: (quantity: number, pricePerUnit: number, total: number) => void
   onClose: () => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'shopping'])
   const [quantity, setQuantity] = useState('')
   const [pricePerUnit, setPricePerUnit] = useState('')
   const [total, setTotal] = useState('')
@@ -538,13 +538,13 @@ function BuyMorePopup({
 
     const validation = validateDecimal(value, 0.01, 9999, 2, 'Quantity')
     if (!validation.isValid) {
-      setQuantityError(validation.error || t('shopping.errors.invalidQuantity'))
+      setQuantityError(validation.error || t('shopping:errors.invalidQuantity'))
       return false
     }
 
     const qty = parseDecimal(value)
     if (qty === 0) {
-      setQuantityError(t('shopping.errors.quantityGreaterThanZero'))
+      setQuantityError(t('shopping:errors.quantityGreaterThanZero'))
       return false
     }
 
@@ -556,7 +556,7 @@ function BuyMorePopup({
 
     const validation = validateDecimal(value, 0.01, 99999.99, 2, 'Price per unit')
     if (!validation.isValid) {
-      setPriceError(validation.error || t('shopping.errors.invalidPrice'))
+      setPriceError(validation.error || t('shopping:errors.invalidPrice'))
       return false
     }
 
@@ -568,7 +568,7 @@ function BuyMorePopup({
 
     const validation = validateDecimal(value, 0.01, 999999.99, 2, 'Total')
     if (!validation.isValid) {
-      setTotalError(validation.error || t('shopping.errors.invalidTotal'))
+      setTotalError(validation.error || t('shopping:errors.invalidTotal'))
       return false
     }
 
@@ -640,14 +640,14 @@ function BuyMorePopup({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
-        <h3>{t('shopping.actions.buyMore')}</h3>
+        <h3>{t('shopping:actions.buyMore')}</h3>
         <p><strong>{item.product_name}</strong></p>
         <p className="requested-hint">
-          {t('shopping.labels.alreadyPurchased')}: {item.purchased_quantity}{item.product_unit ? ` ${item.product_unit}` : ''}
+          {t('shopping:labels.alreadyPurchased')}: {item.purchased_quantity}{item.product_unit ? ` ${item.product_unit}` : ''}
         </p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>{t('shopping.fields.additionalQuantity')}</label>
+            <label>{t('shopping:fields.additionalQuantity')}</label>
             <input
               type="number"
               step="0.01"
@@ -661,7 +661,7 @@ function BuyMorePopup({
             {quantityError && <span className="error-message">{quantityError}</span>}
           </div>
           <div className="form-group">
-            <label>{t('shopping.fields.pricePerUnit')}</label>
+            <label>{t('shopping:fields.pricePerUnit')}</label>
             <input
               type="number"
               step="0.01"
@@ -675,7 +675,7 @@ function BuyMorePopup({
             {priceError && <span className="error-message">{priceError}</span>}
           </div>
           <div className="form-group">
-            <label>{t('shopping.fields.totalPrice')}</label>
+            <label>{t('shopping:fields.totalPrice')}</label>
             <input
               type="number"
               step="0.01"
@@ -690,10 +690,10 @@ function BuyMorePopup({
           </div>
           <div className="button-group">
             <button type="button" onClick={onClose} className="btn btn-secondary">
-              {t('common.actions.cancel')}
+              {t('common:actions.cancel')}
             </button>
             <button type="submit" className="btn btn-primary">
-              {t('shopping.actions.addPurchase')}
+              {t('shopping:actions.addPurchase')}
             </button>
           </div>
         </form>
@@ -711,7 +711,7 @@ function PurchasePopup({
   onSubmit: (quantity: number, pricePerUnit: number, total: number) => void
   onClose: () => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'shopping'])
   const [quantity, setQuantity] = useState(item.requested_quantity.toString())
   const [pricePerUnit, setPricePerUnit] = useState('')
   const [total, setTotal] = useState('')
@@ -728,13 +728,13 @@ function PurchasePopup({
 
     const validation = validateDecimal(value, 0.01, 9999, 2, 'Quantity')
     if (!validation.isValid) {
-      setQuantityError(validation.error || t('shopping.errors.invalidQuantity'))
+      setQuantityError(validation.error || t('shopping:errors.invalidQuantity'))
       return false
     }
 
     const qty = parseDecimal(value)
     if (qty === 0) {
-      setQuantityError(t('shopping.errors.quantityGreaterThanZero'))
+      setQuantityError(t('shopping:errors.quantityGreaterThanZero'))
       return false
     }
 
@@ -746,7 +746,7 @@ function PurchasePopup({
 
     const validation = validateDecimal(value, 0.01, 99999.99, 2, 'Price per unit')
     if (!validation.isValid) {
-      setPriceError(validation.error || t('shopping.errors.invalidPrice'))
+      setPriceError(validation.error || t('shopping:errors.invalidPrice'))
       return false
     }
 
@@ -758,7 +758,7 @@ function PurchasePopup({
 
     const validation = validateDecimal(value, 0.01, 999999.99, 2, 'Total')
     if (!validation.isValid) {
-      setTotalError(validation.error || t('shopping.errors.invalidTotal'))
+      setTotalError(validation.error || t('shopping:errors.invalidTotal'))
       return false
     }
 
@@ -830,12 +830,12 @@ function PurchasePopup({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
-        <h3>{t('shopping.actions.markPurchased')}</h3>
+        <h3>{t('shopping:actions.markPurchased')}</h3>
         <p><strong>{item.product_name}</strong></p>
-        <p className="requested-hint">{t('shopping.labels.requested')}: {item.requested_quantity}{item.product_unit ? ` ${item.product_unit}` : ''}</p>
+        <p className="requested-hint">{t('shopping:labels.requested')}: {item.requested_quantity}{item.product_unit ? ` ${item.product_unit}` : ''}</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>{t('shopping.fields.quantityPurchased')}</label>
+            <label>{t('shopping:fields.quantityPurchased')}</label>
             <input
               type="number"
               step="0.01"
@@ -849,7 +849,7 @@ function PurchasePopup({
             {quantityError && <span className="error-message">{quantityError}</span>}
           </div>
           <div className="form-group">
-            <label>{t('shopping.fields.pricePerUnit')}</label>
+            <label>{t('shopping:fields.pricePerUnit')}</label>
             <input
               type="number"
               step="0.01"
@@ -863,7 +863,7 @@ function PurchasePopup({
             {priceError && <span className="error-message">{priceError}</span>}
           </div>
           <div className="form-group">
-            <label>{t('shopping.fields.totalPrice')}</label>
+            <label>{t('shopping:fields.totalPrice')}</label>
             <input
               type="number"
               step="0.01"
@@ -878,10 +878,10 @@ function PurchasePopup({
           </div>
           <div className="button-group">
             <button type="button" onClick={onClose} className="btn btn-secondary">
-              {t('common.actions.cancel')}
+              {t('common:actions.cancel')}
             </button>
             <button type="submit" className="btn btn-success">
-              {t('shopping.actions.confirmPurchase')}
+              {t('shopping:actions.confirmPurchase')}
             </button>
           </div>
         </form>

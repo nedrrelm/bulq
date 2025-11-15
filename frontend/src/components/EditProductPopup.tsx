@@ -18,7 +18,7 @@ const MAX_NAME_LENGTH = 100
 const MIN_NAME_LENGTH = 2
 
 export default function EditProductPopup({ product, onClose, onSuccess }: EditProductPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['admin', 'common'])
   const [productName, setProductName] = useState(product.name)
   const [brand, setBrand] = useState(product.brand || '')
   const [unit, setUnit] = useState(product.unit || '')
@@ -34,19 +34,19 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
     const trimmed = value.trim()
 
     if (trimmed.length === 0) {
-      setError(t('admin.edit.product.errors.nameRequired'))
+      setError(t('admin:edit.product.errors.nameRequired'))
       return false
     }
 
     const lengthValidation = validateLength(trimmed, MIN_NAME_LENGTH, MAX_NAME_LENGTH, 'Product name')
     if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || t('admin.edit.product.errors.invalidName'))
+      setError(lengthValidation.error || t('admin:edit.product.errors.invalidName'))
       return false
     }
 
     const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'(),.', 'Product name', true)
     if (!alphanumericValidation.isValid) {
-      setError(alphanumericValidation.error || t('admin.edit.product.errors.invalidCharacters'))
+      setError(alphanumericValidation.error || t('admin:edit.product.errors.invalidCharacters'))
       return false
     }
 
@@ -89,7 +89,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
   const handleMerge = async () => {
     if (!mergeTargetId.trim()) {
-      setError(t('admin.edit.product.errors.mergeTargetRequired'))
+      setError(t('admin:edit.product.errors.mergeTargetRequired'))
       return
     }
 
@@ -97,10 +97,10 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
       setSubmitting(true)
       const response = await adminApi.mergeProducts(product.id, mergeTargetId.trim())
       const successMsg = translateSuccess(response.code, response.details)
-      alert(`${successMsg}\n${t('admin.edit.affectedRecords')}: ${response.affected_records}`)
+      alert(`${successMsg}\n${t('admin:edit.affectedRecords')}: ${response.affected_records}`)
       onSuccess()
     } catch (err) {
-      setError(getErrorMessage(err, t('admin.edit.product.errors.mergeFailed')))
+      setError(getErrorMessage(err, t('admin:edit.product.errors.mergeFailed')))
       setSubmitting(false)
     }
   }
@@ -121,7 +121,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('admin.edit.product.title')}</h2>
+          <h2>{t('admin:edit.product.title')}</h2>
         </div>
 
         <form onSubmit={handleUpdate}>
@@ -132,14 +132,14 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
           )}
 
           <div className="form-group">
-            <label htmlFor="product-name" className="form-label">{t('admin.edit.product.fields.name')} *</label>
+            <label htmlFor="product-name" className="form-label">{t('admin:edit.product.fields.name')} *</label>
             <input
               id="product-name"
               type="text"
               className={`form-input ${error ? 'input-error' : ''}`}
               value={productName}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={t('admin.edit.product.placeholders.name')}
+              placeholder={t('admin:edit.product.placeholders.name')}
               disabled={submitting}
               required
             />
@@ -147,7 +147,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="brand" className="form-label">{t('admin.edit.product.fields.brand')}</label>
+              <label htmlFor="brand" className="form-label">{t('admin:edit.product.fields.brand')}</label>
               <input
                 id="brand"
                 type="text"
@@ -157,13 +157,13 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
                   setBrand(e.target.value)
                   setError('')
                 }}
-                placeholder={t('admin.edit.product.placeholders.brand')}
+                placeholder={t('admin:edit.product.placeholders.brand')}
                 disabled={submitting}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="unit" className="form-label">{t('admin.edit.product.fields.unit')}</label>
+              <label htmlFor="unit" className="form-label">{t('admin:edit.product.fields.unit')}</label>
               <input
                 id="unit"
                 type="text"
@@ -173,7 +173,7 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
                   setUnit(e.target.value)
                   setError('')
                 }}
-                placeholder={t('admin.edit.product.placeholders.unit')}
+                placeholder={t('admin:edit.product.placeholders.unit')}
                 disabled={submitting}
               />
             </div>
@@ -186,14 +186,14 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
               onClick={onClose}
               disabled={submitting}
             >
-              {t('common.cancel')}
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? t('common.saving') : t('common.saveChanges')}
+              {submitting ? t('common:saving') : t('common:saveChanges')}
             </button>
           </div>
         </form>
@@ -202,9 +202,9 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
         {/* Merge Section */}
         <div className="form-group">
-          <label htmlFor="merge-target" className="form-label">{t('admin.edit.product.mergeTitle')}</label>
+          <label htmlFor="merge-target" className="form-label">{t('admin:edit.product.mergeTitle')}</label>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
-            {t('admin.edit.product.mergeDescription')}
+            {t('admin:edit.product.mergeDescription')}
           </p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input
@@ -216,19 +216,19 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
                 setMergeTargetId(e.target.value)
                 setError('')
               }}
-              placeholder={t('admin.edit.product.mergePlaceholder')}
+              placeholder={t('admin:edit.product.mergePlaceholder')}
               disabled={submitting}
             />
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => showConfirm(
-                t('admin.edit.product.mergeConfirm', { name: product.name }),
+                t('admin:edit.product.mergeConfirm', { name: product.name }),
                 handleMerge
               )}
               disabled={submitting || !mergeTargetId.trim()}
             >
-              {t('admin.edit.product.mergeButton')}
+              {t('admin:edit.product.mergeButton')}
             </button>
           </div>
         </div>
@@ -237,22 +237,22 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
 
         {/* Delete Section */}
         <div className="form-group">
-          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin.edit.dangerZone')}</label>
+          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin:edit.dangerZone')}</label>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
-            {t('admin.edit.product.deleteWarning')}
+            {t('admin:edit.product.deleteWarning')}
           </p>
           <button
             type="button"
             className="btn"
             style={{ backgroundColor: 'var(--color-danger)', color: 'white' }}
             onClick={() => showConfirm(
-              t('admin.edit.product.deleteConfirm', { name: product.name }),
+              t('admin:edit.product.deleteConfirm', { name: product.name }),
               handleDelete,
               { danger: true }
             )}
             disabled={submitting}
           >
-            {t('admin.edit.product.deleteButton')}
+            {t('admin:edit.product.deleteButton')}
           </button>
         </div>
       </div>
