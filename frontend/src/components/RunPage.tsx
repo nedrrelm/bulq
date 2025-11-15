@@ -40,7 +40,7 @@ type Product = RunDetail['products'][0]
 // RunParticipants component extracted to RunParticipants.tsx
 
 export default function RunPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'run'])
   const { runId } = useParams<{ runId: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -100,7 +100,7 @@ export default function RunPage() {
     if (!reassignmentRequest) return
     try {
       await reassignmentApi.acceptReassignment(reassignmentRequest.id)
-      showToast(t('run.messages.leadershipAccepted'), 'success')
+      showToast(t('run:messages.leadershipAccepted'), 'success')
       setReassignmentRequest(null)
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
     } catch (err) {
@@ -112,7 +112,7 @@ export default function RunPage() {
     if (!reassignmentRequest) return
     try {
       await reassignmentApi.declineReassignment(reassignmentRequest.id)
-      showToast(t('run.messages.requestDeclined'), 'success')
+      showToast(t('run:messages.requestDeclined'), 'success')
       setReassignmentRequest(null)
     } catch (err) {
       showToast(formatErrorForDisplay(err, 'decline reassignment'), 'error')
@@ -137,20 +137,20 @@ export default function RunPage() {
       // Reassignment request created - fetch request for all participants
       fetchReassignmentRequest()
       if (message.data.to_user_id === userId) {
-        showToast(t('run.messages.newLeadershipRequest'), 'info')
+        showToast(t('run:messages.newLeadershipRequest'), 'info')
         refreshUnreadCount()
       }
     } else if (message.type === 'reassignment_accepted') {
       // Reassignment accepted - clear request and refresh run
       setReassignmentRequest(null)
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
-      showToast(t('run.messages.leadershipTransferred'), 'success')
+      showToast(t('run:messages.leadershipTransferred'), 'success')
       refreshUnreadCount()
     } else if (message.type === 'reassignment_declined') {
       // Reassignment declined - clear request
       setReassignmentRequest(null)
       if (message.data.from_user_id === userId) {
-        showToast(t('run.messages.leadershipRequestDeclined'), 'info')
+        showToast(t('run:messages.leadershipRequestDeclined'), 'info')
         refreshUnreadCount()
       }
     }
@@ -304,14 +304,14 @@ export default function RunPage() {
     const forceFinishAction = async () => {
       try {
         await finishAdjustingMutation.mutateAsync(true)
-        showToast(t('run.messages.movedToDistribution'), 'success')
+        showToast(t('run:messages.movedToDistribution'), 'success')
       } catch (err) {
         showToast(formatErrorForDisplay(err, 'force finish adjusting'), 'error')
       }
     }
 
     showConfirm(
-      t('run.prompts.forceFinishAdjusting'),
+      t('run:prompts.forceFinishAdjusting'),
       forceFinishAction,
       { danger: true }
     )
@@ -340,7 +340,7 @@ export default function RunPage() {
   const handleCompleteRun = async () => {
     try {
       await completeDistributionMutation.mutateAsync()
-      showToast(t('run.messages.runCompletedSuccessfully'), 'success')
+      showToast(t('run:messages.runCompletedSuccessfully'), 'success')
     } catch (err) {
       showToast(formatErrorForDisplay(err, 'complete run'), 'error')
     }
@@ -373,7 +373,7 @@ export default function RunPage() {
     const cancelAction = async () => {
       try {
         await runsApi.cancelRun(runId)
-        showToast(t('run.messages.runCancelledSuccessfully'), 'success')
+        showToast(t('run:messages.runCancelledSuccessfully'), 'success')
         // Refresh the run data to show updated state
         queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
       } catch (err) {
@@ -382,7 +382,7 @@ export default function RunPage() {
     }
 
     showConfirm(
-      t('run.prompts.cancelRun'),
+      t('run:prompts.cancelRun'),
       cancelAction,
       { danger: true }
     )
@@ -393,9 +393,9 @@ export default function RunPage() {
       <div className="run-page">
         <div className="run-header">
           <button onClick={() => navigate('/')} className="back-button">
-            {t('common.navigation.backToGroup')}
+            {t('common:navigation.backToGroup')}
           </button>
-          <h2>{t('run.messages.loadingRun')}</h2>
+          <h2>{t('run:messages.loadingRun')}</h2>
         </div>
       </div>
     )
@@ -406,12 +406,12 @@ export default function RunPage() {
       <div className="run-page">
         <div className="run-header">
           <button onClick={() => navigate('/')} className="back-button">
-            {t('common.navigation.backToGroup')}
+            {t('common:navigation.backToGroup')}
           </button>
-          <h2>{t('common.errors.error')}</h2>
+          <h2>{t('common:errors.error')}</h2>
         </div>
         <div className="error">
-          <p>{t('run.errors.failedToLoadRun', { error })}</p>
+          <p>{t('run:errors.failedToLoadRun', { error })}</p>
         </div>
       </div>
     )
@@ -422,9 +422,9 @@ export default function RunPage() {
       <div className="run-page">
         <div className="run-header">
           <button onClick={() => navigate('/')} className="back-button">
-            {t('common.navigation.backToGroup')}
+            {t('common:navigation.backToGroup')}
           </button>
-          <h2>{t('run.errors.runNotFound')}</h2>
+          <h2>{t('run:errors.runNotFound')}</h2>
         </div>
       </div>
     )
@@ -461,14 +461,14 @@ export default function RunPage() {
       {reassignmentRequest && reassignmentRequest.to_user_id === userId && (
         <div className="alert alert-warning reassignment-banner">
           <div className="reassignment-content">
-            {t('run.messages.leadershipTransferRequest', { userName: reassignmentRequest.from_user_name })}
+            {t('run:messages.leadershipTransferRequest', { userName: reassignmentRequest.from_user_name })}
           </div>
           <div className="reassignment-actions">
             <button onClick={handleAcceptReassignment} className="btn btn-success btn-sm">
-              {t('run.actions.accept')}
+              {t('run:actions.accept')}
             </button>
             <button onClick={handleDeclineReassignment} className="btn btn-secondary btn-sm">
-              {t('run.actions.decline')}
+              {t('run:actions.decline')}
             </button>
           </div>
         </div>
@@ -476,13 +476,13 @@ export default function RunPage() {
 
       <div className="run-info">
         <div className="info-card">
-          <h3>{t('run.labels.runInformation')}</h3>
+          <h3>{t('run:labels.runInformation')}</h3>
           <div className="info-grid">
             <div className="info-item">
-              <label>{t('run.labels.leader')}:</label>
+              <label>{t('run:labels.leader')}:</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span className={run.participants.find(p => p.is_leader)?.is_removed ? 'removed-user' : ''}>
-                  {run.participants.find(p => p.is_leader)?.user_name || t('common.labels.unknown')}
+                  {run.participants.find(p => p.is_leader)?.user_name || t('common:labels.unknown')}
                 </span>
                 {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && run.participants.length > 1 && (
                   <>
@@ -491,18 +491,18 @@ export default function RunPage() {
                       className="btn btn-ghost btn-sm"
                       style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                       disabled={reassignmentRequest !== null}
-                      title={reassignmentRequest ? t('run.labels.reassignmentRequestPending') : t('run.actions.reassignLeadership')}
+                      title={reassignmentRequest ? t('run:labels.reassignmentRequestPending') : t('run:actions.reassignLeadership')}
                     >
-                      {reassignmentRequest ? t('run.labels.pending') : t('run.actions.reassign')}
+                      {reassignmentRequest ? t('run:labels.pending') : t('run:actions.reassign')}
                     </button>
                     {run.state === 'active' && (
                       <button
                         onClick={() => setShowForceConfirmPopup(true)}
                         className="btn btn-ghost btn-sm"
                         style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-                        title={t('run.actions.forceConfirmTooltip')}
+                        title={t('run:actions.forceConfirmTooltip')}
                       >
-                        {t('run.actions.forceConfirm')}
+                        {t('run:actions.forceConfirm')}
                       </button>
                     )}
                   </>
@@ -510,24 +510,24 @@ export default function RunPage() {
               </div>
             </div>
             <div className="info-item">
-              <label>{t('run.labels.helpers')}:</label>
+              <label>{t('run:labels.helpers')}:</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>{run.helpers.length > 0 ? run.helpers.join(', ') : t('common.labels.none')}</span>
+                <span>{run.helpers.length > 0 ? run.helpers.join(', ') : t('common:labels.none')}</span>
                 {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
                   <button
                     onClick={() => setShowManageHelpersPopup(true)}
                     className="btn btn-ghost btn-sm"
                     style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-                    title={t('run.actions.manageHelpers')}
+                    title={t('run:actions.manageHelpers')}
                   >
-                    {t('run.actions.manage')}
+                    {t('run:actions.manage')}
                   </button>
                 )}
               </div>
             </div>
             {run.comment && (
               <div className="info-item" style={{ gridColumn: '1 / -1' }}>
-                <label>{t('run.labels.comment')}:</label>
+                <label>{t('run:labels.comment')}:</label>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <span style={{ flex: 1 }}>{run.comment}</span>
                   {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
@@ -535,9 +535,9 @@ export default function RunPage() {
                       onClick={() => setShowEditCommentPopup(true)}
                       className="btn btn-ghost btn-sm"
                       style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-                      title={t('run.actions.editComment')}
+                      title={t('run:actions.editComment')}
                     >
-                      {t('run.actions.edit')}
+                      {t('run:actions.edit')}
                     </button>
                   )}
                 </div>
@@ -550,12 +550,12 @@ export default function RunPage() {
                   className="btn btn-secondary btn-sm"
                   style={{ fontSize: '0.875rem' }}
                 >
-                  {t('run.actions.addComment')}
+                  {t('run:actions.addComment')}
                 </button>
               </div>
             )}
             <div className="info-item">
-              <label>{t('run.labels.status')}:</label>
+              <label>{t('run:labels.status')}:</label>
               <span>{stateDisplay.description}</span>
             </div>
           </div>
@@ -564,22 +564,22 @@ export default function RunPage() {
         {run.state === 'active' && (
           <ErrorBoundary>
             <div className="info-card">
-              <h3>{t('run.labels.participants')}</h3>
+              <h3>{t('run:labels.participants')}</h3>
               <div className="participants-list">
                 {run.participants.map(participant => (
                   <div key={participant.user_id} className="participant-item">
                     <div className="participant-info">
                       <span className={`participant-name ${participant.is_removed ? 'removed-user' : ''}`}>
                         {participant.user_name}
-                        {participant.is_leader && <span className="leader-badge">{t('run.labels.leader')}</span>}
-                        {participant.is_helper && <span className="helper-badge">{t('run.labels.helper')}</span>}
+                        {participant.is_leader && <span className="leader-badge">{t('run:labels.leader')}</span>}
+                        {participant.is_helper && <span className="helper-badge">{t('run:labels.helper')}</span>}
                       </span>
                     </div>
                     <div className="participant-ready">
                       {participant.is_ready ? (
-                        <span className="ready-indicator ready">{t('run.labels.ready')}</span>
+                        <span className="ready-indicator ready">{t('run:labels.ready')}</span>
                       ) : (
-                        <span className="ready-indicator not-ready">{t('run.labels.notReady')}</span>
+                        <span className="ready-indicator not-ready">{t('run:labels.notReady')}</span>
                       )}
                     </div>
                   </div>
@@ -594,10 +594,10 @@ export default function RunPage() {
                     disabled={toggleReadyMutation.isPending}
                   />
                   <span>
-                    {toggleReadyMutation.isPending ? t('run.labels.updating') : t('run.labels.imReady')}
+                    {toggleReadyMutation.isPending ? t('run:labels.updating') : t('run:labels.imReady')}
                   </span>
                 </label>
-                <p className="ready-hint">{t('run.labels.readyHint')}</p>
+                <p className="ready-hint">{t('run:labels.readyHint')}</p>
               </div>
             </div>
           </ErrorBoundary>
@@ -605,15 +605,15 @@ export default function RunPage() {
 
         {run.state === 'confirmed' && run.current_user_is_leader && (
           <div className="info-card">
-            <h3>{t('run.labels.readyToShop')}</h3>
-            <p>{t('run.labels.allParticipantsReady')}</p>
+            <h3>{t('run:labels.readyToShop')}</h3>
+            <p>{t('run:labels.allParticipantsReady')}</p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button
                 onClick={handleStartShopping}
                 className="btn btn-primary btn-lg"
                 disabled={startShoppingMutation.isPending}
               >
-                {startShoppingMutation.isPending ? t('run.labels.starting') : t('run.actions.startShopping')}
+                {startShoppingMutation.isPending ? t('run:labels.starting') : t('run:actions.startShopping')}
               </button>
               <DownloadRunStateButton
                 runId={runId}
@@ -622,21 +622,21 @@ export default function RunPage() {
               />
             </div>
             <p className="ready-hint">
-              {t('run.labels.startShoppingHint')}
+              {t('run:labels.startShoppingHint')}
             </p>
           </div>
         )}
 
         {run.state === 'shopping' && (run.current_user_is_leader || run.current_user_is_helper) && (
           <div className="info-card">
-            <h3>{t('run.labels.shoppingInProgress')}</h3>
-            <p>{t('run.labels.currentlyShopping')}</p>
+            <h3>{t('run:labels.shoppingInProgress')}</h3>
+            <p>{t('run:labels.currentlyShopping')}</p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button
                 onClick={() => navigate(`/shopping/${runId}`)}
                 className="btn btn-success btn-lg"
               >
-                {t('run.actions.openShoppingList')}
+                {t('run:actions.openShoppingList')}
               </button>
               <DownloadRunStateButton
                 runId={runId}
@@ -645,29 +645,29 @@ export default function RunPage() {
               />
             </div>
             <p className="ready-hint">
-              {t('run.labels.trackPricesHint')}
+              {t('run:labels.trackPricesHint')}
             </p>
           </div>
         )}
 
         {run.state === 'adjusting' && run.current_user_is_leader && (
           <div className="info-card">
-            <h3>{t('run.labels.adjustingBids')}</h3>
-            <p>{t('run.labels.adjustingBidsDescription')}</p>
+            <h3>{t('run:labels.adjustingBids')}</h3>
+            <p>{t('run:labels.adjustingBidsDescription')}</p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button
                 onClick={handleFinishAdjusting}
                 className="btn btn-primary btn-lg"
                 disabled={finishAdjustingMutation.isPending}
               >
-                {finishAdjustingMutation.isPending ? t('run.labels.processing') : t('run.actions.finishAdjusting')}
+                {finishAdjustingMutation.isPending ? t('run:labels.processing') : t('run:actions.finishAdjusting')}
               </button>
               <button
                 onClick={handleForceFinishAdjusting}
                 className="btn btn-secondary btn-lg"
                 disabled={finishAdjustingMutation.isPending}
               >
-                {t('run.actions.forceFinish')}
+                {t('run:actions.forceFinish')}
               </button>
               <DownloadRunStateButton
                 runId={runId}
@@ -676,7 +676,7 @@ export default function RunPage() {
               />
             </div>
             <p className="ready-hint">
-              {t('run.labels.finishAdjustingHint')}
+              {t('run:labels.finishAdjustingHint')}
             </p>
           </div>
         )}
@@ -687,7 +687,7 @@ export default function RunPage() {
       {shouldFetchDistribution && (
         <div className="distribution-section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>{t('run.labels.distribution')}</h3>
+            <h3>{t('run:labels.distribution')}</h3>
             {(run.current_user_is_leader || run.current_user_is_helper) && (
               <DownloadRunStateButton
                 runId={runId}
@@ -698,7 +698,7 @@ export default function RunPage() {
           </div>
           {distributionUsers.length === 0 ? (
             <div className="empty-state">
-              <p>{t('run.empty.noItemsToDistribute')}</p>
+              <p>{t('run:empty.noItemsToDistribute')}</p>
             </div>
           ) : (
             <div className="distribution-list">
@@ -713,7 +713,7 @@ export default function RunPage() {
                     <span className="user-total">{user.total_cost} RSD</span>
                   </div>
                   <div className="user-actions">
-                    {user.all_picked_up && <span className="pickup-badge">{t('run.labels.pickedUp')}</span>}
+                    {user.all_picked_up && <span className="pickup-badge">{t('run:labels.pickedUp')}</span>}
                     <span className="expand-icon">{expandedUserId === user.user_id ? '▼' : '▶'}</span>
                   </div>
                 </div>
@@ -730,7 +730,7 @@ export default function RunPage() {
                           className="mark-all-button"
                           disabled={markPickedUpMutation.isPending}
                         >
-                          {markPickedUpMutation.isPending ? t('run.labels.updating') : t('run.actions.markAllPickedUp')}
+                          {markPickedUpMutation.isPending ? t('run:labels.updating') : t('run:actions.markAllPickedUp')}
                         </button>
                       )}
                     </div>
@@ -740,12 +740,12 @@ export default function RunPage() {
                           <div className="product-name">
                             {product.product_name}
                             {product.distributed_quantity < product.requested_quantity && (
-                              <span className="shortage-badge" title={t('run.labels.quantityReducedTooltip')}>⚠️</span>
+                              <span className="shortage-badge" title={t('run:labels.quantityReducedTooltip')}>⚠️</span>
                             )}
                           </div>
                           <div className="product-details">
-                            <span>{t('run.labels.requested')}: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
-                            <span>{t('run.labels.allocated')}: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                            <span>{t('run:labels.requested')}: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                            <span>{t('run:labels.allocated')}: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
                             <span>@{product.price_per_unit} RSD</span>
                             <span className="product-subtotal">{product.subtotal} RSD</span>
                           </div>
@@ -756,7 +756,7 @@ export default function RunPage() {
                             disabled={product.is_picked_up || markPickedUpMutation.isPending}
                             className={`pickup-button ${product.is_picked_up ? 'picked-up' : ''}`}
                           >
-                            {markPickedUpMutation.isPending ? t('run.labels.updating') : product.is_picked_up ? t('run.labels.pickedUp') : t('run.actions.markPickedUp')}
+                            {markPickedUpMutation.isPending ? t('run:labels.updating') : product.is_picked_up ? t('run:labels.pickedUp') : t('run:actions.markPickedUp')}
                           </button>
                         )}
                       </div>
@@ -775,7 +775,7 @@ export default function RunPage() {
                 className="complete-button"
                 disabled={completeDistributionMutation.isPending}
               >
-                {completeDistributionMutation.isPending ? t('run.labels.completing') : t('run.actions.completeRun')}
+                {completeDistributionMutation.isPending ? t('run:labels.completing') : t('run:actions.completeRun')}
               </button>
             </div>
           )}
@@ -784,17 +784,17 @@ export default function RunPage() {
 
       <div className="products-section">
         <div className="products-header">
-          <h3>{t('run.labels.products', { count: run.products.length })}</h3>
+          <h3>{t('run:labels.products', { count: run.products.length })}</h3>
           {canBid && run.state !== 'adjusting' && (
             <button onClick={handleAddProduct} className="add-product-button">
-              {t('run.actions.addProduct')}
+              {t('run:actions.addProduct')}
             </button>
           )}
         </div>
 
         {run.products.length === 0 ? (
           <div className="no-products">
-            <p>{t('run.empty.noProducts')}</p>
+            <p>{t('run:empty.noProducts')}</p>
           </div>
         ) : (
           <div className="products-list">
@@ -831,7 +831,7 @@ export default function RunPage() {
       {run.state === 'active' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>{t('run.states.activeDescription')}</p>
+            <p>{t('run:states.activeDescription')}</p>
           </div>
         </div>
       )}
@@ -839,7 +839,7 @@ export default function RunPage() {
       {run.state === 'planning' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>{t('run.states.planningDescription')}</p>
+            <p>{t('run:states.planningDescription')}</p>
           </div>
         </div>
       )}
@@ -847,7 +847,7 @@ export default function RunPage() {
       {run.state === 'confirmed' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>{t('run.states.confirmedDescription')}</p>
+            <p>{t('run:states.confirmedDescription')}</p>
           </div>
         </div>
       )}
@@ -855,7 +855,7 @@ export default function RunPage() {
       {run.state === 'shopping' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>{t('run.states.shoppingDescription')}</p>
+            <p>{t('run:states.shoppingDescription')}</p>
           </div>
         </div>
       )}
@@ -863,7 +863,7 @@ export default function RunPage() {
       {run.state === 'adjusting' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>{t('run.states.adjustingDescription')}</p>
+            <p>{t('run:states.adjustingDescription')}</p>
           </div>
         </div>
       )}
@@ -871,7 +871,7 @@ export default function RunPage() {
       {run.state === 'completed' && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>{t('run.states.completedDescription')}</p>
+            <p>{t('run:states.completedDescription')}</p>
           </div>
         </div>
       )}
@@ -938,7 +938,7 @@ export default function RunPage() {
             }))}
             onClose={() => setShowReassignPopup(false)}
             onSuccess={() => {
-              showToast(t('run.messages.reassignmentRequestSent'), 'success')
+              showToast(t('run:messages.reassignmentRequestSent'), 'success')
               fetchReassignmentRequest()
             }}
             onCancelRun={run.state !== 'completed' && run.state !== 'cancelled' ? handleCancelRun : undefined}
@@ -958,7 +958,7 @@ export default function RunPage() {
             onClose={() => setShowForceConfirmPopup(false)}
             onSuccess={() => {
               setShowForceConfirmPopup(false)
-              showToast(t('run.messages.runForceConfirmed'), 'success')
+              showToast(t('run:messages.runForceConfirmed'), 'success')
               queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
             }}
           />
@@ -972,7 +972,7 @@ export default function RunPage() {
           onClose={() => setShowEditCommentPopup(false)}
           onSuccess={() => {
             setShowEditCommentPopup(false)
-            showToast(t('run.messages.commentUpdated'), 'success')
+            showToast(t('run:messages.commentUpdated'), 'success')
           }}
         />
       )}
@@ -1009,7 +1009,7 @@ function EditCommentPopup({
   onClose: () => void
   onSuccess: () => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'run'])
   const [comment, setComment] = useState(currentComment)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -1034,17 +1034,17 @@ function EditCommentPopup({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
-        <h3>{t('run.actions.editComment')}</h3>
+        <h3>{t('run:actions.editComment')}</h3>
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="comment" className="form-label">{t('run.labels.comment')}</label>
+            <label htmlFor="comment" className="form-label">{t('run:labels.comment')}</label>
             <textarea
               id="comment"
               className="form-input"
               value={comment}
               onChange={e => setComment(e.target.value)}
-              placeholder={t('run.labels.commentPlaceholder')}
+              placeholder={t('run:labels.commentPlaceholder')}
               disabled={loading}
               maxLength={500}
               rows={3}
@@ -1059,14 +1059,14 @@ function EditCommentPopup({
               disabled={loading}
               className="btn btn-secondary"
             >
-              {t('common.actions.cancel')}
+              {t('common:actions.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="btn btn-primary"
             >
-              {loading ? t('common.actions.saving') : t('common.actions.save')}
+              {loading ? t('common:actions.saving') : t('common:actions.save')}
             </button>
           </div>
         </form>

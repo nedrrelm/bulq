@@ -10,30 +10,30 @@ interface NotificationItemProps {
 
 export function NotificationItem({ notification, onClick }: NotificationItemProps) {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'notifications'])
 
   const getNotificationMessage = () => {
     if (notification.type === 'run_state_changed') {
       const { store_name, new_state } = notification.data
 
       const stateMessages: Record<string, string> = {
-        planning: t('notifications.states.planning'),
-        active: t('notifications.states.active'),
-        confirmed: t('notifications.states.confirmed'),
-        shopping: t('notifications.states.shopping'),
-        adjusting: t('notifications.states.adjusting'),
-        distributing: t('notifications.states.distributing'),
-        completed: t('notifications.states.completed'),
-        cancelled: t('notifications.states.cancelled')
+        planning: t('notifications:states.planning'),
+        active: t('notifications:states.active'),
+        confirmed: t('notifications:states.confirmed'),
+        shopping: t('notifications:states.shopping'),
+        adjusting: t('notifications:states.adjusting'),
+        distributing: t('notifications:states.distributing'),
+        completed: t('notifications:states.completed'),
+        cancelled: t('notifications:states.cancelled')
       }
 
-      const message = t('notifications.runStateChanged', {
+      const message = t('notifications:runStateChanged', {
         store_name,
-        state_message: new_state ? (stateMessages[new_state] || t('notifications.changedToState', { state: new_state })) : t('notifications.changedState')
+        state_message: new_state ? (stateMessages[new_state] || t('notifications:changedToState', { state: new_state })) : t('notifications:changedState')
       })
 
       if (notification.grouped && notification.count) {
-        return t('notifications.groupedStateChanges', { count: notification.count, store_name })
+        return t('notifications:groupedStateChanges', { count: notification.count, store_name })
       }
 
       return message
@@ -41,20 +41,20 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
 
     if (notification.type === 'leader_reassignment_request') {
       const { from_user_name, store_name } = notification.data
-      return t('notifications.leadershipRequest', { from_user_name, store_name })
+      return t('notifications:leadershipRequest', { from_user_name, store_name })
     }
 
     if (notification.type === 'leader_reassignment_accepted') {
       const { new_leader_name, store_name } = notification.data
-      return t('notifications.leadershipAccepted', { new_leader_name, store_name })
+      return t('notifications:leadershipAccepted', { new_leader_name, store_name })
     }
 
     if (notification.type === 'leader_reassignment_declined') {
       const { declined_by_name, store_name } = notification.data
-      return t('notifications.leadershipDeclined', { declined_by_name, store_name })
+      return t('notifications:leadershipDeclined', { declined_by_name, store_name })
     }
 
-    return t('notifications.newNotification')
+    return t('notifications:newNotification')
   }
 
   const handleClick = () => {
@@ -76,12 +76,12 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
 
   const timeAgo = (() => {
     try {
-      if (!notification.created_at) return t('common.justNow')
+      if (!notification.created_at) return t('common:justNow')
       const date = new Date(notification.created_at)
-      if (isNaN(date.getTime())) return t('common.justNow')
+      if (isNaN(date.getTime())) return t('common:justNow')
       return formatDistanceToNow(date, { addSuffix: true })
     } catch {
-      return t('common.justNow')
+      return t('common:justNow')
     }
   })()
 

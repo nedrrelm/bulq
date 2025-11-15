@@ -18,7 +18,7 @@ const MAX_LENGTH = 100
 const MIN_LENGTH = 2
 
 export default function EditStorePopup({ store, onClose, onSuccess }: EditStorePopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['admin', 'common'])
   const [storeName, setStoreName] = useState(store.name)
   const [address, setAddress] = useState(store.address || '')
   const [chain, setChain] = useState(store.chain || '')
@@ -36,19 +36,19 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
     const trimmed = value.trim()
 
     if (trimmed.length === 0) {
-      setError(t('admin.edit.store.errors.nameRequired'))
+      setError(t('admin:edit.store.errors.nameRequired'))
       return false
     }
 
     const lengthValidation = validateLength(trimmed, MIN_LENGTH, MAX_LENGTH, 'Store name')
     if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || t('admin.edit.store.errors.invalidName'))
+      setError(lengthValidation.error || t('admin:edit.store.errors.invalidName'))
       return false
     }
 
     const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', 'Store name', true)
     if (!alphanumericValidation.isValid) {
-      setError(alphanumericValidation.error || t('admin.edit.store.errors.invalidCharacters'))
+      setError(alphanumericValidation.error || t('admin:edit.store.errors.invalidCharacters'))
       return false
     }
 
@@ -88,7 +88,7 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
 
   const handleMerge = async () => {
     if (!mergeTargetId.trim()) {
-      setError(t('admin.edit.store.errors.mergeTargetRequired'))
+      setError(t('admin:edit.store.errors.mergeTargetRequired'))
       return
     }
 
@@ -96,10 +96,10 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
       setSubmitting(true)
       const response = await adminApi.mergeStores(store.id, mergeTargetId.trim())
       const successMsg = translateSuccess(response.code, response.details)
-      alert(`${successMsg}\n${t('admin.edit.affectedRecords')}: ${response.affected_records}`)
+      alert(`${successMsg}\n${t('admin:edit.affectedRecords')}: ${response.affected_records}`)
       onSuccess()
     } catch (err) {
-      setError(getErrorMessage(err, t('admin.edit.store.errors.mergeFailed')))
+      setError(getErrorMessage(err, t('admin:edit.store.errors.mergeFailed')))
       setSubmitting(false)
     }
   }
@@ -120,7 +120,7 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('admin.edit.store.title')}</h2>
+          <h2>{t('admin:edit.store.title')}</h2>
         </div>
 
         <form onSubmit={handleUpdate}>
@@ -131,21 +131,21 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
           )}
 
           <div className="form-group">
-            <label htmlFor="store-name" className="form-label">{t('admin.edit.store.fields.name')} *</label>
+            <label htmlFor="store-name" className="form-label">{t('admin:edit.store.fields.name')} *</label>
             <input
               id="store-name"
               type="text"
               className={`form-input ${error ? 'input-error' : ''}`}
               value={storeName}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={t('admin.edit.store.placeholders.name')}
+              placeholder={t('admin:edit.store.placeholders.name')}
               disabled={submitting}
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="address" className="form-label">{t('admin.edit.store.fields.address')}</label>
+            <label htmlFor="address" className="form-label">{t('admin:edit.store.fields.address')}</label>
             <textarea
               id="address"
               className="form-input"
@@ -154,14 +154,14 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
                 setAddress(e.target.value)
                 setError('')
               }}
-              placeholder={t('admin.edit.store.placeholders.address')}
+              placeholder={t('admin:edit.store.placeholders.address')}
               disabled={submitting}
               rows={3}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="chain" className="form-label">{t('admin.edit.store.fields.chain')}</label>
+            <label htmlFor="chain" className="form-label">{t('admin:edit.store.fields.chain')}</label>
             <input
               id="chain"
               type="text"
@@ -171,7 +171,7 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
                 setChain(e.target.value)
                 setError('')
               }}
-              placeholder={t('admin.edit.store.placeholders.chain')}
+              placeholder={t('admin:edit.store.placeholders.chain')}
               disabled={submitting}
             />
           </div>
@@ -183,14 +183,14 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
               onClick={onClose}
               disabled={submitting}
             >
-              {t('common.cancel')}
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? t('common.saving') : t('common.saveChanges')}
+              {submitting ? t('common:saving') : t('common:saveChanges')}
             </button>
           </div>
         </form>
@@ -199,9 +199,9 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
 
         {/* Merge Section */}
         <div className="form-group">
-          <label htmlFor="merge-target" className="form-label">{t('admin.edit.store.mergeTitle')}</label>
+          <label htmlFor="merge-target" className="form-label">{t('admin:edit.store.mergeTitle')}</label>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
-            {t('admin.edit.store.mergeDescription')}
+            {t('admin:edit.store.mergeDescription')}
           </p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input
@@ -213,19 +213,19 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
                 setMergeTargetId(e.target.value)
                 setError('')
               }}
-              placeholder={t('admin.edit.store.mergePlaceholder')}
+              placeholder={t('admin:edit.store.mergePlaceholder')}
               disabled={submitting}
             />
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => showConfirm(
-                t('admin.edit.store.mergeConfirm', { name: store.name }),
+                t('admin:edit.store.mergeConfirm', { name: store.name }),
                 handleMerge
               )}
               disabled={submitting || !mergeTargetId.trim()}
             >
-              {t('admin.edit.store.mergeButton')}
+              {t('admin:edit.store.mergeButton')}
             </button>
           </div>
         </div>
@@ -234,22 +234,22 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
 
         {/* Delete Section */}
         <div className="form-group">
-          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin.edit.dangerZone')}</label>
+          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin:edit.dangerZone')}</label>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
-            {t('admin.edit.store.deleteWarning')}
+            {t('admin:edit.store.deleteWarning')}
           </p>
           <button
             type="button"
             className="btn"
             style={{ backgroundColor: 'var(--color-danger)', color: 'white' }}
             onClick={() => showConfirm(
-              t('admin.edit.store.deleteConfirm', { name: store.name }),
+              t('admin:edit.store.deleteConfirm', { name: store.name }),
               handleDelete,
               { danger: true }
             )}
             disabled={submitting}
           >
-            {t('admin.edit.store.deleteButton')}
+            {t('admin:edit.store.deleteButton')}
           </button>
         </div>
       </div>

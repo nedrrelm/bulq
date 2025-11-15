@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 export function ProfileButton() {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['profile'])
   const navigate = useNavigate()
 
   return (
@@ -27,7 +27,7 @@ export function ProfileButton() {
         e.currentTarget.style.color = '#4b5563'
         e.currentTarget.style.backgroundColor = 'transparent'
       }}
-      aria-label={t('profile.title')}
+      aria-label={t('profile:title')}
     >
       <User size={24} />
     </button>

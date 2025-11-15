@@ -23,7 +23,7 @@ interface RunCardProps {
 }
 
 const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGroupName = false }: RunCardProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['run'])
 
   const content = (
     <div className="run-card-content">
@@ -36,19 +36,19 @@ const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGro
       <div className="run-card-details">
         {showGroupName && run.group_name && (
           <div className="run-detail">
-            <span className="run-detail-label">{t('run.card.group')}:</span>
+            <span className="run-detail-label">{t('run:card.group')}:</span>
             <span className="run-detail-value">{run.group_name}</span>
           </div>
         )}
         <div className="run-detail">
-          <span className="run-detail-label">{t('run.card.leader')}:</span>
+          <span className="run-detail-label">{t('run:card.leader')}:</span>
           <span className={`run-detail-value ${run.leader_is_removed ? 'removed-user' : ''}`}>
             {run.leader_name}
           </span>
         </div>
         {run.planned_on && (
           <div className="run-detail">
-            <span className="run-detail-label">{t('run.card.planned')}:</span>
+            <span className="run-detail-label">{t('run:card.planned')}:</span>
             <span className="run-detail-value">
               {new Date(run.planned_on).toLocaleDateString()}
             </span>

@@ -66,6 +66,10 @@ i18n
     ns: ['errors', 'success', 'common', 'auth', 'groups', 'group', 'run', 'shopping', 'profile', 'store', 'product', 'admin', 'notifications'],
     defaultNS: 'common',
 
+    // Key separator configuration
+    keySeparator: '.', // Default is '.' which we're using
+    nsSeparator: ':', // Use ':' to separate namespace from key (e.g., 'namespace:key.subkey')
+
     interpolation: {
       escapeValue: false, // React already escapes values
     },

@@ -18,7 +18,7 @@ interface GroupInfo {
 }
 
 export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['group'])
   const [groupPreview, setGroupPreview] = useState<GroupInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -34,13 +34,13 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
         const response = await fetch(`${API_BASE_URL}/groups/preview/${inviteToken}`)
 
         if (!response.ok) {
-          throw new Error(t('group.join.errors.invalidInvite'))
+          throw new Error(t('group:join.errors.invalidInvite'))
         }
 
         const data: GroupInfo = await response.json()
         setGroupPreview(data)
       } catch (err) {
-        setError(getErrorMessage(err, t('group.join.errors.loadFailed')))
+        setError(getErrorMessage(err, t('group:join.errors.loadFailed')))
       } finally {
         setLoading(false)
       }
@@ -67,7 +67,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
         onJoinSuccess()
       }, 1500)
     } catch (err) {
-      setError(getErrorMessage(err, t('group.join.errors.joinFailed')))
+      setError(getErrorMessage(err, t('group:join.errors.joinFailed')))
       setJoining(false)
     }
   }
@@ -76,7 +76,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
     return (
       <div className="join-group-page">
         <div className="join-group-card">
-          <p>{t('group.join.loading')}</p>
+          <p>{t('group:join.loading')}</p>
         </div>
       </div>
     )
@@ -87,9 +87,9 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
       <div className="join-group-page">
         <div className="join-group-card">
           <div className="success-icon">✅</div>
-          <h2>{t('group.join.success.title')}</h2>
-          <p>{t('group.join.success.message', { groupName: joinedGroup.name })}</p>
-          <p className="redirect-message">{t('group.join.success.redirecting')}</p>
+          <h2>{t('group:join.success.title')}</h2>
+          <p>{t('group:join.success.message', { groupName: joinedGroup.name })}</p>
+          <p className="redirect-message">{t('group:join.success.redirecting')}</p>
         </div>
       </div>
     )
@@ -98,7 +98,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
   return (
     <div className="join-group-page">
       <div className="join-group-card">
-        <h2>{t('group.join.title')}</h2>
+        <h2>{t('group:join.title')}</h2>
 
         {error && (
           <div className="alert alert-error">
@@ -110,10 +110,10 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
           <div className="group-preview">
             <h3>{groupPreview.name}</h3>
             <div className="group-details">
-              <p><strong>{t('group.join.preview.createdBy')}:</strong> {groupPreview.creator_name}</p>
-              <p><strong>{t('group.join.preview.members')}:</strong> {groupPreview.member_count}</p>
+              <p><strong>{t('group:join.preview.createdBy')}:</strong> {groupPreview.creator_name}</p>
+              <p><strong>{t('group:join.preview.members')}:</strong> {groupPreview.member_count}</p>
             </div>
-            <p className="invite-message">{t('group.join.preview.inviteMessage')}</p>
+            <p className="invite-message">{t('group:join.preview.inviteMessage')}</p>
           </div>
         )}
 
@@ -123,7 +123,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
             className="btn btn-primary"
             disabled={joining || !groupPreview}
           >
-            {joining ? t('group.join.actions.joining') : t('group.join.actions.submit')}
+            {joining ? t('group:join.actions.joining') : t('group:join.actions.submit')}
           </button>
         </div>
       </div>

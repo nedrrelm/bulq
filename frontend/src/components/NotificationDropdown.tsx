@@ -8,7 +8,7 @@ interface NotificationDropdownProps {
 }
 
 export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['notifications'])
   const navigate = useNavigate()
   const { notifications, markAllAsRead, markAsRead } = useNotifications()
 
@@ -42,7 +42,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
           borderBottom: '1px solid #e5e7eb'
         }}
       >
-        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{t('notifications.title')}</h3>
+        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{t('notifications:title')}</h3>
         {notifications.some(n => !n.read) && (
           <button
             onClick={handleMarkAllAsRead}
@@ -56,7 +56,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
               padding: '0.25rem 0.5rem'
             }}
           >
-            {t('notifications.markAllAsRead')}
+            {t('notifications:markAllAsRead')}
           </button>
         )}
       </div>
@@ -64,7 +64,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
       <div style={{ maxHeight: '24rem', overflowY: 'auto' }}>
         {recentNotifications.length === 0 ? (
           <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
-            {t('notifications.noNotifications')}
+            {t('notifications:noNotifications')}
           </div>
         ) : (
           <>
@@ -94,7 +94,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
             padding: '0.5rem'
           }}
         >
-          {t('notifications.seeAll')}
+          {t('notifications:seeAll')}
         </button>
       </div>
     </div>

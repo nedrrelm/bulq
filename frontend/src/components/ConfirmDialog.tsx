@@ -20,7 +20,7 @@ export default function ConfirmDialog({
   cancelText,
   danger = false
 }: ConfirmDialogProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common'])
   const modalRef = useRef<HTMLDivElement>(null)
 
   useModalFocusTrap(modalRef)
@@ -43,18 +43,18 @@ export default function ConfirmDialog({
         aria-describedby="confirm-dialog-message"
         aria-modal="true"
       >
-        <h3 id="confirm-dialog-title">{t('common.buttons.confirmAction')}</h3>
+        <h3 id="confirm-dialog-title">{t('common:buttons.confirmAction')}</h3>
         <p id="confirm-dialog-message" className="confirm-message">{message}</p>
         <div className="button-group">
           <button onClick={onCancel} className="btn btn-secondary">
-            {cancelText || t('common.buttons.cancel')}
+            {cancelText || t('common:buttons.cancel')}
           </button>
           <button
             onClick={onConfirm}
             className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`}
             autoFocus
           >
-            {confirmText || t('common.buttons.confirm')}
+            {confirmText || t('common:buttons.confirm')}
           </button>
         </div>
       </div>

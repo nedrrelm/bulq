@@ -15,7 +15,7 @@ const MAX_LENGTH = 100
 const MIN_LENGTH = 2
 
 export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'groups'])
   const [groupName, setGroupName] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -29,19 +29,19 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
     const trimmed = value.trim()
 
     if (trimmed.length === 0) {
-      setError(t('groups.validation.nameRequired'))
+      setError(t('groups:validation.nameRequired'))
       return false
     }
 
-    const lengthValidation = validateLength(trimmed, MIN_LENGTH, MAX_LENGTH, t('groups.fields.name'))
+    const lengthValidation = validateLength(trimmed, MIN_LENGTH, MAX_LENGTH, t('groups:fields.name'))
     if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || t('groups.validation.invalidName'))
+      setError(lengthValidation.error || t('groups:validation.invalidName'))
       return false
     }
 
-    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', t('groups.fields.name'))
+    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', t('groups:fields.name'))
     if (!alphanumericValidation.isValid) {
-      setError(alphanumericValidation.error || t('groups.validation.invalidCharacters'))
+      setError(alphanumericValidation.error || t('groups:validation.invalidCharacters'))
       return false
     }
 
@@ -84,7 +84,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('groups.create.title')}</h2>
+          <h2>{t('groups:create.title')}</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -95,7 +95,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
           )}
 
           <div className="form-group">
-            <label htmlFor="group-name" className="form-label">{t('groups.fields.name')} *</label>
+            <label htmlFor="group-name" className="form-label">{t('groups:fields.name')} *</label>
             <input
               id="group-name"
               type="text"
@@ -103,12 +103,12 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
               value={groupName}
               onChange={(e) => handleNameChange(e.target.value)}
               onBlur={handleBlur}
-              placeholder={t('groups.create.namePlaceholder')}
+              placeholder={t('groups:create.namePlaceholder')}
               autoFocus
               disabled={submitting}
             />
             <small className="input-hint">
-              {t('groups.validation.nameHint')}
+              {t('groups:validation.nameHint')}
             </small>
           </div>
 
@@ -119,14 +119,14 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
               onClick={onClose}
               disabled={submitting}
             >
-              {t('common.buttons.cancel')}
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? t('groups.create.submitting') : t('groups.create.submit')}
+              {submitting ? t('groups:create.submitting') : t('groups:create.submit')}
             </button>
           </div>
         </form>

@@ -15,7 +15,7 @@ const MAX_LENGTH = 100
 const MIN_LENGTH = 2
 
 export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'store'])
   const [storeName, setStoreName] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -55,19 +55,19 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
     const trimmed = value.trim()
 
     if (trimmed.length === 0) {
-      setError(t('store.validation.nameRequired'))
+      setError(t('store:validation.nameRequired'))
       return false
     }
 
-    const lengthValidation = validateLength(trimmed, MIN_LENGTH, MAX_LENGTH, t('store.fields.name'))
+    const lengthValidation = validateLength(trimmed, MIN_LENGTH, MAX_LENGTH, t('store:fields.name'))
     if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || t('store.validation.nameInvalid'))
+      setError(lengthValidation.error || t('store:validation.nameInvalid'))
       return false
     }
 
-    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', t('store.fields.name'), true)
+    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', t('store:fields.name'), true)
     if (!alphanumericValidation.isValid) {
-      setError(alphanumericValidation.error || t('store.validation.nameInvalidCharacters'))
+      setError(alphanumericValidation.error || t('store:validation.nameInvalidCharacters'))
       return false
     }
 
@@ -100,7 +100,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
     )
 
     if (exactMatch) {
-      setError(t('store.validation.alreadyExists', { name: exactMatch.name }))
+      setError(t('store:validation.alreadyExists', { name: exactMatch.name }))
       return
     }
 
@@ -111,7 +111,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
       const newStore = await storesApi.createStore({ name: storeName.trim() })
       onSuccess(newStore)
     } catch (err) {
-      setError(getErrorMessage(err, t('store.errors.createFailed')))
+      setError(getErrorMessage(err, t('store:errors.createFailed')))
       setSubmitting(false)
     }
   }
@@ -127,7 +127,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('store.create.title')}</h2>
+          <h2>{t('store:create.title')}</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -138,7 +138,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
           )}
 
           <div className="form-group">
-            <label htmlFor="store-name" className="form-label">{t('store.fields.name')} *</label>
+            <label htmlFor="store-name" className="form-label">{t('store:fields.name')} *</label>
             <input
               id="store-name"
               type="text"
@@ -146,23 +146,23 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
               value={storeName}
               onChange={(e) => handleNameChange(e.target.value)}
               onBlur={handleBlur}
-              placeholder={t('store.fields.namePlaceholder')}
+              placeholder={t('store:fields.namePlaceholder')}
               autoFocus
               disabled={submitting}
             />
             <small className="input-hint">
-              {t('store.validation.nameHint')}
+              {t('store:validation.nameHint')}
             </small>
 
             {exactMatch && (
               <div className="alert alert-error" style={{ marginTop: '0.5rem' }}>
-                {t('store.validation.alreadyExists', { name: exactMatch.name })}
+                {t('store:validation.alreadyExists', { name: exactMatch.name })}
               </div>
             )}
 
             {hasNonExactSimilar && (
               <div className="alert" style={{ marginTop: '0.5rem', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
-                <strong>{t('store.validation.similarFound')}:</strong>
+                <strong>{t('store:validation.similarFound')}:</strong>
                 <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.5rem' }}>
                   {similarStores.map(store => (
                     <li key={store.id}>{store.name}</li>
@@ -179,14 +179,14 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
               onClick={onClose}
               disabled={submitting}
             >
-              {t('common.buttons.cancel')}
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? t('store.actions.creating') : t('store.actions.create')}
+              {submitting ? t('store:actions.creating') : t('store:actions.create')}
             </button>
           </div>
         </form>

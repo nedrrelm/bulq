@@ -11,7 +11,7 @@ import { logger } from '../utils/logger'
 import '../styles/pages/ProfilePage.css'
 
 export default function ProfilePage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['profile'])
   const { user, updateUser } = useAuth()
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
@@ -43,20 +43,20 @@ export default function ProfilePage() {
   const handleNameSuccess = (updatedUser: any) => {
     updateUser(updatedUser)
     setShowNamePopup(false)
-    setSuccessMessage(t('profile.messages.nameChanged'))
+    setSuccessMessage(t('profile:messages.nameChanged'))
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
   const handleUsernameSuccess = (updatedUser: any) => {
     updateUser(updatedUser)
     setShowUsernamePopup(false)
-    setSuccessMessage(t('profile.messages.usernameChanged'))
+    setSuccessMessage(t('profile:messages.usernameChanged'))
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
   const handlePasswordSuccess = () => {
     setShowPasswordPopup(false)
-    setSuccessMessage(t('profile.messages.passwordChanged'))
+    setSuccessMessage(t('profile:messages.passwordChanged'))
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
@@ -89,7 +89,7 @@ export default function ProfilePage() {
 
   return (
     <div className="profile-page">
-      <h1>{t('profile.title')}</h1>
+      <h1>{t('profile:title')}</h1>
 
       {/* Success Message */}
       {successMessage && (
@@ -113,16 +113,16 @@ export default function ProfilePage() {
 
       {/* Statistics */}
       <div className="profile-section">
-        <h2>{t('profile.sections.statistics')}</h2>
+        <h2>{t('profile:sections.statistics')}</h2>
         {loadingStats ? (
-          <p>{t('profile.messages.loadingStats')}</p>
+          <p>{t('profile:messages.loadingStats')}</p>
         ) : stats ? (
           <div className="stats-grid">
             <div className="stat-card">
               <Package className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.total_quantity_bought.toFixed(2)}</div>
-                <div className="stat-label">{t('profile.stats.totalQuantityBought')}</div>
+                <div className="stat-label">{t('profile:stats.totalQuantityBought')}</div>
               </div>
             </div>
 
@@ -130,7 +130,7 @@ export default function ProfilePage() {
               <DollarSign className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">${stats.total_money_spent.toFixed(2)}</div>
-                <div className="stat-label">{t('profile.stats.totalMoneySpent')}</div>
+                <div className="stat-label">{t('profile:stats.totalMoneySpent')}</div>
               </div>
             </div>
 
@@ -138,7 +138,7 @@ export default function ProfilePage() {
               <ShoppingCart className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.runs_participated}</div>
-                <div className="stat-label">{t('profile.stats.runsParticipated')}</div>
+                <div className="stat-label">{t('profile:stats.runsParticipated')}</div>
               </div>
             </div>
 
@@ -146,7 +146,7 @@ export default function ProfilePage() {
               <HandHelping className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.runs_helped}</div>
-                <div className="stat-label">{t('profile.stats.runsHelped')}</div>
+                <div className="stat-label">{t('profile:stats.runsHelped')}</div>
               </div>
             </div>
 
@@ -154,7 +154,7 @@ export default function ProfilePage() {
               <Crown className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.runs_led}</div>
-                <div className="stat-label">{t('profile.stats.runsLed')}</div>
+                <div className="stat-label">{t('profile:stats.runsLed')}</div>
               </div>
             </div>
 
@@ -162,23 +162,23 @@ export default function ProfilePage() {
               <Users className="stat-icon" size={32} />
               <div className="stat-content">
                 <div className="stat-value">{stats.groups_count}</div>
-                <div className="stat-label">{t('profile.stats.groups')}</div>
+                <div className="stat-label">{t('profile:stats.groups')}</div>
               </div>
             </div>
           </div>
         ) : (
-          <p>{t('profile.errors.failedToLoadStats')}</p>
+          <p>{t('profile:errors.failedToLoadStats')}</p>
         )}
       </div>
 
       {/* Account Settings */}
       <div className="profile-section">
-        <h2>{t('profile.sections.accountSettings')}</h2>
+        <h2>{t('profile:sections.accountSettings')}</h2>
         <div className="settings-actions">
           <div className="setting-item">
             <div>
-              <h3>{t('profile.fields.language')}</h3>
-              <p>{t('profile.descriptions.chooseLanguage')}</p>
+              <h3>{t('profile:fields.language')}</h3>
+              <p>{t('profile:descriptions.chooseLanguage')}</p>
             </div>
             <select
               className="language-select"
@@ -193,8 +193,8 @@ export default function ProfilePage() {
 
           <div className="setting-item">
             <div>
-              <h3>{t('profile.fields.darkMode')}</h3>
-              <p>{t('profile.descriptions.toggleDarkMode')}</p>
+              <h3>{t('profile:fields.darkMode')}</h3>
+              <p>{t('profile:descriptions.toggleDarkMode')}</p>
             </div>
             <label className="toggle-switch">
               <input
@@ -208,40 +208,40 @@ export default function ProfilePage() {
 
           <div className="setting-item">
             <div>
-              <h3>{t('profile.fields.name')}</h3>
-              <p>{t('profile.descriptions.changeName')}</p>
+              <h3>{t('profile:fields.name')}</h3>
+              <p>{t('profile:descriptions.changeName')}</p>
             </div>
             <button
               className="btn btn-secondary"
               onClick={() => setShowNamePopup(true)}
             >
-              {t('profile.actions.changeName')}
+              {t('profile:actions.changeName')}
             </button>
           </div>
 
           <div className="setting-item">
             <div>
-              <h3>{t('profile.fields.username')}</h3>
-              <p>{t('profile.descriptions.changeUsername')}</p>
+              <h3>{t('profile:fields.username')}</h3>
+              <p>{t('profile:descriptions.changeUsername')}</p>
             </div>
             <button
               className="btn btn-secondary"
               onClick={() => setShowUsernamePopup(true)}
             >
-              {t('profile.actions.changeUsername')}
+              {t('profile:actions.changeUsername')}
             </button>
           </div>
 
           <div className="setting-item">
             <div>
-              <h3>{t('profile.fields.password')}</h3>
-              <p>{t('profile.descriptions.changePassword')}</p>
+              <h3>{t('profile:fields.password')}</h3>
+              <p>{t('profile:descriptions.changePassword')}</p>
             </div>
             <button
               className="btn btn-secondary"
               onClick={() => setShowPasswordPopup(true)}
             >
-              {t('profile.actions.changePassword')}
+              {t('profile:actions.changePassword')}
             </button>
           </div>
         </div>

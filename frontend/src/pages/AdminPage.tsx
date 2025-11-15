@@ -13,7 +13,7 @@ type TabType = 'users' | 'products' | 'stores'
 const LIMIT = 100
 
 export default function AdminPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['admin', 'common'])
   const [activeTab, setActiveTab] = useState<TabType>('users')
   const [search, setSearch] = useState('')
   const [verifiedFilter, setVerifiedFilter] = useState<boolean | undefined>(undefined)
@@ -170,14 +170,14 @@ export default function AdminPage() {
 
   return (
     <div className="admin-page">
-      <h1>{t('admin.title')}</h1>
+      <h1>{t('admin:title')}</h1>
 
       {/* Global Settings */}
       <div className="admin-settings">
         <div className="setting-row">
           <div>
-            <h3>{t('admin.settings.allowRegistration')}</h3>
-            <p>{t('admin.settings.allowRegistrationDescription')}</p>
+            <h3>{t('admin:settings.allowRegistration')}</h3>
+            <p>{t('admin:settings.allowRegistrationDescription')}</p>
           </div>
           <label className="toggle-switch">
             <input
@@ -196,26 +196,26 @@ export default function AdminPage() {
           className={activeTab === 'users' ? 'active' : ''}
           onClick={() => setActiveTab('users')}
         >
-          {t('admin.tabs.users')}
+          {t('admin:tabs.users')}
         </button>
         <button
           className={activeTab === 'products' ? 'active' : ''}
           onClick={() => setActiveTab('products')}
         >
-          {t('admin.tabs.products')}
+          {t('admin:tabs.products')}
         </button>
         <button
           className={activeTab === 'stores' ? 'active' : ''}
           onClick={() => setActiveTab('stores')}
         >
-          {t('admin.tabs.stores')}
+          {t('admin:tabs.stores')}
         </button>
       </div>
 
       <div className="admin-filters">
         <input
           type="text"
-          placeholder={t('admin.search.placeholder')}
+          placeholder={t('admin:search.placeholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="form-input"
@@ -228,27 +228,27 @@ export default function AdminPage() {
           }}
           className="form-input"
         >
-          <option value="all">{t('admin.filters.all')}</option>
-          <option value="true">{t('admin.filters.verified')}</option>
-          <option value="false">{t('admin.filters.unverified')}</option>
+          <option value="all">{t('admin:filters.all')}</option>
+          <option value="true">{t('admin:filters.verified')}</option>
+          <option value="false">{t('admin:filters.unverified')}</option>
         </select>
       </div>
 
       {activeTab === 'users' && (
         <div className="admin-content">
           {loadingUsers ? (
-            <p>{t('common.loading')}</p>
+            <p>{t('common:loading')}</p>
           ) : (
             <>
               <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>{t('admin.users.name')}</th>
-                    <th>{t('admin.users.username')}</th>
-                    <th>{t('admin.users.id')}</th>
-                    <th>{t('admin.users.admin')}</th>
-                    <th>{t('admin.users.verified')}</th>
-                    <th>{t('admin.users.actions')}</th>
+                    <th>{t('admin:users.name')}</th>
+                    <th>{t('admin:users.username')}</th>
+                    <th>{t('admin:users.id')}</th>
+                    <th>{t('admin:users.admin')}</th>
+                    <th>{t('admin:users.verified')}</th>
+                    <th>{t('admin:users.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -265,13 +265,13 @@ export default function AdminPage() {
                           className="btn-small"
                           style={{ marginRight: '0.5rem' }}
                         >
-                          {t('common.edit')}
+                          {t('common:edit')}
                         </button>
                         <button
                           onClick={() => toggleUserVerification(user.id)}
                           className="btn-small"
                         >
-                          {user.verified ? t('admin.actions.unverify') : t('admin.actions.verify')}
+                          {user.verified ? t('admin:actions.unverify') : t('admin:actions.verify')}
                         </button>
                       </td>
                     </tr>
@@ -285,17 +285,17 @@ export default function AdminPage() {
                     disabled={usersOffset === 0}
                     className="btn btn-secondary"
                   >
-                    {t('common.previous')}
+                    {t('common:previous')}
                   </button>
                   <span className="pagination-info">
-                    {t('common.showing')} {usersOffset + 1}-{usersOffset + users.length}
+                    {t('common:showing')} {usersOffset + 1}-{usersOffset + users.length}
                   </span>
                   <button
                     onClick={() => setUsersOffset(usersOffset + LIMIT)}
                     disabled={users.length < LIMIT}
                     className="btn btn-secondary"
                   >
-                    {t('common.next')}
+                    {t('common:next')}
                   </button>
                 </div>
               )}
@@ -307,18 +307,18 @@ export default function AdminPage() {
       {activeTab === 'products' && (
         <div className="admin-content">
           {loadingProducts ? (
-            <p>{t('common.loading')}</p>
+            <p>{t('common:loading')}</p>
           ) : (
             <>
               <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>{t('admin.products.name')}</th>
-                    <th>{t('admin.products.brand')}</th>
-                    <th>{t('admin.products.unit')}</th>
-                    <th>{t('admin.products.id')}</th>
-                    <th>{t('admin.products.verified')}</th>
-                    <th>{t('admin.products.actions')}</th>
+                    <th>{t('admin:products.name')}</th>
+                    <th>{t('admin:products.brand')}</th>
+                    <th>{t('admin:products.unit')}</th>
+                    <th>{t('admin:products.id')}</th>
+                    <th>{t('admin:products.verified')}</th>
+                    <th>{t('admin:products.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -335,13 +335,13 @@ export default function AdminPage() {
                           className="btn-small"
                           style={{ marginRight: '0.5rem' }}
                         >
-                          {t('common.edit')}
+                          {t('common:edit')}
                         </button>
                         <button
                           onClick={() => toggleProductVerification(product.id)}
                           className="btn-small"
                         >
-                          {product.verified ? t('admin.actions.unverify') : t('admin.actions.verify')}
+                          {product.verified ? t('admin:actions.unverify') : t('admin:actions.verify')}
                         </button>
                       </td>
                     </tr>
@@ -355,17 +355,17 @@ export default function AdminPage() {
                     disabled={productsOffset === 0}
                     className="btn btn-secondary"
                   >
-                    {t('common.previous')}
+                    {t('common:previous')}
                   </button>
                   <span className="pagination-info">
-                    {t('common.showing')} {productsOffset + 1}-{productsOffset + products.length}
+                    {t('common:showing')} {productsOffset + 1}-{productsOffset + products.length}
                   </span>
                   <button
                     onClick={() => setProductsOffset(productsOffset + LIMIT)}
                     disabled={products.length < LIMIT}
                     className="btn btn-secondary"
                   >
-                    {t('common.next')}
+                    {t('common:next')}
                   </button>
                 </div>
               )}
@@ -377,18 +377,18 @@ export default function AdminPage() {
       {activeTab === 'stores' && (
         <div className="admin-content">
           {loadingStores ? (
-            <p>{t('common.loading')}</p>
+            <p>{t('common:loading')}</p>
           ) : (
             <>
               <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>{t('admin.stores.name')}</th>
-                    <th>{t('admin.stores.address')}</th>
-                    <th>{t('admin.stores.chain')}</th>
-                    <th>{t('admin.stores.id')}</th>
-                    <th>{t('admin.stores.verified')}</th>
-                    <th>{t('admin.stores.actions')}</th>
+                    <th>{t('admin:stores.name')}</th>
+                    <th>{t('admin:stores.address')}</th>
+                    <th>{t('admin:stores.chain')}</th>
+                    <th>{t('admin:stores.id')}</th>
+                    <th>{t('admin:stores.verified')}</th>
+                    <th>{t('admin:stores.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -405,13 +405,13 @@ export default function AdminPage() {
                           className="btn-small"
                           style={{ marginRight: '0.5rem' }}
                         >
-                          {t('common.edit')}
+                          {t('common:edit')}
                         </button>
                         <button
                           onClick={() => toggleStoreVerification(store.id)}
                           className="btn-small"
                         >
-                          {store.verified ? t('admin.actions.unverify') : t('admin.actions.verify')}
+                          {store.verified ? t('admin:actions.unverify') : t('admin:actions.verify')}
                         </button>
                       </td>
                     </tr>
@@ -425,17 +425,17 @@ export default function AdminPage() {
                     disabled={storesOffset === 0}
                     className="btn btn-secondary"
                   >
-                    {t('common.previous')}
+                    {t('common:previous')}
                   </button>
                   <span className="pagination-info">
-                    {t('common.showing')} {storesOffset + 1}-{storesOffset + stores.length}
+                    {t('common:showing')} {storesOffset + 1}-{storesOffset + stores.length}
                   </span>
                   <button
                     onClick={() => setStoresOffset(storesOffset + LIMIT)}
                     disabled={stores.length < LIMIT}
                     className="btn btn-secondary"
                   >
-                    {t('common.next')}
+                    {t('common:next')}
                   </button>
                 </div>
               )}
