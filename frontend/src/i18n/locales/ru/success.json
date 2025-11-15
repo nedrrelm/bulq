@@ -1,1 +1,99 @@
-{}
+{
+  "general": {
+    "operation_successful": "Операция успешно завершена",
+    "resource_created": "Ресурс создан",
+    "resource_updated": "Успешно обновлено",
+    "resource_deleted": "Успешно удалено"
+  },
+  "auth": {
+    "user_registered": "Добро пожаловать! Ваш аккаунт создан",
+    "user_logged_in": "Успешный вход",
+    "user_logged_out": "Успешный выход",
+    "password_changed": "Пароль успешно изменён",
+    "profile_updated": "Профиль обновлён"
+  },
+  "run": {
+    "created": "Закупка успешно создана",
+    "updated": "Закупка обновлена",
+    "deleted": "Закупка удалена",
+    "cancelled": "Закупка отменена",
+    "state_changed": "Статус закупки обновлён",
+    "comment_updated": "Комментарий обновлён",
+    "helper_added": "Помощник добавлен",
+    "helper_removed": "Помощник удалён",
+    "force_confirmed": "Закупка подтверждена",
+    "shopping_started": "Покупки начались",
+    "adjusting_finished": "Этап корректировки завершён",
+    "ready_toggled_confirmed": "Все участники готовы - закупка подтверждена!"
+  },
+  "bid": {
+    "placed": "Заявка успешно размещена",
+    "updated": "Заявка обновлена",
+    "retracted": "Заявка удалена",
+    "ready_toggled": "Статус готовности обновлён"
+  },
+  "shopping": {
+    "item_marked_purchased": "Товар отмечен как купленный",
+    "item_marked_unpurchased": "Товар отмечен как не купленный",
+    "price_updated": "Цена обновлена",
+    "additional_purchase_added": "Дополнительное количество добавлено",
+    "completed": "Покупки завершены",
+    "completed_no_purchases": "Покупки завершены без покупок",
+    "completed_adjusting_required": "Покупки завершены - требуется корректировка",
+    "completed_distributing": "Покупки завершены - готово к раздаче"
+  },
+  "distribution": {
+    "bid_marked_picked_up": "Отмечено как полученное",
+    "bid_marked_not_picked_up": "Отмечено как не полученное",
+    "updated": "Раздача обновлена",
+    "completed": "Раздача успешно завершена"
+  },
+  "group": {
+    "created": "Группа успешно создана",
+    "updated": "Группа обновлена",
+    "deleted": "Группа удалена",
+    "joined": "Вы присоединились к группе",
+    "left": "Вы покинули группу",
+    "member_removed": "Участник удалён из группы",
+    "member_promoted": "{{member_name}} теперь администратор группы",
+    "invite_token_regenerated": "Ссылка-приглашение создана заново",
+    "joining_toggled": "Настройки присоединения к группе обновлены"
+  },
+  "notification": {
+    "marked_read": "Уведомление отмечено как прочитанное",
+    "all_marked_read": "Все уведомления отмечены как прочитанные",
+    "deleted": "Уведомление удалено"
+  },
+  "reassignment": {
+    "request_created": "Запрос на передачу лидерства отправлен",
+    "request_accepted": "Лидерство успешно передано",
+    "request_declined": "Передача лидерства отклонена",
+    "request_cancelled": "Запрос на передачу лидерства отменён"
+  },
+  "product": {
+    "created": "Товар создан",
+    "updated": "Товар обновлён",
+    "deleted": "Товар '{{source_name}}' успешно удалён",
+    "verified": "Товар проверен",
+    "unverified": "Проверка товара отменена",
+    "merged": "Товары успешно объединены"
+  },
+  "store": {
+    "created": "Магазин создан",
+    "updated": "Магазин обновлён",
+    "deleted": "Магазин '{{source_name}}' успешно удалён",
+    "verified": "Магазин проверен",
+    "unverified": "Проверка магазина отменена",
+    "merged": "Магазины успешно объединены"
+  },
+  "user": {
+    "deleted": "Пользователь успешно удалён"
+  },
+  "admin": {
+    "user_admin_status_updated": "Статус администратора пользователя обновлён",
+    "user_verified": "Пользователь проверен",
+    "user_unverified": "Проверка пользователя отменена",
+    "products_merged": "Товары объединены: '{{source_name}}' → '{{target_name}}'",
+    "stores_merged": "Магазины объединены: '{{source_name}}' → '{{target_name}}'"
+  }
+}

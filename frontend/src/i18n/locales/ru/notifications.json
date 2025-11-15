@@ -1,0 +1,25 @@
+{
+  "title": "Уведомления",
+  "markAllAsRead": "Отметить всё как прочитанное",
+  "noNotifications": "Нет уведомлений",
+  "newNotification": "Новое уведомление",
+  "runStateChanged": "{{store_name}} {{state_message}}",
+  "changedState": "изменила состояние",
+  "changedToState": "изменена на {{state}}",
+  "groupedStateChanges": "{{count}} изменений состояния для {{store_name}}",
+  "groupedStateChanges_one": "1 изменение состояния для {{store_name}}",
+  "groupedStateChanges_other": "{{count}} изменений состояния для {{store_name}}",
+  "leadershipRequest": "{{from_user_name}} хочет передать вам лидерство в {{store_name}}",
+  "leadershipAccepted": "{{new_leader_name}} принял лидерство в {{store_name}}",
+  "leadershipDeclined": "{{declined_by_name}} отклонил лидерство в {{store_name}}",
+  "states": {
+    "planning": "в планировании",
+    "active": "активна",
+    "confirmed": "подтверждена и готова",
+    "shopping": "покупки начались",
+    "adjusting": "требует корректировок",
+    "distributing": "готова к раздаче",
+    "completed": "была завершена",
+    "cancelled": "была отменена"
+  }
+}

@@ -1,1 +1,99 @@
-{}
+{
+  "general": {
+    "operation_successful": "Операција успешно завршена",
+    "resource_created": "Ресурс направљен",
+    "resource_updated": "Успешно ажурирано",
+    "resource_deleted": "Успешно обрисано"
+  },
+  "auth": {
+    "user_registered": "Добродошли! Ваш налог је направљен",
+    "user_logged_in": "Успешно пријављени",
+    "user_logged_out": "Успешно одјављени",
+    "password_changed": "Лозинка успешно промењена",
+    "profile_updated": "Профил ажуриран"
+  },
+  "run": {
+    "created": "Набавка успешно направљена",
+    "updated": "Набавка ажурирана",
+    "deleted": "Набавка обрисана",
+    "cancelled": "Набавка отказана",
+    "state_changed": "Статус набавке ажуриран",
+    "comment_updated": "Коментар ажуриран",
+    "helper_added": "Помоћник додат",
+    "helper_removed": "Помоћник уклоњен",
+    "force_confirmed": "Набавка потврђена",
+    "shopping_started": "Куповина започета",
+    "adjusting_finished": "Фаза прилагођавања завршена",
+    "ready_toggled_confirmed": "Сви учесници спремни - набавка потврђена!"
+  },
+  "bid": {
+    "placed": "Понуда успешно пријављена",
+    "updated": "Понуда ажурирана",
+    "retracted": "Понуда уклоњена",
+    "ready_toggled": "Статус спремности ажуриран"
+  },
+  "shopping": {
+    "item_marked_purchased": "Ставка означена као купљена",
+    "item_marked_unpurchased": "Ставка означена као некупљена",
+    "price_updated": "Цена ажурирана",
+    "additional_purchase_added": "Додатна количина додата",
+    "completed": "Куповина завршена",
+    "completed_no_purchases": "Куповина завршена без куповина",
+    "completed_adjusting_required": "Куповина завршена - потребно прилагођавање",
+    "completed_distributing": "Куповина завршена - спремно за дистрибуцију"
+  },
+  "distribution": {
+    "bid_marked_picked_up": "Означено као преузето",
+    "bid_marked_not_picked_up": "Означено као непреузето",
+    "updated": "Дистрибуција ажурирана",
+    "completed": "Дистрибуција успешно завршена"
+  },
+  "group": {
+    "created": "Група успешно направљена",
+    "updated": "Група ажурирана",
+    "deleted": "Група обрисана",
+    "joined": "Придружили сте се групи",
+    "left": "Напустили сте групу",
+    "member_removed": "Члан уклоњен из групе",
+    "member_promoted": "{{member_name}} је сада администратор групе",
+    "invite_token_regenerated": "Позивни линк генерисан",
+    "joining_toggled": "Подешавања придруживања групи ажурирана"
+  },
+  "notification": {
+    "marked_read": "Обавештење означено као прочитано",
+    "all_marked_read": "Сва обавештења означена као прочитана",
+    "deleted": "Обавештење обрисано"
+  },
+  "reassignment": {
+    "request_created": "Захтев за пренос лидерства послат",
+    "request_accepted": "Лидерство успешно пренето",
+    "request_declined": "Пренос лидерства одбијен",
+    "request_cancelled": "Захтев за пренос лидерства отказан"
+  },
+  "product": {
+    "created": "Производ направљен",
+    "updated": "Производ ажуриран",
+    "deleted": "Производ '{{source_name}}' успешно обрисан",
+    "verified": "Производ верификован",
+    "unverified": "Производ неверификован",
+    "merged": "Производи успешно спојени"
+  },
+  "store": {
+    "created": "Продавница направљена",
+    "updated": "Продавница ажурирана",
+    "deleted": "Продавница '{{source_name}}' успешно обрисана",
+    "verified": "Продавница верификована",
+    "unverified": "Продавница неверификована",
+    "merged": "Продавнице успешно спојене"
+  },
+  "user": {
+    "deleted": "Корисник успешно обрисан"
+  },
+  "admin": {
+    "user_admin_status_updated": "Административни статус корисника ажуриран",
+    "user_verified": "Корисник верификован",
+    "user_unverified": "Корисник неверификован",
+    "products_merged": "Производи спојени: '{{source_name}}' → '{{target_name}}'",
+    "stores_merged": "Продавнице спојене: '{{source_name}}' → '{{target_name}}'"
+  }
+}

@@ -1,1 +1,61 @@
-{}
+{
+  "app": {
+    "name": "Bulq",
+    "tagline": "Организујте групне набавке заједно"
+  },
+  "buttons": {
+    "save": "Сачувај",
+    "cancel": "Откажи",
+    "delete": "Обриши",
+    "edit": "Измени",
+    "create": "Направи",
+    "submit": "Пошаљи",
+    "confirm": "Потврди",
+    "close": "Затвори",
+    "yes": "Да",
+    "no": "Не"
+  },
+  "actions": {
+    "save": "Сачувај",
+    "saving": "Чување...",
+    "cancel": "Откажи",
+    "delete": "Обриши",
+    "edit": "Измени",
+    "create": "Направи",
+    "submit": "Пошаљи",
+    "confirm": "Потврди",
+    "close": "Затвори",
+    "back": "Назад",
+    "retry": "Покушај поново"
+  },
+  "navigation": {
+    "backToGroup": "Назад на групу",
+    "dashboard": "Контролна табла"
+  },
+  "labels": {
+    "unknown": "Непознато",
+    "none": "Ништа"
+  },
+  "states": {
+    "loading": "Учитавање..."
+  },
+  "errors": {
+    "error": "Грешка",
+    "generic": "Дошло је до грешке"
+  },
+  "validation": {
+    "required": "Ово поље је обавезно",
+    "invalid_email": "Неисправна имејл адреса",
+    "invalid_format": "Неисправан формат",
+    "too_short": "Прекратко",
+    "too_long": "Предугачко",
+    "min_length": "Минимум {{count}} карактера",
+    "max_length": "Максимум {{count}} карактера"
+  },
+  "previous": "Претходна",
+  "next": "Следећа",
+  "showing": "Приказивање",
+  "loading": "Учитавање...",
+  "saveChanges": "Сачувај промене",
+  "justNow": "управо сада"
+}
