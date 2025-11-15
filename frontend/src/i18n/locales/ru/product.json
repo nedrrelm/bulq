@@ -1,0 +1,65 @@
+{
+  "fields": {
+    "name": "Название товара",
+    "namePlaceholder": "например, Молоко, Хлеб, Яйца...",
+    "brand": "Бренд",
+    "brandPlaceholder": "Необязательно",
+    "unit": "Единица",
+    "unitPlaceholder": "например, кг, л, шт...",
+    "store": "Магазин",
+    "storeSelectPlaceholder": "Выберите магазин (необязательно)",
+    "price": "Цена",
+    "pricePlaceholder": "0.00",
+    "minimumQuantity": "Минимальное количество",
+    "minimumQuantityPlaceholder": "Необязательно"
+  },
+  "create": {
+    "title": "Создать новый товар"
+  },
+  "actions": {
+    "create": "Создать товар",
+    "creating": "Создание...",
+    "createNew": "Создать новый товар",
+    "addNew": "Добавить товар"
+  },
+  "validation": {
+    "nameRequired": "Название товара обязательно",
+    "nameInvalid": "Недопустимое название товара",
+    "nameInvalidCharacters": "Недопустимые символы в названии товара",
+    "priceInvalid": "Недопустимая цена",
+    "similarFound": "Найдены похожие товары",
+    "alreadyExists": "Товар '{{name}}' уже существует",
+    "atStores": "в {{stores}}",
+    "noStoreWarning": "Вы не выбрали магазин. Вы уверены, что хотите продолжить?",
+    "noPriceWarning": "Вы выбрали магазин, но не добавили цену. Вы уверены, что хотите продолжить?"
+  },
+  "errors": {
+    "loadFailed": "Не удалось загрузить товары",
+    "reloadFailed": "Не удалось перезагрузить товары",
+    "createFailed": "Не удалось создать товар",
+    "notFound": "Товар не найден"
+  },
+  "states": {
+    "loading": "Загрузка товаров..."
+  },
+  "addToRun": {
+    "title": "Добавить товар в закупку",
+    "description": "Найдите товар или создайте новый",
+    "searchPlaceholder": "Поиск товаров...",
+    "noMatch": "Нет товаров, соответствующих '{{term}}'",
+    "allProductsHaveBids": "Все доступные товары уже имеют заявки в этой закупке",
+    "keyboardHint": "Используйте стрелки ↑↓ для навигации, Enter для выбора"
+  },
+  "priceHistory": {
+    "title": "История цен",
+    "noData": "Нет данных об истории цен",
+    "noHistory": "Нет истории цен для этого магазина",
+    "currentPrice": "Текущая",
+    "lowest": "Минимальная",
+    "average": "Средняя",
+    "highest": "Максимальная"
+  },
+  "emptyStates": {
+    "noStoreInfo": "Пока нет информации о магазине для этого товара"
+  }
+}

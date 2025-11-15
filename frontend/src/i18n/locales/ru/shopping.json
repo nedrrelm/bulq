@@ -1,0 +1,57 @@
+{
+  "navigation": {
+    "backToRun": "Вернуться к закупке"
+  },
+  "labels": {
+    "shoppingMode": "Режим покупок",
+    "total": "Всего",
+    "toBuy": "К покупке ({{count}})",
+    "toBuy_one": "К покупке ({{count}} позиция)",
+    "toBuy_other": "К покупке ({{count}} позиций)",
+    "purchased": "Куплено ({{count}})",
+    "purchased_one": "Куплено ({{count}} позиция)",
+    "purchased_other": "Куплено ({{count}} позиций)",
+    "pricesSeen": "Цены видели",
+    "today": "сегодня",
+    "yesterday": "вчера",
+    "on": "",
+    "unknownDate": "неизвестная дата",
+    "requested": "Запрошено",
+    "alreadyPurchased": "Уже куплено"
+  },
+  "actions": {
+    "completeShopping": "Завершить покупки",
+    "addPrice": "Добавить цену",
+    "updatePrice": "Обновить цену",
+    "markPurchased": "Отметить как купленное",
+    "buyMore": "Купить больше",
+    "confirmPurchase": "Подтвердить покупку",
+    "addPurchase": "Добавить покупку"
+  },
+  "fields": {
+    "price": "Цена (RSD)",
+    "minimumQuantity": "Минимальное количество",
+    "minimumQuantityPlaceholder": "например, 2",
+    "notes": "Заметки",
+    "notesPlaceholder": "например, по акции, другой бренд...",
+    "quantityPurchased": "Купленное количество",
+    "pricePerUnit": "Цена за единицу (RSD)",
+    "totalPrice": "Общая цена (RSD)",
+    "additionalQuantity": "Дополнительное количество"
+  },
+  "messages": {
+    "loadingShoppingList": "Загрузка списка покупок..."
+  },
+  "prompts": {
+    "unpurchasedItems": "У вас ещё {{count}} некупленных позиций. Вы уверены, что хотите завершить покупки?",
+    "unpurchasedItems_one": "У вас ещё 1 некупленная позиция. Вы уверены, что хотите завершить покупки?",
+    "unpurchasedItems_other": "У вас ещё {{count}} некупленных позиций. Вы уверены, что хотите завершить покупки?"
+  },
+  "errors": {
+    "invalidPrice": "Недопустимая цена",
+    "invalidQuantity": "Недопустимое количество",
+    "invalidTotal": "Недопустимая сумма",
+    "quantityGreaterThanZero": "Количество должно быть больше нуля",
+    "minimumQuantityRange": "Минимальное количество должно быть от 1 до 9999"
+  }
+}

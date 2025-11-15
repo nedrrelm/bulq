@@ -1,1 +1,147 @@
-{}
+{
+  "auth": {
+    "required": "Требуется аутентификация",
+    "invalid_credentials": "Неверное имя пользователя или пароль",
+    "session_expired": "Ваша сессия истекла. Пожалуйста, войдите снова."
+  },
+  "registration": {
+    "disabled": "Регистрация в настоящее время отключена",
+    "username_taken": "Имя пользователя уже занято",
+    "email_taken": "Email уже зарегистрирован",
+    "password_too_short": "Пароль должен содержать не менее {{min_length}} символов",
+    "password_too_weak": "Пароль не соответствует требованиям безопасности"
+  },
+  "password": {
+    "mismatch": "Пароли не совпадают",
+    "incorrect": "Текущий пароль неверен",
+    "same_as_old": "Новый пароль должен отличаться от текущего"
+  },
+  "permissions": {
+    "insufficient": "У вас нет разрешения на выполнение этого действия",
+    "not_group_member": "Вы не являетесь участником этой группы",
+    "not_group_admin": "Вы не являетесь администратором группы",
+    "not_run_participant": "Вы не являетесь участником этой закупки",
+    "not_run_leader": "Только лидер закупки может выполнить это действие",
+    "not_run_leader_or_helper": "Только лидер закупки или помощники могут выполнить это действие",
+    "not_system_admin": "Требуются права администратора"
+  },
+  "not_found": {
+    "user": "Пользователь не найден",
+    "group": "Группа не найдена",
+    "run": "Закупка не найдена",
+    "store": "Магазин не найден",
+    "product": "Товар не найден",
+    "bid": "Заявка не найдена",
+    "participation": "Запись об участии не найдена",
+    "shopping_list_item": "Элемент списка покупок не найден",
+    "notification": "Уведомление не найдено",
+    "reassignment_request": "Запрос на передачу не найден",
+    "product_availability": "Доступность товара не найдена"
+  },
+  "run_state": {
+    "invalid_transition": "Невозможно перейти из {{current_state}} в {{target_state}}",
+    "not_in_planning": "Закупка должна быть в состоянии планирования",
+    "not_in_active": "Закупка должна быть в активном состоянии",
+    "not_in_confirmed": "Закупка должна быть в подтверждённом состоянии",
+    "not_in_shopping": "Закупка должна быть в состоянии покупок",
+    "not_in_adjusting": "Закупка должна быть в состоянии корректировки",
+    "not_in_distributing": "Закупка должна быть в состоянии раздачи",
+    "already_cancelled": "Закупка была отменена",
+    "already_completed": "Закупка уже завершена",
+    "cannot_cancel_completed": "Невозможно отменить завершённую закупку"
+  },
+  "run_actions": {
+    "cannot_join_adjusting": "Невозможно присоединиться к закупке на этапе корректировки",
+    "cannot_modify_cancelled": "Невозможно изменить отменённую закупку",
+    "cannot_modify_completed": "Невозможно изменить завершённую закупку",
+    "max_products_exceeded": "Превышено максимальное количество товаров ({{max_products}})",
+    "export_invalid_state": "Невозможно экспортировать закупку в текущем состоянии"
+  },
+  "bid": {
+    "quantity_negative": "Количество заявки не может быть отрицательным",
+    "quantity_exceeds_purchased": "Количество заявки не может превышать купленное количество ({{purchased_quantity}})",
+    "quantity_below_distributed": "Невозможно уменьшить заявку ниже распределённого количества ({{distributed_quantity}})",
+    "product_not_in_shopping_list": "Товара нет в списке покупок",
+    "cannot_bid_new_product_adjusting": "Невозможно добавить новые товары на этапе корректировки",
+    "cannot_retract_adjusting": "Невозможно отозвать заявки на этапе корректировки"
+  },
+  "shopping": {
+    "item_already_purchased": "Товар уже отмечен как купленный",
+    "item_not_purchased": "Товар ещё не был куплен",
+    "cannot_add_more_unpurchased": "Невозможно добавить больше к некупленному товару"
+  },
+  "distribution": {
+    "total_exceeds_purchased": "Общая раздача ({{total_distributed}}) превышает купленное количество ({{purchased_quantity}})",
+    "bid_already_picked_up": "Заявка уже получена",
+    "bid_not_picked_up": "Заявка ещё не получена",
+    "cannot_complete_unpurchased": "Невозможно завершить раздачу с {{unpurchased_count}} некупленными товарами"
+  },
+  "group": {
+    "joining_disabled": "Эта группа не принимает новых участников",
+    "already_member": "Вы уже являетесь участником этой группы",
+    "not_member": "Вы не являетесь участником этой группы",
+    "max_groups_exceeded": "Вы достигли максимального количества групп ({{max_groups}})",
+    "max_members_exceeded": "Группа достигла максимальной вместимости ({{max_members}} участников)",
+    "cannot_remove_admin": "Невозможно удалить администраторов группы",
+    "cannot_remove_self_admin": "Невозможно удалить собственный статус администратора",
+    "last_admin_cannot_leave": "Последний администратор не может покинуть группу",
+    "already_admin": "Пользователь уже является администратором группы",
+    "invite_token_regeneration_failed": "Не удалось создать новый токен приглашения",
+    "join_failed": "Не удалось присоединиться к группе",
+    "member_removal_failed": "Не удалось удалить участника",
+    "member_promotion_failed": "Не удалось повысить участника",
+    "joining_setting_update_failed": "Не удалось обновить настройки присоединения"
+  },
+  "reassignment": {
+    "not_current_leader": "Только текущий лидер закупки может передать лидерство",
+    "target_not_participant": "Целевой пользователь не является участником этой закупки",
+    "cannot_transfer_to_self": "Невозможно передать лидерство самому себе",
+    "request_already_exists": "Уже существует ожидающий запрос на передачу",
+    "request_already_resolved": "Этот запрос на передачу уже был разрешён",
+    "not_target_user": "Только целевой пользователь может ответить на этот запрос",
+    "invalid_action": "Недопустимое действие для этого запроса на передачу",
+    "invalid_run_state": "Невозможно передать лидерство в текущем состоянии закупки"
+  },
+  "product": {
+    "name_empty": "Название товара не может быть пустым",
+    "price_negative": "Цена товара не может быть отрицательной",
+    "price_zero": "Цена товара не может быть нулевой",
+    "merge_same_product": "Невозможно объединить товар с самим собой",
+    "has_active_bids": "Невозможно удалить товар с {{bid_count}} активными заявками"
+  },
+  "store": {
+    "name_empty": "Название магазина не может быть пустым",
+    "merge_same_store": "Невозможно объединить магазин с самим собой",
+    "has_active_runs": "Невозможно удалить магазин с {{run_count}} активными закупками"
+  },
+  "admin": {
+    "cannot_delete_own_account": "Невозможно удалить собственный аккаунт",
+    "cannot_delete_admin_user": "Невозможно удалить аккаунты администраторов",
+    "cannot_remove_own_admin_status": "Невозможно удалить собственный статус администратора"
+  },
+  "notification": {
+    "mark_read_failed": "Не удалось отметить уведомление как прочитанное",
+    "not_owner": "Вы не владеете этим уведомлением"
+  },
+  "validation": {
+    "invalid_id_format": "Недопустимый формат ID",
+    "invalid_uuid_format": "Недопустимый формат UUID для {{field}}",
+    "invalid_date_format": "Недопустимый формат даты",
+    "invalid_request_format": "Недопустимый формат запроса"
+  },
+  "helper": {
+    "cannot_assign_leader": "Лидер не может быть назначен помощником",
+    "not_group_member": "Помощник должен быть участником группы"
+  },
+  "config": {
+    "database_session_required": "Требуется сессия базы данных",
+    "invalid_repo_mode": "Недопустимый режим репозитория: {{repo_mode}}",
+    "configuration_error": "Ошибка конфигурации"
+  },
+  "generic": {
+    "operation_failed": "Операция не выполнена",
+    "resource_not_found": "Ресурс не найден",
+    "validation_failed": "Проверка не пройдена",
+    "unknown_error": "Произошла непредвиденная ошибка"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "title": "Профиль",
+  "sections": {
+    "statistics": "Статистика",
+    "accountSettings": "Настройки аккаунта"
+  },
+  "stats": {
+    "totalQuantityBought": "Всего куплено товаров",
+    "totalMoneySpent": "Всего потрачено денег",
+    "runsParticipated": "Участие в закупках",
+    "runsHelped": "Помощь в закупках",
+    "runsLed": "Проведённых закупок",
+    "groups": "Группы"
+  },
+  "fields": {
+    "name": "Имя",
+    "username": "Имя пользователя",
+    "password": "Пароль",
+    "currentPassword": "Текущий пароль",
+    "newPassword": "Новый пароль",
+    "confirmPassword": "Подтвердите пароль",
+    "language": "Язык",
+    "darkMode": "Тёмная тема"
+  },
+  "descriptions": {
+    "chooseLanguage": "Выберите предпочитаемый язык",
+    "toggleDarkMode": "Переключить тёмное оформление",
+    "changeName": "Обновить ваше отображаемое имя",
+    "changeUsername": "Обновить ваше имя пользователя",
+    "changePassword": "Обновить ваш пароль"
+  },
+  "actions": {
+    "changeName": "Изменить имя",
+    "changeUsername": "Изменить имя пользователя",
+    "changePassword": "Изменить пароль"
+  },
+  "messages": {
+    "loadingStats": "Загрузка статистики...",
+    "nameChanged": "Имя успешно изменено!",
+    "usernameChanged": "Имя пользователя успешно изменено!",
+    "passwordChanged": "Пароль успешно изменён!"
+  },
+  "errors": {
+    "failedToLoadStats": "Не удалось загрузить статистику"
+  },
+  "validation": {
+    "nameRequired": "Имя обязательно",
+    "usernameMinLength": "Имя пользователя должно содержать не менее 3 символов",
+    "usernameInvalidChars": "Имя пользователя может содержать только буквы, цифры, подчёркивания и дефисы",
+    "passwordMinLength": "Пароль должен содержать не менее 6 символов",
+    "passwordMismatch": "Пароли не совпадают"
+  },
+  "changeName": {
+    "title": "Изменить имя",
+    "changing": "Изменение..."
+  },
+  "changeUsername": {
+    "title": "Изменить имя пользователя",
+    "hint": "3-50 символов, только буквы, цифры, _ и -",
+    "changing": "Изменение..."
+  },
+  "changePassword": {
+    "title": "Изменить пароль",
+    "changing": "Изменение..."
+  }
+}

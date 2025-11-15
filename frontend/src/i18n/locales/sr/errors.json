@@ -1,1 +1,147 @@
-{}
+{
+  "auth": {
+    "required": "Потребна је аутентификација",
+    "invalid_credentials": "Неисправно корисничко име или лозинка",
+    "session_expired": "Ваша сесија је истекла. Молимо пријавите се поново."
+  },
+  "registration": {
+    "disabled": "Регистрација је тренутно онемогућена",
+    "username_taken": "Корисничко име је већ заузето",
+    "email_taken": "Имејл адреса је већ регистрована",
+    "password_too_short": "Лозинка мора имати најмање {{min_length}} карактера",
+    "password_too_weak": "Лозинка не испуњава безбедносне захтеве"
+  },
+  "password": {
+    "mismatch": "Лозинке се не подударају",
+    "incorrect": "Тренутна лозинка је неисправна",
+    "same_as_old": "Нова лозинка мора бити различита од тренутне лозинке"
+  },
+  "permissions": {
+    "insufficient": "Немате дозволу да извршите ову акцију",
+    "not_group_member": "Нисте члан ове групе",
+    "not_group_admin": "Нисте администратор групе",
+    "not_run_participant": "Нисте учесник ове набавке",
+    "not_run_leader": "Само вођа набавке може извршити ову акцију",
+    "not_run_leader_or_helper": "Само вођа набавке или помоћници могу извршити ову акцију",
+    "not_system_admin": "Потребне су административне привилегије"
+  },
+  "not_found": {
+    "user": "Корисник није пронађен",
+    "group": "Група није пронађена",
+    "run": "Набавка није пронађена",
+    "store": "Продавница није пронађена",
+    "product": "Производ није пронађен",
+    "bid": "Понуда није пронађена",
+    "participation": "Запис о учешћу није пронађен",
+    "shopping_list_item": "Ставка листе за куповину није пронађена",
+    "notification": "Обавештење није пронађено",
+    "reassignment_request": "Захтев за промену вође није пронађен",
+    "product_availability": "Доступност производа није пронађена"
+  },
+  "run_state": {
+    "invalid_transition": "Није могућ прелазак из {{current_state}} у {{target_state}}",
+    "not_in_planning": "Набавка мора бити у стању планирања",
+    "not_in_active": "Набавка мора бити у активном стању",
+    "not_in_confirmed": "Набавка мора бити у потврђеном стању",
+    "not_in_shopping": "Набавка мора бити у стању куповине",
+    "not_in_adjusting": "Набавка мора бити у стању прилагођавања",
+    "not_in_distributing": "Набавка мора бити у стању дистрибуције",
+    "already_cancelled": "Набавка је отказана",
+    "already_completed": "Набавка је већ завршена",
+    "cannot_cancel_completed": "Није могуће отказати завршену набавку"
+  },
+  "run_actions": {
+    "cannot_join_adjusting": "Није могуће придружити се набавци током фазе прилагођавања",
+    "cannot_modify_cancelled": "Није могуће изменити отказану набавку",
+    "cannot_modify_completed": "Није могуће изменити завршену набавку",
+    "max_products_exceeded": "Премашен је максималан број производа ({{max_products}})",
+    "export_invalid_state": "Није могуће извести набавку у тренутном стању"
+  },
+  "bid": {
+    "quantity_negative": "Количина понуде не може бити негативна",
+    "quantity_exceeds_purchased": "Количина понуде не може премашити купљену количину ({{purchased_quantity}})",
+    "quantity_below_distributed": "Није могуће смањити понуду испод дистрибуиране количине ({{distributed_quantity}})",
+    "product_not_in_shopping_list": "Производ није на листи за куповину",
+    "cannot_bid_new_product_adjusting": "Није могуће додати нове производе током фазе прилагођавања",
+    "cannot_retract_adjusting": "Није могуће повући понуде током фазе прилагођавања"
+  },
+  "shopping": {
+    "item_already_purchased": "Ставка је већ означена као купљена",
+    "item_not_purchased": "Ставка још није купљена",
+    "cannot_add_more_unpurchased": "Није могуће додати више некупљеној ставци"
+  },
+  "distribution": {
+    "total_exceeds_purchased": "Укупна дистрибуција ({{total_distributed}}) премашује купљену количину ({{purchased_quantity}})",
+    "bid_already_picked_up": "Понуда је већ преузета",
+    "bid_not_picked_up": "Понуда још није преузета",
+    "cannot_complete_unpurchased": "Није могуће завршити дистрибуцију са {{unpurchased_count}} некупљених ставки"
+  },
+  "group": {
+    "joining_disabled": "Ова група не прихвата нове чланове",
+    "already_member": "Већ сте члан ове групе",
+    "not_member": "Нисте члан ове групе",
+    "max_groups_exceeded": "Достигли сте максималан број група ({{max_groups}})",
+    "max_members_exceeded": "Група је достигла максималан капацитет ({{max_members}} чланова)",
+    "cannot_remove_admin": "Није могуће уклонити администраторе групе",
+    "cannot_remove_self_admin": "Није могуће уклонити сопствени административни статус",
+    "last_admin_cannot_leave": "Последњи администратор не може напустити групу",
+    "already_admin": "Корисник је већ администратор групе",
+    "invite_token_regeneration_failed": "Генерисање новог позивног линка није успело",
+    "join_failed": "Придруживање групи није успело",
+    "member_removal_failed": "Уклањање члана није успело",
+    "member_promotion_failed": "Унапређење члана није успело",
+    "joining_setting_update_failed": "Ажурирање подешавања придруживања није успело"
+  },
+  "reassignment": {
+    "not_current_leader": "Само тренутни вођа набавке може преносити лидерство",
+    "target_not_participant": "Циљни корисник није учесник ове набавке",
+    "cannot_transfer_to_self": "Не можете пренети лидерство на себе",
+    "request_already_exists": "Захтев за промену вође на чекању већ постоји",
+    "request_already_resolved": "Овај захтев за промену вође је већ решен",
+    "not_target_user": "Само циљни корисник може одговорити на овај захтев",
+    "invalid_action": "Неисправна акција за овај захтев за промену вође",
+    "invalid_run_state": "Није могуће преносити лидерство у тренутном стању набавке"
+  },
+  "product": {
+    "name_empty": "Назив производа не може бити празан",
+    "price_negative": "Цена производа не може бити негативна",
+    "price_zero": "Цена производа не може бити нула",
+    "merge_same_product": "Није могуће спојити производ са самим собом",
+    "has_active_bids": "Није могуће обрисати производ са {{bid_count}} активних понуда"
+  },
+  "store": {
+    "name_empty": "Назив продавнице не може бити празан",
+    "merge_same_store": "Није могуће спојити продавницу са самом собом",
+    "has_active_runs": "Није могуће обрисати продавницу са {{run_count}} активних набавки"
+  },
+  "admin": {
+    "cannot_delete_own_account": "Не можете обрисати сопствени налог",
+    "cannot_delete_admin_user": "Није могуће обрисати администраторске налоге",
+    "cannot_remove_own_admin_status": "Не можете уклонити сопствени административни статус"
+  },
+  "notification": {
+    "mark_read_failed": "Означавање обавештења као прочитаног није успело",
+    "not_owner": "Не поседујете ово обавештење"
+  },
+  "validation": {
+    "invalid_id_format": "Неисправан формат ИД-а",
+    "invalid_uuid_format": "Неисправан UUID формат за {{field}}",
+    "invalid_date_format": "Неисправан формат датума",
+    "invalid_request_format": "Неисправан формат захтева"
+  },
+  "helper": {
+    "cannot_assign_leader": "Вођа не може бити додељен као помоћник",
+    "not_group_member": "Помоћник мора бити члан групе"
+  },
+  "config": {
+    "database_session_required": "Потребна је сесија базе података",
+    "invalid_repo_mode": "Неисправан режим репозиторијума: {{repo_mode}}",
+    "configuration_error": "Грешка у конфигурацији"
+  },
+  "generic": {
+    "operation_failed": "Операција није успела",
+    "resource_not_found": "Ресурс није пронађен",
+    "validation_failed": "Валидација није успела",
+    "unknown_error": "Дошло је до неочекиване грешке"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "title": "Профил",
+  "sections": {
+    "statistics": "Статистика",
+    "accountSettings": "Подешавања налога"
+  },
+  "stats": {
+    "totalQuantityBought": "Укупно купљених ставки",
+    "totalMoneySpent": "Укупно потрошеног новца",
+    "runsParticipated": "Учешће у набавкама",
+    "runsHelped": "Помогнуте набавке",
+    "runsLed": "Вођене набавке",
+    "groups": "Групе"
+  },
+  "fields": {
+    "name": "Име",
+    "username": "Корисничко име",
+    "password": "Лозинка",
+    "currentPassword": "Тренутна лозинка",
+    "newPassword": "Нова лозинка",
+    "confirmPassword": "Потврдите лозинку",
+    "language": "Језик",
+    "darkMode": "Тамни режим"
+  },
+  "descriptions": {
+    "chooseLanguage": "Изаберите жељени језик",
+    "toggleDarkMode": "Укључи/искључи тамни режим",
+    "changeName": "Ажурирајте своје име",
+    "changeUsername": "Ажурирајте своје корисничко име",
+    "changePassword": "Ажурирајте своју лозинку"
+  },
+  "actions": {
+    "changeName": "Промени име",
+    "changeUsername": "Промени корисничко име",
+    "changePassword": "Промени лозинку"
+  },
+  "messages": {
+    "loadingStats": "Учитавање статистике...",
+    "nameChanged": "Име успешно промењено!",
+    "usernameChanged": "Корисничко име успешно промењено!",
+    "passwordChanged": "Лозинка успешно промењена!"
+  },
+  "errors": {
+    "failedToLoadStats": "Учитавање статистике није успело"
+  },
+  "validation": {
+    "nameRequired": "Име је обавезно",
+    "usernameMinLength": "Корисничко име мора имати најмање 3 карактера",
+    "usernameInvalidChars": "Корисничко име може садржати само слова, бројеве, доње црте и цртице",
+    "passwordMinLength": "Лозинка мора имати најмање 6 карактера",
+    "passwordMismatch": "Лозинке се не подударају"
+  },
+  "changeName": {
+    "title": "Промени име",
+    "changing": "Мењање..."
+  },
+  "changeUsername": {
+    "title": "Промени корисничко име",
+    "hint": "3-50 карактера, само слова, бројеви, _ и -",
+    "changing": "Мењање..."
+  },
+  "changePassword": {
+    "title": "Промени лозинку",
+    "changing": "Мењање..."
+  }
+}

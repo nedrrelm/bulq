@@ -1,0 +1,25 @@
+{
+  "title": "Обавештења",
+  "markAllAsRead": "Означи све као прочитано",
+  "noNotifications": "Нема обавештења",
+  "newNotification": "Ново обавештење",
+  "runStateChanged": "{{store_name}} {{state_message}}",
+  "changedState": "променило стање",
+  "changedToState": "промењено у {{state}}",
+  "groupedStateChanges": "{{count}} промена стања за {{store_name}}",
+  "groupedStateChanges_one": "1 промена стања за {{store_name}}",
+  "groupedStateChanges_other": "{{count}} промена стања за {{store_name}}",
+  "leadershipRequest": "{{from_user_name}} жели да пренесе лидерство {{store_name}} на вас",
+  "leadershipAccepted": "{{new_leader_name}} је прихватио лидерство {{store_name}}",
+  "leadershipDeclined": "{{declined_by_name}} је одбио лидерство {{store_name}}",
+  "states": {
+    "planning": "је у планирању",
+    "active": "је активна",
+    "confirmed": "је потврђена и спремна",
+    "shopping": "куповина је започета",
+    "adjusting": "захтева прилагођавања",
+    "distributing": "је спремна за дистрибуцију",
+    "completed": "је завршена",
+    "cancelled": "је отказана"
+  }
+}
