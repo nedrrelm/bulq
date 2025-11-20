@@ -35,24 +35,28 @@ The application has been migrated from email-based authentication to username-on
 
 ### 1. Preparation
 ```bash
-# Backup the database
-pg_dump -U bulq_user -d bulq_db > backup_before_username_migration_$(date +%Y%m%d_%H%M%S).sql
+# Backup the database (from inside the database container)
+docker compose exec db pg_dump -U bulq bulq > backup_before_username_migration_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ### 2. Stop the Application
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### 3. Run the Migration
 ```bash
-psql -U bulq_user -d bulq_db -f backend/migrations/002_remove_email_add_username.sql
+# Start only the database container
+docker compose up -d db
+
+# Run the migration script inside the database container
+docker compose exec -T db psql -U bulq -d bulq < backend/migrations/002_remove_email_add_username.sql
 ```
 
 ### 4. Verify Migration
 ```bash
 # Check that the users table has been updated correctly
-psql -U bulq_user -d bulq_db -c "\d users"
+docker compose exec db psql -U bulq -d bulq -c "\d users"
 
 # Should show:
 # - username column as "character varying NOT NULL"
@@ -66,8 +70,8 @@ psql -U bulq_user -d bulq_db -c "\d users"
 git pull origin master
 
 # Rebuild and start containers
-docker-compose build
-docker-compose up -d
+docker compose build
+docker compose up -d
 ```
 
 ### 6. Verify Application
@@ -81,17 +85,23 @@ If something goes wrong, you can rollback:
 
 ```bash
 # Stop the application
-docker-compose down
+docker compose down
 
-# Restore from backup
-psql -U bulq_user -d bulq_db < backup_before_username_migration_TIMESTAMP.sql
+# Start only the database container
+docker compose up -d db
+
+# Restore from backup (inside the database container)
+docker compose exec -T db psql -U bulq -d bulq < backup_before_username_migration_TIMESTAMP.sql
+
+# Stop the database
+docker compose down
 
 # Checkout previous version
 git checkout <previous-commit-hash>
 
 # Rebuild and restart
-docker-compose build
-docker-compose up -d
+docker compose build
+docker compose up -d
 ```
 
 ## Testing
@@ -115,6 +125,6 @@ After deployment, test the following:
 ## Support
 
 If you encounter issues:
-1. Check application logs: `docker-compose logs backend`
-2. Check database state: `psql -U bulq_user -d bulq_db -c "SELECT id, name, username FROM users LIMIT 5;"`
+1. Check application logs: `docker compose logs backend`
+2. Check database state: `docker compose exec db psql -U bulq -d bulq -c "SELECT id, name, username FROM users LIMIT 5;"`
 3. Restore from backup if needed (see Rollback Procedure above)

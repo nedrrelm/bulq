@@ -125,6 +125,7 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -
     # Don't expose internal database errors to clients
     error_response = ErrorResponse(
         error='DatabaseError',
+        code='DATABASE_ERROR',
         message='A database error occurred while processing your request',
         details={'error_type': exc.__class__.__name__},
         path=request.url.path,
@@ -161,6 +162,7 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
     # Don't expose internal errors to clients in production
     error_response = ErrorResponse(
         error='InternalServerError',
+        code='INTERNAL_SERVER_ERROR',
         message='An unexpected error occurred while processing your request',
         details={'error_type': exc.__class__.__name__},
         path=request.url.path,
