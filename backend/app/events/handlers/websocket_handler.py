@@ -48,9 +48,9 @@ class WebSocketEventHandler:
                         'product_id': str(event.product_id),
                         'user_id': str(event.user_id),
                         'user_name': event.user_name,
-                        'quantity': event.quantity,
+                        'quantity': float(event.quantity),
                         'interested_only': event.interested_only,
-                        'new_total': event.new_total,
+                        'new_total': float(event.new_total),
                     },
                 },
             )
@@ -83,7 +83,7 @@ class WebSocketEventHandler:
                     'data': {
                         'product_id': str(event.product_id),
                         'user_id': str(event.user_id),
-                        'new_total': event.new_total,
+                        'new_total': float(event.new_total),
                     },
                 },
             )
