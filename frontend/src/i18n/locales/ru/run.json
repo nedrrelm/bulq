@@ -40,7 +40,10 @@
     "accept": "Принять",
     "decline": "Отклонить",
     "markPickedUp": "Отметить как полученное",
-    "markAllPickedUp": "Отметить всё полученным"
+    "markAllPickedUp": "Отметить всё полученным",
+    "downloadState": "Скачать данные",
+    "downloading": "Скачивание...",
+    "downloadStateTooltip": "Скачать данные о закупке в формате JSON"
   },
   "labels": {
     "runInformation": "Информация о закупке",

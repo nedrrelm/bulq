@@ -40,7 +40,10 @@
     "accept": "Accept",
     "decline": "Decline",
     "markPickedUp": "Mark as Picked Up",
-    "markAllPickedUp": "Mark All Picked Up"
+    "markAllPickedUp": "Mark All Picked Up",
+    "downloadState": "Download State",
+    "downloading": "Downloading...",
+    "downloadStateTooltip": "Download run data as JSON"
   },
   "labels": {
     "runInformation": "Run Information",

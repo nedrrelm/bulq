@@ -32,7 +32,9 @@
   "actions": {
     "changeName": "Изменить имя",
     "changeUsername": "Изменить имя пользователя",
-    "changePassword": "Изменить пароль"
+    "changePassword": "Изменить пароль",
+    "adminPanel": "Панель администратора",
+    "logout": "Выйти"
   },
   "messages": {
     "loadingStats": "Загрузка статистики...",
