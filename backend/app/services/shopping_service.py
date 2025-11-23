@@ -605,7 +605,7 @@ class ShoppingService(BaseService):
                 state=RunState.COMPLETED,
             )
 
-        has_insufficient = False
+        needs_adjustment = False
         for shopping_item in shopping_items:
             if not shopping_item.is_purchased:
                 continue
@@ -614,13 +614,13 @@ class ShoppingService(BaseService):
             if not shopping_item.purchased_quantity or shopping_item.purchased_quantity == 0:
                 continue
 
-            # Check if purchased quantity is less than requested
-            if shopping_item.purchased_quantity < shopping_item.requested_quantity:
-                has_insufficient = True
+            # Check if purchased quantity differs from requested (either shortage or surplus)
+            if shopping_item.purchased_quantity != shopping_item.requested_quantity:
+                needs_adjustment = True
                 break
 
-        # If we have insufficient quantities, transition to adjusting state
-        if has_insufficient:
+        # If we have quantity mismatches (shortage or surplus), transition to adjusting state
+        if needs_adjustment:
             # Wrap state change and notifications in transaction
             with transaction(self.db, 'transition to adjusting state'):
                 old_state = run.state
