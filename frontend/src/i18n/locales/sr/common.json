@@ -52,6 +52,15 @@
     "min_length": "Минимум {{count}} карактера",
     "max_length": "Максимум {{count}} карактера"
   },
+  "search": {
+    "placeholder": "Претражи производе, продавнице, групе...",
+    "noResults": "Нема резултата",
+    "categories": {
+      "products": "Производи",
+      "stores": "Продавнице",
+      "groups": "Групе"
+    }
+  },
   "previous": "Претходна",
   "next": "Следећа",
   "showing": "Приказивање",

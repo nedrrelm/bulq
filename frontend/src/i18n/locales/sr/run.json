@@ -40,7 +40,10 @@
     "accept": "Прихвати",
     "decline": "Одбиј",
     "markPickedUp": "Означи као преузето",
-    "markAllPickedUp": "Означи све као преузето"
+    "markAllPickedUp": "Означи све као преузето",
+    "downloadState": "Преузми податке",
+    "downloading": "Преузимање...",
+    "downloadStateTooltip": "Преузми податке о набавци у JSON формату"
   },
   "labels": {
     "runInformation": "Информације о набавци",

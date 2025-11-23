@@ -52,6 +52,15 @@
     "min_length": "Minimum {{count}} characters",
     "max_length": "Maximum {{count}} characters"
   },
+  "search": {
+    "placeholder": "Search products, stores, groups...",
+    "noResults": "No results found",
+    "categories": {
+      "products": "Products",
+      "stores": "Stores",
+      "groups": "Groups"
+    }
+  },
   "previous": "Previous",
   "next": "Next",
   "showing": "Showing",

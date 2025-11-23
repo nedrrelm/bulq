@@ -32,7 +32,9 @@
   "actions": {
     "changeName": "Промени име",
     "changeUsername": "Промени корисничко име",
-    "changePassword": "Промени лозинку"
+    "changePassword": "Промени лозинку",
+    "adminPanel": "Админ панел",
+    "logout": "Одјави се"
   },
   "messages": {
     "loadingStats": "Учитавање статистике...",

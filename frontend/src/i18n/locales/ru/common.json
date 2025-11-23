@@ -52,6 +52,15 @@
     "min_length": "Минимум {{count}} символов",
     "max_length": "Максимум {{count}} символов"
   },
+  "search": {
+    "placeholder": "Поиск товаров, магазинов, групп...",
+    "noResults": "Результаты не найдены",
+    "categories": {
+      "products": "Товары",
+      "stores": "Магазины",
+      "groups": "Группы"
+    }
+  },
   "previous": "Предыдущая",
   "next": "Следующая",
   "showing": "Показано",

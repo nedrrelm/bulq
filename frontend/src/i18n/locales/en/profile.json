@@ -32,7 +32,9 @@
   "actions": {
     "changeName": "Change Name",
     "changeUsername": "Change Username",
-    "changePassword": "Change Password"
+    "changePassword": "Change Password",
+    "adminPanel": "Admin Panel",
+    "logout": "Logout"
   },
   "messages": {
     "loadingStats": "Loading statistics...",

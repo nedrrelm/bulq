@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import './styles/App.css'
 import './styles/dark-mode.css'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -153,6 +154,7 @@ function ProfilePageWrapper() {
 
 // Shared layout component with header
 function AppLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation(['common', 'profile'])
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
@@ -235,7 +237,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="header-search">
           <input
             type="text"
-            placeholder="Search products, stores, groups..."
+            placeholder={t('common:search.placeholder')}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="form-input"
@@ -244,7 +246,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="search-dropdown">
               {(searchResults?.products?.length ?? 0) > 0 && (
                 <>
-                  <div className="search-category-label">Products</div>
+                  <div className="search-category-label">{t('common:search.categories.products')}</div>
                   {searchResults!.products!.map((product: { id: string; name: string; brand: string | null; stores: { store_name: string; price: number | null }[] }) => (
                     <div
                       key={`product-${product.id}`}
@@ -274,7 +276,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               {(searchResults?.stores?.length ?? 0) > 0 && (
                 <>
                   {(searchResults?.products?.length ?? 0) > 0 && <div className="search-divider" />}
-                  <div className="search-category-label">Stores</div>
+                  <div className="search-category-label">{t('common:search.categories.stores')}</div>
                   {searchResults!.stores!.map((store: { id: string; name: string; address: string | null }) => (
                     <div
                       key={`store-${store.id}`}
@@ -298,7 +300,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                   {((searchResults?.products?.length ?? 0) > 0 || (searchResults?.stores?.length ?? 0) > 0) && (
                     <div className="search-divider" />
                   )}
-                  <div className="search-category-label">Groups</div>
+                  <div className="search-category-label">{t('common:search.categories.groups')}</div>
                   {searchResults!.groups!.map((group: { id: string; name: string; member_count: number }) => (
                     <div
                       key={`group-${group.id}`}
@@ -320,7 +322,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           )}
           {searchQuery.trim().length >= 2 && !searching && !hasResults && (
             <div className="search-dropdown">
-              <div className="search-no-results">No results found</div>
+              <div className="search-no-results">{t('common:search.noResults')}</div>
             </div>
           )}
         </div>
@@ -346,11 +348,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="desktop-buttons">
             {user.is_admin && (
               <button onClick={() => navigate('/admin')} className="admin-button">
-                Admin
+                {t('profile:actions.adminPanel')}
               </button>
             )}
             <button onClick={logout} className="logout-button">
-              Logout
+              {t('profile:actions.logout')}
             </button>
           </div>
         </div>
@@ -364,7 +366,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="drawer-search">
               <input
                 type="text"
-                placeholder="Search products, stores, groups..."
+                placeholder={t('common:search.placeholder')}
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="form-input"
@@ -373,7 +375,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="search-dropdown">
                   {(searchResults?.products?.length ?? 0) > 0 && (
                     <>
-                      <div className="search-category-label">Products</div>
+                      <div className="search-category-label">{t('common:search.categories.products')}</div>
                       {searchResults!.products!.map((product: { id: string; name: string; brand: string | null; stores: { store_name: string; price: number | null }[] }) => (
                         <div
                           key={`product-${product.id}`}
@@ -404,7 +406,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                   {(searchResults?.stores?.length ?? 0) > 0 && (
                     <>
                       {(searchResults?.products?.length ?? 0) > 0 && <div className="search-divider" />}
-                      <div className="search-category-label">Stores</div>
+                      <div className="search-category-label">{t('common:search.categories.stores')}</div>
                       {searchResults!.stores!.map((store: { id: string; name: string; address: string | null }) => (
                         <div
                           key={`store-${store.id}`}
@@ -429,7 +431,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                       {((searchResults?.products?.length ?? 0) > 0 || (searchResults?.stores?.length ?? 0) > 0) && (
                         <div className="search-divider" />
                       )}
-                      <div className="search-category-label">Groups</div>
+                      <div className="search-category-label">{t('common:search.categories.groups')}</div>
                       {searchResults!.groups!.map((group: { id: string; name: string; member_count: number }) => (
                         <div
                           key={`group-${group.id}`}
@@ -452,7 +454,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               )}
               {searchQuery.trim().length >= 2 && !searching && !hasResults && (
                 <div className="search-dropdown">
-                  <div className="search-no-results">No results found</div>
+                  <div className="search-no-results">{t('common:search.noResults')}</div>
                 </div>
               )}
             </div>
@@ -461,21 +463,21 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => handleMenuItemClick(() => navigate('/profile'))}
               className="drawer-item"
             >
-              Profile
+              {t('profile:title')}
             </button>
             {user.is_admin && (
               <button
                 onClick={() => handleMenuItemClick(() => navigate('/admin'))}
                 className="drawer-item"
               >
-                Admin Panel
+                {t('profile:actions.adminPanel')}
               </button>
             )}
             <button
               onClick={() => handleMenuItemClick(logout)}
               className="drawer-item"
             >
-              Logout
+              {t('profile:actions.logout')}
             </button>
           </div>
         </>
