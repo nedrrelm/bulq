@@ -384,13 +384,9 @@ export default function RunPage() {
           }
         })
 
-        const totalProducts = filteredProducts.length
-        const remainingProducts = filteredProducts.filter(p => !p.is_picked_up).length
         return {
           ...user,
-          products: enrichedProducts,
-          totalProducts,
-          remainingProducts
+          products: enrichedProducts
         }
       })
       .filter((user) => user.products.length > 0)
@@ -740,10 +736,7 @@ export default function RunPage() {
                   onClick={() => toggleExpand(user.user_id)}
                 >
                   <div className="user-info">
-                    <span className="user-name">
-                      {user.user_name}
-                      <span className="product-count">{user.remainingProducts}/{user.totalProducts}</span>
-                    </span>
+                    <span className="user-name">{user.user_name}</span>
                     <span className="user-total">{user.total_cost} RSD</span>
                   </div>
                   <div className="user-actions">

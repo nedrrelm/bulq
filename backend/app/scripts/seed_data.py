@@ -234,6 +234,10 @@ def create_seed_data(repo):
     repo._create_bid(alice_adjusting_p.id, toilet_paper.id, 1, False)
     repo._create_bid(bob_adjusting_p.id, toilet_paper.id, 1, False)
 
+    # Coffee Beans - surplus without leader (requested 2, purchased 3 - only sold in 3-packs)
+    repo._create_bid(alice_adjusting_p.id, coffee_beans.id, 1, False)
+    repo._create_bid(bob_adjusting_p.id, coffee_beans.id, 1, False)
+
     # Shopping list items for adjusting run
     # Almond Butter - shortage (requested 4, purchased 3)
     shopping_item4 = repo._create_shopping_list_item(
@@ -261,6 +265,15 @@ def create_seed_data(repo):
     shopping_item_tp.purchased_price_per_unit = 22.99
     shopping_item_tp.purchased_quantity = 4
     shopping_item_tp.purchase_order = 3
+
+    # Coffee Beans - surplus without leader (requested 2, purchased 3 - only sold in 3-packs)
+    shopping_item_coffee = repo._create_shopping_list_item(
+        run_adjusting.id, coffee_beans.id, 2
+    )  # 1 + 1
+    shopping_item_coffee.is_purchased = True
+    shopping_item_coffee.purchased_price_per_unit = 14.99
+    shopping_item_coffee.purchased_quantity = 3
+    shopping_item_coffee.purchase_order = 4
 
     # Distributing run - items purchased, being distributed
     test_distributing_p = repo.get_participation(test_user.id, run_distributing.id)

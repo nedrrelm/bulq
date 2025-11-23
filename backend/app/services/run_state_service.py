@@ -609,3 +609,62 @@ class RunStateService(BaseService):
                     self.repo.update_bid_distributed_quantities(
                         bid.id, bid.quantity, shopping_item.purchased_price_per_unit
                     )
+
+                # If there's a surplus, assign it to the leader
+                if total_requested < shopping_item.purchased_quantity:
+                    surplus = shopping_item.purchased_quantity - total_requested
+                    # Find the leader's bid for this product
+                    run = self.repo.get_run_by_id(run_id)
+                    participations = self.repo.get_run_participations(run_id)
+                    leader_participation = next(
+                        (p for p in participations if p.is_leader), None
+                    )
+                    if leader_participation:
+                        leader_bid = next(
+                            (bid for bid in product_bids if bid.participation_id == leader_participation.id),
+                            None
+                        )
+                        if leader_bid:
+                            # Leader has a bid, add surplus to their bid quantity and allocation
+                            new_quantity = leader_bid.quantity + surplus
+                            # Update the bid quantity to reflect the surplus
+                            updated_bid = self.repo.create_or_update_bid(
+                                leader_participation.id,
+                                shopping_item.product_id,
+                                new_quantity,
+                                leader_bid.interested_only,
+                                leader_bid.comment
+                            )
+                            # Update distributed quantities
+                            self.repo.update_bid_distributed_quantities(
+                                updated_bid.id, new_quantity, shopping_item.purchased_price_per_unit
+                            )
+                            # Update the shopping list requested quantity to include the surplus
+                            self.repo.update_shopping_list_item_requested_quantity(
+                                shopping_item.id, shopping_item.purchased_quantity
+                            )
+                            logger.info(
+                                f'Assigned surplus to leader (existing bid): product={shopping_item.product_id}, surplus={surplus}, new_quantity={new_quantity}',
+                                extra={'run_id': str(run_id), 'leader_id': str(leader_participation.user_id)},
+                            )
+                        else:
+                            # Leader doesn't have a bid, create one with the surplus
+                            new_bid = self.repo.create_or_update_bid(
+                                leader_participation.id,
+                                shopping_item.product_id,
+                                surplus,
+                                False,  # not interested_only
+                                None    # no comment
+                            )
+                            # Set distributed quantities for the new bid
+                            self.repo.update_bid_distributed_quantities(
+                                new_bid.id, surplus, shopping_item.purchased_price_per_unit
+                            )
+                            # Update the shopping list requested quantity to include the surplus
+                            self.repo.update_shopping_list_item_requested_quantity(
+                                shopping_item.id, shopping_item.purchased_quantity
+                            )
+                            logger.info(
+                                f'Assigned surplus to leader (new bid): product={shopping_item.product_id}, surplus={surplus}',
+                                extra={'run_id': str(run_id), 'leader_id': str(leader_participation.user_id)},
+                            )
