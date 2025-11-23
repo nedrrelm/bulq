@@ -544,6 +544,66 @@ class AbstractRepository(ABC):
         raise NotImplementedError('Subclass must implement bulk_update_store_availabilities')
 
     @abstractmethod
+    def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
+        """Check if two users participate in any of the same runs. Returns list of overlapping run IDs."""
+        raise NotImplementedError('Subclass must implement check_overlapping_run_participations')
+
+    @abstractmethod
+    def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update all run participations from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_run_participations')
+
+    @abstractmethod
+    def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update group creator from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_group_creator')
+
+    @abstractmethod
+    def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product creator from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_product_creator')
+
+    @abstractmethod
+    def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product verifier from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_product_verifier')
+
+    @abstractmethod
+    def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update store creator from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_store_creator')
+
+    @abstractmethod
+    def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update store verifier from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_store_verifier')
+
+    @abstractmethod
+    def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product availability creator from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_product_availability_creator')
+
+    @abstractmethod
+    def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update notifications from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_notifications')
+
+    @abstractmethod
+    def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update reassignment requests from_user from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_reassignment_from_user')
+
+    @abstractmethod
+    def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update reassignment requests to_user from old user to new user. Returns count of updated records."""
+        raise NotImplementedError('Subclass must implement bulk_update_reassignment_to_user')
+
+    @abstractmethod
+    def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Transfer group admin status from old user to new user. Returns count of updated groups."""
+        raise NotImplementedError('Subclass must implement transfer_group_admin_status')
+
+    @abstractmethod
     def count_product_bids(self, product_id: UUID) -> int:
         """Count how many bids reference this product."""
         raise NotImplementedError('Subclass must implement count_product_bids')

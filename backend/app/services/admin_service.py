@@ -13,14 +13,17 @@ from app.api.schemas import (
 from app.core.error_codes import (
     CANNOT_DELETE_ADMIN_USER,
     CANNOT_DELETE_OWN_ACCOUNT,
+    CANNOT_MERGE_ADMIN_USER,
     CANNOT_MERGE_SAME_PRODUCT,
     CANNOT_MERGE_SAME_STORE,
+    CANNOT_MERGE_SAME_USER,
     CANNOT_REMOVE_OWN_ADMIN_STATUS,
     PRODUCT_HAS_ACTIVE_BIDS,
     PRODUCT_NOT_FOUND,
     STORE_HAS_ACTIVE_RUNS,
     STORE_NOT_FOUND,
     USER_NOT_FOUND,
+    USERS_HAVE_CONFLICTING_PARTICIPATIONS,
 )
 from app.core.exceptions import NotFoundError
 from app.core.models import User
@@ -36,6 +39,7 @@ from app.core.success_codes import (
     USER_DELETED,
     USER_UNVERIFIED,
     USER_VERIFIED,
+    USERS_MERGED,
 )
 
 from .base_service import BaseService
@@ -527,6 +531,108 @@ class AdminService(BaseService):
 
         return MergeResponse(
             code=STORES_MERGED,
+            source_id=str(source_id),
+            target_id=str(target_id),
+            affected_records=total_affected,
+            details={'source_name': source.name, 'target_name': target.name},
+        )
+
+    def merge_users(self, source_id: UUID, target_id: UUID, admin_user: User) -> dict[str, Any]:
+        """Merge one user into another.
+
+        All data from source will be moved to target (participations, groups, created/verified items, notifications).
+        Source user will be deleted.
+
+        Args:
+            source_id: ID of user to merge from (will be deleted)
+            target_id: ID of user to merge into (will be kept)
+            admin_user: Admin user performing the action
+
+        Returns:
+            MergeResponse with affected records count
+
+        Raises:
+            NotFoundError: If either user not found
+            BadRequestError: If trying to merge user into itself, or source is admin, or users have conflicting participations
+        """
+        from app.core.exceptions import BadRequestError
+
+        # Validate users exist
+        source = self.repo.get_user_by_id(source_id)
+        target = self.repo.get_user_by_id(target_id)
+
+        if not source:
+            raise NotFoundError(
+                code=USER_NOT_FOUND,
+                message='Source user not found',
+                user_id=str(source_id),
+            )
+        if not target:
+            raise NotFoundError(
+                code=USER_NOT_FOUND,
+                message='Target user not found',
+                user_id=str(target_id),
+            )
+        if source_id == target_id:
+            raise BadRequestError(
+                code=CANNOT_MERGE_SAME_USER,
+                message='Cannot merge user into itself',
+                user_id=str(source_id),
+            )
+
+        # Prevent merging admin users
+        if source.is_admin:
+            raise BadRequestError(
+                code=CANNOT_MERGE_ADMIN_USER,
+                message='Cannot merge admin users',
+                user_id=str(source_id),
+            )
+
+        # Check for conflicting run participations
+        overlapping_runs = self.repo.check_overlapping_run_participations(source_id, target_id)
+        if overlapping_runs:
+            raise BadRequestError(
+                code=USERS_HAVE_CONFLICTING_PARTICIPATIONS,
+                message=f'Users participate in {len(overlapping_runs)} common run(s). Cannot merge.',
+                overlapping_run_count=len(overlapping_runs),
+                source_user_id=str(source_id),
+                target_user_id=str(target_id),
+            )
+
+        # Move all references
+        participations_count = self.repo.bulk_update_run_participations(source_id, target_id)
+        groups_count = self.repo.bulk_update_group_creator(source_id, target_id)
+        products_created = self.repo.bulk_update_product_creator(source_id, target_id)
+        products_verified = self.repo.bulk_update_product_verifier(source_id, target_id)
+        stores_created = self.repo.bulk_update_store_creator(source_id, target_id)
+        stores_verified = self.repo.bulk_update_store_verifier(source_id, target_id)
+        availabilities_count = self.repo.bulk_update_product_availability_creator(source_id, target_id)
+        notifications_count = self.repo.bulk_update_notifications(source_id, target_id)
+        reassignments_from = self.repo.bulk_update_reassignment_from_user(source_id, target_id)
+        reassignments_to = self.repo.bulk_update_reassignment_to_user(source_id, target_id)
+        admin_status_count = self.repo.transfer_group_admin_status(source_id, target_id)
+
+        # Delete source user (group_membership will cascade delete)
+        self.repo.delete_user(source_id)
+
+        total_affected = (
+            participations_count
+            + groups_count
+            + products_created
+            + products_verified
+            + stores_created
+            + stores_verified
+            + availabilities_count
+            + notifications_count
+            + reassignments_from
+            + reassignments_to
+            + admin_status_count
+        )
+
+        from app.api.schemas import MergeResponse
+
+        return MergeResponse(
+            code=USERS_MERGED,
             source_id=str(source_id),
             target_id=str(target_id),
             affected_records=total_affected,

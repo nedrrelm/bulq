@@ -21,6 +21,11 @@ def create_seed_data(repo):
     test_user = repo.create_user('Test User', 'test', 'hashed_password')
     test_user.is_admin = True
 
+    # Additional users for testing merge functionality
+    david = repo.create_user('David Williams', 'david', 'hashed_password')
+    emily = repo.create_user('Emily Brown', 'emily', 'hashed_password')
+    frank = repo.create_user('Frank Miller', 'frank', 'hashed_password')
+
     # Create test groups
     friends_group = repo.create_group('Test Friends', alice.id)
     work_group = repo.create_group('Work Lunch', bob.id)
@@ -30,6 +35,9 @@ def create_seed_data(repo):
     repo.add_group_member(friends_group.id, bob)
     repo.add_group_member(friends_group.id, carol)
     repo.add_group_member(friends_group.id, test_user, is_group_admin=True)
+    # David is not in any group (for testing merge of non-member)
+    repo.add_group_member(friends_group.id, emily, is_group_admin=True)  # Group admin
+    repo.add_group_member(friends_group.id, frank)  # Regular member with run participation
 
     repo.add_group_member(work_group.id, bob, is_group_admin=True)
     repo.add_group_member(work_group.id, carol)
@@ -372,6 +380,12 @@ def create_seed_data(repo):
     )
     bob_completed_2_p.picked_up_at = datetime.now(UTC) - timedelta(days=29)
 
+    # Add Frank to this completed run (for testing user merge)
+    frank_completed_2_p = repo._create_participation(
+        frank.id, run_completed_2.id, is_leader=False, is_ready=True
+    )
+    frank_completed_2_p.picked_up_at = datetime.now(UTC) - timedelta(days=29)
+
     bid12 = repo._create_bid(test_completed_2_p.id, olive_oil.id, 1, False)
     bid12.distributed_quantity = 1
     bid12.distributed_price_per_unit = 23.99
@@ -379,6 +393,10 @@ def create_seed_data(repo):
     bid13 = repo._create_bid(bob_completed_2_p.id, paper_towels.id, 1, False)
     bid13.distributed_quantity = 1
     bid13.distributed_price_per_unit = 19.99
+
+    bid_frank = repo._create_bid(frank_completed_2_p.id, quinoa.id, 1, False)
+    bid_frank.distributed_quantity = 1
+    bid_frank.distributed_price_per_unit = 18.99
 
     shopping_item11 = repo._create_shopping_list_item(run_completed_2.id, olive_oil.id, 1)
     shopping_item11.is_purchased = True
@@ -391,6 +409,12 @@ def create_seed_data(repo):
     shopping_item12.purchased_price_per_unit = 19.99
     shopping_item12.purchased_quantity = 1
     shopping_item12.purchase_order = 2
+
+    shopping_item_quinoa = repo._create_shopping_list_item(run_completed_2.id, quinoa.id, 1)
+    shopping_item_quinoa.is_purchased = True
+    shopping_item_quinoa.purchased_price_per_unit = 18.99
+    shopping_item_quinoa.purchased_quantity = 1
+    shopping_item_quinoa.purchase_order = 3
 
     # run_completed_3 (45 days ago) - alice is leader
     alice_completed_3_p = repo.get_participation(alice.id, run_completed_3.id)

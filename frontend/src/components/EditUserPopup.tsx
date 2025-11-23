@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { adminApi, type AdminUser } from '../api/admin'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, sanitizeString } from '../utils/validation'
@@ -7,6 +8,7 @@ import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
 import { translateSuccess } from '../utils/translation'
+import { runKeys } from '../hooks/queries/useRuns'
 
 interface EditUserPopupProps {
   user: AdminUser
@@ -21,14 +23,16 @@ const MIN_USERNAME_LENGTH = 3
 
 export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopupProps) {
   const { t } = useTranslation(['admin', 'common'])
+  const queryClient = useQueryClient()
   const [userName, setUserName] = useState(user.name)
   const [username, setUsername] = useState(user.username)
   const [isAdmin, setIsAdmin] = useState(user.is_admin)
   const [verified, setVerified] = useState(user.verified)
+  const [mergeTargetId, setMergeTargetId] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
-  const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
+  const { confirmState, showConfirm, hideConfirm, handleConfirm} = useConfirm()
 
   useModalFocusTrap(modalRef, true, onClose)
 
@@ -100,6 +104,28 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
       onSuccess()
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to update user'))
+      setSubmitting(false)
+    }
+  }
+
+  const handleMerge = async () => {
+    if (!mergeTargetId.trim()) {
+      setError(t('admin:edit.user.errors.mergeTargetRequired'))
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      const response = await adminApi.mergeUsers(user.id, mergeTargetId.trim())
+      const successMsg = translateSuccess(response.code, response.details)
+      alert(`${successMsg}\n${t('admin:edit.affectedRecords')}: ${response.affected_records}`)
+
+      // Invalidate all run queries to refresh participant names
+      queryClient.invalidateQueries({ queryKey: runKeys.all })
+
+      onSuccess()
+    } catch (err) {
+      setError(getErrorMessage(err, t('admin:edit.user.errors.mergeFailed')))
       setSubmitting(false)
     }
   }
@@ -218,6 +244,42 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
             </button>
           </div>
         </form>
+
+        <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
+
+        {/* Merge Section */}
+        <div className="form-group">
+          <label htmlFor="merge-target" className="form-label">{t('admin:edit.user.mergeTitle')}</label>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+            {t('admin:edit.user.mergeDescription')}
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              id="merge-target"
+              type="text"
+              className="form-input"
+              value={mergeTargetId}
+              onChange={(e) => {
+                setMergeTargetId(e.target.value)
+                setError('')
+              }}
+              placeholder={t('admin:edit.user.mergePlaceholder')}
+              disabled={submitting}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => showConfirm(
+                t('admin:edit.user.mergeConfirm', { sourceName: user.name }),
+                handleMerge,
+                { danger: true }
+              )}
+              disabled={submitting || !mergeTargetId.trim()}
+            >
+              {t('admin:edit.user.mergeButton')}
+            </button>
+          </div>
+        </div>
 
         <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
 

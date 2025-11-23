@@ -62,6 +62,10 @@ export const adminApi = {
     return await api.put<AdminUser>(`/admin/users/${userId}`, data)
   },
 
+  async mergeUsers(sourceId: string, targetId: string): Promise<MergeResponse> {
+    return await api.post<MergeResponse>(`/admin/users/${sourceId}/merge/${targetId}`)
+  },
+
   async deleteUser(userId: string): Promise<DeleteResponse> {
     return await api.delete<DeleteResponse>(`/admin/users/${userId}`)
   },
