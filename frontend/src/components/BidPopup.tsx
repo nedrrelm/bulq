@@ -93,7 +93,14 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
           <div className="adjusting-mode-notice">
             <strong>{t('run:bid.adjustingModeWarning')}</strong>
             <p>
-              {t('run:bid.adjustingModeDescription')}
+              {(() => {
+                // Determine if this is a shortage (can only decrease) or surplus (can only increase)
+                const isIncrease = minAllowed !== undefined && maxAllowed !== undefined &&
+                                   currentQuantity !== undefined && minAllowed >= currentQuantity
+                return isIncrease
+                  ? t('run:bid.adjustingModeDescriptionIncrease')
+                  : t('run:bid.adjustingModeDescription')
+              })()}
               {minAllowed !== undefined && maxAllowed !== undefined && (
                 <> {t('run:bid.range', { min: minAllowed, max: maxAllowed })}</>
               )}

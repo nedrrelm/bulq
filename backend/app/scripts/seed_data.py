@@ -229,7 +229,13 @@ def create_seed_data(repo):
     repo._create_bid(test_adjusting_p.id, frozen_berries.id, 1, False)
     repo._create_bid(carol_adjusting_p.id, frozen_berries.id, 2, False)
 
+    # Toilet Paper - requested 3 but purchased 4 (only sold in 4-packs)
+    repo._create_bid(test_adjusting_p.id, toilet_paper.id, 1, False)
+    repo._create_bid(alice_adjusting_p.id, toilet_paper.id, 1, False)
+    repo._create_bid(bob_adjusting_p.id, toilet_paper.id, 1, False)
+
     # Shopping list items for adjusting run
+    # Almond Butter - shortage (requested 4, purchased 3)
     shopping_item4 = repo._create_shopping_list_item(
         run_adjusting.id, almond_butter.id, 4
     )  # 2 + 1 + 1
@@ -238,6 +244,7 @@ def create_seed_data(repo):
     shopping_item4.purchased_quantity = 3
     shopping_item4.purchase_order = 1
 
+    # Frozen Berries - shortage (requested 3, purchased 2)
     shopping_item5 = repo._create_shopping_list_item(
         run_adjusting.id, frozen_berries.id, 3
     )  # 1 + 2
@@ -245,6 +252,15 @@ def create_seed_data(repo):
     shopping_item5.purchased_price_per_unit = 12.99
     shopping_item5.purchased_quantity = 2
     shopping_item5.purchase_order = 2
+
+    # Toilet Paper - surplus (requested 3, purchased 4 - only sold in 4-packs)
+    shopping_item_tp = repo._create_shopping_list_item(
+        run_adjusting.id, toilet_paper.id, 3
+    )  # 1 + 1 + 1
+    shopping_item_tp.is_purchased = True
+    shopping_item_tp.purchased_price_per_unit = 22.99
+    shopping_item_tp.purchased_quantity = 4
+    shopping_item_tp.purchase_order = 3
 
     # Distributing run - items purchased, being distributed
     test_distributing_p = repo.get_participation(test_user.id, run_distributing.id)

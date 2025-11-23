@@ -28,7 +28,9 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
   const needsAdjustment = runState === 'adjusting' &&
                           product.purchased_quantity !== null &&
                           product.purchased_quantity > 0 &&
-                          product.total_quantity > product.purchased_quantity
+                          product.total_quantity !== product.purchased_quantity
+  const needsAdjustmentShortage = needsAdjustment && product.purchased_quantity < product.total_quantity
+  const needsAdjustmentSurplus = needsAdjustment && product.purchased_quantity > product.total_quantity
   const adjustmentOk = runState === 'adjusting' &&
                        product.purchased_quantity !== null &&
                        product.purchased_quantity > 0 &&
@@ -49,8 +51,20 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
   const notPurchasedFinal = isPostShopping &&
                             (product.purchased_quantity === null || product.purchased_quantity === 0)
 
-  const shortage = product.purchased_quantity !== null ? product.total_quantity - product.purchased_quantity : 0
-  const canRetract = !adjustmentOk && !(runState === 'adjusting' && product.current_user_bid && !product.current_user_bid.interested_only && product.current_user_bid.quantity > shortage)
+  // Calculate difference: positive = surplus, negative = shortage
+  const difference = product.purchased_quantity !== null ? product.purchased_quantity - product.total_quantity : 0
+  const shortage = difference < 0 ? Math.abs(difference) : 0
+  const surplus = difference > 0 ? difference : 0
+
+  // Retraction rules in adjusting mode:
+  // - If shortage: cannot retract (would worsen shortage)
+  // - If surplus: cannot retract at all (need to increase bids, not reduce)
+  const canRetract = !adjustmentOk && !(
+    runState === 'adjusting' &&
+    product.current_user_bid &&
+    !product.current_user_bid.interested_only &&
+    (shortage > 0 || surplus > 0)
+  )
 
   // Count comments
   const commentCount = product.user_bids.filter(bid => bid.comment && bid.comment.trim().length > 0).length
@@ -62,7 +76,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
   const showCommentsButton = canEditComments || commentCount > 0
 
   return (
-    <div className={`product-item ${needsAdjustment ? 'needs-adjustment' : adjustmentOk ? 'adjustment-ok' : notPurchasedAdjusting ? 'not-purchased-adjusting' : ''} ${fullyPurchased ? 'adjustment-ok' : partiallyPurchased ? 'needs-adjustment' : notPurchasedFinal ? 'not-purchased-adjusting' : ''}`}>
+    <div className={`product-item ${needsAdjustmentShortage ? 'needs-adjustment-shortage' : needsAdjustmentSurplus ? 'needs-adjustment-surplus' : adjustmentOk ? 'adjustment-ok' : notPurchasedAdjusting ? 'not-purchased-adjusting' : ''} ${fullyPurchased ? 'adjustment-ok' : partiallyPurchased ? 'needs-adjustment' : notPurchasedFinal ? 'not-purchased-adjusting' : ''}`}>
       <div className="product-header">
         <div className="product-title-row">
           <h4>{product.name}</h4>
@@ -83,11 +97,16 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
       {runState === 'adjusting' && (
         <div>
           {product.purchased_quantity !== null && product.purchased_quantity > 0 ? (
-            <div className={`adjustment-info ${needsAdjustment ? 'needs-adjustment' : 'adjustment-ok'}`}>
+            <div className={`adjustment-info ${needsAdjustmentShortage ? 'needs-adjustment-shortage' : needsAdjustmentSurplus ? 'needs-adjustment-surplus' : 'adjustment-ok'}`}>
               <strong>{t('run:product.purchased')}:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>{t('run:product.requested')}:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
-              {needsAdjustment && (
+              {needsAdjustmentShortage && (
                 <span className="adjustment-warning">
                   ⚠ {t('run:product.reduceBy', { amount: product.total_quantity - product.purchased_quantity, unit: product.unit || '' })}
+                </span>
+              )}
+              {needsAdjustmentSurplus && (
+                <span className="adjustment-warning surplus">
+                  ⚠ {t('run:product.increaseBy', { amount: product.purchased_quantity - product.total_quantity, unit: product.unit || '' })}
                 </span>
               )}
               {adjustmentOk && (

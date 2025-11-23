@@ -882,17 +882,31 @@ export default function RunPage() {
           const currentBid = selectedProduct.current_user_bid
           const hasPurchasedQuantity = selectedProduct.purchased_quantity !== null
 
-          const shortage = hasPurchasedQuantity && selectedProduct.purchased_quantity !== null
-            ? selectedProduct.total_quantity - selectedProduct.purchased_quantity
+          // Calculate difference: positive = surplus, negative = shortage
+          const difference = hasPurchasedQuantity && selectedProduct.purchased_quantity !== null
+            ? selectedProduct.purchased_quantity - selectedProduct.total_quantity
             : 0
 
-          const minAllowed = isAdjustingMode && currentBid && hasPurchasedQuantity
-            ? Math.max(0, currentBid.quantity - shortage)
-            : undefined
+          let minAllowed: number | undefined = undefined
+          let maxAllowed: number | undefined = undefined
 
-          const maxAllowed = isAdjustingMode && currentBid
-            ? currentBid.quantity
-            : undefined
+          if (isAdjustingMode && currentBid && hasPurchasedQuantity) {
+            if (difference < 0) {
+              // Shortage: can only decrease, but not below (currentBid - shortage)
+              const shortage = Math.abs(difference)
+              minAllowed = Math.max(0, currentBid.quantity - shortage)
+              maxAllowed = currentBid.quantity
+            } else if (difference > 0) {
+              // Surplus: can only increase, but not above (currentBid + surplus)
+              const surplus = difference
+              minAllowed = currentBid.quantity
+              maxAllowed = currentBid.quantity + surplus
+            } else {
+              // No difference, quantities match (shouldn't happen in adjusting mode)
+              minAllowed = currentBid.quantity
+              maxAllowed = currentBid.quantity
+            }
+          }
 
           return (
             <BidPopup

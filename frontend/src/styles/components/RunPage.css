@@ -754,9 +754,14 @@
 }
 
 /* Adjustment state styling */
-.product-item.needs-adjustment {
+.product-item.needs-adjustment-shortage {
   border-color: #f59e0b;
   background-color: #fffbeb;
+}
+
+.product-item.needs-adjustment-surplus {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
 }
 
 .product-item.adjustment-ok {
@@ -776,8 +781,12 @@
   font-size: 14px;
 }
 
-.adjustment-info.needs-adjustment {
+.adjustment-info.needs-adjustment-shortage {
   background-color: #fef3c7;
+}
+
+.adjustment-info.needs-adjustment-surplus {
+  background-color: #dbeafe;
 }
 
 .adjustment-info.adjustment-ok {
@@ -788,6 +797,10 @@
   color: #d97706;
   font-weight: bold;
   margin-left: 8px;
+}
+
+.adjustment-warning.surplus {
+  color: #2563eb;
 }
 
 .adjustment-ok-badge {
