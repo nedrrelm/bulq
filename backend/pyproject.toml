@@ -1,7 +1,12 @@
 [project]
-name = "backend"
+name = "bulq"
 version = "0.1.0"
-description = "Add your description here"
+description = "Bulk buying organization platform for friend groups"
+license = {text = "AGPL-3.0-or-later"}
+authors = [
+    {name = "nedrrelm"}
+]
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.117.1",

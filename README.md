@@ -1,4 +1,5 @@
 # Bulq 📦
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 > A platform for organizing group purchases to reduce costs through bulk buying
 
@@ -75,4 +76,19 @@ See [Development Notes](docs/development_notes.md) for:
 
 ## License
 
-_Coming soon - AGPL v3_
+This project is licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
+
+**Copyright (C) 2025 nedrrelm**
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+See the [LICENSE](LICENSE) file for the full license text.
+
+### What this means:
+
+- ✅ **You can use, modify, and distribute** this software freely
+- ✅ **You can run it as a service** (SaaS/hosted application)
+- ⚠️ **If you modify and deploy** it as a network service, you must make your source code available to users
+- ⚠️ **Derivative works** must also be licensed under AGPL-3.0
+
+For more information about the AGPL license, see https://www.gnu.org/licenses/agpl-3.0.html
