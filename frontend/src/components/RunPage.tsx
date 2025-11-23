@@ -352,14 +352,45 @@ export default function RunPage() {
 
   // Filter out users who have no purchased products
   const distributionUsers = useMemo(() => {
+    // First, calculate total distributed quantities for each product across all users
+    const productTotals = new Map<string, { total: number, remaining: number }>()
+
+    allUsers.forEach(user => {
+      user.products.forEach(product => {
+        if (product.distributed_quantity && product.distributed_quantity > 0) {
+          const existing = productTotals.get(product.product_id) || { total: 0, remaining: 0 }
+          existing.total += product.distributed_quantity
+          if (!product.is_picked_up) {
+            existing.remaining += product.distributed_quantity
+          }
+          productTotals.set(product.product_id, existing)
+        }
+      })
+    })
+
     const result = allUsers
       .map((user) => {
         const filteredProducts = user.products.filter(p => {
           return p.distributed_quantity && p.distributed_quantity > 0
         })
+
+        // Add remaining/total info to each product
+        const enrichedProducts = filteredProducts.map(p => {
+          const totals = productTotals.get(p.product_id)
+          return {
+            ...p,
+            remaining_total: totals?.remaining || 0,
+            distributed_total: totals?.total || 0
+          }
+        })
+
+        const totalProducts = filteredProducts.length
+        const remainingProducts = filteredProducts.filter(p => !p.is_picked_up).length
         return {
           ...user,
-          products: filteredProducts
+          products: enrichedProducts,
+          totalProducts,
+          remainingProducts
         }
       })
       .filter((user) => user.products.length > 0)
@@ -709,7 +740,10 @@ export default function RunPage() {
                   onClick={() => toggleExpand(user.user_id)}
                 >
                   <div className="user-info">
-                    <span className="user-name">{user.user_name}</span>
+                    <span className="user-name">
+                      {user.user_name}
+                      <span className="product-count">{user.remainingProducts}/{user.totalProducts}</span>
+                    </span>
                     <span className="user-total">{user.total_cost} RSD</span>
                   </div>
                   <div className="user-actions">
@@ -752,7 +786,7 @@ export default function RunPage() {
                           </div>
                           <div className="product-details">
                             <span>{t('run:labels.requested')}: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
-                            <span>{t('run:labels.allocated')}: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                            <span>{t('run:labels.allocated')}: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''} <span className="remaining-info">({product.remaining_total}/{product.distributed_total} {t('run:labels.left')})</span></span>
                             <span>@{product.price_per_unit} RSD</span>
                             <span className="product-subtotal">{product.subtotal} RSD</span>
                           </div>

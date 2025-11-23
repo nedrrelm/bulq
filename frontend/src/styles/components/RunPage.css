@@ -60,6 +60,18 @@
 .user-name {
   font-weight: 600;
   font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-name .product-count {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background-color: var(--color-background-secondary);
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
 }
 
 .user-total {
@@ -152,6 +164,12 @@
   gap: 1rem;
   font-size: 0.875rem;
   color: var(--color-gray-600);
+}
+
+.product-details .remaining-info {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 .product-subtotal {
