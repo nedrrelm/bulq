@@ -1136,6 +1136,155 @@ class DatabaseRepository(AbstractRepository):
         self.db.commit()
         return result
 
+    def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
+        """Check if two users participate in any of the same runs. Returns list of overlapping run IDs."""
+        user1_runs = (
+            self.db.query(RunParticipation.run_id)
+            .filter(RunParticipation.user_id == user1_id)
+            .subquery()
+        )
+        overlapping_runs = (
+            self.db.query(RunParticipation.run_id)
+            .filter(
+                RunParticipation.user_id == user2_id,
+                RunParticipation.run_id.in_(user1_runs)
+            )
+            .all()
+        )
+        return [run_id for (run_id,) in overlapping_runs]
+
+    def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update all run participations from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(RunParticipation)
+            .filter(RunParticipation.user_id == old_user_id)
+            .update({RunParticipation.user_id: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update group creator from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(Group)
+            .filter(Group.created_by == old_user_id)
+            .update({Group.created_by: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product creator from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(Product)
+            .filter(Product.created_by == old_user_id)
+            .update({Product.created_by: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product verifier from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(Product)
+            .filter(Product.verified_by == old_user_id)
+            .update({Product.verified_by: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update store creator from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(Store)
+            .filter(Store.created_by == old_user_id)
+            .update({Store.created_by: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update store verifier from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(Store)
+            .filter(Store.verified_by == old_user_id)
+            .update({Store.verified_by: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product availability creator from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(ProductAvailability)
+            .filter(ProductAvailability.created_by == old_user_id)
+            .update({ProductAvailability.created_by: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update notifications from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(Notification)
+            .filter(Notification.user_id == old_user_id)
+            .update({Notification.user_id: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update reassignment requests from_user from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(LeaderReassignmentRequest)
+            .filter(LeaderReassignmentRequest.from_user_id == old_user_id)
+            .update({LeaderReassignmentRequest.from_user_id: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update reassignment requests to_user from old user to new user. Returns count of updated records."""
+        result = (
+            self.db.query(LeaderReassignmentRequest)
+            .filter(LeaderReassignmentRequest.to_user_id == old_user_id)
+            .update({LeaderReassignmentRequest.to_user_id: new_user_id})
+        )
+        self.db.commit()
+        return result
+
+    def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Transfer group admin status from old user to new user. Returns count of updated groups."""
+        from app.core.models import group_membership
+
+        # Find all groups where old user is admin
+        old_user_admin_groups = (
+            self.db.query(group_membership.c.group_id)
+            .filter(
+                group_membership.c.user_id == old_user_id,
+                group_membership.c.is_group_admin == True
+            )
+            .all()
+        )
+
+        group_ids = [g[0] for g in old_user_admin_groups]
+
+        if not group_ids:
+            return 0
+
+        # Make new user admin in those groups (if they're already a member)
+        result = (
+            self.db.query(group_membership)
+            .filter(
+                group_membership.c.user_id == new_user_id,
+                group_membership.c.group_id.in_(group_ids)
+            )
+            .update({group_membership.c.is_group_admin: True}, synchronize_session=False)
+        )
+
+        self.db.commit()
+        return result
+
     def count_product_bids(self, product_id: UUID) -> int:
         """Count how many bids reference this product."""
         return self.db.query(ProductBid).filter(ProductBid.product_id == product_id).count()

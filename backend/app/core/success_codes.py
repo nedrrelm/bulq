@@ -153,6 +153,7 @@ USER_ADMIN_STATUS_UPDATED = 'USER_ADMIN_STATUS_UPDATED'
 USER_DELETED = 'USER_DELETED'
 USER_VERIFIED = 'USER_VERIFIED'
 USER_UNVERIFIED = 'USER_UNVERIFIED'
+USERS_MERGED = 'USERS_MERGED'
 
 
 # ============================================================================
@@ -250,5 +251,6 @@ SUCCESS_CODE_GROUPS = {
         USER_DELETED,
         USER_VERIFIED,
         USER_UNVERIFIED,
+        USERS_MERGED,
     ],
 }

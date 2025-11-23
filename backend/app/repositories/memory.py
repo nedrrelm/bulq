@@ -1100,6 +1100,116 @@ class MemoryRepository(AbstractRepository):
                 count += 1
         return count
 
+    def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
+        """Check if two users participate in any of the same runs. Returns list of overlapping run IDs."""
+        user1_runs = {p.run_id for p in self._participations.values() if p.user_id == user1_id}
+        user2_runs = {p.run_id for p in self._participations.values() if p.user_id == user2_id}
+        return list(user1_runs & user2_runs)
+
+    def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update all run participations from old user to new user. Returns count of updated records."""
+        count = 0
+        for participation in self._participations.values():
+            if participation.user_id == old_user_id:
+                participation.user_id = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update group creator from old user to new user. Returns count of updated records."""
+        count = 0
+        for group in self._groups.values():
+            if group.created_by == old_user_id:
+                group.created_by = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product creator from old user to new user. Returns count of updated records."""
+        count = 0
+        for product in self._products.values():
+            if product.created_by == old_user_id:
+                product.created_by = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product verifier from old user to new user. Returns count of updated records."""
+        count = 0
+        for product in self._products.values():
+            if product.verified_by == old_user_id:
+                product.verified_by = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update store creator from old user to new user. Returns count of updated records."""
+        count = 0
+        for store in self._stores.values():
+            if store.created_by == old_user_id:
+                store.created_by = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update store verifier from old user to new user. Returns count of updated records."""
+        count = 0
+        for store in self._stores.values():
+            if store.verified_by == old_user_id:
+                store.verified_by = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update product availability creator from old user to new user. Returns count of updated records."""
+        count = 0
+        for avail in self._product_availabilities.values():
+            if avail.created_by == old_user_id:
+                avail.created_by = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update notifications from old user to new user. Returns count of updated records."""
+        count = 0
+        for notification in self._notifications.values():
+            if notification.user_id == old_user_id:
+                notification.user_id = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update reassignment requests from_user from old user to new user. Returns count of updated records."""
+        count = 0
+        for request in self._reassignment_requests.values():
+            if request.from_user_id == old_user_id:
+                request.from_user_id = new_user_id
+                count += 1
+        return count
+
+    def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Update reassignment requests to_user from old user to new user. Returns count of updated records."""
+        count = 0
+        for request in self._reassignment_requests.values():
+            if request.to_user_id == old_user_id:
+                request.to_user_id = new_user_id
+                count += 1
+        return count
+
+    def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
+        """Transfer group admin status from old user to new user. Returns count of updated groups."""
+        count = 0
+        # Find groups where old user is admin
+        for group_id in list(self._group_memberships.keys()):
+            old_user_is_admin = self._group_admin_status.get((group_id, old_user_id), False)
+            if old_user_is_admin:
+                # Check if new user is a member of this group
+                if new_user_id in self._group_memberships.get(group_id, []):
+                    # Make new user admin in this group
+                    self._group_admin_status[(group_id, new_user_id)] = True
+                    count += 1
+        return count
+
     def count_product_bids(self, product_id: UUID) -> int:
         """Count how many bids reference this product."""
         return sum(1 for bid in self._product_bids.values() if bid.product_id == product_id)

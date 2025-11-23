@@ -118,6 +118,11 @@
       },
       "usernameHint": "3-50 characters, only letters, numbers, _ and -",
       "adminNote": "Administrators have full access to the admin panel",
+      "mergeTitle": "Merge Users",
+      "mergeDescription": "Merge this user with another user. All data (participations, groups, created items) will be transferred to the target user.",
+      "mergePlaceholder": "Enter target user ID",
+      "mergeButton": "Merge",
+      "mergeConfirm": "Are you sure you want to merge user '{{sourceName}}' with another user? This cannot be undone.",
       "deleteWarning": "Deleting this user will remove them from all groups and cancel their runs.",
       "deleteButton": "Delete User",
       "deleteConfirm": "Are you sure you want to delete user '{{name}}'? This cannot be undone.",
@@ -126,7 +131,9 @@
         "invalidName": "Invalid name",
         "usernameRequired": "Username is required",
         "invalidUsername": "Invalid username",
-        "usernameFormat": "Username can only contain letters, numbers, underscores, and hyphens"
+        "usernameFormat": "Username can only contain letters, numbers, underscores, and hyphens",
+        "mergeTargetRequired": "Please enter a target user ID",
+        "mergeFailed": "Failed to merge users"
       }
     }
   }

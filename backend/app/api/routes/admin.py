@@ -170,6 +170,18 @@ async def merge_stores(
     return service.merge_stores(UUID(source_id), UUID(target_id), admin_user)
 
 
+@router.post('/users/{source_id}/merge/{target_id}', response_model=MergeResponse)
+async def merge_users(
+    source_id: str,
+    target_id: str,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Merge one user into another. All data will be transferred."""
+    service = AdminService(db)
+    return service.merge_users(UUID(source_id), UUID(target_id), admin_user)
+
+
 # ==================== Delete Routes ====================
 
 
