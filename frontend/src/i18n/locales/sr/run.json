@@ -71,6 +71,7 @@
     "pickedUp": "Преузето",
     "requested": "Захтевано",
     "allocated": "Додељено",
+    "left": "преостало",
     "completing": "Завршавање...",
     "products": "Производи ({{count}})",
     "reassignmentRequestPending": "Захтев за промену вође на чекању",

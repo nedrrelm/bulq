@@ -71,6 +71,7 @@
     "pickedUp": "Получено",
     "requested": "Запрошено",
     "allocated": "Выделено",
+    "left": "осталось",
     "completing": "Завершение...",
     "products": "Товары ({{count}})",
     "reassignmentRequestPending": "Запрос на передачу лидерства ожидает ответа",

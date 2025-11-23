@@ -71,6 +71,7 @@
     "pickedUp": "Picked Up",
     "requested": "Requested",
     "allocated": "Allocated",
+    "left": "left",
     "completing": "Completing...",
     "products": "Products ({{count}})",
     "reassignmentRequestPending": "Reassignment request pending",
