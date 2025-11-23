@@ -734,7 +734,14 @@ export default function RunPage() {
                         </button>
                       )}
                     </div>
-                    {user.products.map(product => (
+                    {user.products
+                      .sort((a, b) => {
+                        // Sort unpicked items first
+                        if (!a.is_picked_up && b.is_picked_up) return -1
+                        if (a.is_picked_up && !b.is_picked_up) return 1
+                        return 0
+                      })
+                      .map(product => (
                       <div key={product.bid_id} className={`product-item ${product.is_picked_up ? 'picked-up' : ''}`}>
                         <div className="product-info">
                           <div className="product-name">
@@ -802,10 +809,14 @@ export default function RunPage() {
               .sort((a, b) => {
                 // In adjusting state, sort by adjustment status
                 if (run.state === 'adjusting') {
-                  const aNeedsAdjustment = a.purchased_quantity !== null && a.total_quantity > a.purchased_quantity
-                  const bNeedsAdjustment = b.purchased_quantity !== null && b.total_quantity > b.purchased_quantity
+                  const aNeedsAdjustment = a.purchased_quantity !== null &&
+                                          a.purchased_quantity > 0 &&
+                                          a.total_quantity !== a.purchased_quantity
+                  const bNeedsAdjustment = b.purchased_quantity !== null &&
+                                          b.purchased_quantity > 0 &&
+                                          b.total_quantity !== b.purchased_quantity
 
-                  // Products needing adjustment come first
+                  // Products needing adjustment (shortage or surplus) come first
                   if (aNeedsAdjustment && !bNeedsAdjustment) return -1
                   if (!aNeedsAdjustment && bNeedsAdjustment) return 1
                 }
