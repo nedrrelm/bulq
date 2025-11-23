@@ -488,6 +488,27 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </ErrorBoundary>
       </main>
+
+      {/* AGPL compliance footer */}
+      <footer style={{
+        marginTop: 'auto',
+        padding: '1rem',
+        textAlign: 'center',
+        fontSize: '0.875rem',
+        color: 'var(--color-text-secondary)',
+        borderTop: '1px solid var(--color-border)'
+      }}>
+        <a
+          href="https://github.com/nedrrelm/bulq"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--color-primary)' }}
+        >
+          {t('common:footer.sourceCode')}
+        </a>
+        {' • '}
+        <span>Licensed under AGPL-3.0</span>
+      </footer>
     </div>
   )
 }
