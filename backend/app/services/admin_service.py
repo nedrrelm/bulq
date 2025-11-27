@@ -46,7 +46,7 @@ from .base_service import BaseService
 
 
 class AdminService(BaseService):
-    """Service for admin operations."""
+    """Service for admin operations.""" 
 
     def get_users(
         self,

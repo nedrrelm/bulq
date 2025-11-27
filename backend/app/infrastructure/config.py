@@ -1,5 +1,5 @@
 """Application configuration."""
-
+# @Todo would be better to to move configuration to a .env.development and .env.production files.
 import os
 from typing import Literal
 

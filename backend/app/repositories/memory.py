@@ -1,4 +1,5 @@
 """Repository pattern with abstract base class and concrete implementations."""
+# @Todo it would be better to use real in memory db, like H2 for the testing purposes. By running different app in Dev profile 
 
 from datetime import UTC
 from decimal import Decimal

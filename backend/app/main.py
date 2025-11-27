@@ -69,10 +69,12 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-
+# @TODO i think it would be cool to use dependency-injector library like in this example:
+# https://github.com/jujumilk3/fastapi-clean-architecture/tree/main
 @app.on_event('startup')
 async def startup_event():
     """Create database tables, seed data, and setup event handlers on startup."""
+    # @Todo create tables using alembic in order to keep track of all db changes
     create_tables()
 
     # Register event handlers for domain events

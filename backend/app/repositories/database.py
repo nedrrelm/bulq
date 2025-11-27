@@ -1,5 +1,5 @@
 """Repository pattern with abstract base class and concrete implementations."""
-
+# @Todo split database.py into smaller files, like user.py, group.py, store.py, product.py, run.py, participation.py, shopping_list_item.py, product_availability.py, notification.py, reassignment_request.py, etc.
 from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4

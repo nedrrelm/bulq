@@ -31,7 +31,8 @@ engine = create_engine(
     pool_recycle=POOL_RECYCLE,  # Recycle connections after 1 hour
     pool_pre_ping=True,  # Verify connections before use
 )
-
+# @TODO sql Alchemy is not initialized in async mode. So uvcorn, fastAPI, etc. are not able to use it. 
+#  Async mode requires whole stack to be async.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
