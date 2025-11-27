@@ -1,5 +1,7 @@
 """Repository pattern with abstract base class and concrete implementations."""
-# @Todo it would be better to use real in memory db, like H2 for the testing purposes. By running different app in Dev profile 
+# @Todo it would be better to use real in memory db, 
+# like H2 for the testing purposes. 
+# Also if we are running app in Development profile, app could use H2 to speed up startup.
 
 from datetime import UTC
 from decimal import Decimal
