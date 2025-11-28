@@ -68,8 +68,7 @@ def receive_connect(dbapi_conn, connection_record):
 @event.listens_for(engine.sync_engine, 'checkout')
 def receive_checkout(dbapi_conn, connection_record, connection_proxy):
     """Log when a connection is checked out from the pool."""
- 
-
+    pool = engine.pool
     # Log statistics
     logger.debug(
         'Connection checked out from pool',
@@ -77,6 +76,8 @@ def receive_checkout(dbapi_conn, connection_record, connection_proxy):
     )
 
     # Warn if pool is running low
+    pool_size = pool.size() if hasattr(pool, 'size') else 0
+    checked_out = pool.checkedout() if hasattr(pool, 'checkedout') else 0
     if pool_size > 0 and checked_out >= pool_size * 0.8:  # 80% utilization
         logger.warning(
             'Database connection pool is running low',
@@ -84,6 +85,7 @@ def receive_checkout(dbapi_conn, connection_record, connection_proxy):
         )
 
     # Alert if pool is exhausted
+    overflow = pool.overflow() if hasattr(pool, 'overflow') else 0
     if overflow >= MAX_OVERFLOW:
         logger.error(
             'Database connection pool exhausted - using maximum overflow',
@@ -94,7 +96,6 @@ def receive_checkout(dbapi_conn, connection_record, connection_proxy):
 @event.listens_for(engine.sync_engine, 'checkin')
 def receive_checkin(dbapi_conn, connection_record):
     """Log when a connection is returned to the pool."""
-    pool = engine.pool
     logger.debug(
         'Connection returned to pool',
         extra=get_pool_status(),
