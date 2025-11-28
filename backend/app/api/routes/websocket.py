@@ -134,7 +134,7 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
         manager.disconnect(websocket, room_id)
         logger.debug('WebSocket disconnected', extra={'group_id': group_id, 'endpoint': 'group'})
     finally:
-        db.close()
+     await db.close()
 
 
 @router.websocket('/ws/runs/{run_id}')
@@ -236,7 +236,7 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
         manager.disconnect(websocket, room_id)
         logger.debug('WebSocket disconnected', extra={'run_id': str(run_id), 'endpoint': 'run'})
     finally:
-        db.close()
+       await db.close()
 
 
 @router.websocket('/ws/user')
@@ -318,4 +318,4 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
         manager.disconnect(websocket, room_id_disconnect)
         logger.debug('WebSocket disconnected', extra={'user_id': str(user_id), 'endpoint': 'user'})
     finally:
-        db.close()
+        await db.close()

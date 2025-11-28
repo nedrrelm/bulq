@@ -71,7 +71,7 @@ async def register(
     from app.infrastructure.runtime_settings import is_registration_allowed
 
     # Check if registration is allowed
-    if not is_registration_allowed(db):
+    if not await is_registration_allowed(db):
         logger.warning(
             'Registration attempt when registration is disabled',
             extra={'username': user_data.username},
@@ -179,9 +179,11 @@ async def logout(request: Request, response: Response) -> SuccessResponse:
     """Logout user."""
     session_token = request.cookies.get('session_token')
     if session_token:
+        session = get_session(session_token)
+        user_id=session['user_id'] if session and 'user_id' in session else None
         delete_session(session_token)
         logger.info(
-            'User logged out successfully', extra={'session_token_length': len(session_token)}
+            f'User {user_id} logged out successfully', extra={'session_token_length': len(session_token)}
         )
 
     response.delete_cookie(key='session_token')

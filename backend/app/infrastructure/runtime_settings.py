@@ -1,40 +1,36 @@
 """Runtime application settings stored in database."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import AppSettings
+from sqlalchemy import select, insert
 
 
-def get_setting(db: Session, key: str, default: str = None) -> str | None:
+async def get_setting(db: AsyncSession, key: str, default: str = None) -> str | None:
     """Get a runtime setting value from database."""
-    setting = db.query(AppSettings).filter(AppSettings.key == key).first()
+    setting = (await db.execute(select(AppSettings).filter(AppSettings.key == key))).scalar_one_or_none()
     return setting.value if setting else default
 
 
-def set_setting(db: Session, key: str, value: str) -> None:
+async def set_setting(db: AsyncSession, key: str, value: str) -> None:
     """Set a runtime setting value in database."""
-    setting = db.query(AppSettings).filter(AppSettings.key == key).first()
-    if setting:
-        setting.value = value
-    else:
-        setting = AppSettings(key=key, value=value)
-        db.add(setting)
-    db.commit()
+    result= await db.execute(insert(AppSettings).values(key=key, value=value).on_conflict_do_update(index_elements=[AppSettings.key], set_= {"key":key, "value":value}))
+    await db.commit()
 
 
-def is_registration_allowed(db: Session) -> bool:
+async def is_registration_allowed(db: AsyncSession) -> bool:
     """Check if user registration is allowed."""
-    value = get_setting(db, 'allow_registration', 'true')
+    value = await get_setting(db, 'allow_registration', 'true')
     return value.lower() == 'true'
 
 
-def set_registration_allowed(db: Session, allowed: bool) -> None:
+async def set_registration_allowed(db: AsyncSession, allowed: bool) -> None:
     """Enable or disable user registration."""
-    set_setting(db, 'allow_registration', 'true' if allowed else 'false')
+    await set_setting(db, 'allow_registration', 'true' if allowed else 'false')
 
 
-def initialize_default_settings(db: Session) -> None:
+async def initialize_default_settings(db: AsyncSession) -> None:
     """Initialize default settings if they don't exist."""
     # Only set if not already set
-    if get_setting(db, 'allow_registration') is None:
-        set_setting(db, 'allow_registration', 'true')  # Default to true
+    if await get_setting(db, 'allow_registration') is None:
+        await set_setting(db, 'allow_registration', 'true')  # Default to true

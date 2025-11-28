@@ -4,7 +4,8 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select,insert
 
 from app.core.models import (
     Group,
@@ -45,129 +46,129 @@ class DatabaseRepository(AbstractRepository):
     Use this repository when REPO_MODE is set to "database" in config.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
     # ==================== User Methods ====================
 
-    def get_user_by_id(self, user_id: UUID) -> User | None:
+    async def get_user_by_id(self, user_id: UUID) -> User | None:
         """Get user by ID."""
-        return self.db.query(User).filter(User.id == user_id).first()
+        return await self.db.execute(select(User).filter(User.id == user_id).first())
 
-    def get_user_by_username(self, username: str) -> User | None:
+    async def get_user_by_username(self, username: str) -> User | None:
         """Get user by username."""
-        return self.db.query(User).filter(User.username == username).first()
+        return await self.db.execute(select(User).filter(User.username == username).first())
 
-    def create_user(self, name: str, username: str, password_hash: str) -> User:
+    async def create_user(self, name: str, username: str, password_hash: str) -> User:
         """Create a new user."""
         user = User(name=name, username=username, password_hash=password_hash)
-        self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
+        self.db.execute(insert(User).values(user))
+        await self.db.commit()
+        await self.db.refresh(user)
         return user
 
-    def get_user_groups(self, user: User) -> list[Group]:
+    async def get_user_groups(self, user: User) -> list[Group]:
         """Get all groups that a user is a member of."""
-        return self.db.query(Group).join(Group.members).filter(User.id == user.id).all()
+        return await self.db.execute(select(Group).join(Group.members).filter(User.id == user.id).all())
 
-    def get_all_users(self) -> list[User]:
+    async def get_all_users(self) -> list[User]:
         """Get all users."""
-        return self.db.query(User).all()
+        return await self.db.execute(select(User).all())
 
     # ==================== Group Methods ====================
 
-    def get_group_by_id(self, group_id: UUID) -> Group | None:
+    async def get_group_by_id(self, group_id: UUID) -> Group | None:
         """Get group by ID."""
-        return self.db.query(Group).filter(Group.id == group_id).first()
+        return await self.db.execute(select(Group).filter(Group.id == group_id).first())
 
-    def get_group_by_invite_token(self, invite_token: str) -> Group | None:
+    async def get_group_by_invite_token(self, invite_token: str) -> Group | None:
         """Get group by invite token."""
-        return self.db.query(Group).filter(Group.invite_token == invite_token).first()
+        return await self.db.execute(select(Group).filter(Group.invite_token == invite_token).first())
 
-    def regenerate_group_invite_token(self, group_id: UUID) -> str | None:
+    async def regenerate_group_invite_token(self, group_id: UUID) -> str | None:
         """Regenerate invite token for a group."""
         from uuid import uuid4
 
-        group = self.db.query(Group).filter(Group.id == group_id).first()
+        group = await self.db.execute(select(Group).filter(Group.id == group_id).first())
         if group:
             new_token = str(uuid4())
             group.invite_token = new_token
-            self.db.commit()
+            await self.db.commit()
             return new_token
         return None
 
-    def create_group(self, name: str, created_by: UUID) -> Group:
+    async def create_group(self, name: str, created_by: UUID) -> Group:
         """Create a new group."""
         from uuid import uuid4
 
         group = Group(
             name=name, created_by=created_by, invite_token=str(uuid4()), is_joining_allowed=True
         )
-        self.db.add(group)
-        self.db.commit()
-        self.db.refresh(group)
+        await self.db.execute(insert(Group).values(group))
+        await self.db.commit()
+        await self.db.refresh(group)
         return group
 
-    def add_group_member(self, group_id: UUID, user: User, is_group_admin: bool = False) -> bool:
+    async def add_group_member(self, group_id: UUID, user: User, is_group_admin: bool = False) -> bool:
         """Add a user to a group."""
         from sqlalchemy import insert, select
 
         from app.core.models import group_membership
 
         # Check if already a member
-        existing = self.db.execute(
+        existing = await self.db.execute(
             select(group_membership).where(
                 group_membership.c.group_id == group_id, group_membership.c.user_id == user.id
             )
-        ).first()
+        ).scalar()
 
         if existing:
             return False
 
         # Insert into group_membership table
-        self.db.execute(
+        await self.db.execute(
             insert(group_membership).values(
                 group_id=group_id, user_id=user.id, is_group_admin=is_group_admin
             )
         )
-        self.db.commit()
+        await self.db.commit()
         return True
 
-    def remove_group_member(self, group_id: UUID, user_id: UUID) -> bool:
+    async def remove_group_member(self, group_id: UUID, user_id: UUID) -> bool:
         """Remove a user from a group."""
         from sqlalchemy import delete
 
         from app.core.models import group_membership
 
-        result = self.db.execute(
+        result = await self.db.execute(
             delete(group_membership).where(
                 group_membership.c.group_id == group_id, group_membership.c.user_id == user_id
             )
         )
-        self.db.commit()
+        await self.db.commit()
         return result.rowcount > 0
 
-    def is_user_group_admin(self, group_id: UUID, user_id: UUID) -> bool:
+    async def is_user_group_admin(self, group_id: UUID, user_id: UUID) -> bool:
         """Check if a user is an admin of a group."""
         from sqlalchemy import select
 
         from app.core.models import group_membership
 
-        result = self.db.execute(
+        result = await self.db.execute(
             select(group_membership.c.is_group_admin).where(
                 group_membership.c.group_id == group_id, group_membership.c.user_id == user_id
             )
-        ).first()
+        ).scalar()
 
         return result[0] if result else False
 
-    def get_group_members_with_admin_status(self, group_id: UUID) -> list[dict]:
+    async def get_group_members_with_admin_status(self, group_id: UUID) -> list[dict]:
         """Get all members of a group with their admin status."""
         from sqlalchemy import select
 
         from app.core.models import group_membership
 
-        results = self.db.execute(
+        results = await self.db.execute(
             select(User, group_membership.c.is_group_admin)
             .join(group_membership, User.id == group_membership.c.user_id)
             .where(group_membership.c.group_id == group_id)
@@ -183,70 +184,70 @@ class DatabaseRepository(AbstractRepository):
             for user, is_admin in results
         ]
 
-    def update_group_joining_allowed(
+    async def update_group_joining_allowed(
         self, group_id: UUID, is_joining_allowed: bool
     ) -> Group | None:
         """Update whether a group allows joining via invite link."""
-        group = self.db.query(Group).filter(Group.id == group_id).first()
+        group = await self.db.execute(select(Group).filter(Group.id == group_id).first())
         if group:
             group.is_joining_allowed = is_joining_allowed
-            self.db.commit()
-            self.db.refresh(group)
+            await self.db.commit()
+            await self.db.refresh(group)
             return group
         return None
 
-    def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
+    async def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
         """Set the admin status of a group member."""
         from sqlalchemy import update
 
         from app.core.models import group_membership
 
-        result = self.db.execute(
+        result = await self.db.execute(
             update(group_membership)
             .where(group_membership.c.group_id == group_id, group_membership.c.user_id == user_id)
             .values(is_group_admin=is_admin)
         )
-        self.db.commit()
+        await self.db.commit()
         return result.rowcount > 0
 
     # ==================== Store Methods ====================
 
-    def search_stores(self, query: str) -> list[Store]:
+    async def search_stores(self, query: str) -> list[Store]:
         """Search stores by name."""
-        return self.db.query(Store).filter(Store.name.ilike(f'%{query}%')).all()
+        return await self.db.execute(select(Store).filter(Store.name.ilike(f'%{query}%')).all())
 
-    def get_all_stores(self, limit: int = None, offset: int = 0) -> list[Store]:
+    async def get_all_stores(self, limit: int = None, offset: int = 0) -> list[Store]:
         """Get all stores (optionally paginated)."""
-        query = self.db.query(Store).order_by(Store.name)
+        query = await self.db.execute(select(Store).order_by(Store.name))
         if limit is not None:
             query = query.limit(limit).offset(offset)
-        return query.all()
+        return await query.all()
 
-    def create_store(self, name: str) -> Store:
+    async def create_store(self, name: str) -> Store:
         """Create a new store."""
         store = Store(name=name)
-        self.db.add(store)
-        self.db.commit()
-        self.db.refresh(store)
+        await self.db.execute(insert(Store).values(store))
+        await self.db.commit()
+        await self.db.refresh(store)
         return store
 
-    def get_store_by_id(self, store_id: UUID) -> Store | None:
+    async def get_store_by_id(self, store_id: UUID) -> Store | None:
         """Get store by ID."""
-        return self.db.query(Store).filter(Store.id == store_id).first()
+        return await self.db.execute(select(Store).filter(Store.id == store_id).first())
 
-    def get_products_by_store_from_availabilities(self, store_id: UUID) -> list[Product]:
+    async def get_products_by_store_from_availabilities(self, store_id: UUID) -> list[Product]:
         """Get all unique products that are available at a store."""
         from sqlalchemy import distinct
 
         product_ids = (
-            self.db.query(distinct(ProductAvailability.product_id))
+            await self.db.execute(select(distinct(ProductAvailability.product_id)).filter(ProductAvailability.store_id == store_id))
             .filter(ProductAvailability.store_id == store_id)
             .all()
-        )
+        ).all()
         product_ids = [pid[0] for pid in product_ids]
-        return self.db.query(Product).filter(Product.id.in_(product_ids)).all()
+        return await self.db.execute(select(Product).filter(Product.id.in_(product_ids)).all())
 
-    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> list[Run]:
+    async def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> list[Run]:
         """Get all active runs for a store across all user's groups."""
         from sqlalchemy import and_, select
 
@@ -263,7 +264,7 @@ class DatabaseRepository(AbstractRepository):
 
         # Get user's group IDs
         user_group_ids = (
-            self.db.execute(
+            await self.db.execute(
                 select(group_membership.c.group_id).where(group_membership.c.user_id == user_id)
             )
             .scalars()
@@ -271,34 +272,32 @@ class DatabaseRepository(AbstractRepository):
         )
 
         # Get runs for those groups that target this store and are active
-        return (
-            self.db.query(Run)
+        return await self.db.execute(select(Run)
             .filter(
                 and_(
                     Run.store_id == store_id,
                     Run.state.in_(active_states),
                     Run.group_id.in_(user_group_ids),
                 )
-            )
-            .all()
+            ).all()
         )
 
     # ==================== Run Methods ====================
 
-    def get_runs_by_group(self, group_id: UUID) -> list[Run]:
+    async def get_runs_by_group(self, group_id: UUID) -> list[Run]:
         """Get all runs for a group."""
-        return self.db.query(Run).filter(Run.group_id == group_id).all()
+        return await self.db.execute(select(Run).filter(Run.group_id == group_id).all())
 
-    def get_completed_cancelled_runs_by_group(
+    async def get_completed_cancelled_runs_by_group(
         self, group_id: UUID, limit: int = 10, offset: int = 0
     ) -> list[Run]:
         """Get completed and cancelled runs for a group (paginated)."""
         from sqlalchemy import case, desc
 
         # Query runs that are completed or cancelled
-        query = self.db.query(Run).filter(
+        query = await self.db.execute(select(Run).filter(
             Run.group_id == group_id, Run.state.in_([RunState.COMPLETED, RunState.CANCELLED])
-        )
+        ))
 
         # Order by the appropriate timestamp (completed_at or cancelled_at), most recent first
         query = query.order_by(
@@ -311,64 +310,64 @@ class DatabaseRepository(AbstractRepository):
             )
         )
 
-        return query.limit(limit).offset(offset).all()
+        return await query.limit(limit).offset(offset).all()
 
-    def get_run_by_id(self, run_id: UUID) -> Run | None:
+    async def get_run_by_id(self, run_id: UUID) -> Run | None:
         """Get run by ID."""
-        return self.db.query(Run).filter(Run.id == run_id).first()
+        return await self.db.execute(select(Run).filter(Run.id == run_id).first())
 
     # ==================== Product Methods ====================
 
-    def get_products_by_store(self, store_id: UUID) -> list[Product]:
+    async def get_products_by_store(self, store_id: UUID) -> list[Product]:
         """Get all products for a store (via product availabilities)."""
-        return self.get_products_by_store_from_availabilities(store_id)
+        return await self.get_products_by_store_from_availabilities(store_id)
 
-    def search_products(self, query: str) -> list[Product]:
+    async def search_products(self, query: str) -> list[Product]:
         """Search for products by name."""
-        return self.db.query(Product).filter(Product.name.ilike(f'%{query}%')).all()
+        return await self.db.execute(select(Product).filter(Product.name.ilike(f'%{query}%')).all())
 
-    def get_product_by_id(self, product_id: UUID) -> Product | None:
+    async def get_product_by_id(self, product_id: UUID) -> Product | None:
         """Get product by ID."""
-        return self.db.query(Product).filter(Product.id == product_id).first()
+        return await self.db.execute(select(Product).filter(Product.id == product_id).first())
 
-    def create_product(
+    async def create_product(
         self, name: str, brand: str | None = None, unit: str | None = None
     ) -> Product:
         """Create a new product (store-agnostic)."""
         product = Product(name=name, brand=brand, unit=unit)
-        self.db.add(product)
-        self.db.commit()
-        self.db.refresh(product)
+        await self.db.execute(insert(Product).values(product))
+        await self.db.commit()
+        await self.db.refresh(product)
         return product
 
-    def get_all_products(self) -> list[Product]:
+    async def get_all_products(self) -> list[Product]:
         """Get all products."""
-        return self.db.query(Product).all()
+        return await self.db.execute(select(Product).all())
 
     # ==================== Product Bid Methods ====================
 
-    def get_bids_by_run(self, run_id: UUID) -> list[ProductBid]:
+    async def get_bids_by_run(self, run_id: UUID) -> list[ProductBid]:
         """Get all bids for a run."""
         return (
-            self.db.query(ProductBid)
+            await self.db.execute(select(ProductBid).join(RunParticipation).filter(RunParticipation.run_id == run_id).all())
             .join(RunParticipation)
             .filter(RunParticipation.run_id == run_id)
             .all()
         )
 
-    def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
+    async def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
         """Get all bids for a run with participation and user data eagerly loaded."""
         from sqlalchemy.orm import joinedload
 
         return (
-            self.db.query(ProductBid)
+            await self.db.execute(select(ProductBid).join(RunParticipation).filter(RunParticipation.run_id == run_id).options(joinedload(ProductBid.participation).joinedload(RunParticipation.user)).all())
             .join(RunParticipation)
             .filter(RunParticipation.run_id == run_id)
             .options(joinedload(ProductBid.participation).joinedload(RunParticipation.user))
             .all()
         )
 
-    def create_or_update_bid(
+    async def create_or_update_bid(
         self,
         participation_id: UUID,
         product_id: UUID,
@@ -379,7 +378,7 @@ class DatabaseRepository(AbstractRepository):
         """Create or update a product bid."""
         # Check if bid already exists
         existing_bid = (
-            self.db.query(ProductBid)
+            await self.db.execute(select(ProductBid).filter(ProductBid.participation_id == participation_id, ProductBid.product_id == product_id).first())
             .filter(
                 ProductBid.participation_id == participation_id, ProductBid.product_id == product_id
             )
@@ -391,8 +390,8 @@ class DatabaseRepository(AbstractRepository):
             existing_bid.quantity = quantity
             existing_bid.interested_only = interested_only
             existing_bid.comment = comment
-            self.db.commit()
-            self.db.refresh(existing_bid)
+            await self.db.commit()
+            await self.db.refresh(existing_bid)
             return existing_bid
         else:
             # Create new bid
@@ -403,56 +402,56 @@ class DatabaseRepository(AbstractRepository):
                 interested_only=interested_only,
                 comment=comment,
             )
-            self.db.add(bid)
-            self.db.commit()
-            self.db.refresh(bid)
+            await self.db.execute(insert(ProductBid).values(bid))
+            await self.db.commit()
+            await self.db.refresh(bid)
             return bid
 
-    def delete_bid(self, participation_id: UUID, product_id: UUID) -> bool:
+    async def delete_bid(self, participation_id: UUID, product_id: UUID) -> bool:
         """Delete a product bid."""
         result = (
-            self.db.query(ProductBid)
+            await self.db.execute(delete(ProductBid).filter(ProductBid.participation_id == participation_id, ProductBid.product_id == product_id))
             .filter(
                 ProductBid.participation_id == participation_id, ProductBid.product_id == product_id
             )
             .delete()
         )
-        self.db.commit()
+        await self.db.commit()
         return result > 0
 
-    def get_bid(self, participation_id: UUID, product_id: UUID) -> ProductBid | None:
+    async def get_bid(self, participation_id: UUID, product_id: UUID) -> ProductBid | None:
         """Get a specific bid."""
         return (
-            self.db.query(ProductBid)
+            await self.db.execute(select(ProductBid).filter(ProductBid.participation_id == participation_id, ProductBid.product_id == product_id).first())
             .filter(
                 ProductBid.participation_id == participation_id, ProductBid.product_id == product_id
             )
             .first()
         )
 
-    def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
+    async def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
         """Get a bid by its ID."""
-        return self.db.query(ProductBid).filter(ProductBid.id == bid_id).first()
+        return await self.db.execute(select(ProductBid).filter(ProductBid.id == bid_id).first())
 
-    def get_bids_by_participation(self, participation_id: UUID) -> list[ProductBid]:
+    async def get_bids_by_participation(self, participation_id: UUID) -> list[ProductBid]:
         """Get all bids for a participation."""
         return (
-            self.db.query(ProductBid).filter(ProductBid.participation_id == participation_id).all()
+            await self.db.execute(select(ProductBid).filter(ProductBid.participation_id == participation_id).all())
         )
 
-    def update_bid_distributed_quantities(
+    async def update_bid_distributed_quantities(
         self, bid_id: UUID, quantity: float, price_per_unit: Decimal
     ) -> None:
-        """Update the distributed quantity and price for a bid."""
-        bid = self.db.query(ProductBid).filter(ProductBid.id == bid_id).first()
+        """Update the distributed quantity and price for a bid."""  
+        bid = await self.db.execute(select(ProductBid).filter(ProductBid.id == bid_id).first())
         if bid:
             bid.distributed_quantity = quantity
             bid.distributed_price_per_unit = price_per_unit
-            self.db.commit()
+            await self.db.commit()
 
-    def commit_changes(self) -> None:
+    async def commit_changes(self) -> None:
         """Commit any pending changes to the database."""
-        self.db.commit()
+        await self.db.commit()
 
     # ==================== Auth Methods ====================
 
