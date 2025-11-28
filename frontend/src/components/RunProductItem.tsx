@@ -29,8 +29,8 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
                           product.purchased_quantity !== null &&
                           product.purchased_quantity > 0 &&
                           product.total_quantity !== product.purchased_quantity
-  const needsAdjustmentShortage = needsAdjustment && product.purchased_quantity < product.total_quantity
-  const needsAdjustmentSurplus = needsAdjustment && product.purchased_quantity > product.total_quantity
+  const needsAdjustmentShortage = needsAdjustment && product.purchased_quantity !== null && product.purchased_quantity < product.total_quantity
+  const needsAdjustmentSurplus = needsAdjustment && product.purchased_quantity !== null && product.purchased_quantity > product.total_quantity
   const adjustmentOk = runState === 'adjusting' &&
                        product.purchased_quantity !== null &&
                        product.purchased_quantity > 0 &&

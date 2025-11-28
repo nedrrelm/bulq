@@ -91,6 +91,7 @@ async def validation_exception_handler(
 
     error_response = ValidationErrorResponse(
         error='ValidationError',
+        code='VALIDATION_ERROR',
         message='Request validation failed',
         errors=errors,
         path=request.url.path,

@@ -75,7 +75,7 @@ app.add_middleware(
 async def startup_event():
     """Create database tables, seed data, and setup event handlers on startup."""
     # @Todo create tables using alembic in order to keep track of all db changes
-    create_tables()
+    await create_tables()
 
     # Register event handlers for domain events
     from .api.websocket_manager import manager
@@ -116,14 +116,15 @@ async def startup_event():
         """Handle run state changed event for notifications."""
         from .infrastructure.database import SessionLocal
 
-        db = SessionLocal()
-        try:
-            repo = get_repository(db)
-            notification_handler = NotificationEventHandler(repo)
-            await notification_handler.handle_run_state_changed(event)
-            db.commit()
-        finally:
-            db.close()
+        async with SessionLocal() as db:
+            try:
+                repo = get_repository(db)
+                notification_handler = NotificationEventHandler(repo)
+                await notification_handler.handle_run_state_changed(event)
+                await db.commit()
+            except Exception:
+                await db.rollback()
+                raise
 
     event_bus.subscribe(RunStateChangedEvent, handle_run_state_changed_notification)
 
@@ -137,9 +138,9 @@ async def startup_event():
     from .infrastructure.runtime_settings import initialize_default_settings
 
     try:
-        db = SessionLocal()
-        initialize_default_settings(db)
-        db.close()
+        async with SessionLocal() as db:
+            # Use run_sync to run synchronous code with async session
+            await initialize_default_settings(db)
         logger.info('⚙️  Default settings initialized')
     except Exception as e:
         logger.error(f'Failed to initialize default settings: {e}', exc_info=True)
@@ -202,8 +203,8 @@ async def db_health_check():
 
         from .infrastructure.database import engine, get_pool_status
 
-        with engine.connect() as conn:
-            conn.execute(text('SELECT 1'))
+        async with engine.connect() as conn:
+            await conn.execute(text('SELECT 1'))
 
         pool_status = get_pool_status()
         return {
