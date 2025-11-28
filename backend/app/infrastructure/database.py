@@ -58,10 +58,9 @@ SessionLocal = async_sessionmaker(
 @event.listens_for(engine.sync_engine, 'connect')
 def receive_connect(dbapi_conn, connection_record):
     """Log when a new connection is created."""
-    pool = engine.pool
     logger.debug(
         'New database connection created',
-        extra=get_pool_status(pool),
+        extra=get_pool_status(),
     )
 
 
