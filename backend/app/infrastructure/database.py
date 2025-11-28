@@ -61,58 +61,33 @@ def receive_connect(dbapi_conn, connection_record):
     pool = engine.pool
     logger.debug(
         'New database connection created',
-        extra={
-            'pool_size': pool.size() if hasattr(pool, 'size') else 0,
-            'checked_in': pool.checkedin() if hasattr(pool, 'checkedin') else 0,
-            'checked_out': pool.checkedout() if hasattr(pool, 'checkedout') else 0,
-            'overflow': pool.overflow() if hasattr(pool, 'overflow') else 0,
-        },
+        extra=get_pool_status(pool),
     )
 
 
 @event.listens_for(engine.sync_engine, 'checkout')
 def receive_checkout(dbapi_conn, connection_record, connection_proxy):
     """Log when a connection is checked out from the pool."""
-    pool = engine.pool
-    checked_out = pool.checkedout() if hasattr(pool, 'checkedout') else 0
-    overflow = pool.overflow() if hasattr(pool, 'overflow') else 0
-    pool_size = pool.size() if hasattr(pool, 'size') else 0
-    total_connections = pool_size + overflow
+ 
 
     # Log statistics
     logger.debug(
         'Connection checked out from pool',
-        extra={
-            'checked_out': checked_out,
-            'checked_in': pool.checkedin() if hasattr(pool, 'checkedin') else 0,
-            'overflow': overflow,
-            'pool_size': pool_size,
-            'total_connections': total_connections,
-        },
+        extra=get_pool_status(),
     )
 
     # Warn if pool is running low
     if pool_size > 0 and checked_out >= pool_size * 0.8:  # 80% utilization
         logger.warning(
             'Database connection pool is running low',
-            extra={
-                'checked_out': checked_out,
-                'pool_size': pool_size,
-                'overflow': overflow,
-                'utilization_pct': (checked_out / total_connections) * 100 if total_connections > 0 else 0,
-            },
+            extra=get_pool_status(),
         )
 
     # Alert if pool is exhausted
     if overflow >= MAX_OVERFLOW:
         logger.error(
             'Database connection pool exhausted - using maximum overflow',
-            extra={
-                'pool_size': pool_size,
-                'max_overflow': MAX_OVERFLOW,
-                'overflow': overflow,
-                'checked_out': checked_out,
-            },
+            extra=get_pool_status(),
         )
 
 
@@ -122,11 +97,7 @@ def receive_checkin(dbapi_conn, connection_record):
     pool = engine.pool
     logger.debug(
         'Connection returned to pool',
-        extra={
-            'checked_out': pool.checkedout() if hasattr(pool, 'checkedout') else 0,
-            'checked_in': pool.checkedin() if hasattr(pool, 'checkedin') else 0,
-            'overflow': pool.overflow() if hasattr(pool, 'overflow') else 0,
-        },
+        extra=get_pool_status(),
     )
 
 

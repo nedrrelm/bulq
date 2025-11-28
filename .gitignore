@@ -70,3 +70,7 @@ htmlcov/
 # uv lock file (keep pyproject.toml but ignore resolved dependencies in some cases)
 # Note: uv.lock should typically be committed, but add here if needed
 # uv.lock
+
+
+#cursor
+.cursorignore
