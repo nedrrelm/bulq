@@ -27,7 +27,7 @@ from app.infrastructure.auth import create_session, delete_session, get_session,
 from app.infrastructure.config import SECURE_COOKIES, SESSION_EXPIRY_HOURS
 from app.infrastructure.database import get_db
 from app.infrastructure.request_context import get_logger
-from app.repositories import get_repository
+from app.repositories import get_user_repository
 
 router = APIRouter(prefix='/auth', tags=['authentication'])
 logger = get_logger(__name__)
@@ -43,11 +43,11 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User | 
     if not session:
         return None
 
-    repo = get_repository(db)
+    user_repo = get_user_repository(db)
     from uuid import UUID
 
     user_id = UUID(session['user_id'])
-    user = repo.get_user_by_id(user_id)
+    user = user_repo.get_user_by_id(user_id)
     return user
 
 
@@ -81,10 +81,10 @@ async def register(
         )
 
     logger.info('Registration attempt', extra={'username': user_data.username})
-    repo = get_repository(db)
+    user_repo = get_user_repository(db)
 
     # Check if user already exists
-    existing_user = repo.get_user_by_username(user_data.username)
+    existing_user = user_repo.get_user_by_username(user_data.username)
     if existing_user:
         logger.warning(
             'Registration failed - username already exists', extra={'username': user_data.username}
@@ -95,7 +95,7 @@ async def register(
 
     # Create new user
     password_hash = hash_password(user_data.password)
-    new_user = repo.create_user(
+    new_user = user_repo.create_user(
         name=user_data.name, username=user_data.username, password_hash=password_hash
     )
 
@@ -132,11 +132,11 @@ async def login(
 ) -> UserResponse:
     """Login user."""
     logger.info('Login attempt', extra={'username': user_data.username})
-    repo = get_repository(db)
+    user_repo = get_user_repository(db)
 
     # Find user by username
-    user = repo.get_user_by_username(user_data.username)
-    if not user or not repo.verify_password(user_data.password, user.password_hash):
+    user = user_repo.get_user_by_username(user_data.username)
+    if not user or not user_repo.verify_password(user_data.password, user.password_hash):
         logger.warning('Failed login attempt', extra={'username': user_data.username})
         raise UnauthorizedError(
             code=AUTH_INVALID_CREDENTIALS, message='Invalid username or password'
@@ -207,8 +207,8 @@ async def get_profile_stats(
 ) -> UserStatsResponse:
     """Get current user's statistics."""
     logger.info('Fetching user statistics', extra={'user_id': str(current_user.id)})
-    repo = get_repository(db)
-    stats = repo.get_user_stats(current_user.id)
+    user_repo = get_user_repository(db)
+    stats = user_repo.get_user_stats(current_user.id)
     return UserStatsResponse(**stats)
 
 
@@ -220,10 +220,10 @@ async def change_password(
 ) -> SuccessResponse:
     """Change user password."""
     logger.info('Password change request', extra={'user_id': str(current_user.id)})
-    repo = get_repository(db)
+    user_repo = get_user_repository(db)
 
     # Verify current password using repository method (handles memory vs database)
-    if not repo.verify_password(request.current_password, current_user.password_hash):
+    if not user_repo.verify_password(request.current_password, current_user.password_hash):
         logger.warning(
             'Password change failed - incorrect current password',
             extra={'user_id': str(current_user.id)},
@@ -234,7 +234,7 @@ async def change_password(
     from app.infrastructure.auth import hash_password
 
     new_password_hash = hash_password(request.new_password)
-    repo.update_user(current_user.id, password_hash=new_password_hash)
+    user_repo.update_user(current_user.id, password_hash=new_password_hash)
 
     logger.info('Password changed successfully', extra={'user_id': str(current_user.id)})
     return SuccessResponse(code=PASSWORD_CHANGED, details={'user_id': str(current_user.id)})
@@ -251,17 +251,17 @@ async def change_username(
         'Username change request',
         extra={'user_id': str(current_user.id), 'new_username': request.new_username},
     )
-    repo = get_repository(db)
+    user_repo = get_user_repository(db)
 
     # Verify current password using repository method (handles memory vs database)
-    if not repo.verify_password(request.current_password, current_user.password_hash):
+    if not user_repo.verify_password(request.current_password, current_user.password_hash):
         logger.warning(
             'Username change failed - incorrect password', extra={'user_id': str(current_user.id)}
         )
         raise UnauthorizedError(code=PASSWORD_INCORRECT, message='Current password is incorrect')
 
     # Check if new username is already taken
-    existing_user = repo.get_user_by_username(request.new_username)
+    existing_user = user_repo.get_user_by_username(request.new_username)
     if existing_user and existing_user.id != current_user.id:
         logger.warning(
             'Username change failed - username already exists',
@@ -272,7 +272,7 @@ async def change_username(
         )
 
     # Update username
-    updated_user = repo.update_user(current_user.id, username=request.new_username)
+    updated_user = user_repo.update_user(current_user.id, username=request.new_username)
     if not updated_user:
         raise BadRequestError(code=OPERATION_FAILED, message='Failed to update username')
 
@@ -306,17 +306,17 @@ async def change_name(
         'Name change request',
         extra={'user_id': str(current_user.id), 'new_name': request.new_name},
     )
-    repo = get_repository(db)
+    user_repo = get_user_repository(db)
 
     # Verify current password using repository method (handles memory vs database)
-    if not repo.verify_password(request.current_password, current_user.password_hash):
+    if not user_repo.verify_password(request.current_password, current_user.password_hash):
         logger.warning(
             'Name change failed - incorrect password', extra={'user_id': str(current_user.id)}
         )
         raise UnauthorizedError(code=PASSWORD_INCORRECT, message='Current password is incorrect')
 
     # Update name
-    updated_user = repo.update_user(current_user.id, name=request.new_name)
+    updated_user = user_repo.update_user(current_user.id, name=request.new_name)
     if not updated_user:
         raise BadRequestError(code=OPERATION_FAILED, message='Failed to update name')
 
@@ -345,11 +345,11 @@ async def toggle_dark_mode(
 ) -> UserResponse:
     """Toggle dark mode for the current user."""
     logger.info('Dark mode toggle request', extra={'user_id': str(current_user.id)})
-    repo = get_repository(db)
+    user_repo = get_user_repository(db)
 
     # Toggle dark mode
     new_dark_mode = not current_user.dark_mode
-    updated_user = repo.update_user(current_user.id, dark_mode=new_dark_mode)
+    updated_user = user_repo.update_user(current_user.id, dark_mode=new_dark_mode)
     if not updated_user:
         raise BadRequestError(code=OPERATION_FAILED, message='Failed to toggle dark mode')
 
@@ -379,10 +379,10 @@ async def change_language(
         'Language change request',
         extra={'user_id': str(current_user.id), 'new_language': request.language},
     )
-    repo = get_repository(db)
+    user_repo = get_user_repository(db)
 
     # Update language preference
-    updated_user = repo.update_user(current_user.id, preferred_language=request.language)
+    updated_user = user_repo.update_user(current_user.id, preferred_language=request.language)
     if not updated_user:
         raise BadRequestError(code=OPERATION_FAILED, message='Failed to change language')
 

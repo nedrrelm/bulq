@@ -2,10 +2,18 @@
 
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app.api.schemas import StorePageResponse, StoreProductResponse, StoreResponse, StoreRunResponse
 from app.core.error_codes import STORE_NAME_EMPTY, STORE_NOT_FOUND
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.models import Store
+from app.repositories import (
+    get_group_repository,
+    get_product_repository,
+    get_run_repository,
+    get_store_repository,
+)
 
 from .base_service import BaseService
 
@@ -13,9 +21,17 @@ from .base_service import BaseService
 class StoreService(BaseService):
     """Service for store operations."""
 
+    def __init__(self, db: Session):
+        """Initialize service with necessary repositories."""
+        super().__init__(db)
+        self.group_repo = get_group_repository(db)
+        self.product_repo = get_product_repository(db)
+        self.run_repo = get_run_repository(db)
+        self.store_repo = get_store_repository(db)
+
     def get_all_stores(self, limit: int = 100, offset: int = 0) -> list[Store]:
         """Get all available stores (paginated)."""
-        return self.repo.get_all_stores(limit, offset)
+        return self.store_repo.get_all_stores(limit, offset)
 
     def get_similar_stores(self, name: str, limit: int = 5) -> list[Store]:
         """Get stores with similar names for duplicate detection.
@@ -27,7 +43,7 @@ class StoreService(BaseService):
             return []
 
         # Use the search_stores method which does case-insensitive matching
-        results = self.repo.search_stores(name.strip())
+        results = self.store_repo.search_stores(name.strip())
 
         # Limit results
         return results[:limit]
@@ -36,11 +52,11 @@ class StoreService(BaseService):
         """Create a new store."""
         if not name or not name.strip():
             raise ValidationError(code=STORE_NAME_EMPTY, message='Store name cannot be empty')
-        return self.repo.create_store(name.strip())
+        return self.store_repo.create_store(name.strip())
 
     def get_store_by_id(self, store_id: UUID) -> Store:
         """Get store by ID."""
-        store = self.repo.get_store_by_id(store_id)
+        store = self.store_repo.get_store_by_id(store_id)
         if not store:
             raise NotFoundError(
                 code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
@@ -54,13 +70,13 @@ class StoreService(BaseService):
             StorePageResponse with store info, products with prices, and active runs with full details
         """
         store = self.get_store_by_id(store_id)
-        products = self.repo.get_products_by_store_from_availabilities(store_id)
-        active_runs = self.repo.get_active_runs_by_store_for_user(store_id, user_id)
+        products = self.store_repo.get_products_by_store_from_availabilities(store_id)
+        active_runs = self.store_repo.get_active_runs_by_store_for_user(store_id, user_id)
 
         # Format products with availability prices
         products_response = []
         for p in products:
-            availability = self.repo.get_availability_by_product_and_store(p.id, store_id)
+            availability = self.product_repo.get_availability_by_product_and_store(p.id, store_id)
             current_price = str(availability.price) if availability and availability.price else None
 
             products_response.append(
@@ -76,11 +92,11 @@ class StoreService(BaseService):
         # Format active runs with complete details
         runs_response = []
         for r in active_runs:
-            group = self.repo.get_group_by_id(r.group_id)
-            store_obj = self.repo.get_store_by_id(r.store_id)
+            group = self.group_repo.get_group_by_id(r.group_id)
+            store_obj = self.store_repo.get_store_by_id(r.store_id)
 
             # Get leader from participations
-            participations = self.repo.get_run_participations(r.id)
+            participations = self.run_repo.get_run_participations(r.id)
             leader = next((p for p in participations if p.is_leader), None)
             leader_name = leader.user.name if leader and leader.user else 'Unknown'
 

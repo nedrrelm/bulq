@@ -3,6 +3,8 @@
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app.api.schemas import (
     DistributionProduct,
     DistributionUser,
@@ -30,6 +32,14 @@ from app.core.run_state import RunState, state_machine
 from app.core.success_codes import BID_MARKED_PICKED_UP
 from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transaction
+from app.repositories import (
+    get_bid_repository,
+    get_notification_repository,
+    get_product_repository,
+    get_run_repository,
+    get_store_repository,
+    get_user_repository,
+)
 from app.utils.background_tasks import create_background_task
 
 from .base_service import BaseService
@@ -39,6 +49,16 @@ logger = get_logger(__name__)
 
 class DistributionService(BaseService):
     """Service for distribution operations."""
+
+    def __init__(self, db: Session):
+        """Initialize service with necessary repositories."""
+        super().__init__(db)
+        self.bid_repo = get_bid_repository(db)
+        self.notification_repo = get_notification_repository(db)
+        self.product_repo = get_product_repository(db)
+        self.run_repo = get_run_repository(db)
+        self.store_repo = get_store_repository(db)
+        self.user_repo = get_user_repository(db)
 
     def _is_leader_or_helper(self, participation) -> bool:
         """Check if participation is leader or helper."""
@@ -60,7 +80,7 @@ class DistributionService(BaseService):
             BadRequestError: If distribution not available in current state
         """
         self._validate_distribution_access(run_id, current_user)
-        all_bids = self.repo.get_bids_by_run_with_participations(run_id)
+        all_bids = self.bid_repo.get_bids_by_run_with_participations(run_id)
 
         logger.debug(f'Found {len(all_bids)} bids for distribution', extra={'run_id': str(run_id)})
         for bid in all_bids:
@@ -110,11 +130,11 @@ class DistributionService(BaseService):
 
     def _validate_distribution_access(self, run_id: UUID, current_user: User) -> None:
         """Validate user has access to view distribution."""
-        run = self.repo.get_run_by_id(run_id)
+        run = self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        user_groups = self.repo.get_user_groups(current_user)
+        user_groups = self.user_repo.get_user_groups(current_user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError(
                 code=NOT_RUN_PARTICIPANT, message='Not authorized to view this run', run_id=run_id
@@ -217,12 +237,12 @@ class DistributionService(BaseService):
             ForbiddenError: If user is not the run leader
         """
         # Get the run
-        run = self.repo.get_run_by_id(run_id)
+        run = self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
-        participation = self.repo.get_participation(current_user.id, run_id)
+        participation = self.run_repo.get_participation(current_user.id, run_id)
         if not participation or not self._is_leader_or_helper(participation):
             raise ForbiddenError(
                 code=NOT_RUN_LEADER_OR_HELPER,
@@ -273,12 +293,12 @@ class DistributionService(BaseService):
             BadRequestError: If not in distributing state or items not picked up
         """
         # Get the run
-        run = self.repo.get_run_by_id(run_id)
+        run = self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader
-        participation = self.repo.get_participation(current_user.id, run_id)
+        participation = self.run_repo.get_participation(current_user.id, run_id)
         if not participation or not participation.is_leader:
             raise ForbiddenError(
                 code=NOT_RUN_LEADER,
@@ -298,7 +318,7 @@ class DistributionService(BaseService):
             )
 
         # Verify all items are picked up
-        all_bids = self.repo.get_bids_by_run(run_id)
+        all_bids = self.bid_repo.get_bids_by_run(run_id)
         unpicked_bids = [
             bid
             for bid in all_bids
@@ -316,7 +336,7 @@ class DistributionService(BaseService):
         with transaction(self.db, 'complete distribution and transition to completed state'):
             # Transition to completed state
             old_state = run.state
-            self.repo.update_run_state(run_id, RunState.COMPLETED)
+            self.run_repo.update_run_state(run_id, RunState.COMPLETED)
 
             # Create notifications for all participants
             self._notify_run_state_change(run, old_state, RunState.COMPLETED)
@@ -333,15 +353,15 @@ class DistributionService(BaseService):
 
     def _get_product(self, product_id: UUID) -> Product:
         """Get product from repository."""
-        return self.repo.get_product_by_id(product_id)
+        return self.product_repo.get_product_by_id(product_id)
 
     def _get_bid(self, bid_id: UUID) -> ProductBid:
         """Get bid from repository."""
-        return self.repo.get_bid_by_id(bid_id)
+        return self.bid_repo.get_bid_by_id(bid_id)
 
     def _commit_changes(self) -> None:
         """Commit changes."""
-        self.repo.commit_changes()
+        self.bid_repo.commit_changes()
 
     def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
         """Create notifications for all participants when run state changes.
@@ -352,12 +372,12 @@ class DistributionService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        all_stores = self.repo.get_all_stores()
+        all_stores = self.store_repo.get_all_stores()
         store = next((s for s in all_stores if s.id == run.store_id), None)
         store_name = store.name if store else 'Unknown Store'
 
         # Get all participants of this run
-        participations = self.repo.get_run_participations(run.id)
+        participations = self.run_repo.get_run_participations(run.id)
 
         # Create notification data using Pydantic model for type safety
         notification_data = RunStateChangedData(
@@ -373,7 +393,7 @@ class DistributionService(BaseService):
         from app.api.websocket_manager import manager
 
         for participation in participations:
-            notification = self.repo.create_notification(
+            notification = self.notification_repo.create_notification(
                 user_id=participation.user_id,
                 type='run_state_changed',
                 data=notification_data.model_dump(mode='json'),

@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app.api.schemas import (
     AdminProductResponse,
     AdminStoreResponse,
@@ -41,12 +43,20 @@ from app.core.success_codes import (
     USER_VERIFIED,
     USERS_MERGED,
 )
+from app.repositories import get_product_repository, get_store_repository, get_user_repository
 
 from .base_service import BaseService
 
 
 class AdminService(BaseService):
     """Service for admin operations."""
+
+    def __init__(self, db: Session):
+        """Initialize admin service with necessary repositories."""
+        super().__init__(db)
+        self.user_repo = get_user_repository(db)
+        self.product_repo = get_product_repository(db)
+        self.store_repo = get_store_repository(db)
 
     def get_users(
         self,
@@ -66,7 +76,7 @@ class AdminService(BaseService):
         Returns:
             List of user dictionaries with formatted data
         """
-        users = self.repo.get_all_users()
+        users = self.user_repo.get_all_users()
 
         # Filter by search query (name, username, or ID)
         if search:
@@ -118,7 +128,7 @@ class AdminService(BaseService):
         Raises:
             NotFoundError: If user not found
         """
-        user = self.repo.get_user_by_id(user_id)
+        user = self.user_repo.get_user_by_id(user_id)
         if not user:
             raise NotFoundError(code=USER_NOT_FOUND, message='User not found', user_id=str(user_id))
 
@@ -149,7 +159,7 @@ class AdminService(BaseService):
         Returns:
             List of AdminProductResponse with formatted data
         """
-        products = self.repo.get_all_products()
+        products = self.product_repo.get_all_products()
 
         # Filter by search query (name, brand, or ID)
         if search:
@@ -201,7 +211,7 @@ class AdminService(BaseService):
         Raises:
             NotFoundError: If product not found
         """
-        product = self.repo.get_product_by_id(product_id)
+        product = self.product_repo.get_product_by_id(product_id)
         if not product:
             raise NotFoundError(
                 code=PRODUCT_NOT_FOUND, message='Product not found', product_id=str(product_id)
@@ -240,7 +250,7 @@ class AdminService(BaseService):
         Returns:
             List of AdminStoreResponse with formatted data
         """
-        stores = self.repo.get_all_stores()
+        stores = self.store_repo.get_all_stores()
 
         # Filter by search query (name, address, chain, or ID)
         if search:
@@ -293,7 +303,7 @@ class AdminService(BaseService):
         Raises:
             NotFoundError: If store not found
         """
-        store = self.repo.get_store_by_id(store_id)
+        store = self.store_repo.get_store_by_id(store_id)
         if not store:
             raise NotFoundError(
                 code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
@@ -332,7 +342,7 @@ class AdminService(BaseService):
         Raises:
             NotFoundError: If product not found
         """
-        product = self.repo.update_product(product_id, **data)
+        product = self.product_repo.update_product(product_id, **data)
         if not product:
             raise NotFoundError(
                 code=PRODUCT_NOT_FOUND, message='Product not found', product_id=str(product_id)
@@ -361,7 +371,7 @@ class AdminService(BaseService):
         Raises:
             NotFoundError: If store not found
         """
-        store = self.repo.update_store(store_id, **data)
+        store = self.store_repo.update_store(store_id, **data)
         if not store:
             raise NotFoundError(
                 code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
@@ -401,7 +411,7 @@ class AdminService(BaseService):
                 user_id=str(user_id),
             )
 
-        user = self.repo.update_user(user_id, **data)
+        user = self.user_repo.update_user(user_id, **data)
         if not user:
             raise NotFoundError(code=USER_NOT_FOUND, message='User not found', user_id=str(user_id))
 
@@ -437,8 +447,8 @@ class AdminService(BaseService):
         from app.core.exceptions import BadRequestError
 
         # Validate products exist
-        source = self.repo.get_product_by_id(source_id)
-        target = self.repo.get_product_by_id(target_id)
+        source = self.product_repo.get_product_by_id(source_id)
+        target = self.product_repo.get_product_by_id(target_id)
 
         if not source:
             raise NotFoundError(
@@ -460,12 +470,12 @@ class AdminService(BaseService):
             )
 
         # Move all references
-        bids_count = self.repo.bulk_update_product_bids(source_id, target_id)
-        avails_count = self.repo.bulk_update_product_availabilities(source_id, target_id)
-        items_count = self.repo.bulk_update_shopping_list_items(source_id, target_id)
+        bids_count = self.product_repo.bulk_update_product_bids(source_id, target_id)
+        avails_count = self.product_repo.bulk_update_product_availabilities(source_id, target_id)
+        items_count = self.product_repo.bulk_update_shopping_list_items(source_id, target_id)
 
         # Delete source product
-        self.repo.delete_product(source_id)
+        self.product_repo.delete_product(source_id)
 
         total_affected = bids_count + avails_count + items_count
 
@@ -500,8 +510,8 @@ class AdminService(BaseService):
         from app.core.exceptions import BadRequestError
 
         # Validate stores exist
-        source = self.repo.get_store_by_id(source_id)
-        target = self.repo.get_store_by_id(target_id)
+        source = self.store_repo.get_store_by_id(source_id)
+        target = self.store_repo.get_store_by_id(target_id)
 
         if not source:
             raise NotFoundError(
@@ -519,11 +529,11 @@ class AdminService(BaseService):
             )
 
         # Move all references
-        runs_count = self.repo.bulk_update_runs(source_id, target_id)
-        avails_count = self.repo.bulk_update_store_availabilities(source_id, target_id)
+        runs_count = self.store_repo.bulk_update_runs(source_id, target_id)
+        avails_count = self.store_repo.bulk_update_store_availabilities(source_id, target_id)
 
         # Delete source store
-        self.repo.delete_store(source_id)
+        self.store_repo.delete_store(source_id)
 
         total_affected = runs_count + avails_count
 
@@ -558,8 +568,8 @@ class AdminService(BaseService):
         from app.core.exceptions import BadRequestError
 
         # Validate users exist
-        source = self.repo.get_user_by_id(source_id)
-        target = self.repo.get_user_by_id(target_id)
+        source = self.user_repo.get_user_by_id(source_id)
+        target = self.user_repo.get_user_by_id(target_id)
 
         if not source:
             raise NotFoundError(
@@ -589,7 +599,7 @@ class AdminService(BaseService):
             )
 
         # Check for conflicting run participations
-        overlapping_runs = self.repo.check_overlapping_run_participations(source_id, target_id)
+        overlapping_runs = self.user_repo.check_overlapping_run_participations(source_id, target_id)
         if overlapping_runs:
             raise BadRequestError(
                 code=USERS_HAVE_CONFLICTING_PARTICIPATIONS,
@@ -600,20 +610,20 @@ class AdminService(BaseService):
             )
 
         # Move all references
-        participations_count = self.repo.bulk_update_run_participations(source_id, target_id)
-        groups_count = self.repo.bulk_update_group_creator(source_id, target_id)
-        products_created = self.repo.bulk_update_product_creator(source_id, target_id)
-        products_verified = self.repo.bulk_update_product_verifier(source_id, target_id)
-        stores_created = self.repo.bulk_update_store_creator(source_id, target_id)
-        stores_verified = self.repo.bulk_update_store_verifier(source_id, target_id)
-        availabilities_count = self.repo.bulk_update_product_availability_creator(source_id, target_id)
-        notifications_count = self.repo.bulk_update_notifications(source_id, target_id)
-        reassignments_from = self.repo.bulk_update_reassignment_from_user(source_id, target_id)
-        reassignments_to = self.repo.bulk_update_reassignment_to_user(source_id, target_id)
-        admin_status_count = self.repo.transfer_group_admin_status(source_id, target_id)
+        participations_count = self.user_repo.bulk_update_run_participations(source_id, target_id)
+        groups_count = self.user_repo.bulk_update_group_creator(source_id, target_id)
+        products_created = self.user_repo.bulk_update_product_creator(source_id, target_id)
+        products_verified = self.user_repo.bulk_update_product_verifier(source_id, target_id)
+        stores_created = self.user_repo.bulk_update_store_creator(source_id, target_id)
+        stores_verified = self.user_repo.bulk_update_store_verifier(source_id, target_id)
+        availabilities_count = self.user_repo.bulk_update_product_availability_creator(source_id, target_id)
+        notifications_count = self.user_repo.bulk_update_notifications(source_id, target_id)
+        reassignments_from = self.user_repo.bulk_update_reassignment_from_user(source_id, target_id)
+        reassignments_to = self.user_repo.bulk_update_reassignment_to_user(source_id, target_id)
+        admin_status_count = self.user_repo.transfer_group_admin_status(source_id, target_id)
 
         # Delete source user (group_membership will cascade delete)
-        self.repo.delete_user(source_id)
+        self.user_repo.delete_user(source_id)
 
         total_affected = (
             participations_count
@@ -657,14 +667,14 @@ class AdminService(BaseService):
         """
         from app.core.exceptions import BadRequestError
 
-        product = self.repo.get_product_by_id(product_id)
+        product = self.product_repo.get_product_by_id(product_id)
         if not product:
             raise NotFoundError(
                 code=PRODUCT_NOT_FOUND, message='Product not found', product_id=str(product_id)
             )
 
         # Check if product has any bids
-        bid_count = self.repo.count_product_bids(product_id)
+        bid_count = self.product_repo.count_product_bids(product_id)
         if bid_count > 0:
             raise BadRequestError(
                 code=PRODUCT_HAS_ACTIVE_BIDS,
@@ -674,7 +684,7 @@ class AdminService(BaseService):
             )
 
         # Delete the product
-        self.repo.delete_product(product_id)
+        self.product_repo.delete_product(product_id)
 
         from app.api.schemas import DeleteResponse
 
@@ -700,14 +710,14 @@ class AdminService(BaseService):
         """
         from app.core.exceptions import BadRequestError
 
-        store = self.repo.get_store_by_id(store_id)
+        store = self.store_repo.get_store_by_id(store_id)
         if not store:
             raise NotFoundError(
                 code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
             )
 
         # Check if store has any runs
-        run_count = self.repo.count_store_runs(store_id)
+        run_count = self.store_repo.count_store_runs(store_id)
         if run_count > 0:
             raise BadRequestError(
                 code=STORE_HAS_ACTIVE_RUNS,
@@ -717,7 +727,7 @@ class AdminService(BaseService):
             )
 
         # Delete the store
-        self.repo.delete_store(store_id)
+        self.store_repo.delete_store(store_id)
 
         from app.api.schemas import DeleteResponse
 
@@ -743,7 +753,7 @@ class AdminService(BaseService):
         """
         from app.core.exceptions import ForbiddenError
 
-        user = self.repo.get_user_by_id(user_id)
+        user = self.user_repo.get_user_by_id(user_id)
         if not user:
             raise NotFoundError(code=USER_NOT_FOUND, message='User not found', user_id=str(user_id))
 
@@ -764,7 +774,7 @@ class AdminService(BaseService):
             )
 
         # Delete the user
-        self.repo.delete_user(user_id)
+        self.user_repo.delete_user(user_id)
 
         from app.api.schemas import DeleteResponse
 

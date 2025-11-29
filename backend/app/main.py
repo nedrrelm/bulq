@@ -91,7 +91,7 @@ async def startup_event():
     from .events.event_bus import event_bus
     from .events.handlers.notification_handler import NotificationEventHandler
     from .events.handlers.websocket_handler import WebSocketEventHandler
-    from .repositories import get_repository
+    from .repositories import get_notification_repository
 
     # Create event handlers
     ws_handler = WebSocketEventHandler(manager)
@@ -116,8 +116,8 @@ async def startup_event():
 
         db = SessionLocal()
         try:
-            repo = get_repository(db)
-            notification_handler = NotificationEventHandler(repo)
+            notification_repo = get_notification_repository(db)
+            notification_handler = NotificationEventHandler(notification_repo)
             await notification_handler.handle_run_state_changed(event)
             db.commit()
         finally:
@@ -147,12 +147,24 @@ async def startup_event():
 
     if os.getenv('ENV') == 'development':
         try:
-            from .repositories import get_repository
+            from .infrastructure.config import REPO_MODE
             from .scripts.seed_data import create_seed_data
 
-            repo = get_repository()
-            create_seed_data(repo)
-            logger.info('🌱 Seed data initialization completed')
+            if REPO_MODE == 'memory':
+                # Memory mode: pass None as db_session
+                create_seed_data(None)
+                logger.info('🌱 Seed data created (memory mode)')
+            else:
+                # Database mode: pass db session
+                from .infrastructure.database import SessionLocal
+
+                db = SessionLocal()
+                try:
+                    create_seed_data(db)
+                    db.commit()
+                    logger.info('🌱 Seed data created (database mode)')
+                finally:
+                    db.close()
         except ImportError as e:
             logger.warning(f'Could not import seed data: {e}. Skipping seed data creation.')
             raise

@@ -1,9 +1,14 @@
 """Notification event handler for creating database notifications from domain events."""
 
+from typing import TYPE_CHECKING
+
 from app.infrastructure.request_context import get_logger
-from app.repositories import AbstractRepository
 
 from ..domain_events import RunStateChangedEvent
+
+if TYPE_CHECKING:
+    from app.repositories.database.notification import DatabaseNotificationRepository
+    from app.repositories.memory.notification import MemoryNotificationRepository
 
 logger = get_logger(__name__)
 
@@ -15,13 +20,13 @@ class NotificationEventHandler:
     stored in the database.
     """
 
-    def __init__(self, repo: AbstractRepository) -> None:
-        """Initialize handler with repository.
+    def __init__(self, notification_repo: "DatabaseNotificationRepository | MemoryNotificationRepository") -> None:
+        """Initialize handler with notification repository.
 
         Args:
-            repo: Repository for database operations
+            notification_repo: Notification repository for database operations
         """
-        self._repo = repo
+        self._notification_repo = notification_repo
 
     async def handle_run_state_changed(self, event: RunStateChangedEvent) -> None:
         """Create notifications for all participants when run state changes.
@@ -31,7 +36,7 @@ class NotificationEventHandler:
         """
         try:
             # Get all participants of this run
-            participations = self._repo.get_run_participations(event.run_id)
+            participations = self._notification_repo.get_run_participations(event.run_id)
 
             notification_data = {
                 'run_id': str(event.run_id),
@@ -43,7 +48,7 @@ class NotificationEventHandler:
 
             # Create notification for each participant
             for participation in participations:
-                self._repo.create_notification(
+                self._notification_repo.create_notification(
                     user_id=participation.user_id, type='run_state_changed', data=notification_data
                 )
 
