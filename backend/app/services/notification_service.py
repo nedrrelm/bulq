@@ -3,6 +3,8 @@
 from collections import defaultdict
 from datetime import timedelta
 
+from sqlalchemy.orm import Session
+
 from app.api.schemas import MarkAllReadResponse, NotificationResponse, SuccessResponse
 from app.core.error_codes import (
     NOT_NOTIFICATION_OWNER,
@@ -13,6 +15,7 @@ from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import User
 from app.core.success_codes import NOTIFICATION_MARKED_READ, NOTIFICATIONS_MARKED_READ
 from app.infrastructure.request_context import get_logger
+from app.repositories import get_notification_repository
 from app.utils.validation import validate_uuid
 
 from .base_service import BaseService
@@ -22,6 +25,11 @@ logger = get_logger(__name__)
 
 class NotificationService(BaseService):
     """Service for managing notifications."""
+
+    def __init__(self, db: Session):
+        """Initialize service with necessary repositories."""
+        super().__init__(db)
+        self.notification_repo = get_notification_repository(db)
 
     def get_user_notifications(
         self, user: User, limit: int = 20, offset: int = 0
@@ -41,7 +49,7 @@ class NotificationService(BaseService):
             extra={'user_id': str(user.id), 'limit': limit, 'offset': offset},
         )
 
-        notifications = self.repo.get_user_notifications(user.id, limit, offset)
+        notifications = self.notification_repo.get_user_notifications(user.id, limit, offset)
 
         # Group similar notifications
         grouped = self._group_notifications(notifications)
@@ -59,7 +67,7 @@ class NotificationService(BaseService):
         """
         logger.debug('Fetching unread notifications for user', extra={'user_id': str(user.id)})
 
-        notifications = self.repo.get_unread_notifications(user.id)
+        notifications = self.notification_repo.get_unread_notifications(user.id)
         return [self._notification_to_pydantic(n) for n in notifications]
 
     def get_unread_count(self, user: User) -> int:
@@ -71,7 +79,7 @@ class NotificationService(BaseService):
         Returns:
             Count of unread notifications
         """
-        return self.repo.get_unread_count(user.id)
+        return self.notification_repo.get_unread_count(user.id)
 
     def mark_as_read(self, notification_id: str, user: User) -> SuccessResponse:
         """Mark a notification as read (with authorization check).
@@ -91,7 +99,7 @@ class NotificationService(BaseService):
         notification_uuid = validate_uuid(notification_id, 'Notification')
 
         # Get notification and check ownership
-        notification = self.repo.get_notification_by_id(notification_uuid)
+        notification = self.notification_repo.get_notification_by_id(notification_uuid)
         if not notification:
             raise NotFoundError(
                 code=NOTIFICATION_NOT_FOUND,
@@ -110,7 +118,7 @@ class NotificationService(BaseService):
                 notification_id=notification_id,
             )
 
-        success = self.repo.mark_notification_as_read(notification_uuid)
+        success = self.notification_repo.mark_notification_as_read(notification_uuid)
         if not success:
             raise BadRequestError(
                 code=NOTIFICATION_MARK_READ_FAILED,
@@ -137,7 +145,7 @@ class NotificationService(BaseService):
         Returns:
             MarkAllReadResponse with count of marked notifications
         """
-        count = self.repo.mark_all_notifications_as_read(user.id)
+        count = self.notification_repo.mark_all_notifications_as_read(user.id)
 
         logger.info(
             'Marked all notifications as read', extra={'user_id': str(user.id), 'count': count}
