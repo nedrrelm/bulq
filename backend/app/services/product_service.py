@@ -4,6 +4,8 @@ from collections import defaultdict
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app.api.schemas import (
     PricePoint,
     ProductDetailResponse,
@@ -19,6 +21,12 @@ from app.core.error_codes import (
 )
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.models import Product
+from app.repositories import (
+    get_product_repository,
+    get_run_repository,
+    get_shopping_repository,
+    get_store_repository,
+)
 
 from .base_service import BaseService
 
@@ -26,17 +34,25 @@ from .base_service import BaseService
 class ProductService(BaseService):
     """Service for product operations."""
 
+    def __init__(self, db: Session):
+        """Initialize service with necessary repositories."""
+        super().__init__(db)
+        self.product_repo = get_product_repository(db)
+        self.run_repo = get_run_repository(db)
+        self.shopping_repo = get_shopping_repository(db)
+        self.store_repo = get_store_repository(db)
+
     def search_products(self, query: str) -> list[ProductSearchResult]:
         """Search for products by name across all stores."""
-        products = self.repo.search_products(query)
+        products = self.product_repo.search_products(query)
 
         result = []
         for product in products:
             # Get availabilities to show store information
-            availabilities = self.repo.get_product_availabilities(product.id)
+            availabilities = self.product_repo.get_product_availabilities(product.id)
             stores_info = []
             for avail in availabilities:
-                store = self.repo.get_store_by_id(avail.store_id)
+                store = self.store_repo.get_store_by_id(avail.store_id)
                 if store:
                     stores_info.append(
                         StoreInfo(
@@ -74,12 +90,12 @@ class ProductService(BaseService):
 
         Shows the product across different stores with price history.
         """
-        product = self.repo.get_product_by_id(product_id)
+        product = self.product_repo.get_product_by_id(product_id)
         if not product:
             return None
 
         # Get all availabilities for this product
-        availabilities = self.repo.get_product_availabilities(product_id)
+        availabilities = self.product_repo.get_product_availabilities(product_id)
 
         # Group availabilities by store
         stores_map = defaultdict(list)
@@ -88,7 +104,7 @@ class ProductService(BaseService):
 
         # Collect price data by store
         stores_data = []
-        all_stores = {s.id: s for s in self.repo.get_all_stores()}
+        all_stores = {s.id: s for s in self.store_repo.get_all_stores()}
 
         for store_id, store_availabilities in stores_map.items():
             store = all_stores.get(store_id)
@@ -96,7 +112,7 @@ class ProductService(BaseService):
                 continue
 
             # Get shopping list items for this product at this store
-            shopping_items = self.repo.get_shopping_list_items_by_product(product.id)
+            shopping_items = self.shopping_repo.get_shopping_list_items_by_product(product.id)
 
             # Extract price history from all availabilities at this store
             all_prices = []
@@ -117,7 +133,7 @@ class ProductService(BaseService):
             for item in shopping_items:
                 if item.purchased_price_per_unit:
                     # Check if this item's run was for this store
-                    run = self.repo.get_run_by_id(item.run_id)
+                    run = self.run_repo.get_run_by_id(item.run_id)
                     if run and run.store_id == store_id:
                         all_prices.append(
                             PricePoint(
@@ -188,19 +204,19 @@ class ProductService(BaseService):
 
         # Verify store exists if provided
         if store_id:
-            store = self.repo.get_store_by_id(store_id)
+            store = self.store_repo.get_store_by_id(store_id)
             if not store:
                 raise NotFoundError(
                     code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
                 )
 
         # Create the product
-        product = self.repo.create_product(name.strip(), brand, unit)
+        product = self.product_repo.create_product(name.strip(), brand, unit)
 
         # Create availability if store is provided
         availability = None
         if store_id:
-            availability = self.repo.create_product_availability(
+            availability = self.product_repo.create_product_availability(
                 product.id,
                 store_id,
                 price=price,
