@@ -28,8 +28,8 @@ def transaction(
     Usage:
         with transaction(db, "remove group member"):
             # Multiple database operations
-            repo.update_user(...)
-            repo.delete_participation(...)
+            user_repo.update_user(...)
+            run_repo.delete_participation(...)
             # All committed together or all rolled back
 
     Args:
@@ -67,8 +67,8 @@ def transactional(description: str | None = None) -> Callable:
             @transactional("update user profile")
             def update_profile(self, user_id: str, data: dict):
                 # Multiple repository calls
-                self.repo.update_user(...)
-                self.repo.create_notification(...)
+                self.user_repo.update_user(...)
+                self.notification_repo.create_notification(...)
                 # All committed together or all rolled back
 
     Args:

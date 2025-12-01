@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app.api.schemas import (
     CompleteShoppingResponse,
     MarkPurchasedResponse,
@@ -37,6 +39,15 @@ from app.core.success_codes import (
 )
 from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transaction
+from app.repositories import (
+    get_bid_repository,
+    get_notification_repository,
+    get_product_repository,
+    get_run_repository,
+    get_shopping_repository,
+    get_store_repository,
+    get_user_repository,
+)
 from app.utils.background_tasks import create_background_task
 
 from .base_service import BaseService
@@ -46,6 +57,17 @@ logger = get_logger(__name__)
 
 class ShoppingService(BaseService):
     """Service for managing shopping list operations."""
+
+    def __init__(self, db: Session):
+        """Initialize service with necessary repositories."""
+        super().__init__(db)
+        self.bid_repo = get_bid_repository(db)
+        self.notification_repo = get_notification_repository(db)
+        self.product_repo = get_product_repository(db)
+        self.run_repo = get_run_repository(db)
+        self.shopping_repo = get_shopping_repository(db)
+        self.store_repo = get_store_repository(db)
+        self.user_repo = get_user_repository(db)
 
     def _is_leader_or_helper(self, participation) -> bool:
         """Check if participation is leader or helper."""
@@ -64,7 +86,7 @@ class ShoppingService(BaseService):
         """
         try:
             # Get existing availabilities for this product at this store
-            availabilities = self.repo.get_product_availabilities(product_id, store_id)
+            availabilities = self.product_repo.get_product_availabilities(product_id, store_id)
 
             # Check if we have any prices from today
             today = datetime.now().date()
@@ -76,7 +98,7 @@ class ShoppingService(BaseService):
 
             # If no prices today, or price differs from all today's prices, create new availability
             if not today_prices or price not in today_prices:
-                self.repo.create_product_availability(
+                self.product_repo.create_product_availability(
                     product_id=product_id,
                     store_id=store_id,
                     price=price,
@@ -127,12 +149,12 @@ class ShoppingService(BaseService):
             raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid run ID format') from e
 
         # Get the run
-        run = self.repo.get_run_by_id(run_uuid)
+        run = self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user has access to this run
-        user_groups = self.repo.get_user_groups(user)
+        user_groups = self.user_repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError(
                 code=NOT_RUN_PARTICIPANT, message='Not authorized to view this run', run_id=run_id
@@ -149,16 +171,16 @@ class ShoppingService(BaseService):
             )
 
         # Get shopping list items
-        items = self.repo.get_shopping_list_items(run_uuid)
+        items = self.shopping_repo.get_shopping_list_items(run_uuid)
 
         # Convert to response format
         response_items = []
         for item in items:
             # Get product directly by ID
-            product = self.repo.get_product_by_id(item.product_id)
+            product = self.product_repo.get_product_by_id(item.product_id)
 
             # Get all product availabilities for this product at this store
-            all_availabilities = self.repo.get_product_availabilities(
+            all_availabilities = self.product_repo.get_product_availabilities(
                 product_id=item.product_id, store_id=run.store_id
             )
 
@@ -265,12 +287,12 @@ class ShoppingService(BaseService):
             raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
         # Get the run
-        run = self.repo.get_run_by_id(run_uuid)
+        run = self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
-        participation = self.repo.get_participation(user.id, run_uuid)
+        participation = self.run_repo.get_participation(user.id, run_uuid)
         if not participation or not self._is_leader_or_helper(participation):
             raise ForbiddenError(
                 code=NOT_RUN_LEADER_OR_HELPER,
@@ -279,7 +301,7 @@ class ShoppingService(BaseService):
             )
 
         # Get the shopping list item to find the product
-        item = self.repo.get_shopping_list_item(item_uuid)
+        item = self.shopping_repo.get_shopping_list_item(item_uuid)
         if not item:
             raise NotFoundError(
                 code=SHOPPING_LIST_ITEM_NOT_FOUND,
@@ -289,7 +311,7 @@ class ShoppingService(BaseService):
             )
 
         # Create or update product availability
-        self.repo.create_product_availability(
+        self.product_repo.create_product_availability(
             product_id=item.product_id,
             store_id=run.store_id,
             price=price,
@@ -342,12 +364,12 @@ class ShoppingService(BaseService):
             raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
         # Get the run
-        run = self.repo.get_run_by_id(run_uuid)
+        run = self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
-        participation = self.repo.get_participation(user.id, run_uuid)
+        participation = self.run_repo.get_participation(user.id, run_uuid)
         if not participation or not self._is_leader_or_helper(participation):
             raise ForbiddenError(
                 code=NOT_RUN_LEADER_OR_HELPER,
@@ -356,7 +378,7 @@ class ShoppingService(BaseService):
             )
 
         # Get next purchase order number
-        existing_items = self.repo.get_shopping_list_items(run_uuid)
+        existing_items = self.shopping_repo.get_shopping_list_items(run_uuid)
         max_order = max(
             [item.purchase_order for item in existing_items if item.purchase_order is not None],
             default=0,
@@ -364,7 +386,7 @@ class ShoppingService(BaseService):
         next_order = max_order + 1
 
         # Mark as purchased
-        item = self.repo.mark_item_purchased(item_uuid, quantity, price_per_unit, total, next_order)
+        item = self.shopping_repo.mark_item_purchased(item_uuid, quantity, price_per_unit, total, next_order)
         if not item:
             raise NotFoundError(
                 code=SHOPPING_LIST_ITEM_NOT_FOUND,
@@ -429,12 +451,12 @@ class ShoppingService(BaseService):
             raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
         # Get the run
-        run = self.repo.get_run_by_id(run_uuid)
+        run = self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
-        participation = self.repo.get_participation(user.id, run_uuid)
+        participation = self.run_repo.get_participation(user.id, run_uuid)
         if not participation or not self._is_leader_or_helper(participation):
             raise ForbiddenError(
                 code=NOT_RUN_LEADER_OR_HELPER,
@@ -443,7 +465,7 @@ class ShoppingService(BaseService):
             )
 
         # Get the shopping list item
-        item = self.repo.get_shopping_list_item(item_uuid)
+        item = self.shopping_repo.get_shopping_list_item(item_uuid)
         if not item:
             raise NotFoundError(
                 code=SHOPPING_LIST_ITEM_NOT_FOUND,
@@ -468,7 +490,7 @@ class ShoppingService(BaseService):
         new_price_per_unit = new_total / new_quantity if new_quantity > 0 else 0
 
         # Update the shopping list item
-        updated_item = self.repo.add_more_purchased(item_uuid, quantity, total, new_price_per_unit)
+        updated_item = self.shopping_repo.add_more_purchased(item_uuid, quantity, total, new_price_per_unit)
         if not updated_item:
             raise NotFoundError(
                 code=SHOPPING_LIST_ITEM_NOT_FOUND,
@@ -541,12 +563,12 @@ class ShoppingService(BaseService):
             raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid run ID format') from e
 
         # Get the run
-        run = self.repo.get_run_by_id(run_uuid)
+        run = self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader
-        participation = self.repo.get_participation(user.id, run_uuid)
+        participation = self.run_repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
             raise ForbiddenError(
                 code=NOT_RUN_LEADER,
@@ -566,8 +588,8 @@ class ShoppingService(BaseService):
             )
 
         # Check if any items have insufficient quantities
-        shopping_items = self.repo.get_shopping_list_items(run_uuid)
-        all_bids = self.repo.get_bids_by_run(run_uuid)
+        shopping_items = self.shopping_repo.get_shopping_list_items(run_uuid)
+        all_bids = self.bid_repo.get_bids_by_run(run_uuid)
 
         # Check if nothing was actually purchased
         anything_purchased = any(
@@ -580,9 +602,9 @@ class ShoppingService(BaseService):
             with transaction(self.db, 'transition to completed state (nothing purchased)'):
                 old_state = run.state
                 # First transition to distributing (required by state machine)
-                self.repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
+                self.run_repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
                 # Then immediately to completed
-                self.repo.update_run_state(run_uuid, RunState.COMPLETED)
+                self.run_repo.update_run_state(run_uuid, RunState.COMPLETED)
                 self._notify_run_state_change(run, old_state, RunState.COMPLETED)
 
             await manager.broadcast(
@@ -624,7 +646,7 @@ class ShoppingService(BaseService):
             # Wrap state change and notifications in transaction
             with transaction(self.db, 'transition to adjusting state'):
                 old_state = run.state
-                self.repo.update_run_state(run_uuid, RunState.ADJUSTING)
+                self.run_repo.update_run_state(run_uuid, RunState.ADJUSTING)
 
                 # Create notifications for all participants
                 self._notify_run_state_change(run, old_state, RunState.ADJUSTING)
@@ -671,13 +693,13 @@ class ShoppingService(BaseService):
 
                 # Distribute the purchased items to bidders (all quantities match)
                 for bid in product_bids:
-                    self.repo.update_bid_distributed_quantities(
+                    self.bid_repo.update_bid_distributed_quantities(
                         bid.id, bid.quantity, shopping_item.purchased_price_per_unit
                     )
 
             # Transition to distributing state
             old_state = run.state
-            self.repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
+            self.run_repo.update_run_state(run_uuid, RunState.DISTRIBUTING)
 
             # Create notifications for all participants
             self._notify_run_state_change(run, old_state, RunState.DISTRIBUTING)
@@ -711,12 +733,12 @@ class ShoppingService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        all_stores = self.repo.get_all_stores()
+        all_stores = self.store_repo.get_all_stores()
         store = next((s for s in all_stores if s.id == run.store_id), None)
         store_name = store.name if store else 'Unknown Store'
 
         # Get all participants of this run
-        participations = self.repo.get_run_participations(run.id)
+        participations = self.run_repo.get_run_participations(run.id)
 
         # Create notification data using Pydantic model for type safety
         notification_data = RunStateChangedData(
@@ -730,7 +752,7 @@ class ShoppingService(BaseService):
         # Create notification for each participant and broadcast via WebSocket
 
         for participation in participations:
-            notification = self.repo.create_notification(
+            notification = self.notification_repo.create_notification(
                 user_id=participation.user_id,
                 type='run_state_changed',
                 data=notification_data.model_dump(mode='json'),
