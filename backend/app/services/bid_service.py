@@ -2,6 +2,8 @@
 
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app.api.schemas import PlaceBidResponse, RetractBidResponse
 from app.core.error_codes import (
     BID_NOT_FOUND,
@@ -27,6 +29,13 @@ from app.events.domain_events import BidPlacedEvent, BidRetractedEvent
 from app.events.event_bus import event_bus
 from app.infrastructure.config import MAX_PRODUCTS_PER_RUN
 from app.infrastructure.request_context import get_logger
+from app.repositories import (
+    get_bid_repository,
+    get_product_repository,
+    get_run_repository,
+    get_shopping_repository,
+    get_user_repository,
+)
 from app.utils.validation import validate_uuid
 
 from .base_service import BaseService
@@ -36,6 +45,15 @@ logger = get_logger(__name__)
 
 class BidService(BaseService):
     """Service for managing bid operations."""
+
+    def __init__(self, db: Session):
+        """Initialize service with necessary repositories."""
+        super().__init__(db)
+        self.bid_repo = get_bid_repository(db)
+        self.product_repo = get_product_repository(db)
+        self.run_repo = get_run_repository(db)
+        self.shopping_repo = get_shopping_repository(db)
+        self.user_repo = get_user_repository(db)
 
     def place_bid(
         self,
@@ -90,7 +108,7 @@ class BidService(BaseService):
         self._validate_bid_for_state(run, product_uuid, quantity, participation)
 
         # Create or update the bid
-        self.repo.create_or_update_bid(
+        self.bid_repo.create_or_update_bid(
             participation.id, product_uuid, quantity, interested_only, comment
         )
 
@@ -196,7 +214,7 @@ class BidService(BaseService):
         Returns:
             Total quantity across all bids for the product
         """
-        all_bids = self.repo.get_bids_by_run(run_id)
+        all_bids = self.bid_repo.get_bids_by_run(run_id)
         product_bids = [bid for bid in all_bids if bid.product_id == product_id]
         return sum(bid.quantity for bid in product_bids if not bid.interested_only)
 
@@ -222,7 +240,7 @@ class BidService(BaseService):
             )
 
         # Verify product exists (products don't need store availability to be bid on)
-        product = self.repo.get_product_by_id(product_uuid)
+        product = self.product_repo.get_product_by_id(product_uuid)
         if not product:
             raise NotFoundError(
                 code=PRODUCT_NOT_FOUND, message='Product not found', product_id=product_id
@@ -232,12 +250,12 @@ class BidService(BaseService):
 
     def _get_run_with_auth_check(self, run_uuid: UUID, user: User) -> Run:
         """Get run and verify user has access to it."""
-        run = self.repo.get_run_by_id(run_uuid)
+        run = self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=str(run_uuid))
 
         # Verify user has access to this run (member of the group)
-        user_groups = self.repo.get_user_groups(user)
+        user_groups = self.user_repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError(
                 code=NOT_RUN_PARTICIPANT,
@@ -251,7 +269,7 @@ class BidService(BaseService):
         self, run_uuid: UUID, run: Run, user: User
     ) -> tuple[RunParticipation, bool]:
         """Get or create user participation in run."""
-        participation = self.repo.get_participation(user.id, run_uuid)
+        participation = self.run_repo.get_participation(user.id, run_uuid)
         is_new_participant = False
 
         if not participation:
@@ -265,7 +283,7 @@ class BidService(BaseService):
                     current_state=run.state,
                 )
             # Create participation (not as leader)
-            participation = self.repo.create_participation(user.id, run_uuid, is_leader=False)
+            participation = self.run_repo.create_participation(user.id, run_uuid, is_leader=False)
             is_new_participant = True
 
         return participation, is_new_participant
@@ -281,7 +299,7 @@ class BidService(BaseService):
             )
 
         # Check for existing bid
-        existing_bid = self.repo.get_bid(participation.id, product_uuid)
+        existing_bid = self.bid_repo.get_bid(participation.id, product_uuid)
 
         # Check product limit for new products
         if not existing_bid:
@@ -302,7 +320,7 @@ class BidService(BaseService):
 
     def _check_product_limit(self, run_id: UUID) -> None:
         """Check if run has reached maximum product limit."""
-        all_bids = self.repo.get_bids_by_run(run_id)
+        all_bids = self.bid_repo.get_bids_by_run(run_id)
         unique_products = {bid.product_id for bid in all_bids}
         if len(unique_products) >= MAX_PRODUCTS_PER_RUN:
             logger.warning(
@@ -327,7 +345,7 @@ class BidService(BaseService):
         - Upward adjustments when purchased > requested (surplus)
         """
         # Get shopping list to check purchased quantity
-        shopping_items = self.repo.get_shopping_list_items(run_id)
+        shopping_items = self.shopping_repo.get_shopping_list_items(run_id)
         shopping_item = next(
             (item for item in shopping_items if item.product_id == product_uuid), None
         )
@@ -401,7 +419,7 @@ class BidService(BaseService):
         # Automatic state transition: planning → active
         # When a non-leader places their first bid, transition from planning to active
         if is_new_participant and not participation.is_leader and run.state == RunState.PLANNING:
-            self.repo.update_run_state(run.id, RunState.ACTIVE)
+            self.run_repo.update_run_state(run.id, RunState.ACTIVE)
             return True
         return False
 
@@ -412,11 +430,11 @@ class BidService(BaseService):
         run_uuid = validate_uuid(run_id, 'Run')
         product_uuid = validate_uuid(product_id, 'Product')
 
-        run = self.repo.get_run_by_id(run_uuid)
+        run = self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        user_groups = self.repo.get_user_groups(user)
+        user_groups = self.user_repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError(
                 code=NOT_RUN_PARTICIPANT,
@@ -447,7 +465,7 @@ class BidService(BaseService):
         if run.state != RunState.ADJUSTING:
             return
 
-        shopping_items = self.repo.get_shopping_list_items(run_id)
+        shopping_items = self.shopping_repo.get_shopping_list_items(run_id)
         shopping_item = next(
             (item for item in shopping_items if item.product_id == product_id), None
         )
@@ -459,11 +477,11 @@ class BidService(BaseService):
         requested_qty = shopping_item.requested_quantity
         difference = purchased_qty - requested_qty  # positive = surplus, negative = shortage
 
-        participation = self.repo.get_participation(user_id, run_id)
+        participation = self.run_repo.get_participation(user_id, run_id)
         if not participation:
             return
 
-        current_bid = self.repo.get_bid(participation.id, product_id)
+        current_bid = self.bid_repo.get_bid(participation.id, product_id)
         if not current_bid:
             return
 
@@ -486,7 +504,7 @@ class BidService(BaseService):
         self, user_id: UUID, run_id: UUID, run_id_str: str
     ) -> RunParticipation:
         """Get user's participation in a run."""
-        participation = self.repo.get_participation(user_id, run_id)
+        participation = self.run_repo.get_participation(user_id, run_id)
         if not participation:
             raise NotFoundError(
                 code=PARTICIPATION_NOT_FOUND,
@@ -500,10 +518,10 @@ class BidService(BaseService):
         self, participation: RunParticipation, product_id: UUID, product_id_str: str
     ) -> None:
         """Remove bid from database."""
-        bid = self.repo.get_bid(participation.id, product_id)
+        bid = self.bid_repo.get_bid(participation.id, product_id)
         if not bid:
             raise NotFoundError(
                 code=BID_NOT_FOUND, message='Bid not found', product_id=product_id_str
             )
 
-        self.repo.delete_bid(participation.id, product_id)
+        self.bid_repo.delete_bid(participation.id, product_id)

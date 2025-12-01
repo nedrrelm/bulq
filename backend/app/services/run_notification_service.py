@@ -1,5 +1,7 @@
 """Run notification service for managing notifications and WebSocket broadcasting."""
 
+from sqlalchemy.orm import Session
+
 from app.api.schemas.notification_data import (
     BidRetractedData,
     BidUpdatedData,
@@ -12,6 +14,11 @@ from app.api.websocket_manager import ConnectionManager
 from app.core.models import Run
 from app.core.run_state import RunState
 from app.infrastructure.request_context import get_logger
+from app.repositories import (
+    get_notification_repository,
+    get_run_repository,
+    get_store_repository,
+)
 from app.utils.background_tasks import create_background_task
 
 from .base_service import BaseService
@@ -22,7 +29,7 @@ logger = get_logger(__name__)
 class RunNotificationService(BaseService):
     """Service for managing run notifications and WebSocket broadcasting."""
 
-    def __init__(self, db, websocket_manager: ConnectionManager | None = None):
+    def __init__(self, db: Session, websocket_manager: ConnectionManager | None = None):
         """Initialize service with database session and WebSocket manager.
 
         Args:
@@ -30,6 +37,9 @@ class RunNotificationService(BaseService):
             websocket_manager: Optional WebSocket manager for broadcasting
         """
         super().__init__(db)
+        self.notification_repo = get_notification_repository(db)
+        self.run_repo = get_run_repository(db)
+        self.store_repo = get_store_repository(db)
         self._ws_manager = websocket_manager
 
     def set_websocket_manager(self, ws_manager: ConnectionManager) -> None:
@@ -204,12 +214,12 @@ class RunNotificationService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        all_stores = self.repo.get_all_stores()
+        all_stores = self.store_repo.get_all_stores()
         store = next((s for s in all_stores if s.id == run.store_id), None)
         store_name = store.name if store else 'Unknown Store'
 
         # Get all participants of this run
-        participations = self.repo.get_run_participations(run.id)
+        participations = self.run_repo.get_run_participations(run.id)
 
         # Create notification data using Pydantic model for type safety
         notification_data = RunStateChangedData(
@@ -222,7 +232,7 @@ class RunNotificationService(BaseService):
 
         # Create notification for each participant and broadcast via WebSocket
         for participation in participations:
-            notification = self.repo.create_notification(
+            notification = self.notification_repo.create_notification(
                 user_id=participation.user_id,
                 type='run_state_changed',
                 data=notification_data.model_dump(mode='json'),
