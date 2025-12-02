@@ -30,7 +30,10 @@ services:
     volumes:
       # Mount source code for hot-reload in development
       # Comment out this line in production
-      - ./backend:/app
+        # Mount source code for hot-reload in development
+    # Exclude .venv to prevent Linux/Windows conflicts
+    - ./backend:/app
+    - /app/.venv  # Exclude .venv from the mount (anonymous volume)
     depends_on:
       db:
         condition: service_healthy

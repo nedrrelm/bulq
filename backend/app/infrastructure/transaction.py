@@ -4,36 +4,36 @@ This module provides utilities for wrapping multi-step database operations
 in transactions to ensure atomicity and prevent partial state changes.
 """
 
-from collections.abc import Callable, Generator
-from contextlib import contextmanager
+from collections.abc import AsyncGenerator, Callable
+from contextlib import asynccontextmanager
 from functools import wraps
 from typing import Any
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.request_context import get_logger
 
 logger = get_logger(__name__)
 
 
-@contextmanager
-def transaction(
-    db: Session, description: str = 'database operation'
-) -> Generator[None, None, None]:
+@asynccontextmanager
+async def transaction(
+    db: AsyncSession, description: str = 'database operation'
+) -> AsyncGenerator[None, None]:
     """Context manager for explicit transaction management.
 
     Wraps a block of code in a database transaction. Commits on success,
     rolls back on any exception.
 
     Usage:
-        with transaction(db, "remove group member"):
+        async with transaction(db, "remove group member"):
             # Multiple database operations
-            user_repo.update_user(...)
-            run_repo.delete_participation(...)
+            await user_repo.update_user(...)
+            await run_repo.delete_participation(...)
             # All committed together or all rolled back
 
     Args:
-        db: SQLAlchemy database session
+        db: SQLAlchemy async database session
         description: Description of the operation for logging
 
     Yields:
@@ -45,10 +45,10 @@ def transaction(
     try:
         logger.debug(f'Starting transaction: {description}')
         yield
-        db.commit()
+        await db.commit()
         logger.debug(f'Transaction committed: {description}')
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error(
             'Transaction rolled back due to error',
             extra={'description': description, 'error': str(e), 'error_type': type(e).__name__},
@@ -59,16 +59,16 @@ def transaction(
 def transactional(description: str | None = None) -> Callable:
     """Decorator to wrap a service method in a transaction.
 
-    The decorated method must have 'self' with a 'db' attribute that is a SQLAlchemy session.
+    The decorated method must have 'self' with a 'db' attribute that is an AsyncSession.
     This decorator ensures that all database operations within the method are atomic.
 
     Usage:
         class MyService(BaseService):
             @transactional("update user profile")
-            def update_profile(self, user_id: str, data: dict):
+            async def update_profile(self, user_id: str, data: dict):
                 # Multiple repository calls
-                self.user_repo.update_user(...)
-                self.notification_repo.create_notification(...)
+                await self.user_repo.update_user(...)
+                await self.notification_repo.create_notification(...)
                 # All committed together or all rolled back
 
     Args:
@@ -81,41 +81,41 @@ def transactional(description: str | None = None) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(self, *args: Any, **kwargs: Any) -> Any:
+        async def wrapper(self, *args: Any, **kwargs: Any) -> Any:
             # Get the database session from self.db
             if not hasattr(self, 'db'):
                 raise AttributeError(
-                    f'{self.__class__.__name__} must have a "db" attribute (SQLAlchemy Session) '
+                    f'{self.__class__.__name__} must have a "db" attribute (AsyncSession) '
                     f'to use @transactional decorator'
                 )
 
-            db: Session = self.db
+            db: AsyncSession = self.db
             op_description = description or f'{self.__class__.__name__}.{func.__name__}'
 
-            with transaction(db, op_description):
-                return func(self, *args, **kwargs)
+            async with transaction(db, op_description):
+                return await func(self, *args, **kwargs)
 
         return wrapper
 
     return decorator
 
 
-@contextmanager
-def savepoint(db: Session, name: str = 'savepoint') -> Generator[None, None, None]:
+@asynccontextmanager
+async def savepoint(db: AsyncSession, name: str = 'savepoint') -> AsyncGenerator[None, None]:
     """Context manager for nested transactions using SAVEPOINTs.
 
     Use this for operations that need sub-transaction semantics within
     a larger transaction.
 
     Usage:
-        with transaction(db, "outer operation"):
+        async with transaction(db, "outer operation"):
             # Do some work
-            with savepoint(db, "inner operation"):
+            async with savepoint(db, "inner operation"):
                 # This can be rolled back independently
-                repo.update_something(...)
+                await repo.update_something(...)
 
     Args:
-        db: SQLAlchemy database session
+        db: SQLAlchemy async database session
         name: Name of the savepoint for identification
 
     Yields:
@@ -126,12 +126,12 @@ def savepoint(db: Session, name: str = 'savepoint') -> Generator[None, None, Non
     """
     try:
         logger.debug(f'Creating savepoint: {name}')
-        sp = db.begin_nested()
+        sp = await db.begin_nested()
         yield
-        sp.commit()
+        await sp.commit()
         logger.debug(f'Savepoint committed: {name}')
     except Exception as e:
-        sp.rollback()
+        await sp.rollback()
         logger.warning(
             'Savepoint rolled back',
             extra={'savepoint': name, 'error': str(e), 'error_type': type(e).__name__},
@@ -139,11 +139,11 @@ def savepoint(db: Session, name: str = 'savepoint') -> Generator[None, None, Non
         raise
 
 
-def ensure_transaction_active(db: Session) -> bool:
+def ensure_transaction_active(db: AsyncSession) -> bool:
     """Check if a transaction is currently active on the session.
 
     Args:
-        db: SQLAlchemy database session
+        db: SQLAlchemy async database session
 
     Returns:
         True if transaction is active, False otherwise
@@ -151,13 +151,13 @@ def ensure_transaction_active(db: Session) -> bool:
     return db.in_transaction()
 
 
-def flush_and_check(db: Session, description: str = 'operation') -> None:
+async def flush_and_check(db: AsyncSession, description: str = 'operation') -> None:
     """Flush changes to database and log any errors without committing.
 
     Useful for intermediate validation of changes before committing the full transaction.
 
     Args:
-        db: SQLAlchemy database session
+        db: SQLAlchemy async database session
         description: Description for logging
 
     Raises:
@@ -165,7 +165,7 @@ def flush_and_check(db: Session, description: str = 'operation') -> None:
     """
     try:
         logger.debug(f'Flushing changes: {description}')
-        db.flush()
+        await db.flush()
     except Exception as e:
         logger.error(
             'Flush failed',

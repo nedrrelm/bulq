@@ -4,7 +4,8 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy import distinct, func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import Product, ProductAvailability, ProductBid, ShoppingListItem
 from app.repositories.abstract.product import AbstractProductRepository
@@ -13,46 +14,57 @@ from app.repositories.abstract.product import AbstractProductRepository
 class DatabaseProductRepository(AbstractProductRepository):
     """Database implementation of product repository."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_products_by_store(self, store_id: UUID) -> list[Product]:
+    async def get_products_by_store(self, store_id: UUID) -> list[Product]:
         """Get all products for a store (via product availabilities)."""
-        from sqlalchemy import distinct
-
-        product_ids = (
-            self.db.query(distinct(ProductAvailability.product_id))
-            .filter(ProductAvailability.store_id == store_id)
-            .all()
+        # Get distinct product IDs
+        result = await self.db.execute(
+            select(distinct(ProductAvailability.product_id)).filter(
+                ProductAvailability.store_id == store_id
+            )
         )
-        product_ids = [pid[0] for pid in product_ids]
-        return self.db.query(Product).filter(Product.id.in_(product_ids)).all()
+        product_ids = [pid[0] for pid in result.all()]
+        
+        if not product_ids:
+            return []
+        
+        # Get products by IDs
+        result = await self.db.execute(select(Product).filter(Product.id.in_(product_ids)))
+        return list(result.scalars().all())
 
-    def search_products(self, query: str) -> list[Product]:
+    async def search_products(self, query: str) -> list[Product]:
         """Search for products by name."""
-        return self.db.query(Product).filter(Product.name.ilike(f'%{query}%')).all()
+        result = await self.db.execute(
+            select(Product).filter(Product.name.ilike(f'%{query}%'))
+        )
+        return list(result.scalars().all())
 
-    def get_product_by_id(self, product_id: UUID) -> Product | None:
+    async def get_product_by_id(self, product_id: UUID) -> Product | None:
         """Get product by ID."""
-        return self.db.query(Product).filter(Product.id == product_id).first()
+        result = await self.db.execute(select(Product).filter(Product.id == product_id))
+        return result.scalar_one_or_none()
 
-    def create_product(
+    async def create_product(
         self, name: str, brand: str | None = None, unit: str | None = None
     ) -> Product:
         """Create a new product (store-agnostic)."""
         product = Product(name=name, brand=brand, unit=unit)
         self.db.add(product)
-        self.db.commit()
-        self.db.refresh(product)
+        await self.db.commit()
+        await self.db.refresh(product)
         return product
 
-    def get_all_products(self) -> list[Product]:
+    async def get_all_products(self) -> list[Product]:
         """Get all products."""
-        return self.db.query(Product).all()
+        result = await self.db.execute(select(Product))
+        return list(result.scalars().all())
 
-    def update_product(self, product_id: UUID, **fields) -> Product | None:
+    async def update_product(self, product_id: UUID, **fields) -> Product | None:
         """Update product fields. Returns updated product or None if not found."""
-        product = self.db.query(Product).filter(Product.id == product_id).first()
+        result = await self.db.execute(select(Product).filter(Product.id == product_id))
+        product = result.scalar_one_or_none()
         if not product:
             return None
 
@@ -60,46 +72,46 @@ class DatabaseProductRepository(AbstractProductRepository):
             if hasattr(product, key):
                 setattr(product, key, value)
 
-        self.db.commit()
-        self.db.refresh(product)
+        await self.db.commit()
+        await self.db.refresh(product)
         return product
 
-    def delete_product(self, product_id: UUID) -> bool:
+    async def delete_product(self, product_id: UUID) -> bool:
         """Delete a product. Returns True if deleted, False if not found."""
-        product = self.db.query(Product).filter(Product.id == product_id).first()
+        result = await self.db.execute(select(Product).filter(Product.id == product_id))
+        product = result.scalar_one_or_none()
         if not product:
             return False
 
         self.db.delete(product)
-        self.db.commit()
+        await self.db.commit()
         return True
 
-    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
+    async def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
         """Get product availabilities, optionally filtered by store."""
-        query = self.db.query(ProductAvailability).filter(
-            ProductAvailability.product_id == product_id
-        )
+        query = select(ProductAvailability).filter(ProductAvailability.product_id == product_id)
 
         if store_id:
             query = query.filter(ProductAvailability.store_id == store_id)
 
-        return query.all()
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
 
-    def get_availability_by_product_and_store(
+    async def get_availability_by_product_and_store(
         self, product_id: UUID, store_id: UUID
     ) -> ProductAvailability | None:
         """Get the most recent product availability by product and store."""
-        return (
-            self.db.query(ProductAvailability)
+        result = await self.db.execute(
+            select(ProductAvailability)
             .filter(
                 ProductAvailability.product_id == product_id,
                 ProductAvailability.store_id == store_id,
             )
             .order_by(ProductAvailability.created_at.desc())
-            .first()
         )
+        return result.scalar_one_or_none()
 
-    def create_product_availability(
+    async def create_product_availability(
         self,
         product_id: UUID,
         store_id: UUID,
@@ -119,59 +131,61 @@ class DatabaseProductRepository(AbstractProductRepository):
             created_by=user_id,
         )
         self.db.add(availability)
-        self.db.commit()
-        self.db.refresh(availability)
+        await self.db.commit()
+        await self.db.refresh(availability)
         return availability
 
-    def update_product_availability_price(
+    async def update_product_availability_price(
         self, availability_id: UUID, price: float, notes: str = ''
     ) -> ProductAvailability:
         """Update the price for an existing product availability."""
-        availability = (
-            self.db.query(ProductAvailability)
-            .filter(ProductAvailability.id == availability_id)
-            .first()
+        result = await self.db.execute(
+            select(ProductAvailability).filter(ProductAvailability.id == availability_id)
         )
+        availability = result.scalar_one_or_none()
 
         if availability:
             availability.price = Decimal(str(price))
             if notes:
                 availability.notes = notes
-            self.db.commit()
-            self.db.refresh(availability)
+            await self.db.commit()
+            await self.db.refresh(availability)
 
         return availability
 
-    def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
         """Update all product bids from old product to new product. Returns count of updated records."""
-        result = (
-            self.db.query(ProductBid)
+        result = await self.db.execute(
+            update(ProductBid)
             .filter(ProductBid.product_id == old_product_id)
-            .update({ProductBid.product_id: new_product_id})
+            .values(product_id=new_product_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_product_availabilities(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_product_availabilities(self, old_product_id: UUID, new_product_id: UUID) -> int:
         """Update all product availabilities from old product to new product. Returns count of updated records."""
-        result = (
-            self.db.query(ProductAvailability)
+        result = await self.db.execute(
+            update(ProductAvailability)
             .filter(ProductAvailability.product_id == old_product_id)
-            .update({ProductAvailability.product_id: new_product_id})
+            .values(product_id=new_product_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_shopping_list_items(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_shopping_list_items(self, old_product_id: UUID, new_product_id: UUID) -> int:
         """Update all shopping list items from old product to new product. Returns count of updated records."""
-        result = (
-            self.db.query(ShoppingListItem)
+        result = await self.db.execute(
+            update(ShoppingListItem)
             .filter(ShoppingListItem.product_id == old_product_id)
-            .update({ShoppingListItem.product_id: new_product_id})
+            .values(product_id=new_product_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def count_product_bids(self, product_id: UUID) -> int:
+    async def count_product_bids(self, product_id: UUID) -> int:
         """Count how many bids reference this product."""
-        return self.db.query(ProductBid).filter(ProductBid.product_id == product_id).count()
+        result = await self.db.execute(
+            select(func.count()).select_from(ProductBid).filter(ProductBid.product_id == product_id)
+        )
+        return result.scalar() or 0

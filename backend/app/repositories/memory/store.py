@@ -14,27 +14,27 @@ class MemoryStoreRepository(AbstractStoreRepository):
     def __init__(self, storage: MemoryStorage):
         self.storage = storage
 
-    def search_stores(self, query: str) -> list[Store]:
+    async def search_stores(self, query: str) -> list[Store]:
         query_lower = query.lower()
         return [store for store in self.storage.stores.values() if query_lower in store.name.lower()]
 
-    def get_all_stores(self, limit: int = None, offset: int = 0) -> list[Store]:
+    async def get_all_stores(self, limit: int = None, offset: int = 0) -> list[Store]:
         stores = list(self.storage.stores.values())
         stores.sort(key=lambda s: s.name)
         if limit is not None:
             return stores[offset : offset + limit]
         return stores
 
-    def create_store(self, name: str) -> Store:
+    async def create_store(self, name: str) -> Store:
         """Create a new store."""
         store = Store(id=uuid4(), name=name, verified=False)
         self.storage.stores[store.id] = store
         return store
 
-    def get_store_by_id(self, store_id: UUID) -> Store | None:
+    async def get_store_by_id(self, store_id: UUID) -> Store | None:
         return self.storage.stores.get(store_id)
 
-    def get_products_by_store_from_availabilities(self, store_id: UUID) -> list[Product]:
+    async def get_products_by_store_from_availabilities(self, store_id: UUID) -> list[Product]:
         """Get all unique products that are available at a store."""
         product_ids = {
             avail.product_id
@@ -43,7 +43,7 @@ class MemoryStoreRepository(AbstractStoreRepository):
         }
         return [product for product in self.storage.products.values() if product.id in product_ids]
 
-    def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> list[Run]:
+    async def get_active_runs_by_store_for_user(self, store_id: UUID, user_id: UUID) -> list[Run]:
         """Get all active runs for a store across all user's groups."""
         user_group_ids = []
         for group_id, member_ids in self.storage.group_memberships.items():
@@ -68,7 +68,7 @@ class MemoryStoreRepository(AbstractStoreRepository):
                 runs.append(run)
         return runs
 
-    def update_store(self, store_id: UUID, **fields) -> Store | None:
+    async def update_store(self, store_id: UUID, **fields) -> Store | None:
         """Update store fields. Returns updated store or None if not found."""
         store = self.storage.stores.get(store_id)
         if not store:
@@ -80,7 +80,7 @@ class MemoryStoreRepository(AbstractStoreRepository):
 
         return store
 
-    def delete_store(self, store_id: UUID) -> bool:
+    async def delete_store(self, store_id: UUID) -> bool:
         """Delete a store. Returns True if deleted, False if not found."""
         if store_id not in self.storage.stores:
             return False
@@ -88,7 +88,7 @@ class MemoryStoreRepository(AbstractStoreRepository):
         del self.storage.stores[store_id]
         return True
 
-    def bulk_update_runs(self, old_store_id: UUID, new_store_id: UUID) -> int:
+    async def bulk_update_runs(self, old_store_id: UUID, new_store_id: UUID) -> int:
         """Update all runs from old store to new store. Returns count of updated records."""
         count = 0
         for run in self.storage.runs.values():
@@ -97,7 +97,7 @@ class MemoryStoreRepository(AbstractStoreRepository):
                 count += 1
         return count
 
-    def bulk_update_store_availabilities(self, old_store_id: UUID, new_store_id: UUID) -> int:
+    async def bulk_update_store_availabilities(self, old_store_id: UUID, new_store_id: UUID) -> int:
         """Update all store availabilities from old store to new store. Returns count of updated records."""
         count = 0
         for avail in self.storage.product_availabilities.values():
@@ -106,6 +106,6 @@ class MemoryStoreRepository(AbstractStoreRepository):
                 count += 1
         return count
 
-    def count_store_runs(self, store_id: UUID) -> int:
+    async def count_store_runs(self, store_id: UUID) -> int:
         """Count how many runs reference this store."""
         return sum(1 for run in self.storage.runs.values() if run.store_id == store_id)

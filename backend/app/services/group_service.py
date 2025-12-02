@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import (
     CreateGroupResponse,
@@ -62,7 +62,7 @@ logger = get_logger(__name__)
 class GroupService(BaseService):
     """Service for managing groups and group operations."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.bid_repo = get_bid_repository(db)
@@ -71,7 +71,7 @@ class GroupService(BaseService):
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
 
-    def get_user_groups(self, user: User) -> list[GroupResponse]:
+    async def get_user_groups(self, user: User) -> list[GroupResponse]:
         """Get all groups the user is a member of with run counts.
 
         Args:
@@ -83,10 +83,10 @@ class GroupService(BaseService):
         logger.debug('Fetching groups for user', extra={'user_id': str(user.id)})
 
         # Get groups where the user is a member
-        groups = self.user_repo.get_user_groups(user)
+        groups = await self.user_repo.get_user_groups(user)
 
         # Get all stores for lookups
-        all_stores = self.store_repo.get_all_stores()
+        all_stores = await self.store_repo.get_all_stores()
         store_lookup = {store.id: store.name for store in all_stores}
 
         # State ordering for sorting (reverse order: distributing > adjusting > shopping > confirmed > active > planning)
@@ -102,8 +102,10 @@ class GroupService(BaseService):
         # Convert to response format
         group_responses = []
         for group in groups:
+            member_count = await self.group_repo.get_group_member_count(group.id)
+            group_creator= await self.user_repo.get_user_by_id(group.created_by)
             # Get runs for this group
-            runs = self.run_repo.get_runs_by_group(group.id)
+            runs = await self.run_repo.get_runs_by_group(group.id)
             active_runs = [
                 run for run in runs if run.state not in (RunState.COMPLETED, RunState.CANCELLED)
             ]
@@ -128,10 +130,8 @@ class GroupService(BaseService):
                 GroupResponse(
                     id=str(group.id),
                     name=group.name,
-                    description=f'Group created by {group.creator.name}'
-                    if group.creator
-                    else 'Group',
-                    member_count=len(group.members),
+                    description=f'Group created by {group_creator.name}' if group_creator else 'Group',
+                    member_count=member_count,
                     active_runs_count=len(active_runs),
                     completed_runs_count=len(completed_runs),
                     active_runs=active_runs_summary,
@@ -141,7 +141,7 @@ class GroupService(BaseService):
 
         return group_responses
 
-    def create_group(self, name: str, user: User) -> CreateGroupResponse:
+    async def create_group(self, name: str, user: User) -> CreateGroupResponse:
         """Create a new group and add the creator as an admin member.
 
         Args:
@@ -154,10 +154,10 @@ class GroupService(BaseService):
         logger.info(f'Creating group: {name}', extra={'user_id': str(user.id), 'group_name': name})
 
         # Create the group
-        group = self.group_repo.create_group(name, user.id)
+        group = await self.group_repo.create_group(name, user.id)
 
         # Add the creator as an admin member
-        self.group_repo.add_group_member(group.id, user, is_group_admin=True)
+        await self.group_repo.add_group_member(group.id, user, is_group_admin=True)
 
         logger.info(
             'Group created successfully', extra={'user_id': str(user.id), 'group_id': str(group.id)}
@@ -172,7 +172,7 @@ class GroupService(BaseService):
             active_runs=[],
         )
 
-    def get_group_details(self, group_id: str, user: User) -> GroupDetailResponse:
+    async def get_group_details(self, group_id: str, user: User) -> GroupDetailResponse:
         """Get details of a specific group with authorization check.
 
         Args:
@@ -191,14 +191,14 @@ class GroupService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member of the group
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
         if not any(g.id == group_uuid for g in user_groups):
             logger.warning(
                 "User attempted to access group they're not a member of",
@@ -211,8 +211,8 @@ class GroupService(BaseService):
             )
 
         # Get members and admin status
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
-        is_current_user_admin = self.group_repo.is_user_group_admin(group_uuid, user.id)
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
+        is_current_user_admin = await self.group_repo.is_user_group_admin(group_uuid, user.id)
 
         return GroupDetailResponse(
             id=str(group.id),
@@ -223,7 +223,7 @@ class GroupService(BaseService):
             is_current_user_admin=is_current_user_admin,
         )
 
-    def get_group_runs(self, group_id: str, user: User) -> list[RunResponse]:
+    async def get_group_runs(self, group_id: str, user: User) -> list[RunResponse]:
         """Get all runs for a specific group with authorization check.
 
         Args:
@@ -242,14 +242,14 @@ class GroupService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member of the group
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
         if not any(g.id == group_uuid for g in user_groups):
             raise ForbiddenError(
                 code=NOT_GROUP_MEMBER,
@@ -261,20 +261,23 @@ class GroupService(BaseService):
         logger.debug(
             'Fetching runs for group', extra={'user_id': str(user.id), 'group_id': str(group_uuid)}
         )
-        runs = self.run_repo.get_runs_by_group(group_uuid)
+        runs = await self.run_repo.get_runs_by_group(group_uuid)
 
         # Convert to response format with store names
-        all_stores = self.store_repo.get_all_stores()
+        all_stores = await self.store_repo.get_all_stores()
         store_lookup = {store.id: store.name for store in all_stores}
 
         run_responses = []
         for run in runs:
             # Get leader from participations
-            participations = self.run_repo.get_run_participations(run.id)
+            participations = await self.run_repo.get_run_participations(run.id)
             leader = next((p for p in participations if p.is_leader), None)
-            leader_name = leader.user.name if leader and leader.user else 'Unknown'
+            if leader:
+                leader_user = await self.user_repo.get_user_by_id(leader.user_id)
+                leader_name = leader_user.name if leader_user else 'Unknown'
+            else:
+                leader_name = 'Unknown'
             leader_is_removed = leader.is_removed if leader else False
-
             run_responses.append(
                 RunResponse(
                     id=str(run.id),
@@ -290,7 +293,7 @@ class GroupService(BaseService):
 
         return run_responses
 
-    def get_group_completed_cancelled_runs(
+    async def get_group_completed_cancelled_runs(
         self, group_id: str, user: User, limit: int = 10, offset: int = 0
     ) -> list[RunResponse]:
         """Get completed and cancelled runs for a specific group with pagination.
@@ -313,14 +316,14 @@ class GroupService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member of the group
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
         if not any(g.id == group_uuid for g in user_groups):
             raise ForbiddenError(
                 code=NOT_GROUP_MEMBER,
@@ -338,16 +341,16 @@ class GroupService(BaseService):
                 'offset': offset,
             },
         )
-        runs = self.run_repo.get_completed_cancelled_runs_by_group(group_uuid, limit, offset)
+        runs = await self.run_repo.get_completed_cancelled_runs_by_group(group_uuid, limit, offset)
 
         # Convert to response format with store names
-        all_stores = self.store_repo.get_all_stores()
+        all_stores = await self.store_repo.get_all_stores()
         store_lookup = {store.id: store.name for store in all_stores}
 
         run_responses = []
         for run in runs:
             # Get leader from participations
-            participations = self.run_repo.get_run_participations(run.id)
+            participations = await self.run_repo.get_run_participations(run.id)
             leader = next((p for p in participations if p.is_leader), None)
             leader_name = leader.user.name if leader and leader.user else 'Unknown'
 
@@ -366,7 +369,7 @@ class GroupService(BaseService):
 
         return run_responses
 
-    def regenerate_invite_token(self, group_id: str, user: User) -> RegenerateTokenResponse:
+    async def regenerate_invite_token(self, group_id: str, user: User) -> RegenerateTokenResponse:
         """Regenerate the invite token for a group (only creator can do this).
 
         Args:
@@ -385,7 +388,7 @@ class GroupService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
@@ -408,7 +411,7 @@ class GroupService(BaseService):
             'Regenerating invite token for group',
             extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
         )
-        new_token = self.group_repo.regenerate_group_invite_token(group_uuid)
+        new_token = await self.group_repo.regenerate_group_invite_token(group_uuid)
         if not new_token:
             raise BadRequestError(
                 code=GROUP_INVITE_TOKEN_REGENERATION_FAILED,
@@ -418,7 +421,7 @@ class GroupService(BaseService):
 
         return RegenerateTokenResponse(invite_token=new_token)
 
-    def preview_group(self, invite_token: str) -> PreviewGroupResponse:
+    async def preview_group(self, invite_token: str) -> PreviewGroupResponse:
         """Preview group information by invite token without joining.
 
         Args:
@@ -433,7 +436,7 @@ class GroupService(BaseService):
         logger.debug('Previewing group with invite token', extra={'invite_token': invite_token})
 
         # Find the group by invite token
-        group = self.group_repo.get_group_by_invite_token(invite_token)
+        group = await self.group_repo.get_group_by_invite_token(invite_token)
         if not group:
             logger.warning(
                 'Invalid invite token used for preview', extra={'invite_token': invite_token}
@@ -441,15 +444,16 @@ class GroupService(BaseService):
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', invite_token=invite_token
             )
-
+        member_count = await self.group_repo.get_group_member_count(group.id)
+        group_creator = await self.user_repo.get_user_by_id(group.created_by)
         return PreviewGroupResponse(
             id=str(group.id),
             name=group.name,
-            member_count=len(group.members),
-            creator_name=group.creator.name if group.creator else 'Unknown',
+            member_count=member_count,
+            creator_name=group_creator.name if group_creator else 'Unknown',
         )
 
-    def join_group(self, invite_token: str, user: User) -> JoinGroupResponse:
+    async def join_group(self, invite_token: str, user: User) -> JoinGroupResponse:
         """Join a group using an invite token.
 
         Args:
@@ -468,9 +472,9 @@ class GroupService(BaseService):
             extra={'user_id': str(user.id), 'invite_token': invite_token},
         )
 
-        group = self._validate_group_invite(invite_token, user)
-        self._check_membership_constraints(user, group)
-        self._add_member_to_group_db(user, group)
+        group = await self._validate_group_invite(invite_token, user)
+        await self._check_membership_constraints(user, group)
+        await self._add_member_to_group_db(user, group)
         self._broadcast_member_joined(user, group)
 
         logger.info(
@@ -480,9 +484,9 @@ class GroupService(BaseService):
 
         return JoinGroupResponse(code=GROUP_JOINED, group_id=str(group.id), group_name=group.name)
 
-    def _validate_group_invite(self, invite_token: str, user: User) -> Group:
+    async def _validate_group_invite(self, invite_token: str, user: User) -> Group:
         """Validate invite token and check if joining is allowed."""
-        group = self.group_repo.get_group_by_invite_token(invite_token)
+        group = await self.group_repo.get_group_by_invite_token(invite_token)
         if not group:
             logger.warning(
                 'Invalid invite token used for join',
@@ -505,9 +509,9 @@ class GroupService(BaseService):
 
         return group
 
-    def _check_membership_constraints(self, user: User, group: Group) -> None:
+    async def _check_membership_constraints(self, user: User, group: Group) -> None:
         """Check user/group limits and ensure user is not already a member."""
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
 
         if any(g.id == group.id for g in user_groups):
             logger.info(
@@ -532,7 +536,8 @@ class GroupService(BaseService):
                 current_groups=len(user_groups),
             )
 
-        if len(group.members) >= MAX_MEMBERS_PER_GROUP:
+        member_count = await self.group_repo.get_group_member_count(group.id)
+        if member_count >= MAX_MEMBERS_PER_GROUP:
             logger.warning(
                 'User attempted to join group but group is full',
                 extra={'user_id': str(user.id), 'group_id': str(group.id)},
@@ -541,12 +546,12 @@ class GroupService(BaseService):
                 code=GROUP_MAX_MEMBERS_EXCEEDED,
                 message=f'Group is full (maximum {MAX_MEMBERS_PER_GROUP} members)',
                 max_members=MAX_MEMBERS_PER_GROUP,
-                current_members=len(group.members),
+                current_members=member_count,
             )
 
-    def _add_member_to_group_db(self, user: User, group: Group) -> None:
+    async def _add_member_to_group_db(self, user: User, group: Group) -> None:
         """Add user to the group in the database."""
-        success = self.group_repo.add_group_member(group.id, user)
+        success = await self.group_repo.add_group_member(group.id, user)
         if not success:
             logger.error(
                 'Failed to add user to group',
@@ -560,7 +565,7 @@ class GroupService(BaseService):
         """Emit member_joined domain event."""
         event_bus.emit(MemberJoinedEvent(group_id=group.id, user_id=user.id, user_name=user.name))
 
-    def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
+    async def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
         """Get all members of a group with their admin status.
 
         Args:
@@ -579,15 +584,16 @@ class GroupService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member of the group
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == group_uuid for g in user_groups):
+        # TODO make a new query that checks if user_id is in group_membership table
+        user_is_member = await self.group_repo.is_user_member_of_a_group(user.id, group_uuid)
+        if not user_is_member:
             raise ForbiddenError(
                 code=NOT_GROUP_MEMBER,
                 message='Not a member of this group',
@@ -595,10 +601,11 @@ class GroupService(BaseService):
             )
 
         # Get members with admin status
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
+        # TODO should this fetch all members or just admins?
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
 
         # Check if current user is admin
-        is_current_user_admin = self.group_repo.is_user_group_admin(group_uuid, user.id)
+        is_current_user_admin = await self.group_repo.is_user_group_admin(group_uuid, user.id)
 
         return GroupDetailResponse(
             id=str(group.id),
@@ -609,7 +616,7 @@ class GroupService(BaseService):
             is_current_user_admin=is_current_user_admin,
         )
 
-    def remove_member(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
+    async def remove_member(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
         """Remove a member from a group (admin only).
 
         This operation is wrapped in a transaction to ensure atomicity:
@@ -632,16 +639,16 @@ class GroupService(BaseService):
             ForbiddenError: If user is not a group admin or trying to remove admin
         """
         # Validate outside transaction to fail fast on bad input
-        group_uuid, member_uuid = self._validate_member_removal_request(group_id, member_id, user)
+        group_uuid, member_uuid = await self._validate_member_removal_request(group_id, member_id, user)
 
         # Wrap all database modifications in a transaction
-        with transaction(self.db, 'remove group member and cancel runs'):
-            affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(
+        async with transaction(self.db, 'remove group member and cancel runs'):
+            affected_runs, cancelled_runs = await self._find_and_cancel_affected_runs(
                 group_uuid, member_uuid
             )
 
         # Broadcast notifications after successful transaction
-        self._broadcast_removal_notifications(
+        await self._broadcast_removal_notifications(
             group_uuid, member_uuid, affected_runs, cancelled_runs, is_self_removal=False
         )
 
@@ -663,7 +670,7 @@ class GroupService(BaseService):
             },
         )
 
-    def _validate_member_removal_request(
+    async def _validate_member_removal_request(
         self, group_id: str, member_id: str, user: User
     ) -> tuple[UUID, UUID]:
         """Validate member removal request and return UUIDs.
@@ -674,13 +681,13 @@ class GroupService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
         member_uuid = validate_uuid(member_id, 'Member')
 
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
-        if not self.group_repo.is_user_group_admin(group_uuid, user.id):
+        if not await self.group_repo.is_user_group_admin(group_uuid, user.id):
             logger.warning(
                 'Non-admin user attempted to remove member',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
@@ -691,7 +698,7 @@ class GroupService(BaseService):
                 group_id=str(group_uuid),
             )
 
-        if self.group_repo.is_user_group_admin(group_uuid, member_uuid):
+        if await self.group_repo.is_user_group_admin(group_uuid, member_uuid):
             raise ForbiddenError(
                 code=CANNOT_REMOVE_GROUP_ADMIN,
                 message='Cannot remove group admins',
@@ -700,7 +707,7 @@ class GroupService(BaseService):
             )
 
         # Verify member exists in group
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
         if not any(m['id'] == str(member_uuid) for m in members):
             raise BadRequestError(
                 code=NOT_A_GROUP_MEMBER,
@@ -711,7 +718,7 @@ class GroupService(BaseService):
 
         return group_uuid, member_uuid
 
-    def _find_and_cancel_affected_runs(
+    async def _find_and_cancel_affected_runs(
         self, group_id: UUID, member_id: UUID
     ) -> tuple[list[str], list[str]]:
         """Remove member from group and find/cancel affected runs.
@@ -720,7 +727,7 @@ class GroupService(BaseService):
         It performs multiple database modifications that need to be atomic.
         """
         # First, remove the member from the group
-        success = self.group_repo.remove_group_member(group_id, member_id)
+        success = await self.group_repo.remove_group_member(group_id, member_id)
         if not success:
             raise BadRequestError(
                 code=GROUP_MEMBER_REMOVAL_FAILED,
@@ -730,12 +737,12 @@ class GroupService(BaseService):
             )
 
         # Now handle run participations and cancellations
-        runs = self.run_repo.get_runs_by_group(group_id)
+        runs = await self.run_repo.get_runs_by_group(group_id)
         cancelled_runs = []
         affected_runs = []
 
         for run in runs:
-            participations = self.run_repo.get_run_participations(run.id)
+            participations = await self.run_repo.get_run_participations(run.id)
 
             # Mark removed user's participation as removed and delete their bids from active runs
             user_participated = False
@@ -754,9 +761,9 @@ class GroupService(BaseService):
                     run.state not in [RunState.COMPLETED, RunState.CANCELLED]
                     and user_participation_id
                 ):
-                    bids = self.bid_repo.get_bids_by_participation(user_participation_id)
+                    bids = await self.bid_repo.get_bids_by_participation(user_participation_id)
                     for bid in bids:
-                        self.bid_repo.delete_bid(user_participation_id, bid.product_id)
+                        await self.bid_repo.delete_bid(user_participation_id, bid.product_id)
 
                     logger.info(
                         f'Deleted {len(bids)} bids from active run',
@@ -775,7 +782,7 @@ class GroupService(BaseService):
 
         return affected_runs, cancelled_runs
 
-    def _broadcast_removal_notifications(
+    async def _broadcast_removal_notifications(
         self,
         group_id: UUID,
         member_id: UUID,
@@ -785,7 +792,7 @@ class GroupService(BaseService):
     ) -> None:
         """Emit member removal domain event and broadcast to group WebSocket."""
         # Get member info for the notification
-        member = self.user_repo.get_user_by_id(member_id)
+        member = await self.user_repo.get_user_by_id(member_id)
         member_name = member.name if member else 'Unknown'
 
         # Emit domain event
@@ -846,7 +853,7 @@ class GroupService(BaseService):
                 task_name=f'broadcast_run_cancelled_{run_id}',
             )
 
-    def leave_group(self, group_id: str, user: User) -> SuccessResponse:
+    async def leave_group(self, group_id: str, user: User) -> SuccessResponse:
         """Leave a group.
 
         This operation is similar to remove_member but initiated by the user themselves:
@@ -868,14 +875,14 @@ class GroupService(BaseService):
         """
         group_uuid = validate_uuid(group_id, 'Group')
 
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group =await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
         if not any(m['id'] == str(user.id) for m in members):
             raise BadRequestError(
                 code=NOT_A_GROUP_MEMBER,
@@ -887,7 +894,7 @@ class GroupService(BaseService):
         admin_count = sum(1 for m in members if m['is_group_admin'])
 
         # Prevent the last admin from leaving
-        if self.group_repo.is_user_group_admin(group_uuid, user.id) and admin_count <= 1:
+        if await self.group_repo.is_user_group_admin(group_uuid, user.id) and admin_count <= 1:
             raise ForbiddenError(
                 code=LAST_ADMIN_CANNOT_LEAVE,
                 message='You are the only admin. Please promote another member to admin before leaving.',
@@ -895,11 +902,11 @@ class GroupService(BaseService):
             )
 
         # Wrap all database modifications in a transaction
-        with transaction(self.db, 'leave group and cancel runs'):
-            affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(group_uuid, user.id)
+        async with transaction(self.db, 'leave group and cancel runs'):
+            affected_runs, cancelled_runs =await self._find_and_cancel_affected_runs(group_uuid, user.id)
 
         # Broadcast notifications after successful transaction
-        self._broadcast_removal_notifications(
+        await self._broadcast_removal_notifications(
             group_uuid, user.id, affected_runs, cancelled_runs, is_self_removal=True
         )
 
@@ -917,7 +924,7 @@ class GroupService(BaseService):
             details={'group_id': group_id},
         )
 
-    def promote_member_to_admin(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
+    async def promote_member_to_admin(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
         """Promote a member to group admin (admin only).
 
         Args:
@@ -936,14 +943,14 @@ class GroupService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
         member_uuid = validate_uuid(member_id, 'Member')
 
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if requester is admin
-        if not self.group_repo.is_user_group_admin(group_uuid, user.id):
+        if not await self.group_repo.is_user_group_admin(group_uuid, user.id):
             logger.warning(
                 'Non-admin user attempted to promote member',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
@@ -955,7 +962,7 @@ class GroupService(BaseService):
             )
 
         # Check if member exists in group
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
         member_exists = any(m['id'] == str(member_uuid) for m in members)
 
         if not member_exists:
@@ -967,7 +974,7 @@ class GroupService(BaseService):
             )
 
         # Check if member is already an admin
-        if self.group_repo.is_user_group_admin(group_uuid, member_uuid):
+        if await self.group_repo.is_user_group_admin(group_uuid, member_uuid):
             raise BadRequestError(
                 code=USER_ALREADY_GROUP_ADMIN,
                 message='User is already a group admin',
@@ -976,7 +983,7 @@ class GroupService(BaseService):
             )
 
         # Promote the member
-        success = self.group_repo.set_group_member_admin(group_uuid, member_uuid, True)
+        success = await self.group_repo.set_group_member_admin(group_uuid, member_uuid, True)
 
         if not success:
             raise BadRequestError(
@@ -1024,7 +1031,7 @@ class GroupService(BaseService):
             },
         )
 
-    def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
+    async def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
         """Toggle whether a group allows joining via invite link (admin only).
 
         Args:
@@ -1043,14 +1050,14 @@ class GroupService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a group admin
-        if not self.group_repo.is_user_group_admin(group_uuid, user.id):
+        if not await self.group_repo.is_user_group_admin(group_uuid, user.id):
             logger.warning(
                 'Non-admin user attempted to toggle joining allowed',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
@@ -1063,7 +1070,7 @@ class GroupService(BaseService):
 
         # Toggle the setting
         new_value = not group.is_joining_allowed
-        updated_group = self.group_repo.update_group_joining_allowed(group_uuid, new_value)
+        updated_group = await self.group_repo.update_group_joining_allowed(group_uuid, new_value)
         if not updated_group:
             raise BadRequestError(
                 code=GROUP_JOINING_SETTING_UPDATE_FAILED,

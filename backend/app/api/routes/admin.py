@@ -46,7 +46,7 @@ async def get_users(
 ):
     """Get all users with optional search and filtering (paginated, max 100 per page)."""
     service = AdminService(db)
-    return service.get_users(search, verified, limit, offset)
+    return await service.get_users(search, verified, limit, offset)
 
 
 @router.post('/users/{user_id}/verify', response_model=VerificationToggleResponse)
@@ -55,7 +55,7 @@ async def toggle_user_verification(
 ):
     """Toggle user verification status."""
     service = AdminService(db)
-    return service.toggle_user_verification(UUID(user_id), admin_user)
+    return await service.toggle_user_verification(UUID(user_id), admin_user)
 
 
 @router.get('/products', response_model=list[AdminProductResponse])
@@ -69,7 +69,7 @@ async def get_products(
 ):
     """Get all products with optional search and filtering (paginated, max 100 per page)."""
     service = AdminService(db)
-    return service.get_products(search, verified, limit, offset)
+    return await service.get_products(search, verified, limit, offset)
 
 
 @router.post('/products/{product_id}/verify', response_model=VerificationToggleResponse)
@@ -78,7 +78,7 @@ async def toggle_product_verification(
 ):
     """Toggle product verification status."""
     service = AdminService(db)
-    return service.toggle_product_verification(UUID(product_id), admin_user)
+    return await service.toggle_product_verification(UUID(product_id), admin_user)
 
 
 @router.get('/stores', response_model=list[AdminStoreResponse])
@@ -92,7 +92,7 @@ async def get_stores(
 ):
     """Get all stores with optional search and filtering (paginated, max 100 per page)."""
     service = AdminService(db)
-    return service.get_stores(search, verified, limit, offset)
+    return await service.get_stores(search, verified, limit, offset)
 
 
 @router.post('/stores/{store_id}/verify', response_model=VerificationToggleResponse)
@@ -101,7 +101,7 @@ async def toggle_store_verification(
 ):
     """Toggle store verification status."""
     service = AdminService(db)
-    return service.toggle_store_verification(UUID(store_id), admin_user)
+    return await service.toggle_store_verification(UUID(store_id), admin_user)
 
 
 # ==================== Update Routes ====================
@@ -116,7 +116,7 @@ async def update_product(
 ):
     """Update product fields."""
     service = AdminService(db)
-    return service.update_product(UUID(product_id), data.model_dump(), admin_user)
+    return await service.update_product(UUID(product_id), data.model_dump(), admin_user)
 
 
 @router.put('/stores/{store_id}', response_model=AdminStoreResponse)
@@ -128,7 +128,7 @@ async def update_store(
 ):
     """Update store fields."""
     service = AdminService(db)
-    return service.update_store(UUID(store_id), data.model_dump(), admin_user)
+    return await service.update_store(UUID(store_id), data.model_dump(), admin_user)
 
 
 @router.put('/users/{user_id}', response_model=AdminUserResponse)
@@ -140,7 +140,7 @@ async def update_user(
 ):
     """Update user fields."""
     service = AdminService(db)
-    return service.update_user(UUID(user_id), data.model_dump(), admin_user)
+    return await service.update_user(UUID(user_id), data.model_dump(), admin_user)
 
 
 # ==================== Merge Routes ====================
@@ -155,7 +155,7 @@ async def merge_products(
 ):
     """Merge one product into another. All bids and availabilities will be transferred."""
     service = AdminService(db)
-    return service.merge_products(UUID(source_id), UUID(target_id), admin_user)
+    return await service.merge_products(UUID(source_id), UUID(target_id), admin_user)
 
 
 @router.post('/stores/{source_id}/merge/{target_id}', response_model=MergeResponse)
@@ -167,7 +167,7 @@ async def merge_stores(
 ):
     """Merge one store into another. All runs and availabilities will be transferred."""
     service = AdminService(db)
-    return service.merge_stores(UUID(source_id), UUID(target_id), admin_user)
+    return await service.merge_stores(UUID(source_id), UUID(target_id), admin_user)
 
 
 @router.post('/users/{source_id}/merge/{target_id}', response_model=MergeResponse)
@@ -179,7 +179,7 @@ async def merge_users(
 ):
     """Merge one user into another. All data will be transferred."""
     service = AdminService(db)
-    return service.merge_users(UUID(source_id), UUID(target_id), admin_user)
+    return await service.merge_users(UUID(source_id), UUID(target_id), admin_user)
 
 
 # ==================== Delete Routes ====================
@@ -191,7 +191,7 @@ async def delete_product(
 ):
     """Delete a product. Cannot delete if it has associated bids."""
     service = AdminService(db)
-    return service.delete_product(UUID(product_id), admin_user)
+    return await service.delete_product(UUID(product_id), admin_user)
 
 
 @router.delete('/stores/{store_id}', response_model=DeleteResponse)
@@ -200,7 +200,7 @@ async def delete_store(
 ):
     """Delete a store. Cannot delete if it has associated runs."""
     service = AdminService(db)
-    return service.delete_store(UUID(store_id), admin_user)
+    return await service.delete_store(UUID(store_id), admin_user)
 
 
 @router.delete('/users/{user_id}', response_model=DeleteResponse)
@@ -209,7 +209,7 @@ async def delete_user(
 ):
     """Delete a user. Cannot delete yourself or other admins."""
     service = AdminService(db)
-    return service.delete_user(UUID(user_id), admin_user)
+    return await service.delete_user(UUID(user_id), admin_user)
 
 
 @router.get('/settings/registration')

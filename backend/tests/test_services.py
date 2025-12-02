@@ -21,29 +21,29 @@ def repo():
 @pytest.fixture
 def user(repo):
     """Create a test user"""
-    return repo.create_user(name="Test User", email="test@example.com", password_hash="hash")
+    returnawait repo.create_user(name="Test User", email="test@example.com", password_hash="hash")
 
 
 @pytest.fixture
 def group(repo, user):
     """Create a test group"""
-    group = repo.create_group(name="Test Group", created_by=user.id)
-    repo.add_group_member(group.id, user)
+    group =await repo.create_group(name="Test Group", created_by=user.id)
+   await repo.add_group_member(group.id, user)
     return group
 
 
 @pytest.fixture
 def store(repo):
     """Create a test store"""
-    return repo.create_store(name="Test Store")
+    returnawait repo.create_store(name="Test Store")
 
 
 @pytest.fixture
 def product(repo, store):
     """Create a test product"""
-    product = repo.create_product(name="Test Product", brand="Test Brand")
+    product =await repo.create_product(name="Test Product", brand="Test Brand")
     # Add availability for the store
-    repo.create_availability(product.id, store.id, price=19.99)
+   await repo.create_availability(product.id, store.id, price=19.99)
     return product
 
 
@@ -76,21 +76,21 @@ class TestRunService:
 
     def test_create_run_user_not_member(self, repo, user, store):
         """Test run creation when user is not a group member"""
-        other_user = repo.create_user(name="Other", email="other@example.com", password_hash="hash")
-        group = repo.create_group(name="Other Group", created_by=other_user.id)
-        repo.add_group_member(group.id, other_user)
+        other_user =await repo.create_user(name="Other", email="other@example.com", password_hash="hash")
+        group =await repo.create_group(name="Other Group", created_by=other_user.id)
+       await repo.add_group_member(group.id, other_user)
 
         service = RunService(repo)
         with pytest.raises(ForbiddenError):
             service.create_run(str(group.id), str(store.id), user)
 
-    def test_get_run_details_success(self, repo, user, group, store):
+    async def test_get_run_details_success(self, repo, user, group, store):
         """Test getting run details"""
         service = RunService(repo)
         run_result = service.create_run(str(group.id), str(store.id), user)
         run_id = run_result.id
 
-        details = service.get_run_details(run_id, user)
+        details = await service.get_run_details(run_id, user)
 
         assert details.id == run_id
         assert details.state == "planning"
@@ -196,9 +196,9 @@ class TestGroupService:
 
     def test_get_group_details_not_member(self, repo, user):
         """Test getting group details when not a member"""
-        other_user = repo.create_user(name="Other", email="other@example.com", password_hash="hash")
-        other_group = repo.create_group(name="Other Group", created_by=other_user.id)
-        repo.add_group_member(other_group.id, other_user)
+        other_user =await repo.create_user(name="Other", email="other@example.com", password_hash="hash")
+        other_group =await repo.create_group(name="Other Group", created_by=other_user.id)
+       await repo.add_group_member(other_group.id, other_user)
 
         service = GroupService(repo)
         with pytest.raises(ForbiddenError):
@@ -216,7 +216,7 @@ class TestGroupService:
 
     def test_join_group_by_token_success(self, repo, user, group):
         """Test joining group by invite token"""
-        new_user = repo.create_user(name="New User", email="new@example.com", password_hash="hash")
+        new_user =await repo.create_user(name="New User", email="new@example.com", password_hash="hash")
         service = GroupService(repo)
 
         result = service.join_group(group.invite_token, new_user)
@@ -331,15 +331,15 @@ class TestShoppingService:
     async def test_get_shopping_list(self, repo, user, group, store, product):
         """Test getting shopping list"""
         # Create run and place bids
-        run = repo.create_run(group.id, store.id, user.id)
-        participation = repo.create_participation(user.id, run.id, is_leader=True)
-        repo.create_or_update_bid(participation.id, product.id, quantity=5, interested_only=False)
+        run =await repo.create_run(group.id, store.id, user.id)
+        participation =await repo.create_participation(user.id, run.id, is_leader=True)
+       await repo.create_or_update_bid(participation.id, product.id, quantity=5, interested_only=False)
 
         # Update run to shopping state and generate shopping list
-        repo.update_run_state(run.id, "active")
-        repo.update_run_state(run.id, "confirmed")
-        repo.update_run_state(run.id, "shopping")
-        repo.create_shopping_list_item(run.id, product.id, requested_quantity=5)
+       await repo.update_run_state(run.id, "active")
+       await repo.update_run_state(run.id, "confirmed")
+       await repo.update_run_state(run.id, "shopping")
+       await repo.create_shopping_list_item(run.id, product.id, requested_quantity=5)
 
         service = ShoppingService(repo)
         shopping_list = await service.get_shopping_list(str(run.id), user)
@@ -350,13 +350,13 @@ class TestShoppingService:
 
     async def test_update_availability_price(self, repo, user, group, store, product):
         """Test updating product availability price"""
-        run = repo.create_run(group.id, store.id, user.id)
-        repo.create_participation(user.id, run.id, is_leader=True)
+        run =await repo.create_run(group.id, store.id, user.id)
+       await repo.create_participation(user.id, run.id, is_leader=True)
         # Transition to shopping state
-        repo.update_run_state(run.id, "active")
-        repo.update_run_state(run.id, "confirmed")
-        repo.update_run_state(run.id, "shopping")
-        item = repo.create_shopping_list_item(run.id, product.id, requested_quantity=5)
+       await repo.update_run_state(run.id, "active")
+       await repo.update_run_state(run.id, "confirmed")
+       await repo.update_run_state(run.id, "shopping")
+        item =await repo.create_shopping_list_item(run.id, product.id, requested_quantity=5)
 
         service = ShoppingService(repo)
         result = await service.add_availability_price(
@@ -371,13 +371,13 @@ class TestShoppingService:
 
     async def test_mark_item_purchased(self, repo, user, group, store, product):
         """Test marking item as purchased"""
-        run = repo.create_run(group.id, store.id, user.id)
-        repo.create_participation(user.id, run.id, is_leader=True)
+        run =await repo.create_run(group.id, store.id, user.id)
+       await repo.create_participation(user.id, run.id, is_leader=True)
         # Transition to shopping state
-        repo.update_run_state(run.id, "active")
-        repo.update_run_state(run.id, "confirmed")
-        repo.update_run_state(run.id, "shopping")
-        item = repo.create_shopping_list_item(run.id, product.id, requested_quantity=5)
+       await repo.update_run_state(run.id, "active")
+       await repo.update_run_state(run.id, "confirmed")
+       await repo.update_run_state(run.id, "shopping")
+        item =await repo.create_shopping_list_item(run.id, product.id, requested_quantity=5)
 
         service = ShoppingService(repo)
         result = await service.mark_purchased(
@@ -398,14 +398,14 @@ class TestDistributionService:
     def test_get_distribution_data(self, repo, user, group, store, product):
         """Test getting distribution data"""
         # Setup run with purchases
-        run = repo.create_run(group.id, store.id, user.id)
+        run =await repo.create_run(group.id, store.id, user.id)
         # Properly transition through states to distributing
-        repo.update_run_state(run.id, "active")
-        repo.update_run_state(run.id, "confirmed")
-        repo.update_run_state(run.id, "shopping")
-        repo.update_run_state(run.id, "distributing")
-        participation = repo.create_participation(user.id, run.id, is_leader=True)
-        bid = repo.create_or_update_bid(participation.id, product.id, quantity=5, interested_only=False)
+       await repo.update_run_state(run.id, "active")
+       await repo.update_run_state(run.id, "confirmed")
+       await repo.update_run_state(run.id, "shopping")
+       await repo.update_run_state(run.id, "distributing")
+        participation =await repo.create_participation(user.id, run.id, is_leader=True)
+        bid =await repo.create_or_update_bid(participation.id, product.id, quantity=5, interested_only=False)
 
         service = DistributionService(repo)
         data = service.get_distribution_summary(str(run.id), user)
@@ -415,14 +415,14 @@ class TestDistributionService:
 
     def test_toggle_pickup_status(self, repo, user, group, store, product):
         """Test toggling pickup status"""
-        run = repo.create_run(group.id, store.id, user.id)
+        run =await repo.create_run(group.id, store.id, user.id)
         # Properly transition through states to distributing
-        repo.update_run_state(run.id, "active")
-        repo.update_run_state(run.id, "confirmed")
-        repo.update_run_state(run.id, "shopping")
-        repo.update_run_state(run.id, "distributing")
-        participation = repo.create_participation(user.id, run.id, is_leader=True)
-        bid = repo.create_or_update_bid(participation.id, product.id, quantity=5, interested_only=False)
+       await repo.update_run_state(run.id, "active")
+       await repo.update_run_state(run.id, "confirmed")
+       await repo.update_run_state(run.id, "shopping")
+       await repo.update_run_state(run.id, "distributing")
+        participation =await repo.create_participation(user.id, run.id, is_leader=True)
+        bid =await repo.create_or_update_bid(participation.id, product.id, quantity=5, interested_only=False)
 
         service = DistributionService(repo)
         result = service.mark_picked_up(

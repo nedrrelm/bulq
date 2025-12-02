@@ -3,7 +3,8 @@
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import Notification
 from app.repositories.abstract.notification import AbstractNotificationRepository
@@ -12,68 +13,71 @@ from app.repositories.abstract.notification import AbstractNotificationRepositor
 class DatabaseNotificationRepository(AbstractNotificationRepository):
     """Database implementation of notification repository."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def create_notification(self, user_id: UUID, type: str, data: dict[str, Any]) -> Notification:
+    async def create_notification(self, user_id: UUID, type: str, data: dict[str, Any]) -> Notification:
         """Create a new notification for a user."""
         notification = Notification(user_id=user_id, type=type, data=data, read=False)
         self.db.add(notification)
-        self.db.commit()
-        self.db.refresh(notification)
+        await self.db.commit()
+        await self.db.refresh(notification)
         return notification
 
-    def get_user_notifications(
+    async def get_user_notifications(
         self, user_id: UUID, limit: int = 20, offset: int = 0
     ) -> list[Notification]:
         """Get notifications for a user (paginated)."""
-        return (
-            self.db.query(Notification)
+        result = await self.db.execute(
+            select(Notification)
             .filter(Notification.user_id == user_id)
             .order_by(Notification.created_at.desc())
             .limit(limit)
             .offset(offset)
-            .all()
         )
+        return list(result.scalars().all())
 
-    def get_unread_notifications(self, user_id: UUID) -> list[Notification]:
+    async def get_unread_notifications(self, user_id: UUID) -> list[Notification]:
         """Get all unread notifications for a user."""
-        return (
-            self.db.query(Notification)
+        result = await self.db.execute(
+            select(Notification)
             .filter(Notification.user_id == user_id, ~Notification.read)
             .order_by(Notification.created_at.desc())
-            .all()
         )
+        return list(result.scalars().all())
 
-    def get_unread_count(self, user_id: UUID) -> int:
+    async def get_unread_count(self, user_id: UUID) -> int:
         """Get count of unread notifications for a user."""
-        return (
-            self.db.query(Notification)
-            .filter(Notification.user_id == user_id, ~Notification.read)
-            .count()
+        result = await self.db.execute(
+            select(func.count()).select_from(Notification).filter(
+                Notification.user_id == user_id, ~Notification.read
+            )
         )
+        return result.scalar() or 0
 
-    def mark_notification_as_read(self, notification_id: UUID) -> bool:
+    async def mark_notification_as_read(self, notification_id: UUID) -> bool:
         """Mark a notification as read."""
-        notification = (
-            self.db.query(Notification).filter(Notification.id == notification_id).first()
+        result = await self.db.execute(
+            select(Notification).filter(Notification.id == notification_id)
         )
+        notification = result.scalar_one_or_none()
         if notification:
             notification.read = True
-            self.db.commit()
+            await self.db.commit()
             return True
         return False
 
-    def mark_all_notifications_as_read(self, user_id: UUID) -> int:
+    async def mark_all_notifications_as_read(self, user_id: UUID) -> int:
         """Mark all notifications as read for a user. Returns count of marked notifications."""
-        count = (
-            self.db.query(Notification)
+        result = await self.db.execute(
+            update(Notification)
             .filter(Notification.user_id == user_id, ~Notification.read)
-            .update({Notification.read: True})
+            .values(read=True)
         )
-        self.db.commit()
-        return count
+        await self.db.commit()
+        return result.rowcount
 
-    def get_notification_by_id(self, notification_id: UUID) -> Notification | None:
+    async def get_notification_by_id(self, notification_id: UUID) -> Notification | None:
         """Get a notification by ID."""
-        return self.db.query(Notification).filter(Notification.id == notification_id).first()
+        result = await self.db.execute(select(Notification).filter(Notification.id == notification_id))
+        return result.scalar_one_or_none()

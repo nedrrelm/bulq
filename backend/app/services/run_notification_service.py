@@ -1,6 +1,6 @@
 """Run notification service for managing notifications and WebSocket broadcasting."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.notification_data import (
     BidRetractedData,
@@ -29,11 +29,11 @@ logger = get_logger(__name__)
 class RunNotificationService(BaseService):
     """Service for managing run notifications and WebSocket broadcasting."""
 
-    def __init__(self, db: Session, websocket_manager: ConnectionManager | None = None):
+    def __init__(self, db: AsyncSession, websocket_manager: ConnectionManager | None = None):
         """Initialize service with database session and WebSocket manager.
 
         Args:
-            db: SQLAlchemy database session
+            db: SQLAlchemy async database session
             websocket_manager: Optional WebSocket manager for broadcasting
         """
         super().__init__(db)
@@ -205,7 +205,7 @@ class RunNotificationService(BaseService):
             },
         )
 
-    def notify_run_state_change(self, run: Run, old_state: str, new_state: str) -> None:
+    async def notify_run_state_change(self, run: Run, old_state: str, new_state: str) -> None:
         """Create notifications for all participants when run state changes.
 
         Args:
@@ -214,12 +214,12 @@ class RunNotificationService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        all_stores = self.store_repo.get_all_stores()
+        all_stores = await self.store_repo.get_all_stores()
         store = next((s for s in all_stores if s.id == run.store_id), None)
         store_name = store.name if store else 'Unknown Store'
 
         # Get all participants of this run
-        participations = self.run_repo.get_run_participations(run.id)
+        participations = await self.run_repo.get_run_participations(run.id)
 
         # Create notification data using Pydantic model for type safety
         notification_data = RunStateChangedData(
@@ -232,7 +232,7 @@ class RunNotificationService(BaseService):
 
         # Create notification for each participant and broadcast via WebSocket
         for participation in participations:
-            notification = self.notification_repo.create_notification(
+            notification = await self.notification_repo.create_notification(
                 user_id=participation.user_id,
                 type='run_state_changed',
                 data=notification_data.model_dump(mode='json'),

@@ -1,46 +1,69 @@
 """Database user repository implementation."""
 
 from uuid import UUID
+from app.infrastructure.request_context import get_logger
 
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.models import Group, LeaderReassignmentRequest, Notification, Product, ProductAvailability, ProductBid, Run, RunParticipation, Store, User, group_membership
+from app.core.models import (
+    Group,
+    LeaderReassignmentRequest,
+    Notification,
+    Product,
+    ProductAvailability,
+    ProductBid,
+    RunParticipation,
+    Store,
+    User,
+    group_membership,
+)
 from app.repositories.abstract.user import AbstractUserRepository
 
 
 class DatabaseUserRepository(AbstractUserRepository):
     """Database implementation of user repository."""
+    logger = get_logger(__name__)
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_user_by_id(self, user_id: UUID) -> User | None:
+    async def get_user_by_id(self, user_id: UUID) -> User | None:
         """Get user by ID."""
-        return self.db.query(User).filter(User.id == user_id).first()
+        result = await self.db.execute(select(User).filter(User.id == user_id))
+        self.logger.info(f"Result: {result}")
+        return result.scalar_one_or_none()
 
-    def get_user_by_username(self, username: str) -> User | None:
+    async def get_user_by_username(self, username: str) -> User | None:
         """Get user by username."""
-        return self.db.query(User).filter(User.username == username).first()
+        result = await self.db.execute(select(User).filter(User.username == username))
+        self.logger.info(f"Result: {result}")
+        return result.scalar_one_or_none()
 
-    def create_user(self, name: str, username: str, password_hash: str) -> User:
+    async def create_user(self, name: str, username: str, password_hash: str) -> User:
         """Create a new user."""
         user = User(name=name, username=username, password_hash=password_hash)
         self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
+        await self.db.commit()
+        await self.db.refresh(user)
         return user
 
-    def get_user_groups(self, user: User) -> list[Group]:
+    async def get_user_groups(self, user: User) -> list[Group]:
         """Get all groups that a user is a member of."""
-        return self.db.query(Group).join(Group.members).filter(User.id == user.id).all()
+        result = await self.db.execute(
+            select(Group).join(Group.members).filter(User.id == user.id)
+        )
+        return list(result.scalars().all())
 
-    def get_all_users(self) -> list[User]:
+    async def get_all_users(self) -> list[User]:
         """Get all users."""
-        return self.db.query(User).all()
+        result = await self.db.execute(select(User))
+        return list(result.scalars().all())
 
-    def update_user(self, user_id: UUID, **fields) -> User | None:
+    async def update_user(self, user_id: UUID, **fields) -> User | None:
         """Update user fields. Returns updated user or None if not found."""
-        user = self.db.query(User).filter(User.id == user_id).first()
+        result = await self.db.execute(select(User).filter(User.id == user_id))
+        user = result.scalar_one_or_none()
         if not user:
             return None
 
@@ -48,33 +71,32 @@ class DatabaseUserRepository(AbstractUserRepository):
             if hasattr(user, key):
                 setattr(user, key, value)
 
-        self.db.commit()
-        self.db.refresh(user)
+        await self.db.commit()
+        await self.db.refresh(user)
         return user
 
-    def delete_user(self, user_id: UUID) -> bool:
+    async def delete_user(self, user_id: UUID) -> bool:
         """Delete a user. Returns True if deleted, False if not found."""
-        user = self.db.query(User).filter(User.id == user_id).first()
+        result = await self.db.execute(select(User).filter(User.id == user_id))
+        user = result.scalar_one_or_none()
         if not user:
             return False
 
         self.db.delete(user)
-        self.db.commit()
+        await self.db.commit()
         return True
 
-    def verify_password(self, password: str, stored_hash: str) -> bool:
+    async def verify_password(self, password: str, stored_hash: str) -> bool:
         """Verify a password against a hash."""
         import bcrypt
 
         return bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
 
-    def get_user_stats(self, user_id: UUID) -> dict:
+    async def get_user_stats(self, user_id: UUID) -> dict:
         """Get user statistics including runs, bids, and spending."""
-        from sqlalchemy import func
-
         # Get total quantity bought and money spent from picked-up bids
-        bid_stats = (
-            self.db.query(
+        bid_stats_result = await self.db.execute(
+            select(
                 func.coalesce(func.sum(ProductBid.distributed_quantity), 0).label('total_quantity'),
                 func.coalesce(
                     func.sum(
@@ -85,43 +107,43 @@ class DatabaseUserRepository(AbstractUserRepository):
             )
             .join(RunParticipation, ProductBid.participation_id == RunParticipation.id)
             .filter(RunParticipation.user_id == user_id, ProductBid.is_picked_up)
-            .first()
         )
+        bid_stats = bid_stats_result.first()
 
         total_quantity = float(bid_stats.total_quantity) if bid_stats else 0.0
         total_spent = float(bid_stats.total_spent) if bid_stats else 0.0
 
         # Get runs participated count (distinct runs)
-        runs_participated = (
-            self.db.query(func.count(func.distinct(RunParticipation.run_id)))
-            .filter(RunParticipation.user_id == user_id)
-            .scalar()
-            or 0
+        runs_participated_result = await self.db.execute(
+            select(func.count(func.distinct(RunParticipation.run_id))).filter(
+                RunParticipation.user_id == user_id
+            )
         )
+        runs_participated = runs_participated_result.scalar() or 0
 
         # Get runs where user was helper
-        runs_helped = (
-            self.db.query(func.count(RunParticipation.id))
-            .filter(RunParticipation.user_id == user_id, RunParticipation.is_helper)
-            .scalar()
-            or 0
+        runs_helped_result = await self.db.execute(
+            select(func.count(RunParticipation.id)).filter(
+                RunParticipation.user_id == user_id, RunParticipation.is_helper
+            )
         )
+        runs_helped = runs_helped_result.scalar() or 0
 
         # Get runs where user was leader
-        runs_led = (
-            self.db.query(func.count(RunParticipation.id))
-            .filter(RunParticipation.user_id == user_id, RunParticipation.is_leader)
-            .scalar()
-            or 0
+        runs_led_result = await self.db.execute(
+            select(func.count(RunParticipation.id)).filter(
+                RunParticipation.user_id == user_id, RunParticipation.is_leader
+            )
         )
+        runs_led = runs_led_result.scalar() or 0
 
         # Get groups count
-        groups_count = (
-            self.db.query(func.count(group_membership.c.group_id))
-            .filter(group_membership.c.user_id == user_id)
-            .scalar()
-            or 0
+        groups_count_result = await self.db.execute(
+            select(func.count(group_membership.c.group_id)).filter(
+                group_membership.c.user_id == user_id
+            )
         )
+        groups_count = groups_count_result.scalar() or 0
 
         return {
             'total_quantity_bought': total_quantity,
@@ -132,117 +154,106 @@ class DatabaseUserRepository(AbstractUserRepository):
             'groups_count': groups_count,
         }
 
-    def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update all run participations from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(RunParticipation)
+        result = await self.db.execute(
+            update(RunParticipation)
             .filter(RunParticipation.user_id == old_user_id)
-            .update({RunParticipation.user_id: new_user_id})
+            .values(user_id=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update group creator from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(Group)
-            .filter(Group.created_by == old_user_id)
-            .update({Group.created_by: new_user_id})
+        result = await self.db.execute(
+            update(Group).filter(Group.created_by == old_user_id).values(created_by=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product creator from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(Product)
-            .filter(Product.created_by == old_user_id)
-            .update({Product.created_by: new_user_id})
+        result = await self.db.execute(
+            update(Product).filter(Product.created_by == old_user_id).values(created_by=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product verifier from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(Product)
-            .filter(Product.verified_by == old_user_id)
-            .update({Product.verified_by: new_user_id})
+        result = await self.db.execute(
+            update(Product).filter(Product.verified_by == old_user_id).values(verified_by=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update store creator from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(Store)
-            .filter(Store.created_by == old_user_id)
-            .update({Store.created_by: new_user_id})
+        result = await self.db.execute(
+            update(Store).filter(Store.created_by == old_user_id).values(created_by=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update store verifier from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(Store)
-            .filter(Store.verified_by == old_user_id)
-            .update({Store.verified_by: new_user_id})
+        result = await self.db.execute(
+            update(Store).filter(Store.verified_by == old_user_id).values(verified_by=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product availability creator from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(ProductAvailability)
+        result = await self.db.execute(
+            update(ProductAvailability)
             .filter(ProductAvailability.created_by == old_user_id)
-            .update({ProductAvailability.created_by: new_user_id})
+            .values(created_by=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update notifications from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(Notification)
+        result = await self.db.execute(
+            update(Notification)
             .filter(Notification.user_id == old_user_id)
-            .update({Notification.user_id: new_user_id})
+            .values(user_id=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update reassignment requests from_user from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(LeaderReassignmentRequest)
+        result = await self.db.execute(
+            update(LeaderReassignmentRequest)
             .filter(LeaderReassignmentRequest.from_user_id == old_user_id)
-            .update({LeaderReassignmentRequest.from_user_id: new_user_id})
+            .values(from_user_id=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update reassignment requests to_user from old user to new user. Returns count of updated records."""
-        result = (
-            self.db.query(LeaderReassignmentRequest)
+        result = await self.db.execute(
+            update(LeaderReassignmentRequest)
             .filter(LeaderReassignmentRequest.to_user_id == old_user_id)
-            .update({LeaderReassignmentRequest.to_user_id: new_user_id})
+            .values(to_user_id=new_user_id)
         )
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Transfer group admin status from old user to new user. Returns count of updated groups."""
         # Find all groups where old user is admin
-        old_user_admin_groups = (
-            self.db.query(group_membership.c.group_id)
-            .filter(
+        result = await self.db.execute(
+            select(group_membership.c.group_id).filter(
                 group_membership.c.user_id == old_user_id,
-                group_membership.c.is_group_admin == True
+                group_membership.c.is_group_admin == True,
             )
-            .all()
         )
+        old_user_admin_groups = result.all()
 
         group_ids = [g[0] for g in old_user_admin_groups]
 
@@ -250,31 +261,33 @@ class DatabaseUserRepository(AbstractUserRepository):
             return 0
 
         # Make new user admin in those groups (if they're already a member)
-        result = (
-            self.db.query(group_membership)
+        result = await self.db.execute(
+            update(group_membership)
             .filter(
                 group_membership.c.user_id == new_user_id,
-                group_membership.c.group_id.in_(group_ids)
+                group_membership.c.group_id.in_(group_ids),
             )
-            .update({group_membership.c.is_group_admin: True}, synchronize_session=False)
+            .values(is_group_admin=True)
         )
 
-        self.db.commit()
-        return result
+        await self.db.commit()
+        return result.rowcount
 
-    def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
+    async def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
         """Check if two users participate in any of the same runs. Returns list of overlapping run IDs."""
-        user1_runs = (
-            self.db.query(RunParticipation.run_id)
+        # Get user1's run IDs as a subquery
+        user1_runs_subq = (
+            select(RunParticipation.run_id)
             .filter(RunParticipation.user_id == user1_id)
             .subquery()
         )
-        overlapping_runs = (
-            self.db.query(RunParticipation.run_id)
-            .filter(
+
+        # Find runs where user2 participates that are in user1's runs
+        result = await self.db.execute(
+            select(RunParticipation.run_id).filter(
                 RunParticipation.user_id == user2_id,
-                RunParticipation.run_id.in_(user1_runs)
+                RunParticipation.run_id.in_(select(user1_runs_subq.c.run_id)),
             )
-            .all()
         )
+        overlapping_runs = result.all()
         return [run_id for (run_id,) in overlapping_runs]

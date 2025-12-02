@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import MyRequestsResponse, ReassignmentDetailResponse, ReassignmentResponse
 from app.api.schemas.notification_data import (
@@ -43,7 +43,7 @@ logger = get_logger(__name__)
 class ReassignmentService(BaseService):
     """Service for handling leader reassignment requests."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.notification_repo = get_notification_repository(db)
@@ -73,20 +73,20 @@ class ReassignmentService(BaseService):
             ValidationError: Invalid request (same user, user not in run, etc.)
             ConflictError: Pending request already exists
         """
-        run, to_user = self._validate_reassignment_eligibility(run_id, from_user, to_user_id)
-        self._check_reassignment_permissions(from_user, to_user_id, run_id)
-        store_name = self._get_store_name(run.store_id)
+        run, to_user = await self._validate_reassignment_eligibility(run_id, from_user, to_user_id)
+        await self._check_reassignment_permissions(from_user, to_user_id, run_id)
+        store_name = await self._get_store_name(run.store_id)
 
         # Wrap request creation and notification in transaction
         if self.db:
-            with transaction(self.db, 'create reassignment request'):
-                request = self._create_reassignment_record(run_id, from_user.id, to_user_id)
+            async with transaction(self.db, 'create reassignment request'):
+                request = await self._create_reassignment_record(run_id, from_user.id, to_user_id)
                 await self._notify_reassignment_participants(
                     run_id, from_user, to_user_id, request.id, store_name
                 )
         else:
             # Fallback for when db session not available
-            request = self._create_reassignment_record(run_id, from_user.id, to_user_id)
+            request = await self._create_reassignment_record(run_id, from_user.id, to_user_id)
             await self._notify_reassignment_participants(
                 run_id, from_user, to_user_id, request.id, store_name
             )
@@ -111,15 +111,15 @@ class ReassignmentService(BaseService):
             resolved_at=None,
         )
 
-    def _validate_reassignment_eligibility(
+    async def _validate_reassignment_eligibility(
         self, run_id: UUID, from_user: User, to_user_id: UUID
     ) -> tuple[Run, User]:
         """Validate that run and users exist."""
-        run = self.run_repo.get_run_by_id(run_id)
+        run = await self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        participation = self.run_repo.get_participation(from_user.id, run_id)
+        participation = await self.run_repo.get_participation(from_user.id, run_id)
         if not participation or not participation.is_leader:
             raise ForbiddenError(
                 code=NOT_RUN_LEADER,
@@ -127,7 +127,7 @@ class ReassignmentService(BaseService):
                 run_id=str(run_id),
             )
 
-        to_user = self.user_repo.get_user_by_id(to_user_id)
+        to_user = await self.user_repo.get_user_by_id(to_user_id)
         if not to_user:
             raise NotFoundError(
                 code='USER_NOT_FOUND', message='User not found', user_id=str(to_user_id)
@@ -135,7 +135,7 @@ class ReassignmentService(BaseService):
 
         return run, to_user
 
-    def _check_reassignment_permissions(
+    async def _check_reassignment_permissions(
         self, from_user: User, to_user_id: UUID, run_id: UUID
     ) -> None:
         """Check if reassignment is allowed."""
@@ -146,7 +146,7 @@ class ReassignmentService(BaseService):
                 run_id=str(run_id),
             )
 
-        target_participation = self.run_repo.get_participation(to_user_id, run_id)
+        target_participation = await self.run_repo.get_participation(to_user_id, run_id)
         if not target_participation:
             raise ValidationError(
                 code=REASSIGNMENT_TARGET_NOT_PARTICIPANT,
@@ -155,7 +155,7 @@ class ReassignmentService(BaseService):
                 target_user_id=str(to_user_id),
             )
 
-        existing_request = self.reassignment_repo.get_pending_reassignment_for_run(run_id)
+        existing_request = await self.reassignment_repo.get_pending_reassignment_for_run(run_id)
         if existing_request:
             raise ConflictError(
                 code=REASSIGNMENT_REQUEST_ALREADY_EXISTS,
@@ -164,15 +164,15 @@ class ReassignmentService(BaseService):
                 request_id=str(existing_request.id),
             )
 
-    def _create_reassignment_record(
+    async def _create_reassignment_record(
         self, run_id: UUID, from_user_id: UUID, to_user_id: UUID
     ) -> LeaderReassignmentRequest:
         """Create reassignment request in database."""
-        return self.reassignment_repo.create_reassignment_request(run_id, from_user_id, to_user_id)
+        return await self.reassignment_repo.create_reassignment_request(run_id, from_user_id, to_user_id)
 
-    def _get_store_name(self, store_id: UUID) -> str:
+    async def _get_store_name(self, store_id: UUID) -> str:
         """Get store name or return default."""
-        store = self.store_repo.get_store_by_id(store_id)
+        store = await self.store_repo.get_store_by_id(store_id)
         return store.name if store else 'Unknown Store'
 
     async def _notify_reassignment_participants(
@@ -187,7 +187,7 @@ class ReassignmentService(BaseService):
             store_name=store_name,
         )
 
-        notification = self.notification_repo.create_notification(
+        notification = await self.notification_repo.create_notification(
             to_user_id, 'leader_reassignment_request', notification_data.model_dump(mode='json')
         )
 
@@ -258,19 +258,19 @@ class ReassignmentService(BaseService):
             ForbiddenError: User is not the target of the request
             ValidationError: Request is not pending
         """
-        request = self._validate_accept_request(request_id, accepting_user)
-        run = self._get_run(request.run_id)
-        store_name = self._get_store_name(run.store_id)
+        request = await self._validate_accept_request(request_id, accepting_user)
+        run = await self._get_run(request.run_id)
+        store_name = await self._get_store_name(run.store_id)
 
         # Wrap leadership transfer and status update in transaction
         if self.db:
-            with transaction(self.db, 'accept leader reassignment'):
-                self._transfer_leadership(request.run_id, request.from_user_id, request.to_user_id)
-                self.reassignment_repo.update_reassignment_status(request_id, 'accepted')
+            async with transaction(self.db, 'accept leader reassignment'):
+                await self._transfer_leadership(request.run_id, request.from_user_id, request.to_user_id)
+                await self.reassignment_repo.update_reassignment_status(request_id, 'accepted')
         else:
             # Fallback for when db session not available (shouldn't happen in production)
-            self._transfer_leadership(request.run_id, request.from_user_id, request.to_user_id)
-            self.reassignment_repo.update_reassignment_status(request_id, 'accepted')
+            await self._transfer_leadership(request.run_id, request.from_user_id, request.to_user_id)
+            await self.reassignment_repo.update_reassignment_status(request_id, 'accepted')
 
         # Notify after successful transaction
         await self._notify_acceptance(request, accepting_user, store_name, request_id)
@@ -295,11 +295,11 @@ class ReassignmentService(BaseService):
             resolved_at=request.resolved_at.isoformat() if request.resolved_at else None,
         )
 
-    def _validate_accept_request(
+    async def _validate_accept_request(
         self, request_id: UUID, accepting_user: User
     ) -> LeaderReassignmentRequest:
         """Validate accept request."""
-        request = self.reassignment_repo.get_reassignment_request_by_id(request_id)
+        request = await self.reassignment_repo.get_reassignment_request_by_id(request_id)
         if not request:
             raise NotFoundError(
                 code=REASSIGNMENT_REQUEST_NOT_FOUND,
@@ -324,17 +324,17 @@ class ReassignmentService(BaseService):
 
         return request
 
-    def _get_run(self, run_id: UUID) -> Run:
+    async def _get_run(self, run_id: UUID) -> Run:
         """Get run or raise error."""
-        run = self.run_repo.get_run_by_id(run_id)
+        run = await self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
         return run
 
-    def _transfer_leadership(self, run_id: UUID, from_user_id: UUID, to_user_id: UUID) -> None:
+    async def _transfer_leadership(self, run_id: UUID, from_user_id: UUID, to_user_id: UUID) -> None:
         """Transfer leadership from one user to another."""
-        old_leader_participation = self.run_repo.get_participation(from_user_id, run_id)
-        new_leader_participation = self.run_repo.get_participation(to_user_id, run_id)
+        old_leader_participation = await self.run_repo.get_participation(from_user_id, run_id)
+        new_leader_participation = await self.run_repo.get_participation(to_user_id, run_id)
 
         if not old_leader_participation or not new_leader_participation:
             raise ValidationError(
@@ -361,7 +361,7 @@ class ReassignmentService(BaseService):
             store_name=store_name,
         )
 
-        notification = self.notification_repo.create_notification(
+        notification = await self.notification_repo.create_notification(
             request.from_user_id,
             'leader_reassignment_accepted',
             notification_data.model_dump(mode='json'),
@@ -435,17 +435,17 @@ class ReassignmentService(BaseService):
             ForbiddenError: User is not the target of the request
             ValidationError: Request is not pending
         """
-        request = self._validate_decline_request(request_id, declining_user)
-        run = self._get_run(request.run_id)
-        store_name = self._get_store_name(run.store_id)
+        request = await self._validate_decline_request(request_id, declining_user)
+        run = await self._get_run(request.run_id)
+        store_name = await self._get_store_name(run.store_id)
 
         # Wrap status update and notification in transaction
         if self.db:
-            with transaction(self.db, 'decline reassignment request'):
-                self.reassignment_repo.update_reassignment_status(request_id, 'declined')
+            async with transaction(self.db, 'decline reassignment request'):
+                await self.reassignment_repo.update_reassignment_status(request_id, 'declined')
                 await self._notify_decline(request, declining_user, store_name, request_id)
         else:
-            self.reassignment_repo.update_reassignment_status(request_id, 'declined')
+            await self.reassignment_repo.update_reassignment_status(request_id, 'declined')
             await self._notify_decline(request, declining_user, store_name, request_id)
 
         logger.info(
@@ -468,11 +468,11 @@ class ReassignmentService(BaseService):
             resolved_at=request.resolved_at.isoformat() if request.resolved_at else None,
         )
 
-    def _validate_decline_request(
+    async def _validate_decline_request(
         self, request_id: UUID, declining_user: User
     ) -> LeaderReassignmentRequest:
         """Validate decline request."""
-        request = self.reassignment_repo.get_reassignment_request_by_id(request_id)
+        request = await self.reassignment_repo.get_reassignment_request_by_id(request_id)
         if not request:
             raise NotFoundError(
                 code=REASSIGNMENT_REQUEST_NOT_FOUND,
@@ -512,7 +512,7 @@ class ReassignmentService(BaseService):
             store_name=store_name,
         )
 
-        notification = self.notification_repo.create_notification(
+        notification = await self.notification_repo.create_notification(
             request.from_user_id,
             'leader_reassignment_declined',
             notification_data.model_dump(mode='json'),
@@ -569,7 +569,7 @@ class ReassignmentService(BaseService):
                 },
             )
 
-    def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> ReassignmentResponse:
+    async def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> ReassignmentResponse:
         """Cancel a pending reassignment request.
 
         Args:
@@ -585,7 +585,7 @@ class ReassignmentService(BaseService):
             ValidationError: Request is not pending
         """
         # Get request
-        request = self.reassignment_repo.get_reassignment_request_by_id(request_id)
+        request = await self.reassignment_repo.get_reassignment_request_by_id(request_id)
         if not request:
             raise NotFoundError(
                 code=REASSIGNMENT_REQUEST_NOT_FOUND,
@@ -611,7 +611,7 @@ class ReassignmentService(BaseService):
             )
 
         # Update request status
-        self.reassignment_repo.update_reassignment_status(request_id, 'cancelled')
+        await self.reassignment_repo.update_reassignment_status(request_id, 'cancelled')
 
         logger.info(
             'Leader reassignment cancelled',
@@ -632,7 +632,7 @@ class ReassignmentService(BaseService):
             resolved_at=request.resolved_at.isoformat() if request.resolved_at else None,
         )
 
-    def get_pending_requests_for_user(self, user_id: UUID) -> MyRequestsResponse:
+    async def get_pending_requests_for_user(self, user_id: UUID) -> MyRequestsResponse:
         """Get all pending reassignment requests involving a user.
 
         Args:
@@ -641,15 +641,15 @@ class ReassignmentService(BaseService):
         Returns:
             MyRequestsResponse with 'sent' and 'received' lists of requests
         """
-        sent_requests = self.reassignment_repo.get_pending_reassignments_from_user(user_id)
-        received_requests = self.reassignment_repo.get_pending_reassignments_to_user(user_id)
+        sent_requests = await self.reassignment_repo.get_pending_reassignments_from_user(user_id)
+        received_requests = await self.reassignment_repo.get_pending_reassignments_to_user(user_id)
 
         return MyRequestsResponse(
-            sent=[self._format_request(r) for r in sent_requests],
-            received=[self._format_request(r) for r in received_requests],
+            sent=[await self._format_request(r) for r in sent_requests],
+            received=[await self._format_request(r) for r in received_requests],
         )
 
-    def get_pending_request_for_run(self, run_id: UUID) -> ReassignmentDetailResponse | None:
+    async def get_pending_request_for_run(self, run_id: UUID) -> ReassignmentDetailResponse | None:
         """Get pending reassignment request for a run (if any).
 
         Args:
@@ -658,22 +658,22 @@ class ReassignmentService(BaseService):
         Returns:
             ReassignmentDetailResponse or None
         """
-        request = self.reassignment_repo.get_pending_reassignment_for_run(run_id)
-        return self._format_request(request) if request else None
+        request = await self.reassignment_repo.get_pending_reassignment_for_run(run_id)
+        return await self._format_request(request) if request else None
 
-    def _format_request(self, request: LeaderReassignmentRequest) -> ReassignmentDetailResponse:
+    async def _format_request(self, request: LeaderReassignmentRequest) -> ReassignmentDetailResponse:
         """Format a reassignment request for API response."""
         # Get user names
-        from_user = self.user_repo.get_user_by_id(request.from_user_id)
-        to_user = self.user_repo.get_user_by_id(request.to_user_id)
+        from_user = await self.user_repo.get_user_by_id(request.from_user_id)
+        to_user = await self.user_repo.get_user_by_id(request.to_user_id)
 
         # Get run details
-        run = self.run_repo.get_run_by_id(request.run_id)
+        run = await self.run_repo.get_run_by_id(request.run_id)
 
         # Get store name
         store_name = 'Unknown Store'
         if run:
-            store = self.store_repo.get_store_by_id(run.store_id)
+            store = await self.store_repo.get_store_by_id(run.store_id)
             store_name = store.name if store else 'Unknown Store'
 
         return ReassignmentDetailResponse(

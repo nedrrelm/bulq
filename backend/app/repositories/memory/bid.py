@@ -15,12 +15,12 @@ class MemoryBidRepository(AbstractBidRepository):
     def __init__(self, storage: MemoryStorage):
         self.storage = storage
 
-    def get_bids_by_run(self, run_id: UUID) -> list[ProductBid]:
+    async def get_bids_by_run(self, run_id: UUID) -> list[ProductBid]:
         participations = [p for p in self.storage.participations.values() if p.run_id == run_id]
         participation_ids = {p.id for p in participations}
         return [bid for bid in self.storage.bids.values() if bid.participation_id in participation_ids]
 
-    def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
+    async def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
         """Get bids with participation and user data eagerly loaded to avoid N+1 queries."""
         participations = [p for p in self.storage.participations.values() if p.run_id == run_id]
         participation_ids = {p.id for p in participations}
@@ -39,7 +39,7 @@ class MemoryBidRepository(AbstractBidRepository):
 
         return bids
 
-    def create_or_update_bid(
+    async def create_or_update_bid(
         self,
         participation_id: UUID,
         product_id: UUID,
@@ -71,7 +71,7 @@ class MemoryBidRepository(AbstractBidRepository):
             self.storage.bids[bid.id] = bid
             return bid
 
-    def delete_bid(self, participation_id: UUID, product_id: UUID) -> bool:
+    async def delete_bid(self, participation_id: UUID, product_id: UUID) -> bool:
         """Delete a product bid."""
         bid_to_delete = None
         for bid_id, bid in self.storage.bids.items():
@@ -84,7 +84,7 @@ class MemoryBidRepository(AbstractBidRepository):
             return True
         return False
 
-    def get_bid(self, participation_id: UUID, product_id: UUID) -> ProductBid | None:
+    async def get_bid(self, participation_id: UUID, product_id: UUID) -> ProductBid | None:
         """Get a specific bid."""
         for bid in self.storage.bids.values():
             if bid.participation_id == participation_id and bid.product_id == product_id:
@@ -93,11 +93,11 @@ class MemoryBidRepository(AbstractBidRepository):
                 return bid
         return None
 
-    def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
+    async def get_bid_by_id(self, bid_id: UUID) -> ProductBid | None:
         """Get a bid by its ID."""
         return self.storage.bids.get(bid_id)
 
-    def get_bids_by_participation(self, participation_id: UUID) -> list[ProductBid]:
+    async def get_bids_by_participation(self, participation_id: UUID) -> list[ProductBid]:
         """Get all bids for a participation."""
         bids = []
         for bid in self.storage.bids.values():
@@ -107,7 +107,7 @@ class MemoryBidRepository(AbstractBidRepository):
                 bids.append(bid)
         return bids
 
-    def update_bid_distributed_quantities(
+    async def update_bid_distributed_quantities(
         self, bid_id: UUID, quantity: float, price_per_unit: Decimal
     ) -> None:
         """Update the distributed quantity and price for a bid."""
@@ -116,6 +116,6 @@ class MemoryBidRepository(AbstractBidRepository):
             bid.distributed_quantity = quantity
             bid.distributed_price_per_unit = price_per_unit
 
-    def commit_changes(self) -> None:
+    async def commit_changes(self) -> None:
         """Commit any pending changes (no-op for in-memory repository)."""
         pass

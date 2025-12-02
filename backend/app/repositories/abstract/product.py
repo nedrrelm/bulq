@@ -11,49 +11,49 @@ class AbstractProductRepository(ABC):
     """Abstract base class for product repository operations."""
 
     @abstractmethod
-    def get_products_by_store(self, store_id: UUID) -> list[Product]:
+    async def get_products_by_store(self, store_id: UUID) -> list[Product]:
         """Get all products for a store."""
         raise NotImplementedError('Subclass must implement get_products_by_store')
 
     @abstractmethod
-    def search_products(self, query: str) -> list[Product]:
+    async def search_products(self, query: str) -> list[Product]:
         """Search for products by name."""
         raise NotImplementedError('Subclass must implement search_products')
 
     @abstractmethod
-    def get_product_by_id(self, product_id: UUID) -> Product | None:
+    async def get_product_by_id(self, product_id: UUID) -> Product | None:
         """Get product by ID."""
         raise NotImplementedError('Subclass must implement get_product_by_id')
 
     @abstractmethod
-    def create_product(
+    async def create_product(
         self, name: str, brand: str | None = None, unit: str | None = None
     ) -> Product:
         """Create a new product (store-agnostic)."""
         raise NotImplementedError('Subclass must implement create_product')
 
     @abstractmethod
-    def get_all_products(self) -> list[Product]:
+    async def get_all_products(self) -> list[Product]:
         """Get all products."""
         raise NotImplementedError('Subclass must implement get_all_products')
 
     @abstractmethod
-    def update_product(self, product_id: UUID, **fields) -> Product | None:
+    async def update_product(self, product_id: UUID, **fields) -> Product | None:
         """Update product fields. Returns updated product or None if not found."""
         raise NotImplementedError('Subclass must implement update_product')
 
     @abstractmethod
-    def delete_product(self, product_id: UUID) -> bool:
+    async def delete_product(self, product_id: UUID) -> bool:
         """Delete a product. Returns True if deleted, False if not found."""
         raise NotImplementedError('Subclass must implement delete_product')
 
     @abstractmethod
-    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
+    async def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
         """Get product availabilities, optionally filtered by store."""
         raise NotImplementedError('Subclass must implement get_product_availabilities')
 
     @abstractmethod
-    def create_product_availability(
+    async def create_product_availability(
         self,
         product_id: UUID,
         store_id: UUID,
@@ -66,33 +66,33 @@ class AbstractProductRepository(ABC):
         raise NotImplementedError('Subclass must implement create_product_availability')
 
     @abstractmethod
-    def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Any | None:
+    async def get_availability_by_product_and_store(self, product_id: UUID, store_id: UUID) -> Any | None:
         """Get a specific product availability by product and store."""
         raise NotImplementedError('Subclass must implement get_availability_by_product_and_store')
 
     @abstractmethod
-    def update_product_availability_price(
+    async def update_product_availability_price(
         self, availability_id: UUID, price: float, notes: str = ''
     ) -> Any:
         """Update the price for an existing product availability."""
         raise NotImplementedError('Subclass must implement update_product_availability_price')
 
     @abstractmethod
-    def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
         """Update all product bids from old product to new product. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_product_bids')
 
     @abstractmethod
-    def bulk_update_product_availabilities(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_product_availabilities(self, old_product_id: UUID, new_product_id: UUID) -> int:
         """Update all product availabilities from old product to new product. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_product_availabilities')
 
     @abstractmethod
-    def bulk_update_shopping_list_items(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_shopping_list_items(self, old_product_id: UUID, new_product_id: UUID) -> int:
         """Update all shopping list items from old product to new product. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_shopping_list_items')
 
     @abstractmethod
-    def count_product_bids(self, product_id: UUID) -> int:
+    async def count_product_bids(self, product_id: UUID) -> int:
         """Count how many bids reference this product."""
         raise NotImplementedError('Subclass must implement count_product_bids')

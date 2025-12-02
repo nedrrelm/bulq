@@ -13,13 +13,13 @@ class MemoryUserRepository(AbstractUserRepository):
     def __init__(self, storage: MemoryStorage):
         self.storage = storage
 
-    def get_user_by_id(self, user_id: UUID) -> User | None:
+    async def get_user_by_id(self, user_id: UUID) -> User | None:
         return self.storage.users.get(user_id)
 
-    def get_user_by_username(self, username: str) -> User | None:
+    async def get_user_by_username(self, username: str) -> User | None:
         return self.storage.users_by_username.get(username)
 
-    def create_user(self, name: str, username: str, password_hash: str) -> User:
+    async def create_user(self, name: str, username: str, password_hash: str) -> User:
         user = User(
             id=uuid4(),
             name=name,
@@ -32,10 +32,10 @@ class MemoryUserRepository(AbstractUserRepository):
         self.storage.users_by_username[username] = user
         return user
 
-    def get_all_users(self) -> list[User]:
+    async def get_all_users(self) -> list[User]:
         return list(self.storage.users.values())
 
-    def get_user_groups(self, user: User) -> list[Group]:
+    async def get_user_groups(self, user: User) -> list[Group]:
         user_groups = []
         for group_id, member_ids in self.storage.group_memberships.items():
             if user.id in member_ids:
@@ -49,7 +49,7 @@ class MemoryUserRepository(AbstractUserRepository):
                     user_groups.append(group)
         return user_groups
 
-    def update_user(self, user_id: UUID, **fields) -> User | None:
+    async def update_user(self, user_id: UUID, **fields) -> User | None:
         """Update user fields. Returns updated user or None if not found."""
         user = self.storage.users.get(user_id)
         if not user:
@@ -73,7 +73,7 @@ class MemoryUserRepository(AbstractUserRepository):
 
         return user
 
-    def delete_user(self, user_id: UUID) -> bool:
+    async def delete_user(self, user_id: UUID) -> bool:
         """Delete a user. Returns True if deleted, False if not found."""
         if user_id not in self.storage.users:
             return False
@@ -81,11 +81,11 @@ class MemoryUserRepository(AbstractUserRepository):
         del self.storage.users[user_id]
         return True
 
-    def verify_password(self, password: str, stored_hash: str) -> bool:
+    async def verify_password(self, password: str, stored_hash: str) -> bool:
         # In memory mode, accept any password for ease of testing
         return True
 
-    def get_user_stats(self, user_id: UUID) -> dict:
+    async def get_user_stats(self, user_id: UUID) -> dict:
         """Get user statistics including runs, bids, and spending."""
         # Get total quantity bought and money spent from picked-up bids
         total_quantity = 0.0
@@ -127,7 +127,7 @@ class MemoryUserRepository(AbstractUserRepository):
             'groups_count': groups_count,
         }
 
-    def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update all run participations from old user to new user. Returns count of updated records."""
         count = 0
         for participation in self.storage.participations.values():
@@ -136,7 +136,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update group creator from old user to new user. Returns count of updated records."""
         count = 0
         for group in self.storage.groups.values():
@@ -145,7 +145,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product creator from old user to new user. Returns count of updated records."""
         count = 0
         for product in self.storage.products.values():
@@ -154,7 +154,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product verifier from old user to new user. Returns count of updated records."""
         count = 0
         for product in self.storage.products.values():
@@ -163,7 +163,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update store creator from old user to new user. Returns count of updated records."""
         count = 0
         for store in self.storage.stores.values():
@@ -172,7 +172,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update store verifier from old user to new user. Returns count of updated records."""
         count = 0
         for store in self.storage.stores.values():
@@ -181,7 +181,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product availability creator from old user to new user. Returns count of updated records."""
         count = 0
         for avail in self.storage.product_availabilities.values():
@@ -190,7 +190,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update notifications from old user to new user. Returns count of updated records."""
         count = 0
         for notification in self.storage.notifications.values():
@@ -199,7 +199,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update reassignment requests from_user from old user to new user. Returns count of updated records."""
         count = 0
         for request in self.storage.reassignment_requests.values():
@@ -208,7 +208,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update reassignment requests to_user from old user to new user. Returns count of updated records."""
         count = 0
         for request in self.storage.reassignment_requests.values():
@@ -217,7 +217,7 @@ class MemoryUserRepository(AbstractUserRepository):
                 count += 1
         return count
 
-    def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Transfer group admin status from old user to new user. Returns count of updated groups."""
         count = 0
         # Find groups where old user is admin
@@ -231,7 +231,7 @@ class MemoryUserRepository(AbstractUserRepository):
                     count += 1
         return count
 
-    def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
+    async def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
         """Check if two users participate in any of the same runs. Returns list of overlapping run IDs."""
         user1_runs = {p.run_id for p in self.storage.participations.values() if p.user_id == user1_id}
         user2_runs = {p.run_id for p in self.storage.participations.values() if p.user_id == user2_id}

@@ -3,7 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
@@ -23,7 +23,7 @@ router = APIRouter(prefix='/reassignment', tags=['reassignment'])
 async def request_reassignment(
     data: ReassignmentRequestModel,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Request to reassign leadership of a run."""
     service = ReassignmentService(db)
@@ -36,7 +36,7 @@ async def request_reassignment(
 
 @router.post('/{request_id}/accept', response_model=ReassignmentResponse)
 async def accept_reassignment(
-    request_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    request_id: str, current_user: User = Depends(require_auth), db:  AsyncSession = Depends(get_db)
 ):
     """Accept a leader reassignment request."""
     service = ReassignmentService(db)
@@ -45,7 +45,7 @@ async def accept_reassignment(
 
 @router.post('/{request_id}/decline', response_model=ReassignmentResponse)
 async def decline_reassignment(
-    request_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    request_id: str, current_user: User = Depends(require_auth), db:  AsyncSession = Depends(get_db)
 ):
     """Decline a leader reassignment request."""
     service = ReassignmentService(db)
@@ -54,27 +54,27 @@ async def decline_reassignment(
 
 @router.post('/{request_id}/cancel', response_model=ReassignmentResponse)
 async def cancel_reassignment(
-    request_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    request_id: str, current_user: User = Depends(require_auth), db:  AsyncSession = Depends(get_db)
 ):
     """Cancel a pending reassignment request."""
     service = ReassignmentService(db)
-    return service.cancel_reassignment(UUID(request_id), current_user)
+    return await service.cancel_reassignment(UUID(request_id), current_user)
 
 
 @router.get('/my-requests', response_model=MyRequestsResponse)
 async def get_my_requests(
-    current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    current_user: User = Depends(require_auth), db:  AsyncSession = Depends(get_db)
 ):
     """Get all pending reassignment requests for the current user."""
     service = ReassignmentService(db)
-    return service.get_pending_requests_for_user(current_user.id)
+    return await service.get_pending_requests_for_user(current_user.id)
 
 
 @router.get('/run/{run_id}', response_model=RunRequestResponse)
 async def get_run_request(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, current_user: User = Depends(require_auth), db:  AsyncSession = Depends(get_db)
 ):
     """Get pending reassignment request for a specific run."""
     service = ReassignmentService(db)
-    request = service.get_pending_request_for_run(UUID(run_id))
+    request = await service.get_pending_request_for_run(UUID(run_id))
     return RunRequestResponse(request=request)

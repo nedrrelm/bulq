@@ -2,8 +2,8 @@
 
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, insert, select, update
-from sqlalchemy.orm import Session
+from sqlalchemy import delete, insert, select, update, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import Group, User, group_membership
 from app.repositories.abstract.group import AbstractGroupRepository
@@ -12,85 +12,100 @@ from app.repositories.abstract.group import AbstractGroupRepository
 class DatabaseGroupRepository(AbstractGroupRepository):
     """Database implementation of group repository."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_group_by_id(self, group_id: UUID) -> Group | None:
+    async def get_group_by_id(self, group_id: UUID) -> Group | None:
         """Get group by ID."""
-        return self.db.query(Group).filter(Group.id == group_id).first()
+        result = await self.db.execute(select(Group).filter(Group.id == group_id))
+        return result.scalar_one_or_none()
 
-    def get_group_by_invite_token(self, invite_token: str) -> Group | None:
+    async def get_group_member_count(self, group_id: UUID) -> int:
+        """Get the number of members in a group."""
+        result = await self.db.execute(select(func.count()).select_from(group_membership).where(group_membership.c.group_id == group_id))
+        return result.scalar() or 0
+
+    async def is_user_member_of_a_group(self, user_id: UUID, group_id: UUID) -> bool:
+        """Check if a user is a member of a group."""
+        result = await self.db.execute(select(group_membership).where(group_membership.c.user_id == user_id, group_membership.c.group_id == group_id))
+        return result.scalar_one_or_none() is not None
+
+    async def get_group_by_invite_token(self, invite_token: str) -> Group | None:
         """Get group by invite token."""
-        return self.db.query(Group).filter(Group.invite_token == invite_token).first()
+        result = await self.db.execute(select(Group).filter(Group.invite_token == invite_token))
+        return result.scalar_one_or_none()
 
-    def regenerate_group_invite_token(self, group_id: UUID) -> str | None:
+    async def regenerate_group_invite_token(self, group_id: UUID) -> str | None:
         """Regenerate invite token for a group."""
-        group = self.db.query(Group).filter(Group.id == group_id).first()
+        result = await self.db.execute(select(Group).filter(Group.id == group_id))
+        group = result.scalar_one_or_none()
         if group:
             new_token = str(uuid4())
             group.invite_token = new_token
-            self.db.commit()
+            await self.db.commit()
             return new_token
         return None
 
-    def create_group(self, name: str, created_by: UUID) -> Group:
+    async def create_group(self, name: str, created_by: UUID) -> Group:
         """Create a new group."""
         group = Group(
             name=name, created_by=created_by, invite_token=str(uuid4()), is_joining_allowed=True
         )
         self.db.add(group)
-        self.db.commit()
-        self.db.refresh(group)
+        await self.db.commit()
+        await self.db.refresh(group)
         return group
 
-    def add_group_member(self, group_id: UUID, user: User, is_group_admin: bool = False) -> bool:
+    async def add_group_member(self, group_id: UUID, user: User, is_group_admin: bool = False) -> bool:
         """Add a user to a group."""
         # Check if already a member
-        existing = self.db.execute(
+        result = await self.db.execute(
             select(group_membership).where(
                 group_membership.c.group_id == group_id, group_membership.c.user_id == user.id
             )
-        ).first()
+        )
+        existing = result.first()
 
         if existing:
             return False
 
         # Insert into group_membership table
-        self.db.execute(
+        await self.db.execute(
             insert(group_membership).values(
                 group_id=group_id, user_id=user.id, is_group_admin=is_group_admin
             )
         )
-        self.db.commit()
+        await self.db.commit()
         return True
 
-    def remove_group_member(self, group_id: UUID, user_id: UUID) -> bool:
+    async def remove_group_member(self, group_id: UUID, user_id: UUID) -> bool:
         """Remove a user from a group."""
-        result = self.db.execute(
+        result = await self.db.execute(
             delete(group_membership).where(
                 group_membership.c.group_id == group_id, group_membership.c.user_id == user_id
             )
         )
-        self.db.commit()
+        await self.db.commit()
         return result.rowcount > 0
 
-    def is_user_group_admin(self, group_id: UUID, user_id: UUID) -> bool:
+    async def is_user_group_admin(self, group_id: UUID, user_id: UUID) -> bool:
         """Check if a user is an admin of a group."""
-        result = self.db.execute(
+        result = await self.db.execute(
             select(group_membership.c.is_group_admin).where(
                 group_membership.c.group_id == group_id, group_membership.c.user_id == user_id
             )
-        ).first()
+        )
+        row = result.first()
+        return row[0] if row else False
 
-        return result[0] if result else False
-
-    def get_group_members_with_admin_status(self, group_id: UUID) -> list[dict]:
+    async def get_group_members_with_admin_status(self, group_id: UUID) -> list[dict]:
         """Get all members of a group with their admin status."""
-        results = self.db.execute(
+        result = await self.db.execute(
             select(User, group_membership.c.is_group_admin)
             .join(group_membership, User.id == group_membership.c.user_id)
             .where(group_membership.c.group_id == group_id)
-        ).all()
+        )
+        results = result.all()
 
         return [
             {
@@ -102,24 +117,20 @@ class DatabaseGroupRepository(AbstractGroupRepository):
             for user, is_admin in results
         ]
 
-    def update_group_joining_allowed(
+    async def update_group_joining_allowed(
         self, group_id: UUID, is_joining_allowed: bool
     ) -> Group | None:
         """Update whether a group allows joining via invite link."""
-        group = self.db.query(Group).filter(Group.id == group_id).first()
-        if group:
-            group.is_joining_allowed = is_joining_allowed
-            self.db.commit()
-            self.db.refresh(group)
-            return group
-        return None
+        result = await self.db.execute(update(Group).where(Group.id == group_id).values(is_joining_allowed=is_joining_allowed).returning(Group))
+        await self.db.commit()
+        return result.scalar_one_or_none()
 
-    def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
+    async def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
         """Set the admin status of a group member."""
-        result = self.db.execute(
+        result = await self.db.execute(
             update(group_membership)
             .where(group_membership.c.group_id == group_id, group_membership.c.user_id == user_id)
             .values(is_group_admin=is_admin)
         )
-        self.db.commit()
+        await self.db.commit()
         return result.rowcount > 0

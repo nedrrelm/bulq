@@ -155,7 +155,8 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
             'error_type': exc.__class__.__name__,
             'path': request.url.path,
             'method': request.method,
-            'traceback': traceback.format_exc(),
+            # 'traceback': traceback.format_exc(),
+            'error_message': str(exc),
         },
         exc_info=True,
     )

@@ -67,7 +67,7 @@ export default function CommentsPopup({ productName, userBids, currentUserId, ca
                         className="edit-comment-button"
                         title={t('run:comments.editTooltip')}
                       >
-                        ✏️ {t('common:actions.edit')}
+                        ✏️ {t('common:edit.comment')}
                       </button>
                     )}
                   </div>

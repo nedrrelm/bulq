@@ -148,6 +148,7 @@ def setup_logging(level: str = 'INFO') -> None:
         root_logger.addHandler(file_handler)
 
     # Reduce noise from third-party libraries
+    # This should be set in properties so that it is easy to change and visible on the config.
     logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
     logging.getLogger('uvicorn.error').setLevel(logging.WARNING)
     logging.getLogger('uvicorn').setLevel(logging.WARNING)

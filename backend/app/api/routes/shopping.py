@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 @router.get('/{run_id}/items', response_model=list[ShoppingListItemResponse])
 async def get_shopping_list(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, current_user: User = Depends(require_auth), db:  AsyncSession = Depends(get_db)
 ):
     """Get shopping list for a run."""
     service = ShoppingService(db)
@@ -37,7 +37,7 @@ async def update_availability_price(
     item_id: str,
     request: UpdateAvailabilityPriceRequest,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Update product availability price for a shopping list item."""
     service = ShoppingService(db)
@@ -64,7 +64,7 @@ async def mark_purchased(
     item_id: str,
     request: MarkPurchasedRequest,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Mark a shopping list item as purchased."""
     service = ShoppingService(db)
@@ -91,7 +91,7 @@ async def add_more_purchase(
     item_id: str,
     request: AddMorePurchaseRequest,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Add more purchased quantity to an already-purchased item."""
     service = ShoppingService(db)
@@ -114,7 +114,7 @@ async def add_more_purchase(
 
 @router.post('/{run_id}/complete', response_model=CompleteShoppingResponse)
 async def complete_shopping(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, current_user: User = Depends(require_auth), db:  AsyncSession = Depends(get_db)
 ):
     """Complete shopping - transition from shopping to distributing state (leader only)."""
     logger.info(

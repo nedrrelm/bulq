@@ -15,7 +15,7 @@ class MemoryNotificationRepository(AbstractNotificationRepository):
     def __init__(self, storage: MemoryStorage):
         self.storage = storage
 
-    def create_notification(self, user_id: UUID, type: str, data: dict[str, Any]) -> Notification:
+    async def create_notification(self, user_id: UUID, type: str, data: dict[str, Any]) -> Notification:
         """Create a new notification for a user."""
         notification = Notification(
             id=uuid4(),
@@ -28,7 +28,7 @@ class MemoryNotificationRepository(AbstractNotificationRepository):
         self.storage.notifications[notification.id] = notification
         return notification
 
-    def get_user_notifications(
+    async def get_user_notifications(
         self, user_id: UUID, limit: int = 20, offset: int = 0
     ) -> list[Notification]:
         """Get notifications for a user (paginated)."""
@@ -38,17 +38,17 @@ class MemoryNotificationRepository(AbstractNotificationRepository):
         )
         return user_notifications[offset : offset + limit]
 
-    def get_unread_notifications(self, user_id: UUID) -> list[Notification]:
+    async def get_unread_notifications(self, user_id: UUID) -> list[Notification]:
         """Get all unread notifications for a user."""
         unread = [n for n in self.storage.notifications.values() if n.user_id == user_id and not n.read]
         unread.sort(key=lambda n: n.created_at, reverse=True)
         return unread
 
-    def get_unread_count(self, user_id: UUID) -> int:
+    async def get_unread_count(self, user_id: UUID) -> int:
         """Get count of unread notifications for a user."""
         return sum(1 for n in self.storage.notifications.values() if n.user_id == user_id and not n.read)
 
-    def mark_notification_as_read(self, notification_id: UUID) -> bool:
+    async def mark_notification_as_read(self, notification_id: UUID) -> bool:
         """Mark a notification as read."""
         notification = self.storage.notifications.get(notification_id)
         if notification:
@@ -56,7 +56,7 @@ class MemoryNotificationRepository(AbstractNotificationRepository):
             return True
         return False
 
-    def mark_all_notifications_as_read(self, user_id: UUID) -> int:
+    async def mark_all_notifications_as_read(self, user_id: UUID) -> int:
         """Mark all notifications as read for a user. Returns count of marked notifications."""
         count = 0
         for notification in self.storage.notifications.values():
@@ -65,6 +65,6 @@ class MemoryNotificationRepository(AbstractNotificationRepository):
                 count += 1
         return count
 
-    def get_notification_by_id(self, notification_id: UUID) -> Notification | None:
+    async def get_notification_by_id(self, notification_id: UUID) -> Notification | None:
         """Get a notification by ID."""
         return self.storage.notifications.get(notification_id)

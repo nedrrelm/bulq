@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
@@ -21,7 +21,7 @@ router = APIRouter(prefix='/distribution', tags=['distribution'])
 
 @router.get('/{run_id}', response_model=list[DistributionUser])
 async def get_distribution_data(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, current_user: User = Depends(require_auth), db: AsyncSession = Depends(get_db)
 ):
     """Get distribution data aggregated by user."""
     service = DistributionService(db)
@@ -32,7 +32,7 @@ async def get_distribution_data(
     except ValueError as e:
         raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
-    return service.get_distribution_summary(run_uuid, current_user)
+    return await service.get_distribution_summary(run_uuid, current_user)
 
 
 @router.post('/{run_id}/pickup/{bid_id}', response_model=SuccessResponse)
@@ -40,7 +40,7 @@ async def mark_picked_up(
     run_id: str,
     bid_id: str,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Mark a product as picked up by a user."""
     service = DistributionService(db)
@@ -52,7 +52,7 @@ async def mark_picked_up(
     except ValueError as e:
         raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
-    result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
+    result = await service.mark_picked_up(run_uuid, bid_uuid, current_user)
 
     # Broadcast distribution update to all connected clients for this run
     await manager.broadcast(
@@ -68,7 +68,7 @@ async def mark_picked_up(
 
 @router.post('/{run_id}/complete', response_model=StateChangeResponse)
 async def complete_distribution(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, current_user: User = Depends(require_auth), db: AsyncSession = Depends(get_db)
 ):
     """Complete distribution - transition from distributing to completed state (leader only)."""
     service = DistributionService(db)
@@ -80,4 +80,4 @@ async def complete_distribution(
         raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
     # Complete distribution via service (events are emitted by service)
-    return service.complete_distribution(run_uuid, current_user)
+    return await service.complete_distribution(run_uuid, current_user)

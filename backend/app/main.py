@@ -122,9 +122,6 @@ async def startup_event():
                 await db.commit()
             except Exception:
                 await db.rollback()
-            finally:
-                db.close()
-                raise
 
     event_bus.subscribe(RunStateChangedEvent, handle_run_state_changed_notification)
 
@@ -155,19 +152,16 @@ async def startup_event():
 
             if REPO_MODE == 'memory':
                 # Memory mode: pass None as db_session
-                create_seed_data(None)
+                await create_seed_data(None)
                 logger.info('🌱 Seed data created (memory mode)')
             else:
                 # Database mode: pass db session
                 from .infrastructure.database import SessionLocal
 
-                db = SessionLocal()
-                try:
-                    create_seed_data(db)
-                    db.commit()
+                async with SessionLocal() as db:
+                    await create_seed_data(db)
+                    await db.commit()
                     logger.info('🌱 Seed data created (database mode)')
-                finally:
-                    db.close()
         except ImportError as e:
             logger.warning(f'Could not import seed data: {e}. Skipping seed data creation.')
             raise

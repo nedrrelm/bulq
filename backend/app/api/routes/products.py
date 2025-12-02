@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
@@ -24,35 +24,35 @@ router = APIRouter(prefix='/products', tags=['products'])
 async def search_products(
     q: str = Query(..., min_length=1, description='Search query'),
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Search for products by name across all stores.
 
     Returns products matching the search query.
     """
     service = ProductService(db)
-    return service.search_products(q)
+    return await service.search_products(q)
 
 
 @router.get('/check-similar', response_model=list[ProductSearchResult])
 async def check_similar_products(
     name: str = Query(..., min_length=1, description='Product name to check for similarity'),
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Check for products with similar names.
 
     Returns products that are similar to the provided name, useful for preventing duplicates.
     """
     service = ProductService(db)
-    return service.get_similar_products(name)
+    return await service.get_similar_products(name)
 
 
 @router.post('/create', response_model=CreateProductResponse)
 async def create_product(
     request: CreateProductRequest,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Create a new product and optionally link to a store with price."""
     service = ProductService(db)
@@ -60,7 +60,7 @@ async def create_product(
     try:
         store_uuid = UUID(request.store_id) if request.store_id else None
 
-        product, availability = service.create_product(
+        product, availability = await service.create_product(
             name=request.name,
             brand=request.brand,
             unit=request.unit,
@@ -91,7 +91,7 @@ async def create_product(
 
 @router.get('/{product_id}', response_model=ProductDetailResponse)
 async def get_product_details(
-    product_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    product_id: str, current_user: User = Depends(require_auth), db:  AsyncSession = Depends(get_db)
 ):
     """Get detailed product information including price history from shopping list items.
 
@@ -99,7 +99,7 @@ async def get_product_details(
     """
     service = ProductService(db)
 
-    result = service.get_product_details(UUID(product_id))
+    result = await service.get_product_details(UUID(product_id))
     if not result:
         raise NotFoundError(
             code=PRODUCT_NOT_FOUND, message='Product not found', product_id=product_id

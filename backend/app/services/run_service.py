@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import (
     AvailableProductResponse,
@@ -68,11 +68,11 @@ class RunService(BaseService):
     for complex run operations.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with database session.
 
         Args:
-            db: SQLAlchemy database session
+            db: SQLAlchemy async database session
         """
         super().__init__(db)
         self.bid_repo = get_bid_repository(db)
@@ -86,7 +86,7 @@ class RunService(BaseService):
         self.notification_service = RunNotificationService(db)
         self.state_service = RunStateService(db, self.notification_service)
 
-    def create_run(
+    async def create_run(
         self, group_id: str, store_id: str, user: User, comment: str | None = None
     ) -> CreateRunResponse:
         """Create a new run for a group.
@@ -115,11 +115,11 @@ class RunService(BaseService):
         store_uuid = validate_uuid(store_id, 'Store')
 
         # Verify group exists and user is a member
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(code=GROUP_NOT_FOUND, message='Group not found', group_id=group_id)
 
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
         if not any(g.id == group_uuid for g in user_groups):
             raise ForbiddenError(
                 code=NOT_GROUP_MEMBER,
@@ -128,13 +128,13 @@ class RunService(BaseService):
             )
 
         # Verify store exists
-        all_stores = self.store_repo.get_all_stores()
+        all_stores = await self.store_repo.get_all_stores()
         store = next((s for s in all_stores if s.id == store_uuid), None)
         if not store:
             raise NotFoundError(code=STORE_NOT_FOUND, message='Store not found', store_id=store_id)
 
         # Check active runs limit for the group - use state machine
-        group_runs = self.run_repo.get_runs_by_group(group_uuid)
+        group_runs = await self.run_repo.get_runs_by_group(group_uuid)
         active_runs = [r for r in group_runs if state_machine.is_active_run(RunState(r.state))]
         if len(active_runs) >= MAX_ACTIVE_RUNS_PER_GROUP:
             logger.warning(
@@ -154,7 +154,7 @@ class RunService(BaseService):
             )
 
         # Create the run with current user as leader
-        run = self.run_repo.create_run(group_uuid, store_uuid, user.id, comment)
+        run = await self.run_repo.create_run(group_uuid, store_uuid, user.id, comment)
 
         logger.info(
             'Run created successfully',
@@ -182,7 +182,7 @@ class RunService(BaseService):
             leader_name=user.name,
         )
 
-    def get_run_details(self, run_id: str, user: User) -> RunDetailResponse:
+    async def get_run_details(self, run_id: str, user: User) -> RunDetailResponse:
         """Get detailed information about a specific run.
 
         Args:
@@ -199,12 +199,11 @@ class RunService(BaseService):
         """
         # Validate and get run with authorization check
         run_uuid = self._validate_run_id(run_id)
-        run = self._get_run_with_auth_check(run_uuid, user)
+        run = await self._get_run_with_auth_check(run_uuid, user)
 
         # Get related entities
-        group = self.group_repo.get_group_by_id(run.group_id)
-        all_stores = self.store_repo.get_all_stores()
-        store = next((s for s in all_stores if s.id == run.store_id), None)
+        group = await self.group_repo.get_group_by_id(run.group_id)
+        store = await self.store_repo.get_store_by_id(run.store_id)
 
         if not group or not store:
             raise NotFoundError(
@@ -222,10 +221,10 @@ class RunService(BaseService):
             current_user_is_helper,
             leader_name,
             helpers,
-        ) = self._get_participants_data(run.id, user.id)
+        ) = await self._get_participants_data(run.id, user.id)
 
         # Get products data
-        products = self._get_products_data(run, user.id)
+        products = await self._get_products_data(run, user.id)
 
         return RunDetailResponse(
             id=str(run.id),
@@ -372,7 +371,7 @@ class RunService(BaseService):
         """
         return self.state_service.cancel_run(run_id, user)
 
-    def update_run_comment(self, run_id: str, comment: str | None, user: User) -> SuccessResponse:
+    async def update_run_comment(self, run_id: str, comment: str | None, user: User) -> SuccessResponse:
         """Update the comment/description for a run.
 
         Args:
@@ -390,10 +389,10 @@ class RunService(BaseService):
         """
         # Validate and get run with authorization check
         run_uuid = self._validate_run_id(run_id)
-        self._get_run_with_auth_check(run_uuid, user)
+        await self._get_run_with_auth_check(run_uuid, user)
 
         # Check if user is the leader
-        participation = self.run_repo.get_participation(user.id, run_uuid)
+        participation = await self.run_repo.get_participation(user.id, run_uuid)
         if not participation or not participation.is_leader:
             raise ForbiddenError(
                 code=NOT_RUN_LEADER,
@@ -402,7 +401,7 @@ class RunService(BaseService):
             )
 
         # Update the comment
-        updated_run = self.run_repo.update_run_comment(run_uuid, comment)
+        updated_run = await self.run_repo.update_run_comment(run_uuid, comment)
         if not updated_run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
@@ -416,7 +415,7 @@ class RunService(BaseService):
             details={'run_id': run_id},
         )
 
-    def get_available_products(self, run_id: str, user: User) -> list[AvailableProductResponse]:
+    async def get_available_products(self, run_id: str, user: User) -> list[AvailableProductResponse]:
         """Get products available for bidding (all products without bids yet).
 
         Products with availability at the run's store are sorted first.
@@ -437,19 +436,19 @@ class RunService(BaseService):
         run_uuid = validate_uuid(run_id, 'Run')
 
         # Verify run exists and user has access
-        run = self.run_repo.get_run_by_id(run_uuid)
+        run = await self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError(
                 code=NOT_GROUP_MEMBER, message='Not authorized to view this run', run_id=run_id
             )
 
         # Get all products
-        all_products = self.product_repo.get_all_products()
-        run_bids = self.bid_repo.get_bids_by_run(run.id)
+        all_products = await self.product_repo.get_all_products()
+        run_bids = await self.bid_repo.get_bids_by_run(run.id)
 
         # Get products that have bids
         products_with_bids = {bid.product_id for bid in run_bids}
@@ -459,7 +458,7 @@ class RunService(BaseService):
         for product in all_products:
             if product.id not in products_with_bids:
                 # Get product availability/price for this store
-                availability = self.product_repo.get_availability_by_product_and_store(
+                availability = await self.product_repo.get_availability_by_product_and_store(
                     product.id, run.store_id
                 )
                 current_price = (
@@ -486,14 +485,14 @@ class RunService(BaseService):
         """Validate and convert run ID string to UUID."""
         return validate_uuid(run_id, 'Run')
 
-    def _get_run_with_auth_check(self, run_uuid: UUID, user: User) -> Run:
+    async def _get_run_with_auth_check(self, run_uuid: UUID, user: User) -> Run:
         """Get run and verify user has access to it."""
-        run = self.run_repo.get_run_by_id(run_uuid)
+        run = await self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=str(run_uuid))
 
         # Verify user has access to this run (member of the group)
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
             raise ForbiddenError(
                 code=NOT_RUN_PARTICIPANT,
@@ -503,7 +502,7 @@ class RunService(BaseService):
 
         return run
 
-    def _get_participants_data(
+    async def _get_participants_data(
         self, run_id: UUID, current_user_id: UUID
     ) -> tuple[list[ParticipantResponse], bool, bool, bool, str, list[str]]:
         """Get participants data for a run.
@@ -518,7 +517,7 @@ class RunService(BaseService):
         current_user_is_helper = False
         helpers = []
 
-        participations = self.run_repo.get_run_participations_with_users(run_id)
+        participations = await self.run_repo.get_run_participations_with_users(run_id)
 
         for participation in participations:
             # Check if this is the current user's participation
@@ -557,14 +556,14 @@ class RunService(BaseService):
             helpers,
         )
 
-    def _get_products_data(self, run: Run, current_user_id: UUID) -> list[ProductResponse]:
+    async def _get_products_data(self, run: Run, current_user_id: UUID) -> list[ProductResponse]:
         """Get products data with bids for a run."""
         # Get bids with participations and users eagerly loaded to avoid N+1 queries
-        run_bids = self.bid_repo.get_bids_by_run_with_participations(run.id)
+        run_bids = await self.bid_repo.get_bids_by_run_with_participations(run.id)
 
         # Get shopping list items if in adjusting, distributing, or completed state
         shopping_list_map = (
-            self._get_shopping_list_map(run)
+            await self._get_shopping_list_map(run)
             if run.state in [RunState.ADJUSTING, RunState.DISTRIBUTING, RunState.COMPLETED]
             else {}
         )
@@ -575,7 +574,7 @@ class RunService(BaseService):
         # Fetch all products that have bids (whether or not they have store availability)
         products_map = {}
         for product_id in product_ids_with_bids:
-            product = self.product_repo.get_product_by_id(product_id)
+            product = await self.product_repo.get_product_by_id(product_id)
             if product:
                 products_map[product_id] = product
 
@@ -585,19 +584,19 @@ class RunService(BaseService):
             product_bids = [bid for bid in run_bids if bid.product_id == product_id]
 
             if len(product_bids) > 0:  # Only include products with bids
-                product_response = self._build_product_response(
+                product_response = await self._build_product_response(
                     product, product_bids, current_user_id, run, shopping_list_map
                 )
                 products_data.append(product_response)
 
         return products_data
 
-    def _get_shopping_list_map(self, run: Run) -> dict[UUID, Any]:
+    async def _get_shopping_list_map(self, run: Run) -> dict[UUID, Any]:
         """Get shopping list items mapped by product ID."""
-        shopping_items = self.shopping_repo.get_shopping_list_items(run.id)
+        shopping_items = await self.shopping_repo.get_shopping_list_items(run.id)
         return {item.product_id: item for item in shopping_items}
 
-    def _build_product_response(
+    async def _build_product_response(
         self,
         product: Product,
         product_bids: list[ProductBid],
@@ -618,7 +617,7 @@ class RunService(BaseService):
             purchased_qty = shopping_list_map[product.id].purchased_quantity
 
         # Get product availability/price for this store
-        availability = self.product_repo.get_availability_by_product_and_store(product.id, run.store_id)
+        availability = await self.product_repo.get_availability_by_product_and_store(product.id, run.store_id)
         current_price = str(availability.price) if availability and availability.price else None
 
         return ProductResponse(
@@ -667,7 +666,7 @@ class RunService(BaseService):
 
         return user_bids_data, current_user_bid
 
-    def toggle_helper(
+    async def toggle_helper(
         self, run_id: str, target_user_id: str, current_user: User
     ) -> SuccessResponse:
         """Toggle helper status for a run participant.
@@ -696,25 +695,25 @@ class RunService(BaseService):
             raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
 
         # Get the run
-        run = self.run_repo.get_run_by_id(run_uuid)
+        run = await self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify current user is the run leader
-        current_participation = self.run_repo.get_participation(current_user.id, run_uuid)
+        current_participation = await self.run_repo.get_participation(current_user.id, run_uuid)
         if not current_participation or not current_participation.is_leader:
             raise ForbiddenError(
                 code=NOT_RUN_LEADER, message='Only the run leader can manage helpers', run_id=run_id
             )
 
         # Verify target user is a member of the group
-        target_user = self.user_repo.get_user_by_id(target_user_uuid)
+        target_user = await self.user_repo.get_user_by_id(target_user_uuid)
         if not target_user:
             raise NotFoundError(
                 code=USER_NOT_FOUND, message='User not found', user_id=target_user_id
             )
 
-        target_user_groups = self.user_repo.get_user_groups(target_user)
+        target_user_groups = await self.user_repo.get_user_groups(target_user)
         if not any(g.id == run.group_id for g in target_user_groups):
             raise BadRequestError(
                 code=HELPER_NOT_GROUP_MEMBER,
@@ -724,7 +723,7 @@ class RunService(BaseService):
             )
 
         # Get or create target user's participation
-        target_participation = self.run_repo.get_participation(target_user_uuid, run_uuid)
+        target_participation = await self.run_repo.get_participation(target_user_uuid, run_uuid)
 
         # Cannot make leader a helper
         if target_participation and target_participation.is_leader:
@@ -737,14 +736,14 @@ class RunService(BaseService):
 
         if not target_participation:
             # Create participation as helper for this user if they're not yet a participant
-            target_participation = self.run_repo.create_participation(
+            target_participation = await self.run_repo.create_participation(
                 user_id=target_user_uuid, run_id=run_uuid, is_leader=False, is_helper=True
             )
             new_helper_status = True
         else:
             # Toggle helper status
             new_helper_status = not target_participation.is_helper
-            self.run_repo.update_participation_helper(target_user_uuid, run_uuid, new_helper_status)
+            await self.run_repo.update_participation_helper(target_user_uuid, run_uuid, new_helper_status)
 
         return SuccessResponse(
             code=HELPER_ADDED if new_helper_status else HELPER_REMOVED,
@@ -755,7 +754,7 @@ class RunService(BaseService):
             },
         )
 
-    def export_run_state(self, run_id: str, user: User) -> dict[str, Any]:
+    async def export_run_state(self, run_id: str, user: User) -> dict[str, Any]:
         """Export the current state of a run as structured JSON.
 
         Available for runs in confirmed, shopping, adjusting, or distributing states.
@@ -775,10 +774,10 @@ class RunService(BaseService):
         """
         # Validate and get run with authorization check
         run_uuid = self._validate_run_id(run_id)
-        run = self._get_run_with_auth_check(run_uuid, user)
+        run = await self._get_run_with_auth_check(run_uuid, user)
 
         # Check if user is leader or helper
-        participation = self.run_repo.get_participation(user.id, run_uuid)
+        participation = await self.run_repo.get_participation(user.id, run_uuid)
         if not participation or not (participation.is_leader or participation.is_helper):
             raise ForbiddenError(
                 code=NOT_RUN_LEADER_OR_HELPER,
@@ -803,12 +802,12 @@ class RunService(BaseService):
             )
 
         # Get all bids with participations and users
-        run_bids = self.bid_repo.get_bids_by_run_with_participations(run.id)
+        run_bids = await self.bid_repo.get_bids_by_run_with_participations(run.id)
 
         # Get shopping list items if in adjusting or distributing state
         shopping_list_map = {}
         if RunState(run.state) in [RunState.ADJUSTING, RunState.DISTRIBUTING]:
-            shopping_items = self.shopping_repo.get_shopping_list_items(run.id)
+            shopping_items = await self.shopping_repo.get_shopping_list_items(run.id)
             shopping_list_map = {item.product_id: item for item in shopping_items}
 
         # Build the export data structure
@@ -828,7 +827,7 @@ class RunService(BaseService):
 
         # Process each product
         for product_id, product_bids in products_map.items():
-            product = self.product_repo.get_product_by_id(product_id)
+            product = await self.product_repo.get_product_by_id(product_id)
             if not product:
                 continue
 

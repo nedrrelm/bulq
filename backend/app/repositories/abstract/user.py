@@ -10,47 +10,47 @@ class AbstractUserRepository(ABC):
     """Abstract base class for user repository operations."""
 
     @abstractmethod
-    def get_user_by_id(self, user_id: UUID) -> User | None:
+    async def get_user_by_id(self, user_id: UUID) -> User | None:
         """Get user by ID."""
         raise NotImplementedError('Subclass must implement get_user_by_id')
 
     @abstractmethod
-    def get_user_by_username(self, username: str) -> User | None:
+    async def get_user_by_username(self, username: str) -> User | None:
         """Get user by username."""
         raise NotImplementedError('Subclass must implement get_user_by_username')
 
     @abstractmethod
-    def create_user(self, name: str, username: str, password_hash: str) -> User:
+    async def create_user(self, name: str, username: str, password_hash: str) -> User:
         """Create a new user."""
         raise NotImplementedError('Subclass must implement create_user')
 
     @abstractmethod
-    def get_user_groups(self, user: User) -> list[Group]:
+    async def get_user_groups(self, user: User) -> list[Group]:
         """Get all groups that a user is a member of."""
         raise NotImplementedError('Subclass must implement get_user_groups')
 
     @abstractmethod
-    def get_all_users(self) -> list[User]:
+    async def get_all_users(self) -> list[User]:
         """Get all users."""
         raise NotImplementedError('Subclass must implement get_all_users')
 
     @abstractmethod
-    def update_user(self, user_id: UUID, **fields) -> User | None:
+    async def update_user(self, user_id: UUID, **fields) -> User | None:
         """Update user fields. Returns updated user or None if not found."""
         raise NotImplementedError('Subclass must implement update_user')
 
     @abstractmethod
-    def delete_user(self, user_id: UUID) -> bool:
+    async def delete_user(self, user_id: UUID) -> bool:
         """Delete a user. Returns True if deleted, False if not found."""
         raise NotImplementedError('Subclass must implement delete_user')
 
     @abstractmethod
-    def verify_password(self, password: str, stored_hash: str) -> bool:
+    async def verify_password(self, password: str, stored_hash: str) -> bool:
         """Verify a password."""
         raise NotImplementedError('Subclass must implement verify_password')
 
     @abstractmethod
-    def get_user_stats(self, user_id: UUID) -> dict:
+    async def get_user_stats(self, user_id: UUID) -> dict:
         """Get user statistics including runs, bids, and spending.
 
         Returns:
@@ -65,61 +65,61 @@ class AbstractUserRepository(ABC):
         raise NotImplementedError('Subclass must implement get_user_stats')
 
     @abstractmethod
-    def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_run_participations(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update all run participations from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_run_participations')
 
     @abstractmethod
-    def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_group_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update group creator from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_group_creator')
 
     @abstractmethod
-    def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product creator from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_product_creator')
 
     @abstractmethod
-    def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product verifier from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_product_verifier')
 
     @abstractmethod
-    def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_store_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update store creator from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_store_creator')
 
     @abstractmethod
-    def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_store_verifier(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update store verifier from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_store_verifier')
 
     @abstractmethod
-    def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product availability creator from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_product_availability_creator')
 
     @abstractmethod
-    def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update notifications from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_notifications')
 
     @abstractmethod
-    def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_reassignment_from_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update reassignment requests from_user from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_reassignment_from_user')
 
     @abstractmethod
-    def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def bulk_update_reassignment_to_user(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update reassignment requests to_user from old user to new user. Returns count of updated records."""
         raise NotImplementedError('Subclass must implement bulk_update_reassignment_to_user')
 
     @abstractmethod
-    def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
+    async def transfer_group_admin_status(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Transfer group admin status from old user to new user. Returns count of updated groups."""
         raise NotImplementedError('Subclass must implement transfer_group_admin_status')
 
     @abstractmethod
-    def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
+    async def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
         """Check if two users participate in any of the same runs. Returns list of overlapping run IDs."""
         raise NotImplementedError('Subclass must implement check_overlapping_run_participations')

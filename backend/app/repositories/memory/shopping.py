@@ -14,7 +14,7 @@ class MemoryShoppingRepository(AbstractShoppingRepository):
     def __init__(self, storage: MemoryStorage):
         self.storage = storage
 
-    def create_shopping_list_item(
+    async def create_shopping_list_item(
         self, run_id: UUID, product_id: UUID, requested_quantity: int
     ) -> ShoppingListItem:
         item = ShoppingListItem(
@@ -29,7 +29,7 @@ class MemoryShoppingRepository(AbstractShoppingRepository):
         self.storage.shopping_list_items[item.id] = item
         return item
 
-    def get_shopping_list_items(self, run_id: UUID) -> list[ShoppingListItem]:
+    async def get_shopping_list_items(self, run_id: UUID) -> list[ShoppingListItem]:
         items = []
         for item in self.storage.shopping_list_items.values():
             if item.run_id == run_id:
@@ -38,7 +38,7 @@ class MemoryShoppingRepository(AbstractShoppingRepository):
                 items.append(item)
         return items
 
-    def get_shopping_list_items_by_product(self, product_id: UUID) -> list[ShoppingListItem]:
+    async def get_shopping_list_items_by_product(self, product_id: UUID) -> list[ShoppingListItem]:
         items = []
         for item in self.storage.shopping_list_items.values():
             if item.product_id == product_id:
@@ -47,10 +47,10 @@ class MemoryShoppingRepository(AbstractShoppingRepository):
                 items.append(item)
         return items
 
-    def get_shopping_list_item(self, item_id: UUID) -> ShoppingListItem | None:
+    async def get_shopping_list_item(self, item_id: UUID) -> ShoppingListItem | None:
         return self.storage.shopping_list_items.get(item_id)
 
-    def mark_item_purchased(
+    async def mark_item_purchased(
         self, item_id: UUID, quantity: int, price_per_unit: float, total: float, purchase_order: int
     ) -> ShoppingListItem | None:
         item = self.storage.shopping_list_items.get(item_id)
@@ -63,7 +63,7 @@ class MemoryShoppingRepository(AbstractShoppingRepository):
             return item
         return None
 
-    def add_more_purchased(
+    async def add_more_purchased(
         self,
         item_id: UUID,
         additional_quantity: float,
@@ -79,7 +79,7 @@ class MemoryShoppingRepository(AbstractShoppingRepository):
             return item
         return None
 
-    def update_shopping_list_item_requested_quantity(
+    async def update_shopping_list_item_requested_quantity(
         self, item_id: UUID, requested_quantity: int
     ) -> None:
         """Update the requested quantity for a shopping list item."""

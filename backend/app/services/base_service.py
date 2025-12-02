@@ -1,6 +1,6 @@
 """Base service class for all services."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class BaseService:
@@ -10,10 +10,10 @@ class BaseService:
     using the repository factory functions from app.repositories.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with database session.
 
         Args:
-            db: SQLAlchemy database session
+            db: SQLAlchemy async database session
         """
         self.db = db

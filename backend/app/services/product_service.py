@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import (
     PricePoint,
@@ -34,7 +34,7 @@ from .base_service import BaseService
 class ProductService(BaseService):
     """Service for product operations."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.product_repo = get_product_repository(db)
@@ -42,17 +42,17 @@ class ProductService(BaseService):
         self.shopping_repo = get_shopping_repository(db)
         self.store_repo = get_store_repository(db)
 
-    def search_products(self, query: str) -> list[ProductSearchResult]:
+    async def search_products(self, query: str) -> list[ProductSearchResult]:
         """Search for products by name across all stores."""
-        products = self.product_repo.search_products(query)
+        products = await self.product_repo.search_products(query)
 
         result = []
         for product in products:
             # Get availabilities to show store information
-            availabilities = self.product_repo.get_product_availabilities(product.id)
+            availabilities = await self.product_repo.get_product_availabilities(product.id)
             stores_info = []
             for avail in availabilities:
-                store = self.store_repo.get_store_by_id(avail.store_id)
+                store = await self.store_repo.get_store_by_id(avail.store_id)
                 if store:
                     stores_info.append(
                         StoreInfo(
@@ -70,7 +70,7 @@ class ProductService(BaseService):
 
         return result
 
-    def get_similar_products(self, name: str, limit: int = 5) -> list[ProductSearchResult]:
+    async def get_similar_products(self, name: str, limit: int = 5) -> list[ProductSearchResult]:
         """Get products with similar names for duplicate detection.
 
         Uses case-insensitive search to find products with names similar to the input.
@@ -80,22 +80,22 @@ class ProductService(BaseService):
             return []
 
         # Use the search_products method which does case-insensitive matching
-        results = self.search_products(name.strip())
+        results = await self.search_products(name.strip())
 
         # Limit results
         return results[:limit]
 
-    def get_product_details(self, product_id: UUID) -> ProductDetailResponse | None:
+    async def get_product_details(self, product_id: UUID) -> ProductDetailResponse | None:
         """Get detailed product information including price history from shopping list items and availabilities.
 
         Shows the product across different stores with price history.
         """
-        product = self.product_repo.get_product_by_id(product_id)
+        product = await self.product_repo.get_product_by_id(product_id)
         if not product:
             return None
 
         # Get all availabilities for this product
-        availabilities = self.product_repo.get_product_availabilities(product_id)
+        availabilities = await self.product_repo.get_product_availabilities(product_id)
 
         # Group availabilities by store
         stores_map = defaultdict(list)
@@ -104,7 +104,8 @@ class ProductService(BaseService):
 
         # Collect price data by store
         stores_data = []
-        all_stores = {s.id: s for s in self.store_repo.get_all_stores()}
+        all_stores_list = await self.store_repo.get_all_stores()
+        all_stores = {s.id: s for s in all_stores_list}
 
         for store_id, store_availabilities in stores_map.items():
             store = all_stores.get(store_id)
@@ -112,7 +113,7 @@ class ProductService(BaseService):
                 continue
 
             # Get shopping list items for this product at this store
-            shopping_items = self.shopping_repo.get_shopping_list_items_by_product(product.id)
+            shopping_items = await self.shopping_repo.get_shopping_list_items_by_product(product.id)
 
             # Extract price history from all availabilities at this store
             all_prices = []
@@ -133,7 +134,7 @@ class ProductService(BaseService):
             for item in shopping_items:
                 if item.purchased_price_per_unit:
                     # Check if this item's run was for this store
-                    run = self.run_repo.get_run_by_id(item.run_id)
+                    run = await self.run_repo.get_run_by_id(item.run_id)
                     if run and run.store_id == store_id:
                         all_prices.append(
                             PricePoint(
@@ -171,7 +172,7 @@ class ProductService(BaseService):
             stores=stores_data,
         )
 
-    def create_product(
+    async def create_product(
         self,
         name: str,
         brand: str | None = None,
@@ -204,19 +205,19 @@ class ProductService(BaseService):
 
         # Verify store exists if provided
         if store_id:
-            store = self.store_repo.get_store_by_id(store_id)
+            store = await self.store_repo.get_store_by_id(store_id)
             if not store:
                 raise NotFoundError(
                     code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
                 )
 
         # Create the product
-        product = self.product_repo.create_product(name.strip(), brand, unit)
+        product = await self.product_repo.create_product(name.strip(), brand, unit)
 
         # Create availability if store is provided
         availability = None
         if store_id:
-            availability = self.product_repo.create_product_availability(
+            availability = await self.product_repo.create_product_availability(
                 product.id,
                 store_id,
                 price=price,
