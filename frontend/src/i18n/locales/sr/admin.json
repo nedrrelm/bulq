@@ -7,7 +7,8 @@
   "tabs": {
     "users": "Корисници",
     "products": "Производи",
-    "stores": "Продавнице"
+    "stores": "Продавнице",
+    "groups": "Групе"
   },
   "search": {
     "placeholder": "Претражи..."
@@ -44,6 +45,13 @@
     "id": "ИД",
     "verified": "Верификована",
     "actions": "Акције"
+  },
+  "groups": {
+    "name": "Назив",
+    "creator": "Креатор",
+    "memberCount": "Чланови",
+    "id": "ИД",
+    "createdAt": "Креирана"
   },
   "edit": {
     "dangerZone": "Опасна зона",

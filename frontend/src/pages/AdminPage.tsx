@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { adminApi } from '../api/admin'
-import type { AdminUser, AdminProduct, AdminStore } from '../api/admin'
+import type { AdminUser, AdminProduct, AdminStore, AdminGroup } from '../api/admin'
 import EditProductPopup from '../components/EditProductPopup'
 import EditStorePopup from '../components/EditStorePopup'
 import EditUserPopup from '../components/EditUserPopup'
 import { logger } from '../utils/logger'
 import '../styles/pages/AdminPage.css'
 
-type TabType = 'users' | 'products' | 'stores'
+type TabType = 'users' | 'products' | 'stores' | 'groups'
 
 const LIMIT = 100
 
@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [usersOffset, setUsersOffset] = useState(0)
   const [productsOffset, setProductsOffset] = useState(0)
   const [storesOffset, setStoresOffset] = useState(0)
+  const [groupsOffset, setGroupsOffset] = useState(0)
 
   // Users
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -34,6 +35,10 @@ export default function AdminPage() {
   // Stores
   const [stores, setStores] = useState<AdminStore[]>([])
   const [loadingStores, setLoadingStores] = useState(false)
+
+  // Groups
+  const [groups, setGroups] = useState<AdminGroup[]>([])
+  const [loadingGroups, setLoadingGroups] = useState(false)
 
   // Edit popups
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
@@ -55,15 +60,18 @@ export default function AdminPage() {
       fetchProducts()
     } else if (activeTab === 'stores') {
       fetchStores()
+    } else if (activeTab === 'groups') {
+      fetchGroups()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, search, verifiedFilter, usersOffset, productsOffset, storesOffset])
+  }, [activeTab, search, verifiedFilter, usersOffset, productsOffset, storesOffset, groupsOffset])
 
   // Reset offsets when search or filter changes
   useEffect(() => {
     setUsersOffset(0)
     setProductsOffset(0)
     setStoresOffset(0)
+    setGroupsOffset(0)
   }, [search, verifiedFilter])
 
   const fetchUsers = async () => {
@@ -99,6 +107,18 @@ export default function AdminPage() {
       logger.error('Failed to fetch stores:', err)
     } finally {
       setLoadingStores(false)
+    }
+  }
+
+  const fetchGroups = async () => {
+    setLoadingGroups(true)
+    try {
+      const data = await adminApi.getGroups(search || undefined, LIMIT, groupsOffset)
+      setGroups(data)
+    } catch (err) {
+      logger.error('Failed to fetch groups:', err)
+    } finally {
+      setLoadingGroups(false)
     }
   }
 
@@ -209,6 +229,12 @@ export default function AdminPage() {
           onClick={() => setActiveTab('stores')}
         >
           {t('admin:tabs.stores')}
+        </button>
+        <button
+          className={activeTab === 'groups' ? 'active' : ''}
+          onClick={() => setActiveTab('groups')}
+        >
+          {t('admin:tabs.groups')}
         </button>
       </div>
 
@@ -433,6 +459,60 @@ export default function AdminPage() {
                   <button
                     onClick={() => setStoresOffset(storesOffset + LIMIT)}
                     disabled={stores.length < LIMIT}
+                    className="btn btn-secondary"
+                  >
+                    {t('common:next')}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'groups' && (
+        <div className="admin-content">
+          {loadingGroups ? (
+            <p>{t('common:loading')}</p>
+          ) : (
+            <>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>{t('admin:groups.name')}</th>
+                    <th>{t('admin:groups.creator')}</th>
+                    <th>{t('admin:groups.memberCount')}</th>
+                    <th>{t('admin:groups.id')}</th>
+                    <th>{t('admin:groups.createdAt')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groups?.map((group) => (
+                    <tr key={group.id}>
+                      <td>{group.name}</td>
+                      <td>{group.creator_name}</td>
+                      <td>{group.member_count}</td>
+                      <td className="id-cell">{group.id}</td>
+                      <td>{group.created_at ? new Date(group.created_at).toLocaleDateString() : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {(groupsOffset > 0 || groups.length === LIMIT) && (
+                <div className="pagination-controls">
+                  <button
+                    onClick={() => setGroupsOffset(Math.max(0, groupsOffset - LIMIT))}
+                    disabled={groupsOffset === 0}
+                    className="btn btn-secondary"
+                  >
+                    {t('common:previous')}
+                  </button>
+                  <span className="pagination-info">
+                    {t('common:showing')} {groupsOffset + 1}-{groupsOffset + groups.length}
+                  </span>
+                  <button
+                    onClick={() => setGroupsOffset(groupsOffset + LIMIT)}
+                    disabled={groups.length < LIMIT}
                     className="btn btn-secondary"
                   >
                     {t('common:next')}

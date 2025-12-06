@@ -36,6 +36,17 @@ class AdminStoreResponse(BaseModel):
     created_at: str | None
 
 
+class AdminGroupResponse(BaseModel):
+    """Admin view of group information."""
+
+    id: str
+    name: str
+    created_by: str
+    creator_name: str
+    member_count: int
+    created_at: str | None
+
+
 class VerificationToggleResponse(BaseModel):
     """Response for toggling verification status.
 

@@ -60,3 +60,8 @@ class AbstractGroupRepository(ABC):
     def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
         """Set the admin status of a group member."""
         raise NotImplementedError('Subclass must implement set_group_member_admin')
+
+    @abstractmethod
+    def get_all_groups(self) -> list[Group]:
+        """Get all groups."""
+        raise NotImplementedError('Subclass must implement get_all_groups')

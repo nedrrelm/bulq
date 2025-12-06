@@ -107,3 +107,14 @@ class MemoryGroupRepository(AbstractGroupRepository):
             self.storage.group_admin_status[(group_id, user_id)] = is_admin
             return True
         return False
+
+    def get_all_groups(self) -> list[Group]:
+        """Get all groups."""
+        groups = []
+        for group in self.storage.groups.values():
+            # Set up relationships
+            group.creator = self.storage.users.get(group.created_by)
+            member_ids = self.storage.group_memberships.get(group.id, [])
+            group.members = [self.storage.users.get(uid) for uid in member_ids if uid in self.storage.users]
+            groups.append(group)
+        return groups

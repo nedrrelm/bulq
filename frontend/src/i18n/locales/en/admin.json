@@ -7,7 +7,8 @@
   "tabs": {
     "users": "Users",
     "products": "Products",
-    "stores": "Stores"
+    "stores": "Stores",
+    "groups": "Groups"
   },
   "search": {
     "placeholder": "Search..."
@@ -44,6 +45,13 @@
     "id": "ID",
     "verified": "Verified",
     "actions": "Actions"
+  },
+  "groups": {
+    "name": "Name",
+    "creator": "Creator",
+    "memberCount": "Members",
+    "id": "ID",
+    "createdAt": "Created At"
   },
   "edit": {
     "dangerZone": "Danger Zone",

@@ -1,6 +1,7 @@
 """Pydantic schemas for request/response models."""
 
 from .admin_schemas import (
+    AdminGroupResponse,
     AdminProductResponse,
     AdminStoreResponse,
     AdminUserResponse,
@@ -123,6 +124,7 @@ __all__ = [
     'AdminUserResponse',
     'AdminProductResponse',
     'AdminStoreResponse',
+    'AdminGroupResponse',
     'VerificationToggleResponse',
     'UpdateProductRequest',
     'UpdateStoreRequest',

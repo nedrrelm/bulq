@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
+    AdminGroupResponse,
     AdminProductResponse,
     AdminStoreResponse,
     AdminUserResponse,
@@ -56,6 +57,19 @@ async def toggle_user_verification(
     """Toggle user verification status."""
     service = AdminService(db)
     return service.toggle_user_verification(UUID(user_id), admin_user)
+
+
+@router.get('/groups', response_model=list[AdminGroupResponse])
+async def get_groups(
+    search: str | None = Query(None),
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Get all groups with optional search (paginated, max 100 per page)."""
+    service = AdminService(db)
+    return service.get_groups(search, limit, offset)
 
 
 @router.get('/products', response_model=list[AdminProductResponse])

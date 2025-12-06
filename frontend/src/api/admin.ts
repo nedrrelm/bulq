@@ -27,6 +27,15 @@ export interface AdminStore {
   created_at: string
 }
 
+export interface AdminGroup {
+  id: string
+  name: string
+  created_by: string
+  creator_name: string
+  member_count: number
+  created_at: string | null
+}
+
 export interface MergeResponse {
   success: boolean
   code: string
@@ -128,5 +137,14 @@ export const adminApi = {
 
   async setRegistrationSetting(allowRegistration: boolean): Promise<{ allow_registration: boolean; message: string }> {
     return await api.post<{ allow_registration: boolean; message: string }>(`/admin/settings/registration?allow_registration=${allowRegistration}`)
+  },
+
+  async getGroups(search?: string, limit: number = 100, offset: number = 0): Promise<AdminGroup[]> {
+    const params = new URLSearchParams()
+    if (search) params.append('search', search)
+    params.append('limit', limit.toString())
+    params.append('offset', offset.toString())
+
+    return await api.get<AdminGroup[]>(`/admin/groups?${params}`)
   },
 }

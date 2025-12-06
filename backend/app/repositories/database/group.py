@@ -123,3 +123,7 @@ class DatabaseGroupRepository(AbstractGroupRepository):
         )
         self.db.commit()
         return result.rowcount > 0
+
+    def get_all_groups(self) -> list[Group]:
+        """Get all groups."""
+        return self.db.query(Group).all()

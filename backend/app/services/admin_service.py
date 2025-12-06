@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.api.schemas import (
+    AdminGroupResponse,
     AdminProductResponse,
     AdminStoreResponse,
     AdminUserResponse,
@@ -43,7 +44,12 @@ from app.core.success_codes import (
     USER_VERIFIED,
     USERS_MERGED,
 )
-from app.repositories import get_product_repository, get_store_repository, get_user_repository
+from app.repositories import (
+    get_group_repository,
+    get_product_repository,
+    get_store_repository,
+    get_user_repository,
+)
 
 from .base_service import BaseService
 
@@ -57,6 +63,7 @@ class AdminService(BaseService):
         self.user_repo = get_user_repository(db)
         self.product_repo = get_product_repository(db)
         self.store_repo = get_store_repository(db)
+        self.group_repo = get_group_repository(db)
 
     def get_users(
         self,
@@ -140,6 +147,51 @@ class AdminService(BaseService):
             id=str(user.id),
             verified=user.verified,
         )
+
+    def get_groups(
+        self,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[AdminGroupResponse]:
+        """Get all groups with optional search and filtering (paginated).
+
+        Args:
+            search: Optional search query for group name or ID
+            limit: Maximum number of results (max 100)
+            offset: Number of results to skip
+
+        Returns:
+            List of AdminGroupResponse with formatted data
+        """
+        groups = self.group_repo.get_all_groups()
+
+        # Filter by search query (name or ID)
+        if search:
+            search_lower = search.lower()
+            groups = [
+                g
+                for g in groups
+                if (search_lower in g.name.lower() or search_lower in str(g.id).lower())
+            ]
+
+        # Sort by created_at (most recent first)
+        groups.sort(key=lambda g: g.created_at if g.created_at else datetime.min, reverse=True)
+
+        # Apply pagination
+        paginated_groups = groups[offset : offset + limit]
+
+        return [
+            AdminGroupResponse(
+                id=str(g.id),
+                name=g.name,
+                created_by=str(g.created_by),
+                creator_name=g.creator.name if g.creator else 'Unknown',
+                member_count=len(g.members) if g.members else 0,
+                created_at=g.created_at.isoformat() if g.created_at else None,
+            )
+            for g in paginated_groups
+        ]
 
     def get_products(
         self,

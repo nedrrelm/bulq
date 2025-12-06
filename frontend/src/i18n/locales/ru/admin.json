@@ -7,7 +7,8 @@
   "tabs": {
     "users": "Пользователи",
     "products": "Товары",
-    "stores": "Магазины"
+    "stores": "Магазины",
+    "groups": "Группы"
   },
   "search": {
     "placeholder": "Поиск..."
@@ -44,6 +45,13 @@
     "id": "ID",
     "verified": "Проверен",
     "actions": "Действия"
+  },
+  "groups": {
+    "name": "Название",
+    "creator": "Создатель",
+    "memberCount": "Участники",
+    "id": "ID",
+    "createdAt": "Создана"
   },
   "edit": {
     "dangerZone": "Опасная зона",
