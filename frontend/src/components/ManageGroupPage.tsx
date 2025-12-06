@@ -161,7 +161,7 @@ export default function ManageGroupPage() {
       const data = await groupsApi.toggleJoiningAllowed(groupId)
       setGroup({ ...group, is_joining_allowed: data.is_joining_allowed })
       showToast(
-        t(data.is_joining_allowed ? 'group.manage.messages.joiningEnabled' : 'group.manage.messages.joiningDisabled'),
+        t(data.is_joining_allowed ? 'group:manage.messages.joiningEnabled' : 'group:manage.messages.joiningDisabled'),
         'success'
       )
     } catch (err) {
@@ -296,7 +296,7 @@ export default function ManageGroupPage() {
                 onClick={handleToggleJoining}
                 className={`btn ${group.is_joining_allowed ? 'btn-danger' : 'btn-success'}`}
               >
-                {t(group.is_joining_allowed ? 'group.manage.actions.disallowJoining' : 'group.manage.actions.allowJoining')}
+                {t(group.is_joining_allowed ? 'group:manage.actions.disallowJoining' : 'group:manage.actions.allowJoining')}
               </button>
             </>
           )}
