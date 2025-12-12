@@ -32,6 +32,28 @@ These items must be completed before production deployment.
 
 ---
 
+### Invite Link Flow for Unauthenticated Users
+**Status**: Future
+**Priority**: High
+**Affected files**: Frontend routing, auth flow, invite link handler
+
+**Features:**
+- Detect when unauthenticated user clicks invite link
+- Store invite link/token temporarily (sessionStorage or URL param)
+- Redirect to registration page with context
+- After successful registration/login, redirect to original invite link
+- Auto-join group using stored invite token
+
+**Implementation:**
+- Add redirect parameter to registration/login pages
+- Store invite token in sessionStorage during redirect
+- Update auth success handler to check for pending invite
+- Automatically process group join after authentication
+- Clear stored invite data after successful join
+- Handle edge cases: expired tokens, invalid invites, already member
+
+---
+
 ### Product Management Enhancements
 **Status**: Future
 **Priority**: Medium
