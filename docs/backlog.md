@@ -32,6 +32,71 @@ These items must be completed before production deployment.
 
 ---
 
+### UI/UX Improvements
+**Status**: Future
+**Priority**: Medium
+**Affected files**: Frontend components, run pages
+
+**Features:**
+
+1. **User Breakdown Across All States**
+   - Currently only shown during distribution state
+   - Show breakdown by user in all run states (planning, active, confirmed, shopping, adjusting)
+   - Display each user's requested quantities and totals per user
+   - Note: Per-product breakdown already exists (shopping list items)
+
+2. **Total Run Price Display**
+   - **Before shopping stage**: Show estimated total price with clear indication it's an estimate
+   - **During shopping stage**: Show two values:
+     - Current total for purchased items
+     - Estimated total for remaining items
+   - **After shopping**: Show final total
+   - Update in real-time as items are purchased
+   - Prominent placement in run header or summary card
+
+3. **Currency Symbol Localization**
+   - Fix hardcoded dollar signs ($) in various UI components
+   - Use currency symbol from configuration or user locale
+   - Support for multiple currencies (RSD, EUR, USD, etc.)
+   - Centralize currency formatting logic
+
+4. **Adjusting State: Allow Complete Bid Removal**
+   - Current bug: Cannot remove bid completely during adjusting state
+   - Should allow removing bid if it would match purchased quantity exactly
+   - Investigate minimum quantity validation logic in adjusting state
+   - Update BidPopup component to allow 0 quantity when appropriate
+
+5. **Manual State Transition: Active to Confirmed**
+   - Currently auto-transitions when all users mark ready
+   - Change to require leader to click "Proceed to Confirmed" button
+   - Similar to shopping stage transition (leader explicitly starts shopping)
+   - Prevents premature state changes
+
+6. **Decimal Rounding**
+   - Round all decimal values to 2 decimal points throughout the app
+   - Apply to quantities, prices, totals
+   - Ensure consistent display formatting
+
+7. **Edit Purchased Items**
+   - Allow modifying purchased quantity and price after marking as purchased
+   - Use same purchase popup with prefilled values
+   - Use case: Correcting errors during shopping
+   - Update totals and calculations accordingly
+
+8. **Add Products During Shopping**
+   - Leader can add new products/bids/shopping list items during shopping stage
+   - Supports adding forgotten items or opportunistic purchases
+   - Automatically add to shopping list
+   - Track as new shopping list item
+
+9. **Leader Can Modify User Bids**
+   - Leader has ability to edit other users' bids (not just force equal distribution)
+   - Makes price division and quantity adjustments easier
+   - Useful during adjusting stage for fine-tuning allocations
+   - Note: This needs more design work to determine exact workflow and permissions
+
+---
+
 ### Invite Link Flow for Unauthenticated Users
 **Status**: Future
 **Priority**: High
