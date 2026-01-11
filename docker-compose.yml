@@ -23,8 +23,9 @@ services:
       context: ./backend
       args:
         - BUILD_DEV_DEPS=${BUILD_DEV_DEPS}
-    ports:
-      - "${BACKEND_PORT}:8000"
+    # Expose backend only to internal network (accessed via Caddy)
+    expose:
+      - "8000"
     env_file:
       - .env
     volumes:
@@ -43,26 +44,33 @@ services:
       context: ./frontend
       args:
         VITE_BASE_PATH: ${VITE_BASE_PATH}
-    ports:
-      # Maps host port to container port (3000 for dev, 80 for prod)
-      - "${FRONTEND_PORT}:${CADDY_PORT}"
+    # Expose frontend only to internal network (accessed via Caddy)
+    expose:
+      - "3000"
     env_file:
       - .env
-    environment:
-      # Pass variables to Caddy
-      CADDY_LISTEN: ${CADDY_LISTEN}
-    volumes:
-      # Caddy config volume
-      - caddy_config:/config
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - bulq-network
 
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      # Caddy is now the only service exposed to the host
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - bulq-network
+
 volumes:
   postgres_data:
-  caddy_config:
 
 networks:
   bulq-network:

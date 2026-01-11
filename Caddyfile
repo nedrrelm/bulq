@@ -1,0 +1,42 @@
+# Caddy Reverse Proxy Configuration for Bulq
+# Routes all traffic to backend and frontend services
+
+{
+    # Disable automatic HTTPS in development
+    auto_https off
+}
+
+:80 {
+    # Enable gzip compression
+    encode gzip
+
+    # Security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Frontend - serve React/Caddy (all requests by default)
+    # This includes WebSocket connections for Vite HMR if used
+    reverse_proxy /* frontend:3000
+
+    # Backend API - route /api/* to FastAPI
+    reverse_proxy /api/* backend:8000 {
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # WebSocket connections
+    reverse_proxy /ws/* backend:8000 {
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Access logs for debugging
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}

@@ -1,9 +1,12 @@
-# Caddy configuration for Bulq
-# Dynamically configured via CADDY_LISTEN environment variable
-# Development: CADDY_LISTEN=localhost:3000 (HTTPS with self-signed cert)
-# Production:  CADDY_LISTEN=:80 (behind upstream reverse proxy)
+# Caddy configuration for Bulq Frontend
+# Serves static React build behind Caddy reverse proxy
 
-{$CADDY_LISTEN:localhost:3000} {
+{
+    # Disable automatic HTTPS - we're behind a reverse proxy
+    auto_https off
+}
+
+:3000 {
     # Enable gzip compression
     encode gzip
 
@@ -12,12 +15,6 @@
         X-Frame-Options "SAMEORIGIN"
         X-Content-Type-Options "nosniff"
         Referrer-Policy "strict-origin-when-cross-origin"
-    }
-
-    # Handle API routes - proxy to backend
-    # All backend routes are prefixed with /api to avoid conflicts with frontend routes
-    handle /api/* {
-        reverse_proxy backend:8000
     }
 
     # Serve static assets directly (with caching)
