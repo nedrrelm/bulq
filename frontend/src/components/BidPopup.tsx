@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import '../styles/components/BidPopup.css'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateDecimal, parseDecimal } from '../utils/validation'
+import { formatQuantity } from '../utils/format'
 
 interface BidPopupProps {
   productName: string
@@ -104,7 +105,7 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
                   : t('run:bid.adjustingModeDescription')
               })()}
               {minAllowed !== undefined && maxAllowed !== undefined && (
-                <> {t('run:bid.range', { min: minAllowed, max: maxAllowed })}</>
+                <> {t('run:bid.range', { min: formatQuantity(minAllowed), max: formatQuantity(maxAllowed) })}</>
               )}
             </p>
           </div>

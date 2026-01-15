@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { RunDetail } from '../api'
+import { formatQuantity } from '../utils/format'
 
 type Product = RunDetail['products'][0]
 
@@ -122,15 +123,15 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
         <div>
           {product.purchased_quantity !== null && product.purchased_quantity > 0 ? (
             <div className={`adjustment-info ${needsAdjustmentShortage ? 'needs-adjustment-shortage' : needsAdjustmentSurplus ? 'needs-adjustment-surplus' : 'adjustment-ok'}`}>
-              <strong>{t('run:product.purchased')}:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>{t('run:product.requested')}:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
+              <strong>{t('run:product.purchased')}:</strong> {formatQuantity(product.purchased_quantity)}{product.unit ? ` ${product.unit}` : ''} | <strong>{t('run:product.requested')}:</strong> {formatQuantity(product.total_quantity)}{product.unit ? ` ${product.unit}` : ''}
               {needsAdjustmentShortage && (
                 <span className="adjustment-warning">
-                  ⚠ {t('run:product.reduceBy', { amount: product.total_quantity - product.purchased_quantity, unit: product.unit || '' })}
+                  ⚠ {t('run:product.reduceBy', { amount: formatQuantity(product.total_quantity - (product.purchased_quantity || 0)), unit: product.unit || '' })}
                 </span>
               )}
               {needsAdjustmentSurplus && (
                 <span className="adjustment-warning surplus">
-                  ⚠ {t('run:product.increaseBy', { amount: product.purchased_quantity - product.total_quantity, unit: product.unit || '' })}
+                  ⚠ {t('run:product.increaseBy', { amount: formatQuantity((product.purchased_quantity || 0) - product.total_quantity), unit: product.unit || '' })}
                 </span>
               )}
               {adjustmentOk && (
@@ -154,7 +155,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
         <div>
           {(fullyPurchased || partiallyPurchased) && (
             <div className={`adjustment-info ${fullyPurchased ? 'adjustment-ok' : 'needs-adjustment'}`}>
-              <strong>{t('run:product.purchased')}:</strong> {product.purchased_quantity}{product.unit ? ` ${product.unit}` : ''} | <strong>{t('run:product.requested')}:</strong> {product.total_quantity}{product.unit ? ` ${product.unit}` : ''}
+              <strong>{t('run:product.purchased')}:</strong> {formatQuantity(product.purchased_quantity)}{product.unit ? ` ${product.unit}` : ''} | <strong>{t('run:product.requested')}:</strong> {formatQuantity(product.total_quantity)}{product.unit ? ` ${product.unit}` : ''}
               {fullyPurchased && (
                 <span className="adjustment-ok-badge">
                   ✓ {t('run:product.ok')}
@@ -180,7 +181,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
 
       <div className="product-stats">
         <div className="stat">
-          <span className="stat-value">{product.total_quantity}{product.unit ? ` ${product.unit}` : ''}</span>
+          <span className="stat-value">{formatQuantity(product.total_quantity)}{product.unit ? ` ${product.unit}` : ''}</span>
           <span className="stat-label">{t('run:product.totalQuantity')}</span>
         </div>
         <div className="stat">
@@ -195,10 +196,10 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
           {product.user_bids.map((bid, index) => {
             const allBidderNames = product.user_bids.map(b => b.user_name)
             return (
-            <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? t('run:product.interested') : `${bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}`}>
+            <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? t('run:product.interested') : `${formatQuantity(bid.quantity)}${product.unit ? ` ${product.unit}` : ''}`}`}>
               <span className="avatar-initials">{getUserInitials(bid.user_name, allBidderNames)}</span>
               <span className="bid-quantity">
-                {bid.interested_only ? '?' : bid.quantity}
+                {bid.interested_only ? '?' : formatQuantity(bid.quantity)}
               </span>
             </div>
             )
@@ -214,7 +215,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               {needsAdjustment && product.current_user_bid ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    {t('run:product.yourBid')}: {product.current_user_bid.interested_only ? t('run:product.interested') : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
+                    {t('run:product.yourBid')}: {product.current_user_bid.interested_only ? t('run:product.interested') : `${formatQuantity(product.current_user_bid.quantity)}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                   <div className="bid-buttons">
                     <button
@@ -238,7 +239,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               ) : product.current_user_bid && (adjustmentOk || notPurchasedAdjusting) ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    {t('run:product.yourBid')}: {product.current_user_bid.interested_only ? t('run:product.interested') : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
+                    {t('run:product.yourBid')}: {product.current_user_bid.interested_only ? t('run:product.interested') : `${formatQuantity(product.current_user_bid.quantity)}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                 </div>
               ) : null}
@@ -249,7 +250,7 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
               {product.current_user_bid ? (
                 <div className="user-bid-status">
                   <span className="current-bid">
-                    {t('run:product.yourBid')}: {product.current_user_bid.interested_only ? t('run:product.interested') : `${product.current_user_bid.quantity}${product.unit ? ` ${product.unit}` : ''}`}
+                    {t('run:product.yourBid')}: {product.current_user_bid.interested_only ? t('run:product.interested') : `${formatQuantity(product.current_user_bid.quantity)}${product.unit ? ` ${product.unit}` : ''}`}
                   </span>
                   <div className="bid-buttons">
                     <button
