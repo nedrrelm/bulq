@@ -74,6 +74,10 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
       if (data.run_id) {
         queryClient.invalidateQueries({ queryKey: ['runs', 'detail', data.run_id] })
       }
+    } else if (message.type === 'member_joined') {
+      // Invalidate groups query to show newly joined group
+      queryClient.invalidateQueries({ queryKey: groupKeys.list() })
+      logger.debug('Member joined group, refreshing groups list')
     }
   }, [queryClient])
 

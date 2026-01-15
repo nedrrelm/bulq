@@ -101,7 +101,6 @@ function ManageGroupPageWrapper() {
 
 function JoinGroupWrapper() {
   const { inviteToken } = useParams<{ inviteToken: string }>()
-  const { user } = useAuth()
   const navigate = useNavigate()
 
   if (!inviteToken) {
@@ -109,20 +108,8 @@ function JoinGroupWrapper() {
     return null
   }
 
-  // JoinGroup component handles auth check internally
-  // but we need to wrap it in AppLayout only if user is authenticated
-  if (user) {
-    return (
-      <AppLayout>
-        <JoinGroup
-          inviteToken={inviteToken}
-          onJoinSuccess={() => navigate('/')}
-        />
-      </AppLayout>
-    )
-  }
-
-  // If not authenticated, JoinGroup will redirect to login
+  // JoinGroup component handles its own layout and styling
+  // No need for AppLayout wrapper - it has full-page gradient background
   return (
     <JoinGroup
       inviteToken={inviteToken}

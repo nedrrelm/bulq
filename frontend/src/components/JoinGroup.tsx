@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import '../styles/components/JoinGroup.css'
-import { groupsApi } from '../api'
 import { API_BASE_URL } from '../config'
 import { getErrorMessage } from '../utils/errorHandling'
 import { redirectStorage } from '../utils/redirectStorage'
 import { useAuth } from '../contexts/AuthContext'
+import { useJoinGroup } from '../hooks/queries/useGroups'
 
 interface JoinGroupProps {
   inviteToken: string
@@ -24,10 +24,11 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
   const { t } = useTranslation(['group'])
   const { user } = useAuth()
   const navigate = useNavigate()
+  const joinGroupMutation = useJoinGroup()
+
   const [groupPreview, setGroupPreview] = useState<GroupInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [joining, setJoining] = useState(false)
   const [joinedGroup, setJoinedGroup] = useState<GroupInfo | null>(null)
 
   // Check authentication and redirect if necessary
@@ -66,27 +67,27 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
     fetchGroupInfo()
   }, [inviteToken, user])
 
-  const handleJoin = async () => {
-    try {
-      setJoining(true)
-      setError('')
+  const handleJoin = () => {
+    setError('')
 
-      const data = await groupsApi.joinGroup(inviteToken)
-      setJoinedGroup({
-        id: data.group_id,
-        name: data.group_name,
-        member_count: groupPreview?.member_count || 0,
-        creator_name: groupPreview?.creator_name || ''
-      })
+    joinGroupMutation.mutate(inviteToken, {
+      onSuccess: (data) => {
+        setJoinedGroup({
+          id: data.group_id,
+          name: data.group_name,
+          member_count: groupPreview?.member_count || 0,
+          creator_name: groupPreview?.creator_name || ''
+        })
 
-      // Show success message briefly then redirect
-      setTimeout(() => {
-        onJoinSuccess()
-      }, 1500)
-    } catch (err) {
-      setError(getErrorMessage(err, t('group:join.errors.joinFailed')))
-      setJoining(false)
-    }
+        // Show success message briefly then redirect
+        setTimeout(() => {
+          onJoinSuccess()
+        }, 1500)
+      },
+      onError: (err) => {
+        setError(getErrorMessage(err, t('group:join.errors.joinFailed')))
+      }
+    })
   }
 
   if (loading) {
@@ -138,9 +139,9 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
           <button
             onClick={handleJoin}
             className="btn btn-primary"
-            disabled={joining || !groupPreview}
+            disabled={joinGroupMutation.isPending || !groupPreview}
           >
-            {joining ? t('group:join.actions.joining') : t('group:join.actions.submit')}
+            {joinGroupMutation.isPending ? t('group:join.actions.joining') : t('group:join.actions.submit')}
           </button>
         </div>
       </div>
