@@ -67,18 +67,6 @@ These items must be completed before production deployment.
 
 **Features:**
 
-3. **Currency Symbol Localization**
-   - Fix hardcoded dollar signs ($) in various UI components
-   - Use currency symbol from configuration or user locale
-   - Support for multiple currencies (RSD, EUR, USD, etc.)
-   - Centralize currency formatting logic
-
-4. **Adjusting State: Allow Complete Bid Removal**
-   - Current bug: Cannot remove bid completely during adjusting state
-   - Should allow removing bid if it would match purchased quantity exactly
-   - Investigate minimum quantity validation logic in adjusting state
-   - Update BidPopup component to allow 0 quantity when appropriate
-
 5. **Manual State Transition: Active to Confirmed**
    - Currently auto-transitions when all users mark ready
    - Change to require leader to click "Proceed to Confirmed" button

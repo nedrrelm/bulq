@@ -107,10 +107,24 @@ class BidService(BaseService):
         # Validate the bid based on current state
         self._validate_bid_for_state(run, product_uuid, quantity, participation)
 
-        # Create or update the bid
-        self.bid_repo.create_or_update_bid(
-            participation.id, product_uuid, quantity, interested_only, comment
-        )
+        # Handle quantity=0 as bid removal (in adjusting state, this is allowed when minAllowed=0)
+        if quantity == 0 and not interested_only:
+            existing_bid = self.bid_repo.get_bid(participation.id, product_uuid)
+            if existing_bid:
+                self.bid_repo.delete_bid(participation.id, product_uuid)
+                logger.info(
+                    'Bid removed via quantity=0',
+                    extra={
+                        'user_id': str(user.id),
+                        'run_id': str(run_uuid),
+                        'product_id': str(product_uuid),
+                    },
+                )
+        else:
+            # Create or update the bid
+            self.bid_repo.create_or_update_bid(
+                participation.id, product_uuid, quantity, interested_only, comment
+            )
 
         # Handle automatic state transition (planning → active)
         state_changed = self._check_planning_to_active_transition(
@@ -341,7 +355,7 @@ class BidService(BaseService):
         """Validate bid adjustments during adjusting state.
 
         Allows:
-        - Downward adjustments when purchased < requested (shortage)
+        - Downward adjustments when purchased < requested (shortage), including to 0 if minAllowed=0
         - Upward adjustments when purchased > requested (surplus)
         """
         # Get shopping list to check purchased quantity
@@ -363,7 +377,7 @@ class BidService(BaseService):
         difference = purchased_qty - requested_qty  # positive = surplus, negative = shortage
 
         if difference < 0:
-            # Shortage scenario: can only reduce bids
+            # Shortage scenario: can only reduce bids (including to 0 if minAllowed=0)
             shortage = abs(difference)
             min_allowed = max(0, existing_bid.quantity - shortage)
 
@@ -374,11 +388,23 @@ class BidService(BaseService):
                     current_quantity=existing_bid.quantity,
                     new_quantity=quantity,
                 )
+            # Allow quantity=0 only when min_allowed=0 (shortage exactly matches user's bid)
             if quantity < min_allowed:
                 raise BadRequestError(
                     code=BID_QUANTITY_BELOW_DISTRIBUTED,
                     message=f'Cannot reduce bid below {min_allowed} '
                     f'(current: {existing_bid.quantity}, shortage: {shortage}, would remove more than needed)',
+                    current_quantity=existing_bid.quantity,
+                    new_quantity=quantity,
+                    min_allowed=min_allowed,
+                    shortage=shortage,
+                )
+            # Explicitly check quantity=0 case
+            if quantity == 0 and min_allowed > 0:
+                raise BadRequestError(
+                    code=BID_QUANTITY_BELOW_DISTRIBUTED,
+                    message=f'Cannot remove bid completely. Minimum allowed is {min_allowed} '
+                    f'(shortage: {shortage}, others need at least {min_allowed} from you)',
                     current_quantity=existing_bid.quantity,
                     new_quantity=quantity,
                     min_allowed=min_allowed,
@@ -459,7 +485,7 @@ class BidService(BaseService):
     ) -> None:
         """Check if retraction is allowed in adjusting state.
 
-        - For shortage: cannot retract (would make shortage worse)
+        - For shortage: allow retraction only if it would match purchased quantity exactly
         - For surplus: cannot retract at all (need to increase bids, not reduce)
         """
         if run.state != RunState.ADJUSTING:
@@ -486,12 +512,19 @@ class BidService(BaseService):
             return
 
         if difference < 0:
-            # Shortage scenario: cannot retract at all (would make shortage worse)
-            raise BadRequestError(
-                code=BID_QUANTITY_EXCEEDS_PURCHASED,
-                message=f'Cannot retract bid when there is a shortage. Please reduce your bid instead.',
-                current_quantity=current_bid.quantity,
-            )
+            # Shortage scenario: allow retraction only if it would match purchased quantity exactly
+            shortage = abs(difference)
+            min_allowed = max(0, current_bid.quantity - shortage)
+
+            if min_allowed > 0:
+                # Cannot fully retract because others still need some quantity
+                raise BadRequestError(
+                    code=BID_QUANTITY_EXCEEDS_PURCHASED,
+                    message=f'Cannot retract bid when there is a shortage. Please reduce your bid to at least {min_allowed} instead.',
+                    current_quantity=current_bid.quantity,
+                    min_allowed=min_allowed,
+                )
+            # If min_allowed == 0, retraction is allowed (shortage exactly matches this bid)
         elif difference > 0:
             # Surplus scenario: cannot retract at all (need to increase bids, not reduce)
             raise BadRequestError(

@@ -52,7 +52,9 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
     }
 
     const qty = parseDecimal(value)
-    if (qty === 0) {
+    // Allow quantity=0 only in adjusting mode when minAllowed is 0
+    // (i.e., when removing the bid would exactly match purchased quantity)
+    if (qty === 0 && !(adjustingMode && minAllowed === 0)) {
       setError(t('run:validation.quantityGreaterThanZero'))
       return false
     }

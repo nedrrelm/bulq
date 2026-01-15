@@ -56,15 +56,39 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
   const shortage = difference < 0 ? Math.abs(difference) : 0
   const surplus = difference > 0 ? difference : 0
 
+  // Calculate minAllowed for current user's bid (for retraction logic)
+  const currentBidQty = product.current_user_bid?.quantity || 0
+  const minAllowed = shortage > 0 ? Math.max(0, currentBidQty - shortage) : currentBidQty
+
   // Retraction rules in adjusting mode:
-  // - If shortage: cannot retract (would worsen shortage)
+  // - If shortage: allow retraction only when minAllowed === 0 (shortage matches user's bid)
   // - If surplus: cannot retract at all (need to increase bids, not reduce)
   const canRetract = !adjustmentOk && !(
     runState === 'adjusting' &&
     product.current_user_bid &&
     !product.current_user_bid.interested_only &&
-    (shortage > 0 || surplus > 0)
+    (surplus > 0 || (shortage > 0 && minAllowed > 0))
   )
+
+  // Debug logging for frozen berries
+  if (product.name.includes('Berry') || product.name.includes('berry')) {
+    console.log('[RunProductItem Debug]', {
+      productName: product.name,
+      runState,
+      purchased: product.purchased_quantity,
+      total: product.total_quantity,
+      difference,
+      shortage,
+      surplus,
+      currentBidQty,
+      minAllowed,
+      adjustmentOk,
+      needsAdjustment,
+      canRetract,
+      hasBid: !!product.current_user_bid,
+      interestedOnly: product.current_user_bid?.interested_only
+    })
+  }
 
   // Count comments
   const commentCount = product.user_bids.filter(bid => bid.comment && bid.comment.trim().length > 0).length
