@@ -9,6 +9,7 @@ import { searchApi } from './api'
 import type { SearchResults } from './api'
 import { debounce } from './utils/validation'
 import { logger } from './utils/logger'
+import { redirectStorage } from './utils/redirectStorage'
 import Login from './components/Login'
 import Groups from './components/Groups'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -100,6 +101,7 @@ function ManageGroupPageWrapper() {
 
 function JoinGroupWrapper() {
   const { inviteToken } = useParams<{ inviteToken: string }>()
+  const { user } = useAuth()
   const navigate = useNavigate()
 
   if (!inviteToken) {
@@ -107,6 +109,20 @@ function JoinGroupWrapper() {
     return null
   }
 
+  // JoinGroup component handles auth check internally
+  // but we need to wrap it in AppLayout only if user is authenticated
+  if (user) {
+    return (
+      <AppLayout>
+        <JoinGroup
+          inviteToken={inviteToken}
+          onJoinSuccess={() => navigate('/')}
+        />
+      </AppLayout>
+    )
+  }
+
+  // If not authenticated, JoinGroup will redirect to login
   return (
     <JoinGroup
       inviteToken={inviteToken}
@@ -516,6 +532,18 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   const { user, login, loading } = useAuth()
   const navigate = useNavigate()
+  const currentPath = window.location.pathname
+
+  // Check for pending invite after successful login
+  useEffect(() => {
+    if (user) {
+      const pendingInvite = redirectStorage.getPendingInvite()
+      if (pendingInvite) {
+        redirectStorage.clearPendingInvite()
+        navigate(`/invite/${pendingInvite}`)
+      }
+    }
+  }, [user, navigate])
 
   // Show loading state while checking auth
   if (loading) {
@@ -535,11 +563,10 @@ function AppRoutes() {
     )
   }
 
-  // Show login page if not authenticated
-  if (!user) {
+  // Show login page if not authenticated (except for invite routes which handle auth themselves)
+  if (!user && !currentPath.startsWith('/invite/')) {
     return <Login onLogin={(userData) => {
       login(userData)
-      navigate('/')
     }} />
   }
 

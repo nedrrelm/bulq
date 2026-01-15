@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import '../styles/components/Login.css'
 import { authApi } from '../api'
 import type { User } from '../types/user'
 import { sanitizeString } from '../utils/validation'
 import { getErrorMessage } from '../utils/errorHandling'
+import { API_BASE_URL } from '../config'
 
 interface LoginProps {
   onLogin: (user: User) => void
@@ -22,11 +24,22 @@ interface RegisterFormData {
   confirmPassword: string
 }
 
+interface GroupInfo {
+  id: string
+  name: string
+  member_count: number
+  creator_name: string
+}
+
 export default function Login({ onLogin }: LoginProps) {
-  const { t } = useTranslation(['auth'])
+  const { t } = useTranslation(['auth', 'group'])
+  const [searchParams] = useSearchParams()
+  const inviteToken = searchParams.get('inviteToken')
+
   const [isRegister, setIsRegister] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [groupPreview, setGroupPreview] = useState<GroupInfo | null>(null)
   const usernameInputRef = useRef<HTMLInputElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
@@ -41,6 +54,25 @@ export default function Login({ onLogin }: LoginProps) {
     password: '',
     confirmPassword: ''
   })
+
+  // Fetch group preview if invite token is present
+  useEffect(() => {
+    if (inviteToken) {
+      const fetchGroupPreview = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/groups/preview/${inviteToken}`)
+          if (response.ok) {
+            const data: GroupInfo = await response.json()
+            setGroupPreview(data)
+          }
+        } catch (err) {
+          // Silently fail - user can still login
+          console.error('Failed to fetch group preview:', err)
+        }
+      }
+      fetchGroupPreview()
+    }
+  }, [inviteToken])
 
   useEffect(() => {
     if (isRegister && nameInputRef.current) {
@@ -94,6 +126,19 @@ export default function Login({ onLogin }: LoginProps) {
     <div className="login-container">
       <div className="login-card">
         <h2>{isRegister ? t('auth:register.title') : t('auth:login.title')}</h2>
+
+        {groupPreview && (
+          <div className="alert" style={{
+            backgroundColor: 'var(--color-info-bg)',
+            borderColor: 'var(--color-info)',
+            marginBottom: '1rem'
+          }}>
+            <strong>{t('group:join.preview.inviteMessage')}</strong>
+            <p style={{ margin: '0.5rem 0 0 0' }}>
+              {t('group:join.title')}: <strong>{groupPreview.name}</strong>
+            </p>
+          </div>
+        )}
 
         {error && (
           <div className="error-message">

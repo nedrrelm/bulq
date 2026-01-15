@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import '../styles/components/JoinGroup.css'
 import { groupsApi } from '../api'
 import { API_BASE_URL } from '../config'
 import { getErrorMessage } from '../utils/errorHandling'
+import { redirectStorage } from '../utils/redirectStorage'
+import { useAuth } from '../contexts/AuthContext'
 
 interface JoinGroupProps {
   inviteToken: string
@@ -19,13 +22,27 @@ interface GroupInfo {
 
 export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps) {
   const { t } = useTranslation(['group'])
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [groupPreview, setGroupPreview] = useState<GroupInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [joining, setJoining] = useState(false)
   const [joinedGroup, setJoinedGroup] = useState<GroupInfo | null>(null)
 
+  // Check authentication and redirect if necessary
   useEffect(() => {
+    if (user === null) {
+      // User is not authenticated, store invite token and redirect to login
+      redirectStorage.setPendingInvite(inviteToken)
+      navigate(`/?inviteToken=${inviteToken}`)
+    }
+  }, [user, inviteToken, navigate])
+
+  useEffect(() => {
+    // Don't fetch if user is not authenticated
+    if (!user) return
+
     const fetchGroupInfo = async () => {
       try {
         setLoading(true)
@@ -47,7 +64,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
     }
 
     fetchGroupInfo()
-  }, [inviteToken])
+  }, [inviteToken, user])
 
   const handleJoin = async () => {
     try {
