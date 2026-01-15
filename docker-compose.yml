@@ -59,7 +59,7 @@ services:
     image: caddy:2-alpine
     ports:
       # Caddy is now the only service exposed to the host
-      - "80:80"
+      - "${CADDY_PORT}:${CADDY_INTERNAL_PORT}"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     depends_on:
