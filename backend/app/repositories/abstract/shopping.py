@@ -60,6 +60,35 @@ class AbstractShoppingRepository(ABC):
         raise NotImplementedError('Subclass must implement add_more_purchased')
 
     @abstractmethod
+    def update_item_purchase(
+        self, item_id: UUID, quantity: float, price_per_unit: float, total: float
+    ) -> ShoppingListItem | None:
+        """Update an existing purchase (replaces values, doesn't accumulate).
+
+        Args:
+            item_id: The shopping list item ID
+            quantity: New purchased quantity
+            price_per_unit: New price per unit
+            total: New total cost
+
+        Returns:
+            Updated ShoppingListItem or None if not found
+        """
+        raise NotImplementedError('Subclass must implement update_item_purchase')
+
+    @abstractmethod
+    def unpurchase_item(self, item_id: UUID) -> ShoppingListItem | None:
+        """Reset an item to unpurchased state.
+
+        Args:
+            item_id: The shopping list item ID
+
+        Returns:
+            Updated ShoppingListItem or None if not found
+        """
+        raise NotImplementedError('Subclass must implement unpurchase_item')
+
+    @abstractmethod
     def update_shopping_list_item_requested_quantity(
         self, item_id: UUID, requested_quantity: int
     ) -> None:

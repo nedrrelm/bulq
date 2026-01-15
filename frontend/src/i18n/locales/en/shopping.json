@@ -17,16 +17,17 @@
     "on": "on",
     "unknownDate": "unknown date",
     "requested": "Requested",
-    "alreadyPurchased": "Already purchased"
+    "currentPurchase": "Current purchase"
   },
   "actions": {
     "completeShopping": "Complete Shopping",
     "addPrice": "Add Price",
     "updatePrice": "Update Price",
     "markPurchased": "Mark as Purchased",
-    "buyMore": "Buy More",
+    "editPurchase": "Edit Purchase",
+    "unpurchase": "Unpurchase",
     "confirmPurchase": "Confirm Purchase",
-    "addPurchase": "Add Purchase"
+    "updatePurchase": "Update Purchase"
   },
   "fields": {
     "price": "Price (RSD)",
@@ -45,7 +46,8 @@
   "prompts": {
     "unpurchasedItems": "You still have {{count}} unpurchased item(s). Are you sure you want to complete shopping?",
     "unpurchasedItems_one": "You still have 1 unpurchased item. Are you sure you want to complete shopping?",
-    "unpurchasedItems_other": "You still have {{count}} unpurchased items. Are you sure you want to complete shopping?"
+    "unpurchasedItems_other": "You still have {{count}} unpurchased items. Are you sure you want to complete shopping?",
+    "unpurchaseConfirm": "Are you sure? This will move the item back to the shopping list."
   },
   "errors": {
     "invalidPrice": "Invalid price",

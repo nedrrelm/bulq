@@ -67,17 +67,6 @@ These items must be completed before production deployment.
 
 **Features:**
 
-6. **Decimal Rounding**
-   - Round all decimal values to 2 decimal points throughout the app
-   - Apply to quantities, prices, totals
-   - Ensure consistent display formatting
-
-7. **Edit Purchased Items**
-   - Allow modifying purchased quantity and price after marking as purchased
-   - Use same purchase popup with prefilled values
-   - Use case: Correcting errors during shopping
-   - Update totals and calculations accordingly
-
 8. **Add Products During Shopping**
    - Leader can add new products/bids/shopping list items during shopping stage
    - Supports adding forgotten items or opportunistic purchases

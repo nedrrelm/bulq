@@ -527,6 +527,188 @@ class ShoppingService(BaseService):
             },
         )
 
+    async def update_purchase(
+        self,
+        run_id: str,
+        item_id: str,
+        quantity: float,
+        price_per_unit: float,
+        total: float,
+        user: User,
+    ) -> SuccessResponse:
+        """Update an existing purchase (replaces values, doesn't accumulate).
+
+        Args:
+            run_id: The run ID as string
+            item_id: The shopping list item ID as string
+            quantity: New purchased quantity
+            price_per_unit: New price per unit
+            total: New total price
+            user: The authenticated user
+
+        Returns:
+            SuccessResponse with success message
+
+        Raises:
+            BadRequestError: If ID format is invalid or item is not purchased
+            NotFoundError: If run or item is not found
+            ForbiddenError: If user is not the run leader or helper
+        """
+        # Validate IDs
+        try:
+            run_uuid = UUID(run_id)
+            item_uuid = UUID(item_id)
+        except ValueError as e:
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+
+        # Get the run
+        run = self.run_repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
+
+        # Verify user is the run leader or helper
+        participation = self.run_repo.get_participation(user.id, run_uuid)
+        if not participation or not self._is_leader_or_helper(participation):
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER_OR_HELPER,
+                message='Only the run leader or helpers can update purchases',
+                run_id=run_id,
+            )
+
+        # Get the shopping list item
+        item = self.shopping_repo.get_shopping_list_item(item_uuid)
+        if not item:
+            raise NotFoundError(
+                code=SHOPPING_LIST_ITEM_NOT_FOUND,
+                message='Shopping list item not found',
+                item_id=item_id,
+                run_id=run_id,
+            )
+
+        if not item.is_purchased:
+            raise BadRequestError(
+                code=SHOPPING_ITEM_NOT_PURCHASED,
+                message='Can only update already-purchased items',
+                item_id=item_id,
+                run_id=run_id,
+            )
+
+        # Update the shopping list item
+        updated_item = self.shopping_repo.update_item_purchase(item_uuid, quantity, price_per_unit, total)
+        if not updated_item:
+            raise NotFoundError(
+                code=SHOPPING_LIST_ITEM_NOT_FOUND,
+                message='Shopping list item not found',
+                item_id=item_id,
+                run_id=run_id,
+            )
+
+        # Update ProductAvailability if the price differs from today's prices
+        await self._update_product_availability_if_needed(
+            item.product_id, run.store_id, price_per_unit, user.id
+        )
+
+        logger.info(
+            'Updated purchase for shopping list item',
+            extra={
+                'run_id': run_id,
+                'item_id': item_id,
+                'quantity': quantity,
+                'price_per_unit': price_per_unit,
+                'total': total,
+                'user_id': str(user.id),
+            },
+        )
+
+        return SuccessResponse(
+            code='PURCHASE_UPDATED',
+            details={
+                'run_id': str(run_id),
+                'item_id': str(item_id),
+                'product_id': str(item.product_id),
+            },
+        )
+
+    async def unpurchase_item(
+        self,
+        run_id: str,
+        item_id: str,
+        user: User,
+    ) -> SuccessResponse:
+        """Reset an item to unpurchased state.
+
+        Args:
+            run_id: The run ID as string
+            item_id: The shopping list item ID as string
+            user: The authenticated user
+
+        Returns:
+            SuccessResponse with success message
+
+        Raises:
+            BadRequestError: If ID format is invalid
+            NotFoundError: If run or item is not found
+            ForbiddenError: If user is not the run leader or helper
+        """
+        # Validate IDs
+        try:
+            run_uuid = UUID(run_id)
+            item_uuid = UUID(item_id)
+        except ValueError as e:
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+
+        # Get the run
+        run = self.run_repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
+
+        # Verify user is the run leader or helper
+        participation = self.run_repo.get_participation(user.id, run_uuid)
+        if not participation or not self._is_leader_or_helper(participation):
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER_OR_HELPER,
+                message='Only the run leader or helpers can unpurchase items',
+                run_id=run_id,
+            )
+
+        # Get the shopping list item
+        item = self.shopping_repo.get_shopping_list_item(item_uuid)
+        if not item:
+            raise NotFoundError(
+                code=SHOPPING_LIST_ITEM_NOT_FOUND,
+                message='Shopping list item not found',
+                item_id=item_id,
+                run_id=run_id,
+            )
+
+        # Unpurchase the item
+        unpurchased_item = self.shopping_repo.unpurchase_item(item_uuid)
+        if not unpurchased_item:
+            raise NotFoundError(
+                code=SHOPPING_LIST_ITEM_NOT_FOUND,
+                message='Shopping list item not found',
+                item_id=item_id,
+                run_id=run_id,
+            )
+
+        logger.info(
+            'Unpurchased shopping list item',
+            extra={
+                'run_id': run_id,
+                'item_id': item_id,
+                'user_id': str(user.id),
+            },
+        )
+
+        return SuccessResponse(
+            code='ITEM_UNPURCHASED',
+            details={
+                'run_id': str(run_id),
+                'item_id': str(item_id),
+                'product_id': str(item.product_id),
+            },
+        )
+
     async def complete_shopping(
         self, run_id: str, user: User, db: Any = None
     ) -> CompleteShoppingResponse:

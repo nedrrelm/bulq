@@ -112,6 +112,57 @@ async def add_more_purchase(
     return result
 
 
+@router.put('/{run_id}/items/{item_id}/purchase', response_model=SuccessResponse)
+async def update_purchase(
+    run_id: str,
+    item_id: str,
+    request: MarkPurchasedRequest,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Update an existing purchase (replaces values, doesn't accumulate)."""
+    service = ShoppingService(db)
+
+    result = await service.update_purchase(
+        run_id, item_id, request.quantity, request.price_per_unit, request.total, current_user
+    )
+
+    # Broadcast shopping item update to all connected clients for this run
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'shopping_item_updated',
+            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'purchase_updated'},
+        },
+    )
+
+    return result
+
+
+@router.delete('/{run_id}/items/{item_id}/purchase', response_model=SuccessResponse)
+async def unpurchase_item(
+    run_id: str,
+    item_id: str,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Reset an item to unpurchased state."""
+    service = ShoppingService(db)
+
+    result = await service.unpurchase_item(run_id, item_id, current_user)
+
+    # Broadcast shopping item update to all connected clients for this run
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'shopping_item_updated',
+            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'unpurchased'},
+        },
+    )
+
+    return result
+
+
 @router.post('/{run_id}/complete', response_model=CompleteShoppingResponse)
 async def complete_shopping(
     run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)

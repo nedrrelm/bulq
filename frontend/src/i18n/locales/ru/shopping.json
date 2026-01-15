@@ -17,16 +17,17 @@
     "on": "",
     "unknownDate": "неизвестная дата",
     "requested": "Запрошено",
-    "alreadyPurchased": "Уже куплено"
+    "currentPurchase": "Текущая покупка"
   },
   "actions": {
     "completeShopping": "Завершить покупки",
     "addPrice": "Добавить цену",
     "updatePrice": "Обновить цену",
     "markPurchased": "Отметить как купленное",
-    "buyMore": "Купить больше",
+    "editPurchase": "Редактировать покупку",
+    "unpurchase": "Отменить покупку",
     "confirmPurchase": "Подтвердить покупку",
-    "addPurchase": "Добавить покупку"
+    "updatePurchase": "Обновить покупку"
   },
   "fields": {
     "price": "Цена (RSD)",
@@ -45,7 +46,8 @@
   "prompts": {
     "unpurchasedItems": "У вас ещё {{count}} некупленных позиций. Вы уверены, что хотите завершить покупки?",
     "unpurchasedItems_one": "У вас ещё 1 некупленная позиция. Вы уверены, что хотите завершить покупки?",
-    "unpurchasedItems_other": "У вас ещё {{count}} некупленных позиций. Вы уверены, что хотите завершить покупки?"
+    "unpurchasedItems_other": "У вас ещё {{count}} некупленных позиций. Вы уверены, что хотите завершить покупки?",
+    "unpurchaseConfirm": "Вы уверены? Товар вернётся в список покупок."
   },
   "errors": {
     "invalidPrice": "Недопустимая цена",

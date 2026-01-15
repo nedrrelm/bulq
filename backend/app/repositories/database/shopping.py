@@ -78,6 +78,35 @@ class DatabaseShoppingRepository(AbstractShoppingRepository):
             return item
         return None
 
+    def update_item_purchase(
+        self, item_id: UUID, quantity: float, price_per_unit: float, total: float
+    ) -> ShoppingListItem | None:
+        """Update an existing purchase (replaces values, doesn't accumulate)."""
+        item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
+        if item and item.is_purchased:
+            item.purchased_quantity = quantity
+            item.purchased_price_per_unit = Decimal(str(price_per_unit))
+            item.purchased_total = Decimal(str(total))
+            # Keep is_purchased = True and purchase_order unchanged
+            self.db.commit()
+            self.db.refresh(item)
+            return item
+        return None
+
+    def unpurchase_item(self, item_id: UUID) -> ShoppingListItem | None:
+        """Reset an item to unpurchased state."""
+        item = self.db.query(ShoppingListItem).filter(ShoppingListItem.id == item_id).first()
+        if item:
+            item.is_purchased = False
+            item.purchased_quantity = None
+            item.purchased_price_per_unit = None
+            item.purchased_total = None
+            item.purchase_order = None
+            self.db.commit()
+            self.db.refresh(item)
+            return item
+        return None
+
     def update_shopping_list_item_requested_quantity(
         self, item_id: UUID, requested_quantity: int
     ) -> None:

@@ -32,6 +32,12 @@ export const shoppingApi = {
   markPurchased: (runId: string, itemId: string, data: PurchaseRequest) =>
     api.post(`/shopping/${runId}/items/${itemId}/purchase`, data),
 
+  updatePurchase: (runId: string, itemId: string, data: PurchaseRequest) =>
+    api.put(`/shopping/${runId}/items/${itemId}/purchase`, data),
+
+  unpurchaseItem: (runId: string, itemId: string) =>
+    api.delete(`/shopping/${runId}/items/${itemId}/purchase`),
+
   addMorePurchase: (runId: string, itemId: string, data: AddMorePurchaseRequest) =>
     api.post(`/shopping/${runId}/items/${itemId}/add-more`, data),
 

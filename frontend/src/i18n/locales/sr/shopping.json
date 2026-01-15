@@ -17,16 +17,17 @@
     "on": "дана",
     "unknownDate": "непознат датум",
     "requested": "Захтевано",
-    "alreadyPurchased": "Већ купљено"
+    "currentPurchase": "Тренутна куповина"
   },
   "actions": {
     "completeShopping": "Заврши куповину",
     "addPrice": "Додај цену",
     "updatePrice": "Ажурирај цену",
     "markPurchased": "Означи као купљено",
-    "buyMore": "Купи више",
+    "editPurchase": "Измени куповину",
+    "unpurchase": "Поништи куповину",
     "confirmPurchase": "Потврди куповину",
-    "addPurchase": "Додај куповину"
+    "updatePurchase": "Ажурирај куповину"
   },
   "fields": {
     "price": "Цена (РСД)",
@@ -45,7 +46,8 @@
   "prompts": {
     "unpurchasedItems": "Још увек имате {{count}} некупљених ставки. Да ли сте сигурни да желите да завршите куповину?",
     "unpurchasedItems_one": "Још увек имате 1 некупљену ставку. Да ли сте сигурни да желите да завршите куповину?",
-    "unpurchasedItems_other": "Још увек имате {{count}} некупљених ставки. Да ли сте сигурни да желите да завршите куповину?"
+    "unpurchasedItems_other": "Још увек имате {{count}} некупљених ставки. Да ли сте сигурни да желите да завршите куповину?",
+    "unpurchaseConfirm": "Да ли сте сигурни? Ставка ће се вратити у листу за куповину."
   },
   "errors": {
     "invalidPrice": "Неисправна цена",
