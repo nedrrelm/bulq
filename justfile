@@ -5,6 +5,7 @@ default:
 # Docker operations
 up:
   docker compose up -d
+  @echo "\nApplication running at: http://localhost"
 
 restart service="":
   docker compose restart {{service}}
