@@ -167,28 +167,6 @@ These items must be completed before production deployment.
 
 ---
 
-### Progressive Web App (PWA)
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Frontend build config, service worker, manifest
-
-**Features:**
-- Offline support with service workers
-- Install prompt for mobile devices
-- App-like experience on mobile
-- Push notifications for run updates
-- Cache static assets for faster loading
-- Background sync for bid updates
-
-**Implementation:**
-- Add `manifest.json` with app metadata
-- Configure Vite PWA plugin
-- Implement service worker for caching strategy
-- Add offline fallback pages
-- Test install flow on iOS/Android
-
----
-
 ### Caching & Performance
 **Status**: Future
 **Priority**: Medium

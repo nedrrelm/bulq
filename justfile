@@ -1,3 +1,7 @@
+# List all available commands
+default:
+  @just --list
+
 # Docker operations
 up:
   docker compose up -d
@@ -17,9 +21,5 @@ build:
 
 # Backend linting
 lint:
-  docker compose exec backend uv run --extra dev ruff check app/
-  docker compose exec backend uv run --extra dev ruff format --check app/
-
-lint-fix:
-  docker compose exec backend uv run --extra dev ruff check app/ --fix
   docker compose exec backend uv run --extra dev ruff format app/
+  docker compose exec backend uv run --extra dev ruff check app/ --fix
