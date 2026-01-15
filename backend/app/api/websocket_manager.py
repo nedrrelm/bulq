@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import WebSocket
@@ -33,7 +33,7 @@ class ConnectionManager:
             return
 
         # Add timestamp to all messages
-        message['timestamp'] = datetime.now().isoformat() + 'Z'
+        message['timestamp'] = datetime.now(UTC).isoformat() + 'Z'
         message_json = json.dumps(message)
 
         # Send to all connections, remove dead ones
@@ -50,7 +50,7 @@ class ConnectionManager:
 
     async def send_personal(self, websocket: WebSocket, message: dict[str, Any]) -> None:
         """Send a message to a specific client."""
-        message['timestamp'] = datetime.now().isoformat() + 'Z'
+        message['timestamp'] = datetime.now(UTC).isoformat() + 'Z'
         await websocket.send_text(json.dumps(message))
 
 

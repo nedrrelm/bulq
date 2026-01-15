@@ -1,6 +1,6 @@
 """Memory reassignment repository implementation."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.core.models import LeaderReassignmentRequest
@@ -25,7 +25,7 @@ class MemoryReassignmentRepository(AbstractReassignmentRepository):
             from_user_id=from_user_id,
             to_user_id=to_user_id,
             status='pending',
-            created_at=datetime.now(),
+            created_at=datetime.now(UTC),
             resolved_at=None,
         )
         self.storage.reassignment_requests[request_id] = request
@@ -65,7 +65,7 @@ class MemoryReassignmentRepository(AbstractReassignmentRepository):
             return False
 
         request.status = status
-        request.resolved_at = datetime.now()
+        request.resolved_at = datetime.now(UTC)
         return True
 
     def cancel_all_pending_reassignments_for_run(self, run_id: UUID) -> int:
@@ -74,6 +74,6 @@ class MemoryReassignmentRepository(AbstractReassignmentRepository):
         for request in self.storage.reassignment_requests.values():
             if request.run_id == run_id and request.status == 'pending':
                 request.status = 'cancelled'
-                request.resolved_at = datetime.now()
+                request.resolved_at = datetime.now(UTC)
                 count += 1
         return count

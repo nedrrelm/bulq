@@ -1,6 +1,6 @@
 """Memory product repository implementation."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
@@ -44,8 +44,8 @@ class MemoryProductRepository(AbstractProductRepository):
             brand=brand,
             unit=unit,
             verified=False,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         self.storage.products[product.id] = product
         return product
@@ -112,8 +112,8 @@ class MemoryProductRepository(AbstractProductRepository):
             price=Decimal(str(price)) if price is not None else None,
             notes=notes,
             minimum_quantity=minimum_quantity,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
             created_by=user_id,
         )
         self.storage.product_availabilities[availability.id] = availability

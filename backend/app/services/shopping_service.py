@@ -1,6 +1,6 @@
 """Shopping service for handling shopping list operations."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -89,7 +89,7 @@ class ShoppingService(BaseService):
             availabilities = self.product_repo.get_product_availabilities(product_id, store_id)
 
             # Check if we have any prices from today
-            today = datetime.now().date()
+            today = datetime.now(UTC).date()
             today_prices = [
                 float(avail.price)
                 for avail in availabilities

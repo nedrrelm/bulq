@@ -1,6 +1,6 @@
 """Database reassignment repository implementation."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -79,7 +79,7 @@ class DatabaseReassignmentRepository(AbstractReassignmentRepository):
             return False
 
         request.status = status
-        request.resolved_at = datetime.now()
+        request.resolved_at = datetime.now(UTC)
         self.db.commit()
         return True
 
@@ -94,7 +94,7 @@ class DatabaseReassignmentRepository(AbstractReassignmentRepository):
             .update(
                 {
                     LeaderReassignmentRequest.status: 'cancelled',
-                    LeaderReassignmentRequest.resolved_at: datetime.now(),
+                    LeaderReassignmentRequest.resolved_at: datetime.now(UTC),
                 }
             )
         )

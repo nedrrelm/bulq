@@ -54,7 +54,7 @@ class MemoryRunRepository(AbstractRunRepository):
             state=RunState.PLANNING,
             comment=comment,
         )
-        run.planning_at = datetime.now()
+        run.planning_at = datetime.now(UTC)
         self.storage.runs[run.id] = run
         # Create participation for the leader
         self._create_participation_helper(leader_id, run.id, is_leader=True)
@@ -142,7 +142,7 @@ class MemoryRunRepository(AbstractRunRepository):
             run.state = new_state
 
             timestamp_field = f'{new_state}_at'
-            setattr(run, timestamp_field, datetime.now())
+            setattr(run, timestamp_field, datetime.now(UTC))
 
             logger.info(
                 'Run state transitioned',

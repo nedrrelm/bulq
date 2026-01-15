@@ -1,6 +1,6 @@
 """Memory bid repository implementation."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -53,7 +53,7 @@ class MemoryBidRepository(AbstractBidRepository):
             existing_bid.quantity = quantity
             existing_bid.interested_only = interested_only
             existing_bid.comment = comment
-            existing_bid.updated_at = datetime.now()
+            existing_bid.updated_at = datetime.now(UTC)
             return existing_bid
         else:
             bid = ProductBid(
@@ -63,8 +63,8 @@ class MemoryBidRepository(AbstractBidRepository):
                 quantity=quantity,
                 interested_only=interested_only,
                 comment=comment,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
             bid.participation = self.storage.participations.get(participation_id)
             bid.product = self.storage.products.get(product_id)

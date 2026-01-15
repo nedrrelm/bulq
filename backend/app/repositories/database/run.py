@@ -1,6 +1,6 @@
 """Database run repository implementation."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import case, desc
@@ -160,7 +160,7 @@ class DatabaseRunRepository(AbstractRunRepository):
 
             # Set the timestamp for the new state
             timestamp_field = f'{new_state}_at'
-            setattr(run, timestamp_field, datetime.now())
+            setattr(run, timestamp_field, datetime.now(UTC))
 
             self.db.commit()
             self.db.refresh(run)
