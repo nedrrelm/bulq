@@ -79,14 +79,14 @@ class RunStateService(BaseService):
     def toggle_ready(self, run_id: str, user: User) -> ReadyToggleResponse:
         """Toggle the current user's ready status for a run.
 
-        Can trigger auto-transition to confirmed state if all participants are ready.
+        Note: No longer auto-transitions to confirmed. Leader must manually confirm.
 
         Args:
             run_id: Run ID as string
             user: Current user toggling ready status
 
         Returns:
-            ReadyToggleResponse with ready status and whether state changed
+            ReadyToggleResponse with ready status
 
         Raises:
             BadRequestError: If run ID invalid or state doesn't allow toggling ready
@@ -107,18 +107,7 @@ class RunStateService(BaseService):
             )
         )
 
-        if self._check_all_participants_ready(run_uuid):
-            self._transition_run_state(run, RunState.CONFIRMED)
-            return ReadyToggleResponse(
-                code=READY_TOGGLED_RUN_CONFIRMED,
-                is_ready=new_ready_status,
-                state_changed=True,
-                new_state=RunState.CONFIRMED,
-                run_id=str(run_uuid),
-                group_id=str(run.group_id),
-                user_id=str(user.id),
-            )
-
+        # No auto-transition - leader must manually confirm
         return ReadyToggleResponse(
             code=READY_TOGGLED,
             is_ready=new_ready_status,
@@ -130,7 +119,10 @@ class RunStateService(BaseService):
         )
 
     def force_confirm(self, run_id: str, user: User) -> StateChangeResponse:
-        """Force confirm run - transition from active to confirmed without waiting for all users (leader only).
+        """Confirm run - transition from active to confirmed (leader only).
+
+        This is the standard way to confirm a run. Leader manually confirms when ready,
+        typically after all participants have marked themselves as ready.
 
         Args:
             run_id: Run ID as string
@@ -166,7 +158,7 @@ class RunStateService(BaseService):
         if not participation or not participation.is_leader:
             raise ForbiddenError(
                 code=NOT_RUN_LEADER,
-                message='Only the run leader can force confirm the run',
+                message='Only the run leader can confirm the run',
                 run_id=run_id,
             )
 
@@ -174,7 +166,7 @@ class RunStateService(BaseService):
         if run.state != RunState.ACTIVE:
             raise BadRequestError(
                 code=RUN_NOT_IN_ACTIVE_STATE,
-                message=f'Run must be in active state to force confirm, currently in {run.state}',
+                message=f'Run must be in active state to confirm, currently in {run.state}',
                 run_id=run_id,
                 current_state=run.state,
                 required_state=RunState.ACTIVE.value,

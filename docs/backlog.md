@@ -67,12 +67,6 @@ These items must be completed before production deployment.
 
 **Features:**
 
-5. **Manual State Transition: Active to Confirmed**
-   - Currently auto-transitions when all users mark ready
-   - Change to require leader to click "Proceed to Confirmed" button
-   - Similar to shopping stage transition (leader explicitly starts shopping)
-   - Prevents premature state changes
-
 6. **Decimal Rounding**
    - Round all decimal values to 2 decimal points throughout the app
    - Apply to quantities, prices, totals

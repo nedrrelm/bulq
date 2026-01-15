@@ -763,6 +763,60 @@ export default function RunPage() {
           </ErrorBoundary>
         )}
 
+        {run.state === 'active' && run.current_user_is_leader && (() => {
+          // Calculate if all participants with bids are ready
+          const participantsWithBids = run.participants.filter(p =>
+            run.products.some(product =>
+              product.user_bids.some(bid => bid.user_id === p.user_id)
+            )
+          )
+          const allReady = participantsWithBids.length > 0 && participantsWithBids.every(p => p.is_ready)
+
+          return (
+            <div className="info-card">
+              {allReady ? (
+                <>
+                  <h3>{t('run:labels.readyToConfirm')}</h3>
+                  <p>{t('run:labels.allParticipantsReady')}</p>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setShowForceConfirmPopup(true)}
+                      className="btn btn-primary btn-lg"
+                    >
+                      {t('run:actions.proceedToConfirmed')}
+                    </button>
+                  </div>
+                  <p className="ready-hint">
+                    {t('run:labels.confirmRunHint')}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3>{t('run:labels.waitingForParticipants')}</h3>
+                  <p>{t('run:labels.notAllParticipantsReady')}</p>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>
+                    {t('run:labels.canForceConfirmIfNeeded')}{' '}
+                    <button
+                      onClick={() => setShowForceConfirmPopup(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-primary)',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        padding: 0,
+                        font: 'inherit'
+                      }}
+                    >
+                      {t('run:actions.forceConfirm')}
+                    </button>
+                  </p>
+                </>
+              )}
+            </div>
+          )
+        })()}
+
         {run.state === 'confirmed' && run.current_user_is_leader && (
           <div className="info-card">
             <h3>{t('run:labels.readyToShop')}</h3>
