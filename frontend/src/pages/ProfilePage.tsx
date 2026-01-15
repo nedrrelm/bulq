@@ -129,7 +129,7 @@ export default function ProfilePage() {
             <div className="stat-card">
               <DollarSign className="stat-icon" size={32} />
               <div className="stat-content">
-                <div className="stat-value">${stats.total_money_spent.toFixed(2)}</div>
+                <div className="stat-value">{stats.total_money_spent.toFixed(2)} RSD</div>
                 <div className="stat-label">{t('profile:stats.totalMoneySpent')}</div>
               </div>
             </div>

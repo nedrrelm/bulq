@@ -269,7 +269,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                         )}
                       </div>
                       {product.stores.length > 0 && product.stores[0] && product.stores[0].price && (
-                        <span className="product-price">${product.stores[0].price.toFixed(2)}</span>
+                        <span className="product-price">{product.stores[0].price.toFixed(2)} RSD</span>
                       )}
                     </div>
                   ))}
@@ -399,7 +399,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                             )}
                           </div>
                           {product.stores.length > 0 && product.stores[0] && product.stores[0].price && (
-                            <span className="product-price">${product.stores[0].price.toFixed(2)}</span>
+                            <span className="product-price">{product.stores[0].price.toFixed(2)} RSD</span>
                           )}
                         </div>
                       ))}

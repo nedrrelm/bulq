@@ -59,7 +59,7 @@ function CustomTooltip(props: any) {
   return (
     <div className="custom-tooltip">
       <p className="tooltip-store">{data.store_name}</p>
-      <p className="tooltip-price">${data.price.toFixed(2)}</p>
+      <p className="tooltip-price">{data.price.toFixed(2)} RSD</p>
       <p className="tooltip-date">{new Date(data.timestamp).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -124,7 +124,7 @@ function PriceGraph({ storesData }: { storesData: StoreData[] }) {
             type="number"
             dataKey="price"
             name="Price"
-            tickFormatter={(value) => `$${value.toFixed(2)}`}
+            tickFormatter={(value) => `${value.toFixed(2)} RSD`}
             domain={['auto', 'auto']}
             stroke="#666"
             style={{ fontSize: '12px' }}
@@ -228,7 +228,7 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
                     {store.current_price && (
                       <div className="current-price">
                         <span className="price-label">{t('product:priceHistory.currentPrice')}:</span>
-                        <span className="price-value">${store.current_price.toFixed(2)}</span>
+                        <span className="price-value">{store.current_price.toFixed(2)} RSD</span>
                       </div>
                     )}
                   </div>
@@ -240,19 +240,19 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
                       {minPrice !== null && (
                         <div className="price-stat">
                           <span className="price-label">{t('product:priceHistory.lowest')}</span>
-                          <span className="price-value price-min">${minPrice.toFixed(2)}</span>
+                          <span className="price-value price-min">{minPrice.toFixed(2)} RSD</span>
                         </div>
                       )}
                       {avgPrice !== null && (
                         <div className="price-stat">
                           <span className="price-label">{t('product:priceHistory.average')}</span>
-                          <span className="price-value">${avgPrice.toFixed(2)}</span>
+                          <span className="price-value">{avgPrice.toFixed(2)} RSD</span>
                         </div>
                       )}
                       {maxPrice !== null && maxPrice !== minPrice && (
                         <div className="price-stat">
                           <span className="price-label">{t('product:priceHistory.highest')}</span>
-                          <span className="price-value price-max">${maxPrice.toFixed(2)}</span>
+                          <span className="price-value price-max">{maxPrice.toFixed(2)} RSD</span>
                         </div>
                       )}
                     </div>
