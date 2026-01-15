@@ -71,6 +71,9 @@
     "processing": "Processing...",
     "finishAdjustingHint": "All participants must adjust their bids before moving to distribution",
     "distribution": "Distribution",
+    "userBreakdown": "User Breakdown",
+    "estimated": "Estimated",
+    "quantity": "Quantity",
     "pickedUp": "Picked Up",
     "requested": "Requested",
     "allocated": "Allocated",
@@ -181,7 +184,8 @@
   },
   "empty": {
     "noProducts": "No products added yet. Click 'Add Product' to start!",
-    "noItemsToDistribute": "No items to distribute"
+    "noItemsToDistribute": "No items to distribute",
+    "noBidsYet": "No bids placed yet"
   },
   "states": {
     "planning": "Planning",

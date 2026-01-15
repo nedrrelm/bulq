@@ -396,6 +396,45 @@ export default function RunPage() {
   const allPickedUp = distributionUsers.length > 0 && distributionUsers.every(user => user.all_picked_up)
   const isLeaderOrHelper = run?.current_user_is_leader || run?.current_user_is_helper
 
+  // Calculate user breakdown from bids for pre-distribution states
+  const userBreakdownFromBids = useMemo(() => {
+    if (!run || shouldFetchDistribution) return []
+
+    const breakdown = run.participants
+      .map(participant => {
+        const userProducts = run.products
+          .map(product => {
+            const bid = product.user_bids.find(b => b.user_id === participant.user_id)
+            if (!bid || bid.interested_only) return null
+
+            const price = product.current_price ? parseFloat(product.current_price) : 0
+            const subtotal = price * bid.quantity
+
+            return {
+              product_id: product.id,
+              product_name: product.name,
+              product_unit: product.unit,
+              quantity: bid.quantity,
+              price_per_unit: price,
+              subtotal: subtotal
+            }
+          })
+          .filter((p): p is NonNullable<typeof p> => p !== null)
+
+        const totalCost = userProducts.reduce((sum, p) => sum + p.subtotal, 0)
+
+        return {
+          user_id: participant.user_id,
+          user_name: participant.user_name,
+          products: userProducts,
+          total_cost: totalCost.toFixed(2)
+        }
+      })
+      .filter(user => user.products.length > 0)
+
+    return breakdown
+  }, [run, shouldFetchDistribution])
+
   const handleCancelRun = () => {
     const cancelAction = async () => {
       try {
@@ -710,12 +749,21 @@ export default function RunPage() {
 
       </div>
 
-      {/* Distribution Section - shown in distributing and completed states */}
-      {shouldFetchDistribution && (
+      {/* User Breakdown Section - shown in all states except cancelled */}
+      {run && run.state !== 'cancelled' && (
         <div className="distribution-section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>{t('run:labels.distribution')}</h3>
-            {(run.current_user_is_leader || run.current_user_is_helper) && (
+            <h3>
+              {shouldFetchDistribution
+                ? t('run:labels.distribution')
+                : t('run:labels.userBreakdown')}
+              {!shouldFetchDistribution && (
+                <span style={{ fontSize: '0.8em', color: 'var(--color-text-secondary)', marginLeft: '0.5rem' }}>
+                  ({t('run:labels.estimated')})
+                </span>
+              )}
+            </h3>
+            {shouldFetchDistribution && (run.current_user_is_leader || run.current_user_is_helper) && (
               <DownloadRunStateButton
                 runId={runId}
                 storeName={run.store_name}
@@ -723,13 +771,17 @@ export default function RunPage() {
               />
             )}
           </div>
-          {distributionUsers.length === 0 ? (
-            <div className="empty-state">
-              <p>{t('run:empty.noItemsToDistribute')}</p>
-            </div>
-          ) : (
-            <div className="distribution-list">
-              {distributionUsers.map(user => (
+
+          {shouldFetchDistribution ? (
+            <>
+              {/* Distribution state: show actual distribution data */}
+              {distributionUsers.length === 0 ? (
+                <div className="empty-state">
+                  <p>{t('run:empty.noItemsToDistribute')}</p>
+                </div>
+              ) : (
+                <div className="distribution-list">
+                  {distributionUsers.map(user => (
               <div key={user.user_id} className={`user-card ${user.all_picked_up ? 'completed' : ''}`}>
                 <div
                   className="user-header"
@@ -799,19 +851,70 @@ export default function RunPage() {
                 )}
               </div>
             ))}
-            </div>
-          )}
+                </div>
+              )}
 
-          {allPickedUp && isLeaderOrHelper && run?.state === 'distributing' && (
-            <div className="complete-section">
-              <button
-                onClick={handleCompleteRun}
-                className="complete-button"
-                disabled={completeDistributionMutation.isPending}
-              >
-                {completeDistributionMutation.isPending ? t('run:labels.completing') : t('run:actions.completeRun')}
-              </button>
-            </div>
+              {allPickedUp && isLeaderOrHelper && run?.state === 'distributing' && (
+                <div className="complete-section">
+                  <button
+                    onClick={handleCompleteRun}
+                    className="complete-button"
+                    disabled={completeDistributionMutation.isPending}
+                  >
+                    {completeDistributionMutation.isPending ? t('run:labels.completing') : t('run:actions.completeRun')}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            // Pre-distribution states: show breakdown from bids
+            userBreakdownFromBids.length === 0 ? (
+              <div className="empty-state">
+                <p>{t('run:empty.noBidsYet')}</p>
+              </div>
+            ) : (
+              <div className="distribution-list">
+                {userBreakdownFromBids.map(user => (
+                  <div key={user.user_id} className="user-card">
+                    <div
+                      className="user-header"
+                      onClick={() => toggleExpand(user.user_id)}
+                    >
+                      <div className="user-info">
+                        <span className="user-name">{user.user_name}</span>
+                        <span className="user-total">{user.total_cost} RSD</span>
+                      </div>
+                      <div className="user-actions">
+                        <span className="expand-icon">{expandedUserId === user.user_id ? '▼' : '▶'}</span>
+                      </div>
+                    </div>
+
+                    {expandedUserId === user.user_id && (
+                      <div className="user-products">
+                        {user.products.map(product => (
+                          <div key={product.product_id} className="product-item">
+                            <div className="product-info">
+                              <div className="product-name">
+                                {product.product_name}
+                              </div>
+                              <div className="product-details">
+                                <span>{t('run:labels.quantity')}: {product.quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
+                                {product.price_per_unit > 0 && (
+                                  <>
+                                    <span>@{product.price_per_unit} RSD</span>
+                                    <span className="product-subtotal">{product.subtotal.toFixed(2)} RSD</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </div>
       )}
