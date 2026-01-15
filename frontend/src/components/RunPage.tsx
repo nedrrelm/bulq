@@ -435,6 +435,65 @@ export default function RunPage() {
     return breakdown
   }, [run, shouldFetchDistribution])
 
+  // Calculate total run price based on state
+  const runPriceSummary = useMemo(() => {
+    if (!run) return null
+
+    if (shouldFetchDistribution && distributionUsers.length > 0) {
+      // Distributing/Completed: Use actual distribution data
+      const finalTotal = distributionUsers.reduce((sum, user) => {
+        return sum + parseFloat(user.total_cost)
+      }, 0)
+      return {
+        type: 'final' as const,
+        total: finalTotal
+      }
+    }
+
+    if (run.state === 'shopping' || run.state === 'adjusting') {
+      // Shopping/Adjusting: Show purchased + remaining estimate
+      let purchasedTotal = 0
+      let remainingEstimate = 0
+
+      run.products.forEach(product => {
+        const price = product.current_price ? parseFloat(product.current_price) : 0
+
+        if (product.purchased_quantity !== null && product.purchased_quantity !== undefined) {
+          // Product has been purchased
+          purchasedTotal += price * product.purchased_quantity
+        } else {
+          // Product not yet purchased, estimate from bids
+          const totalQuantity = product.user_bids
+            .filter(bid => !bid.interested_only)
+            .reduce((qty, bid) => qty + bid.quantity, 0)
+          remainingEstimate += price * totalQuantity
+        }
+      })
+
+      return {
+        type: 'split' as const,
+        purchased: purchasedTotal,
+        remaining: remainingEstimate,
+        total: purchasedTotal + remainingEstimate
+      }
+    }
+
+    // Pre-shopping (planning, active, confirmed): Estimated total
+    const estimatedTotal = run.products.reduce((sum, product) => {
+      if (!product.current_price) return sum
+      const price = parseFloat(product.current_price)
+      const totalQuantity = product.user_bids
+        .filter(bid => !bid.interested_only)
+        .reduce((qty, bid) => qty + bid.quantity, 0)
+      return sum + (price * totalQuantity)
+    }, 0)
+
+    return {
+      type: 'estimated' as const,
+      total: estimatedTotal
+    }
+  }, [run, shouldFetchDistribution, distributionUsers])
+
   const handleCancelRun = () => {
     const cancelAction = async () => {
       try {
@@ -626,6 +685,41 @@ export default function RunPage() {
             </div>
           </div>
         </div>
+
+        {/* Total Run Price Summary */}
+        {runPriceSummary && run.state !== 'cancelled' && (
+          <div className="info-card" style={{ marginTop: '1rem' }}>
+            <h3>{t('run:labels.totalRunPrice')}</h3>
+            {runPriceSummary.type === 'estimated' && (
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                {runPriceSummary.total.toFixed(2)} RSD
+                <span style={{ fontSize: '0.875rem', fontWeight: 'normal', color: 'var(--color-text-secondary)', marginLeft: '0.5rem' }}>
+                  ({t('run:labels.estimated')})
+                </span>
+              </div>
+            )}
+            {runPriceSummary.type === 'split' && (
+              <div>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+                    {t('run:labels.purchased')}: <strong style={{ color: 'var(--color-success)' }}>{runPriceSummary.purchased.toFixed(2)} RSD</strong>
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+                    {t('run:labels.remainingEstimate')}: <strong>{runPriceSummary.remaining.toFixed(2)} RSD</strong>
+                  </div>
+                </div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)' }}>
+                  {runPriceSummary.total.toFixed(2)} RSD
+                </div>
+              </div>
+            )}
+            {runPriceSummary.type === 'final' && (
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
+                {runPriceSummary.total.toFixed(2)} RSD
+              </div>
+            )}
+          </div>
+        )}
 
         {run.state === 'active' && (
           <ErrorBoundary>
