@@ -450,8 +450,8 @@ export default function RunPage() {
       }
     }
 
-    if (run.state === 'shopping' || run.state === 'adjusting') {
-      // Shopping/Adjusting: Show purchased + remaining estimate
+    if (run.state === 'adjusting') {
+      // Adjusting: Show purchased + remaining estimate
       let purchasedTotal = 0
       let remainingEstimate = 0
 
@@ -478,7 +478,7 @@ export default function RunPage() {
       }
     }
 
-    // Pre-shopping (planning, active, confirmed): Estimated total
+    // Pre-shopping (planning, active, confirmed, shopping): Estimated total
     const estimatedTotal = run.products.reduce((sum, product) => {
       if (!product.current_price) return sum
       const price = parseFloat(product.current_price)

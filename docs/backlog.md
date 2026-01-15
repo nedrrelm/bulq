@@ -67,21 +67,6 @@ These items must be completed before production deployment.
 
 **Features:**
 
-1. **User Breakdown Across All States**
-   - Currently only shown during distribution state
-   - Show breakdown by user in all run states (planning, active, confirmed, shopping, adjusting)
-   - Display each user's requested quantities and totals per user
-   - Note: Per-product breakdown already exists (shopping list items)
-
-2. **Total Run Price Display**
-   - **Before shopping stage**: Show estimated total price with clear indication it's an estimate
-   - **During shopping stage**: Show two values:
-     - Current total for purchased items
-     - Estimated total for remaining items
-   - **After shopping**: Show final total
-   - Update in real-time as items are purchased
-   - Prominent placement in run header or summary card
-
 3. **Currency Symbol Localization**
    - Fix hardcoded dollar signs ($) in various UI components
    - Use currency symbol from configuration or user locale
