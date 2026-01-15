@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next'
 import '../styles/components/RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
-import { runsApi, reassignmentApi } from '../api'
+import { runsApi, reassignmentApi, shoppingApi } from '../api'
 import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
+import { shoppingKeys } from '../hooks/queries'
 import ErrorBoundary from './ErrorBoundary'
 import { getErrorMessage } from '../utils/errorHandling'
 
@@ -183,18 +184,27 @@ export default function RunPage() {
     if (!selectedProduct) return
 
     try {
-      await runsApi.placeBid(runId, {
-        product_id: selectedProduct.id,
-        quantity,
-        interested_only: interestedOnly,
-        comment
-      })
+      // If in shopping state, add to shopping list; otherwise place a regular bid
+      if (run?.state === 'shopping') {
+        await shoppingApi.addProductToShoppingList(runId, selectedProduct.id, quantity)
+        // Invalidate shopping list and run details to refetch
+        queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
+        queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+        showToast(t('shopping:messages.productAdded'), 'success')
+      } else {
+        await runsApi.placeBid(runId, {
+          product_id: selectedProduct.id,
+          quantity,
+          interested_only: interestedOnly,
+          comment
+        })
+        // WebSocket will update the run data automatically
+      }
 
-      // WebSocket will update the run data automatically
       setShowBidPopup(false)
       setSelectedProduct(null)
     } catch (err) {
-      showToast(formatErrorForDisplay(err, 'place bid'), 'error')
+      showToast(formatErrorForDisplay(err, run?.state === 'shopping' ? 'add product to shopping list' : 'place bid'), 'error')
     }
   }
 
@@ -251,10 +261,10 @@ export default function RunPage() {
     setShowAddProductPopup(true)
   }
 
-  const handleProductSelected = async (product: AvailableProduct) => {
+  const handleProductSelected = (product: AvailableProduct) => {
     setShowAddProductPopup(false)
 
-    // Convert available product to full product format and open bid popup
+    // Convert available product to full product format
     const fullProduct: Product = {
       id: product.id,
       name: product.name,
@@ -1070,7 +1080,7 @@ export default function RunPage() {
       <div className="products-section">
         <div className="products-header">
           <h3>{t('run:labels.products', { count: run.products.length })}</h3>
-          {canBid && run.state !== 'adjusting' && (
+          {((canBid && run.state !== 'adjusting') || (run.state === 'shopping' && (run.current_user_is_leader || run.helpers.includes(user?.id || '')))) && (
             <button onClick={handleAddProduct} className="add-product-button">
               {t('run:actions.addProduct')}
             </button>

@@ -31,6 +31,31 @@ async def get_shopping_list(
     return await service.get_shopping_list(run_id, current_user)
 
 
+@router.post('/{run_id}/items/{product_id}', response_model=SuccessResponse)
+async def add_product_to_shopping_list(
+    run_id: str,
+    product_id: str,
+    quantity: float = 1.0,
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+):
+    """Add a product to the shopping list (shopping state only, leader/helper only)."""
+    service = ShoppingService(db)
+
+    result = await service.add_product_to_shopping_list(run_id, product_id, quantity, current_user)
+
+    # Broadcast shopping list update to all connected clients for this run
+    await manager.broadcast(
+        f'run:{run_id}',
+        {
+            'type': 'shopping_item_updated',
+            'data': {'run_id': run_id, 'action': 'product_added'},
+        },
+    )
+
+    return result
+
+
 @router.post('/{run_id}/items/{item_id}/price', response_model=SuccessResponse)
 async def update_availability_price(
     run_id: str,

@@ -252,6 +252,102 @@ class ShoppingService(BaseService):
 
         return response_items
 
+    async def add_product_to_shopping_list(
+        self, run_id: str, product_id: str, quantity: float, user: User
+    ) -> SuccessResponse:
+        """Add a product to the shopping list during shopping state.
+
+        This method creates both a ProductBid and a ShoppingListItem to ensure
+        proper tracking and distribution later.
+
+        Args:
+            run_id: The run ID as string
+            product_id: The product ID as string
+            quantity: The requested quantity
+            user: The authenticated user
+
+        Returns:
+            SuccessResponse
+
+        Raises:
+            BadRequestError: If ID format invalid or run not in shopping state
+            NotFoundError: If run or product not found
+            ForbiddenError: If user is not leader or helper
+        """
+        # Validate IDs
+        try:
+            run_uuid = UUID(run_id)
+            product_uuid = UUID(product_id)
+        except ValueError as e:
+            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+
+        # Get the run
+        run = self.run_repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
+
+        # Verify run is in shopping state
+        if run.state != RunState.SHOPPING:
+            raise BadRequestError(
+                code=RUN_NOT_IN_SHOPPING_STATE,
+                message='Can only add products to shopping list during shopping state',
+                run_id=run_id,
+                current_state=run.state.value,
+            )
+
+        # Verify user is leader or helper
+        participation = self.run_repo.get_participation(user.id, run_uuid)
+        if not participation or not self._is_leader_or_helper(participation):
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER_OR_HELPER,
+                message='Only the run leader or helpers can add products during shopping',
+                run_id=run_id,
+            )
+
+        # Verify product exists
+        product = self.product_repo.get_product_by_id(product_uuid)
+        if not product:
+            raise NotFoundError(
+                code='PRODUCT_NOT_FOUND',
+                message='Product not found',
+                product_id=product_id,
+            )
+
+        # Create a ProductBid for the user who is adding the product
+        # This ensures the product has a bid for distribution later
+        bid = self.bid_repo.create_or_update_bid(
+            participation_id=participation.id,
+            product_id=product_uuid,
+            quantity=int(quantity),
+            interested_only=False,
+            comment=None,
+        )
+
+        # Create shopping list item
+        item = self.shopping_repo.create_shopping_list_item(run_uuid, product_uuid, quantity)
+
+        logger.info(
+            'Added product to shopping list with bid',
+            extra={
+                'run_id': run_id,
+                'product_id': product_id,
+                'quantity': quantity,
+                'user_id': str(user.id),
+                'bid_id': str(bid.id),
+                'item_id': str(item.id),
+            },
+        )
+
+        return SuccessResponse(
+            code='PRODUCT_ADDED_TO_SHOPPING_LIST',
+            details={
+                'run_id': str(run_id),
+                'product_id': str(product_id),
+                'item_id': str(item.id),
+                'bid_id': str(bid.id),
+            },
+        )
+
     async def add_availability_price(
         self,
         run_id: str,

@@ -79,6 +79,8 @@ These items must be completed before production deployment.
    - Useful during adjusting stage for fine-tuning allocations
    - Note: This needs more design work to determine exact workflow and permissions
 
+10. Let leader change back from confirmed to active
+
 ---
 
 ### Product Management Enhancements

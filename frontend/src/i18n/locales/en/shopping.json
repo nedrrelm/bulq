@@ -41,7 +41,8 @@
     "additionalQuantity": "Additional Quantity"
   },
   "messages": {
-    "loadingShoppingList": "Loading shopping list..."
+    "loadingShoppingList": "Loading shopping list...",
+    "productAdded": "Product added to shopping list"
   },
   "prompts": {
     "unpurchasedItems": "You still have {{count}} unpurchased item(s). Are you sure you want to complete shopping?",

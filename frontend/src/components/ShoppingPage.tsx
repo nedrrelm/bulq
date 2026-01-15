@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -6,6 +6,7 @@ import '../styles/components/ShoppingPage.css'
 import { WS_BASE_URL } from '../config'
 import { shoppingApi } from '../api'
 import type { ShoppingListItem } from '../api'
+import type { AvailableProduct } from '../types'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { useWebSocket } from '../hooks/useWebSocket'
 import Toast from './Toast'
@@ -13,9 +14,12 @@ import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { validateDecimal, parseDecimal, sanitizeString } from '../utils/validation'
-import { useShoppingList, shoppingKeys } from '../hooks/queries'
+import { useShoppingList, shoppingKeys, runKeys } from '../hooks/queries'
 import { formatErrorForDisplay, getErrorMessage } from '../utils/errorHandling'
 import { MAX_NOTES_LENGTH } from '../constants'
+
+const AddProductPopup = lazy(() => import('./AddProductPopup'))
+const BidPopup = lazy(() => import('./BidPopup'))
 
 // Using ShoppingListItem type from API layer
 
@@ -67,6 +71,10 @@ export default function ShoppingPage() {
   const [isEditingPurchase, setIsEditingPurchase] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ShoppingListItem | null>(null)
   const [showPricePopup, setShowPricePopup] = useState(false)
+  const [showAddProductPopup, setShowAddProductPopup] = useState(false)
+  const [showBidPopup, setShowBidPopup] = useState(false)
+  const [selectedProductName, setSelectedProductName] = useState('')
+  const [selectedProductId, setSelectedProductId] = useState('')
   const { toast, showToast, hideToast} = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
@@ -162,6 +170,42 @@ export default function ShoppingPage() {
     )
   }
 
+  const handleAddProduct = () => {
+    setShowAddProductPopup(true)
+  }
+
+  const handleProductSelected = (product: AvailableProduct) => {
+    setShowAddProductPopup(false)
+    setSelectedProductName(product.name)
+    setSelectedProductId(product.id)
+    setShowBidPopup(true)
+  }
+
+  const handleSubmitBid = async (quantity: number, _interestedOnly: boolean, _comment: string | null) => {
+    try {
+      await shoppingApi.addProductToShoppingList(runId, selectedProductId, quantity)
+      // Invalidate shopping list and run details to refetch
+      queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
+      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+      showToast(t('shopping:messages.productAdded'), 'success')
+      setShowBidPopup(false)
+      setSelectedProductName('')
+      setSelectedProductId('')
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'add product to shopping list'), 'error')
+    }
+  }
+
+  const handleCancelBid = () => {
+    setShowBidPopup(false)
+    setSelectedProductName('')
+    setSelectedProductId('')
+  }
+
+  const handleCancelAddProduct = () => {
+    setShowAddProductPopup(false)
+  }
+
   const handleCompleteShopping = async () => {
     const completeShoppingAction = async () => {
       try {
@@ -227,7 +271,12 @@ export default function ShoppingPage() {
       <div className="shopping-content">
         {unpurchasedItems.length > 0 && (
           <div className="shopping-section">
-            <h3>{t('shopping:labels.toBuy', { count: unpurchasedItems.length })}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3>{t('shopping:labels.toBuy', { count: unpurchasedItems.length })}</h3>
+              <button onClick={handleAddProduct} className="btn btn-secondary btn-sm">
+                + {t('run:actions.addProduct')}
+              </button>
+            </div>
             <div className="shopping-list">
               {unpurchasedItems.map(item => (
                 <ShoppingItem
@@ -291,6 +340,26 @@ export default function ShoppingPage() {
           onConfirm={handleConfirm}
           onCancel={hideConfirm}
         />
+      )}
+
+      {showAddProductPopup && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <AddProductPopup
+            runId={runId}
+            onProductSelected={handleProductSelected}
+            onCancel={handleCancelAddProduct}
+          />
+        </Suspense>
+      )}
+
+      {showBidPopup && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <BidPopup
+            productName={selectedProductName}
+            onSubmit={handleSubmitBid}
+            onCancel={handleCancelBid}
+          />
+        </Suspense>
       )}
     </div>
   )

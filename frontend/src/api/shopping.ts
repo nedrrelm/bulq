@@ -38,6 +38,9 @@ export const shoppingApi = {
   unpurchaseItem: (runId: string, itemId: string) =>
     api.delete(`/shopping/${runId}/items/${itemId}/purchase`),
 
+  addProductToShoppingList: (runId: string, productId: string, quantity: number = 1.0) =>
+    api.post(`/shopping/${runId}/items/${productId}`, { quantity }),
+
   addMorePurchase: (runId: string, itemId: string, data: AddMorePurchaseRequest) =>
     api.post(`/shopping/${runId}/items/${itemId}/add-more`, data),
 
