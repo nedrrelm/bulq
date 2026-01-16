@@ -28,34 +28,6 @@ These items must be completed before production deployment.
 
 ---
 
-## 🛠️ Development & Infrastructure
-
----
-
-### Development Tooling
-**Status**: TODO
-**Priority**: Medium
-**Affected files**: Docker configuration, project root
-
-**Tasks:**
-
-1. **Fix Frontend Hot Reload in Docker**
-   - Hot reload not working in frontend container
-   - Investigate volume mounts and Vite configuration
-   - Ensure file changes trigger rebuild in dev mode
-
-2. **Set Up Just Command Runner**
-   - Add `justfile` for common development tasks
-   - Replace manual docker compose commands with recipes
-   - Examples: `just dev`, `just test`, `just lint`, `just build`
-
-3. **Set Up Reverse Proxy Container**
-   - Add dedicated reverse proxy container for development
-   - Simplify networking between frontend/backend
-   - Mirror production setup more closely
-
----
-
 ## 🔧 Future Enhancements
 
 ---
@@ -66,12 +38,6 @@ These items must be completed before production deployment.
 **Affected files**: Frontend components, run pages
 
 **Features:**
-
-8. **Add Products During Shopping**
-   - Leader can add new products/bids/shopping list items during shopping stage
-   - Supports adding forgotten items or opportunistic purchases
-   - Automatically add to shopping list
-   - Track as new shopping list item
 
 9. **Leader Can Modify User Bids**
    - Leader has ability to edit other users' bids (not just force equal distribution)
