@@ -1231,17 +1231,17 @@ export default function RunPage() {
             if (difference < 0) {
               // Shortage: can only decrease, but not below (currentBid - shortage)
               const shortage = Math.abs(difference)
-              minAllowed = Math.max(0, currentBid.quantity - shortage)
-              maxAllowed = currentBid.quantity
+              minAllowed = Math.round(Math.max(0, currentBid.quantity - shortage) * 100) / 100
+              maxAllowed = Math.round(currentBid.quantity * 100) / 100
             } else if (difference > 0) {
               // Surplus: can only increase, but not above (currentBid + surplus)
               const surplus = difference
-              minAllowed = currentBid.quantity
-              maxAllowed = currentBid.quantity + surplus
+              minAllowed = Math.round(currentBid.quantity * 100) / 100
+              maxAllowed = Math.round((currentBid.quantity + surplus) * 100) / 100
             } else {
               // No difference, quantities match (shouldn't happen in adjusting mode)
-              minAllowed = currentBid.quantity
-              maxAllowed = currentBid.quantity
+              minAllowed = Math.round(currentBid.quantity * 100) / 100
+              maxAllowed = Math.round(currentBid.quantity * 100) / 100
             }
           }
 
