@@ -1,5 +1,6 @@
 """Run state service for managing run state transitions."""
 
+from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -597,13 +598,14 @@ class RunStateService(BaseService):
 
                 # Distribute with rounding to 2 decimal places
                 # Track total to ensure we don't exceed purchased quantity
-                total_distributed = 0.0
+                total_distributed = Decimal('0')
                 for i, bid in enumerate(product_bids):
                     if i == len(product_bids) - 1:
                         # Last bid gets the remainder to avoid rounding errors
                         distributed_qty = shopping_item.purchased_quantity - total_distributed
                     else:
-                        distributed_qty = round(bid.quantity * ratio, 2)
+                        # Convert to Decimal to maintain precision
+                        distributed_qty = Decimal(str(round(float(bid.quantity * ratio), 2)))
                         total_distributed += distributed_qty
 
                     self.bid_repo.update_bid_distributed_quantities(
