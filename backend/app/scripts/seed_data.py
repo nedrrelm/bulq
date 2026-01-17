@@ -466,6 +466,13 @@ def create_seed_data(db_session=None):
     bid9.distributed_quantity = 2
     bid9.distributed_price_per_unit = 14.99
 
+    # Almond Butter - NOT purchased (out of stock)
+    bid_repo.create_or_update_bid(alice_distributing_p.id, almond_butter.id, 1, False)
+    bid_repo.create_or_update_bid(bob_distributing_p.id, almond_butter.id, 1, False)
+
+    # Frozen Berries - NOT purchased (decided not to buy)
+    bid_repo.create_or_update_bid(test_distributing_p.id, frozen_berries.id, 2, False)
+
     # Shopping list items
     shopping_item6 = shopping_repo.create_shopping_list_item(
         run_distributing.id, rotisserie_chicken.id, 3
@@ -486,6 +493,22 @@ def create_seed_data(db_session=None):
     shopping_item8.purchased_price_per_unit = 14.99
     shopping_item8.purchased_quantity = 2
     shopping_item8.purchase_order = 3
+
+    # Almond Butter - NOT purchased
+    shopping_item_almond_dist = shopping_repo.create_shopping_list_item(
+        run_distributing.id, almond_butter.id, 2
+    )  # 1 + 1
+    shopping_item_almond_dist.is_purchased = False
+    shopping_item_almond_dist.purchased_quantity = None
+    shopping_item_almond_dist.purchase_order = None
+
+    # Frozen Berries - NOT purchased
+    shopping_item_berries_dist = shopping_repo.create_shopping_list_item(
+        run_distributing.id, frozen_berries.id, 2
+    )  # 2
+    shopping_item_berries_dist.is_purchased = False
+    shopping_item_berries_dist.purchased_quantity = None
+    shopping_item_berries_dist.purchase_order = None
 
     # Distribution records for distributing run
     alice_distributing_p.picked_up_at = None

@@ -130,6 +130,20 @@
   opacity: 0.6;
 }
 
+.product-item.unbought {
+  opacity: 0.5;
+  color: var(--color-gray-500);
+}
+
+.product-item.unbought .product-name {
+  text-decoration: line-through;
+  color: var(--color-gray-500);
+}
+
+.product-item.unbought .product-details {
+  color: var(--color-gray-400);
+}
+
 .product-info {
   flex: 1;
 }

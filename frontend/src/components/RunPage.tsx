@@ -975,13 +975,18 @@ export default function RunPage() {
                     </div>
                     {user.products
                       .sort((a, b) => {
-                        // Sort unpicked items first
-                        if (!a.is_picked_up && b.is_picked_up) return -1
-                        if (a.is_picked_up && !b.is_picked_up) return 1
-                        return 0
+                        // Always sort alphabetically by product name
+                        return a.product_name.localeCompare(b.product_name)
                       })
-                      .map(product => (
-                      <div key={product.bid_id} className={`product-item ${product.is_picked_up ? 'picked-up' : ''}`}>
+                      .map(product => {
+                        // Check if product was purchased (only in distributing/completed where it's relevant)
+                        const productData = run.products.find(p => p.id === product.product_id)
+                        const isUnbought = (run.state === 'distributing' || run.state === 'completed') &&
+                                           productData &&
+                                           (productData.purchased_quantity === null || productData.purchased_quantity === 0)
+
+                        return (
+                      <div key={product.bid_id} className={`product-item ${product.is_picked_up ? 'picked-up' : ''} ${isUnbought ? 'unbought' : ''}`}>
                         <div className="product-info">
                           <div className="product-name">
                             {product.product_name}
@@ -1006,7 +1011,8 @@ export default function RunPage() {
                           </button>
                         )}
                       </div>
-                    ))}
+                        )
+                      })}
                   </div>
                 )}
               </div>
@@ -1051,12 +1057,21 @@ export default function RunPage() {
 
                     {expandedUserId === user.user_id && (
                       <div className="user-products">
-                        {user.products.map(product => (
-                          <div key={product.product_id} className="product-item">
-                            <div className="product-info">
-                              <div className="product-name">
-                                {product.product_name}
-                              </div>
+                        {user.products
+                          .sort((a, b) => a.product_name.localeCompare(b.product_name))
+                          .map(product => {
+                            // Check if product was purchased (only show as unbought in post-shopping states)
+                            const productData = run.products.find(p => p.id === product.product_id)
+                            const isUnbought = (run.state === 'adjusting' || run.state === 'distributing' || run.state === 'completed') &&
+                                               productData &&
+                                               (productData.purchased_quantity === null || productData.purchased_quantity === 0)
+
+                            return (
+                              <div key={product.product_id} className={`product-item ${isUnbought ? 'unbought' : ''}`}>
+                                <div className="product-info">
+                                  <div className="product-name">
+                                    {product.product_name}
+                                  </div>
                               <div className="product-details">
                                 <span>{t('run:labels.quantity')}: {product.quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
                                 {product.price_per_unit > 0 && (
@@ -1068,7 +1083,8 @@ export default function RunPage() {
                               </div>
                             </div>
                           </div>
-                        ))}
+                            )
+                          })}
                       </div>
                     )}
                   </div>
@@ -1097,34 +1113,40 @@ export default function RunPage() {
           <div className="products-list">
             {run.products
               .sort((a, b) => {
-                // In adjusting state, sort by: adjustment needed → correctly bought → unbought, each alphabetically
                 if (run.state === 'adjusting') {
-                  // Categorize products
+                  // Adjusting: needs adjustment → correctly bought → unbought, alphabetically
                   const getCategoryAndName = (product: Product) => {
                     const purchased = product.purchased_quantity !== null && product.purchased_quantity > 0
                     const needsAdjustment = purchased && product.total_quantity !== product.purchased_quantity
 
                     if (needsAdjustment) {
-                      return { category: 0, name: product.name } // Needs adjustment
+                      return { category: 0, name: product.name }
                     } else if (purchased) {
-                      return { category: 1, name: product.name } // Correctly bought
+                      return { category: 1, name: product.name }
                     } else {
-                      return { category: 2, name: product.name } // Unbought
+                      return { category: 2, name: product.name }
                     }
                   }
 
                   const aData = getCategoryAndName(a)
                   const bData = getCategoryAndName(b)
 
-                  // First sort by category
                   if (aData.category !== bData.category) {
                     return aData.category - bData.category
                   }
-
-                  // Within same category, sort alphabetically
                   return aData.name.localeCompare(bData.name)
+                } else if (run.state === 'distributing' || run.state === 'completed') {
+                  // Distributing/Completed: bought → unbought, alphabetically
+                  const aPurchased = a.purchased_quantity !== null && a.purchased_quantity > 0
+                  const bPurchased = b.purchased_quantity !== null && b.purchased_quantity > 0
+
+                  if (aPurchased && !bPurchased) return -1
+                  if (!aPurchased && bPurchased) return 1
+                  return a.name.localeCompare(b.name)
+                } else {
+                  // Planning, Active, Confirmed, Shopping: alphabetically
+                  return a.name.localeCompare(b.name)
                 }
-                return 0
               })
               .map((product) => (
                 <ErrorBoundary key={product.id}>
