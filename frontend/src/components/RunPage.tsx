@@ -413,6 +413,13 @@ export default function RunPage() {
     const breakdown = run.participants
       .map(participant => {
         const userProducts = run.products
+          .filter(product => {
+            // In adjusting state, only include products that were purchased
+            if (run.state === 'adjusting') {
+              return product.purchased_quantity !== null && product.purchased_quantity > 0
+            }
+            return true
+          })
           .map(product => {
             const bid = product.user_bids.find(b => b.user_id === participant.user_id)
             if (!bid || bid.interested_only) return null
@@ -468,16 +475,11 @@ export default function RunPage() {
       run.products.forEach(product => {
         const price = product.current_price ? parseFloat(product.current_price) : 0
 
-        if (product.purchased_quantity !== null && product.purchased_quantity !== undefined) {
+        if (product.purchased_quantity !== null && product.purchased_quantity !== undefined && product.purchased_quantity > 0) {
           // Product has been purchased
           purchasedTotal += price * product.purchased_quantity
-        } else {
-          // Product not yet purchased, estimate from bids
-          const totalQuantity = product.user_bids
-            .filter(bid => !bid.interested_only)
-            .reduce((qty, bid) => qty + bid.quantity, 0)
-          remainingEstimate += price * totalQuantity
         }
+        // Note: Products not purchased (null or 0 quantity) are excluded from totals
       })
 
       return {
@@ -1095,18 +1097,32 @@ export default function RunPage() {
           <div className="products-list">
             {run.products
               .sort((a, b) => {
-                // In adjusting state, sort by adjustment status
+                // In adjusting state, sort by: adjustment needed → correctly bought → unbought, each alphabetically
                 if (run.state === 'adjusting') {
-                  const aNeedsAdjustment = a.purchased_quantity !== null &&
-                                          a.purchased_quantity > 0 &&
-                                          a.total_quantity !== a.purchased_quantity
-                  const bNeedsAdjustment = b.purchased_quantity !== null &&
-                                          b.purchased_quantity > 0 &&
-                                          b.total_quantity !== b.purchased_quantity
+                  // Categorize products
+                  const getCategoryAndName = (product: Product) => {
+                    const purchased = product.purchased_quantity !== null && product.purchased_quantity > 0
+                    const needsAdjustment = purchased && product.total_quantity !== product.purchased_quantity
 
-                  // Products needing adjustment (shortage or surplus) come first
-                  if (aNeedsAdjustment && !bNeedsAdjustment) return -1
-                  if (!aNeedsAdjustment && bNeedsAdjustment) return 1
+                    if (needsAdjustment) {
+                      return { category: 0, name: product.name } // Needs adjustment
+                    } else if (purchased) {
+                      return { category: 1, name: product.name } // Correctly bought
+                    } else {
+                      return { category: 2, name: product.name } // Unbought
+                    }
+                  }
+
+                  const aData = getCategoryAndName(a)
+                  const bData = getCategoryAndName(b)
+
+                  // First sort by category
+                  if (aData.category !== bData.category) {
+                    return aData.category - bData.category
+                  }
+
+                  // Within same category, sort alphabetically
+                  return aData.name.localeCompare(bData.name)
                 }
                 return 0
               })

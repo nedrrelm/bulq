@@ -353,6 +353,23 @@ def create_seed_data(db_session=None):
     bid_repo.create_or_update_bid(alice_adjusting_p.id, coffee_beans.id, 1, False)
     bid_repo.create_or_update_bid(bob_adjusting_p.id, coffee_beans.id, 1, False)
 
+    # Rotisserie Chicken - NOT purchased (out of stock)
+    bid_repo.create_or_update_bid(test_adjusting_p.id, rotisserie_chicken.id, 2, False)
+    bid_repo.create_or_update_bid(carol_adjusting_p.id, rotisserie_chicken.id, 1, False)
+
+    # Paper Towels - NOT purchased (decided not to buy)
+    bid_repo.create_or_update_bid(alice_adjusting_p.id, paper_towels.id, 1, False)
+    bid_repo.create_or_update_bid(bob_adjusting_p.id, paper_towels.id, 1, False)
+
+    # Olive Oil - CORRECTLY purchased (requested 3, purchased 3) - no adjustment needed
+    bid_repo.create_or_update_bid(test_adjusting_p.id, olive_oil.id, 1, False)
+    bid_repo.create_or_update_bid(alice_adjusting_p.id, olive_oil.id, 1, False)
+    bid_repo.create_or_update_bid(carol_adjusting_p.id, olive_oil.id, 1, False)
+
+    # Quinoa - CORRECTLY purchased (requested 2, purchased 2) - no adjustment needed
+    bid_repo.create_or_update_bid(bob_adjusting_p.id, quinoa.id, 1, False)
+    bid_repo.create_or_update_bid(carol_adjusting_p.id, quinoa.id, 1, False)
+
     # Shopping list items for adjusting run
     # Almond Butter - shortage (requested 4, purchased 3)
     shopping_item4 = shopping_repo.create_shopping_list_item(
@@ -389,6 +406,40 @@ def create_seed_data(db_session=None):
     shopping_item_coffee.purchased_price_per_unit = 14.99
     shopping_item_coffee.purchased_quantity = 3
     shopping_item_coffee.purchase_order = 4
+
+    # Rotisserie Chicken - NOT purchased (out of stock)
+    shopping_item_chicken = shopping_repo.create_shopping_list_item(
+        run_adjusting.id, rotisserie_chicken.id, 3
+    )  # 2 + 1
+    shopping_item_chicken.is_purchased = False
+    shopping_item_chicken.purchased_quantity = None
+    shopping_item_chicken.purchase_order = None
+
+    # Paper Towels - NOT purchased (decided not to buy)
+    shopping_item_pt_adj = shopping_repo.create_shopping_list_item(
+        run_adjusting.id, paper_towels.id, 2
+    )  # 1 + 1
+    shopping_item_pt_adj.is_purchased = False
+    shopping_item_pt_adj.purchased_quantity = None
+    shopping_item_pt_adj.purchase_order = None
+
+    # Olive Oil - CORRECTLY purchased (requested 3, purchased 3) - no adjustment needed
+    shopping_item_oil = shopping_repo.create_shopping_list_item(
+        run_adjusting.id, olive_oil.id, 3
+    )  # 1 + 1 + 1
+    shopping_item_oil.is_purchased = True
+    shopping_item_oil.purchased_price_per_unit = 23.99
+    shopping_item_oil.purchased_quantity = 3
+    shopping_item_oil.purchase_order = 5
+
+    # Quinoa - CORRECTLY purchased (requested 2, purchased 2) - no adjustment needed
+    shopping_item_quinoa_adj = shopping_repo.create_shopping_list_item(
+        run_adjusting.id, quinoa.id, 2
+    )  # 1 + 1
+    shopping_item_quinoa_adj.is_purchased = True
+    shopping_item_quinoa_adj.purchased_price_per_unit = 18.99
+    shopping_item_quinoa_adj.purchased_quantity = 2
+    shopping_item_quinoa_adj.purchase_order = 6
 
     # Distributing run - items purchased, being distributed
     test_distributing_p = run_repo.get_participation(test_user.id, run_distributing.id)
