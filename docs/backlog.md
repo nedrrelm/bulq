@@ -47,6 +47,16 @@ These items must be completed before production deployment.
 
 10. Let leader change back from confirmed to active
 
+11. **Don't Show Unbought Items During Adjusting**
+   - Hide products that weren't purchased from the adjusting stage UI
+   - Only show items that need quantity adjustments
+   - Reduces clutter and confusion during adjustment process
+
+12. **Fix Float Quantities Bug During Adjusting**
+   - Address issues with decimal/float quantities during the adjusting stage
+   - Ensure proper rounding and precision handling for bid adjustments
+   - Validate input to prevent float precision errors in quantity calculations
+
 ---
 
 ### Product Management Enhancements
