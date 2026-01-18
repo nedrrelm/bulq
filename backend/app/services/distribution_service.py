@@ -29,7 +29,7 @@ from app.core.exceptions import (
 )
 from app.core.models import Product, ProductBid, User
 from app.core.run_state import RunState, state_machine
-from app.core.success_codes import BID_MARKED_PICKED_UP
+from app.core.success_codes import BID_MARKED_PICKED_UP, DISTRIBUTION_COMPLETED
 from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transaction
 from app.repositories import (
@@ -345,7 +345,7 @@ class DistributionService(BaseService):
             'Distribution completed', extra={'run_id': str(run_id), 'user_id': str(current_user.id)}
         )
         return StateChangeResponse(
-            message='Distribution completed!',
+            code=DISTRIBUTION_COMPLETED,
             state=RunState.COMPLETED,
             run_id=str(run_id),
             group_id=str(run.group_id),
