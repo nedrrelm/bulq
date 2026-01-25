@@ -9,7 +9,7 @@ Complete guide for running Bulq in development and production environments.
 cp .env.example .env
 docker compose up
 ```
-Access: http://localhost:3000
+Access: http://localhost:1314
 
 ### Production
 ```bash
@@ -47,15 +47,15 @@ PROD=
 - CORS allows localhost by default
 - In-memory test data (`REPO_MODE=memory`)
 - Backend hot-reload enabled
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-- Exposed backend port for direct testing
+- Frontend: http://localhost:1314
+- Backend: Internal only (accessed via Caddy)
 
 **Network:**
 ```
-Browser (localhost:3000)
+Browser (localhost:1314)
     ↓ HTTP
-Caddy (3000) → Backend (8000) → PostgreSQL (5432)
+Caddy (1314) → Frontend (3000 internal)
+            → Backend (8000 internal) → PostgreSQL (5432 internal)
 ```
 
 ### Production Mode
@@ -73,15 +73,15 @@ PROD=true
 - Database required (`REPO_MODE=database`)
 - Secure cookies enabled
 - Backend NOT exposed to internet
-- Frontend: https://yourdomain.com (ports 80/443)
+- Frontend: https://yourdomain.com:1314 (or use reverse proxy on port 80/443)
 - Backend: Internal only
 
 **Network:**
 ```
-Browser (yourdomain.com)
-    ↓ HTTPS (443)
-Caddy (80→443, SSL) → Backend (8000 internal) → PostgreSQL (5432 internal)
-                    → React static files
+Browser (yourdomain.com:1314)
+    ↓ HTTP/HTTPS
+Caddy (1314, SSL) → Frontend (3000 internal)
+                 → Backend (8000 internal) → PostgreSQL (5432 internal)
 ```
 
 ### Key Differences
@@ -93,8 +93,8 @@ Caddy (80→443, SSL) → Backend (8000 internal) → PostgreSQL (5432 internal)
 | **Cookies** | `SECURE_COOKIES=false` | `SECURE_COOKIES=true` |
 | **CORS** | Auto (localhost) | Explicit domain |
 | **Database** | Memory or PostgreSQL | PostgreSQL only |
-| **Frontend Port** | 3000 | 80/443 |
-| **Backend Port** | 8000 (exposed) | Internal only |
+| **Exposed Port** | 1314 | 1314 (or use reverse proxy) |
+| **Backend Port** | Internal only | Internal only |
 | **Log Format** | Structured | JSON |
 
 ### Switching Between Modes
@@ -143,9 +143,9 @@ Caddy (80→443, SSL) → Backend (8000 internal) → PostgreSQL (5432 internal)
    ```
 
 4. **Verify:**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000/docs
-   - Backend health: http://localhost:8000/health
+   - Frontend: http://localhost:1314
+   - Backend API: http://localhost:1314/api/docs
+   - Backend health: http://localhost:1314/api/health
 
 ### Development Workflow
 
@@ -189,9 +189,9 @@ docker compose run --rm backend uv run --extra dev pytest tests/ --cov=app --cov
 ### Prerequisites
 
 1. **Server** with Docker and Docker Compose installed
-2. **Domain name** pointing to server IP
-3. **Ports 80 and 443** open on firewall
-4. **DNS A record**: `yourdomain.com → your.server.ip`
+2. **Domain name** pointing to server IP (optional)
+3. **Port 1314** open on firewall (or port 80/443 if using reverse proxy)
+4. **DNS A record**: `yourdomain.com → your.server.ip` (if using domain)
 
 ### Deployment Steps
 
@@ -393,19 +393,11 @@ docker compose up -d
 
 ### Port Already in Use
 
-**Development:**
 ```bash
-lsof -i :3000  # Frontend
-lsof -i :8000  # Backend
+lsof -i :1314  # Check if port is in use
 ```
 
-**Production:**
-```bash
-lsof -i :80
-lsof -i :443
-```
-
-Kill conflicting process or change ports in `.env`.
+Kill conflicting process or change `CADDY_PORT` in `.env`.
 
 ---
 
@@ -437,8 +429,8 @@ docker compose ps
 docker compose exec db pg_isready -U bulq -d bulq
 
 # Backend health
-curl http://localhost:8000/health  # dev
-curl https://yourdomain.com/health  # prod
+curl http://localhost:1314/api/health  # dev
+curl https://yourdomain.com:1314/api/health  # prod
 ```
 
 ### Container Cleanup
@@ -481,9 +473,10 @@ docker system prune -a --volumes
 - [ ] `ALLOWED_ORIGINS` set to production domain
 - [ ] `SECURE_COOKIES=true`
 - [ ] Backend volume mount commented out
-- [ ] Firewall: only ports 80, 443 open
+- [ ] Firewall: only port 1314 open (or 80/443 if using reverse proxy)
 - [ ] Database port (5432) NOT exposed
 - [ ] Backend port (8000) NOT exposed
+- [ ] Frontend port (3000) NOT exposed
 - [ ] `.env` permissions: `chmod 600 .env`
 - [ ] Automated backups configured
 - [ ] SSL certificate provisioned

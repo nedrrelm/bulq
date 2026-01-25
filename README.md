@@ -33,9 +33,9 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Access the application at `http://localhost:3000`
+Access the application at `http://localhost:1314`
 
-Backend API documentation: `http://localhost:8000/docs`
+Backend API documentation: `http://localhost:1314/api/docs`
 
 ## Tech Stack
 
