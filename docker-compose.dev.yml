@@ -1,0 +1,11 @@
+# Development-specific Docker Compose overrides
+# Used automatically with: docker compose up
+# Or explicitly with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    volumes:
+      # Mount source code for hot-reload in development
+      - ./backend:/app
+    environment:
+      - ENV=development

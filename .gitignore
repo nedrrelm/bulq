@@ -21,7 +21,9 @@ build/
 .ipynb_checkpoints
 
 # Environment variables
-.env
+# .env is now tracked (dev config)
+# Only ignore production env file
+deployment/.env.prod
 .env.local
 .env.*.local
 

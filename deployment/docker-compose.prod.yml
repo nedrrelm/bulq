@@ -1,0 +1,14 @@
+# Production-specific Docker Compose overrides
+# Use with: docker compose -f docker-compose.yml -f deployment/docker-compose.prod.yml --env-file deployment/.env.prod up -d
+
+services:
+  backend:
+    # No volume mount in production - use image only
+    # This disables hot-reload for stability
+    environment:
+      - ENV=production
+
+  frontend:
+    # Production frontend builds are already included in the image
+    environment:
+      - ENV=production

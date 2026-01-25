@@ -6,114 +6,130 @@ Complete guide for running Bulq in development and production environments.
 
 ### Development
 ```bash
-cp .env.example .env
-docker compose up
+git clone https://github.com/nedrrelm/bulq.git
+cd bulq
+just dev  # or: docker compose up -d
 ```
 Access: http://localhost:1314
 
 ### Production
 ```bash
-cp .env.example .env
-# Edit .env: set PROD_SECRET_KEY, PROD_POSTGRES_PASSWORD, PROD=true, DEV=
-# Comment out backend volume in docker-compose.yml
-docker compose build && docker compose up -d
+git clone https://github.com/nedrrelm/bulq.git
+cd bulq
+cp deployment/.env.prod.example deployment/.env.prod
+# Edit deployment/.env.prod - set secrets
+just prod --build
 ```
-Access: https://yourdomain.com
 
 ---
 
 ## Environment Configuration
 
-Bulq uses a **unified `.env` file** with automatic environment switching. Simply change `DEV`/`PROD` flags, and all configuration values automatically switch.
+### Development (Default)
 
-**How it works:**
-- `.env` file contains both `DEV_*` and `PROD_*` prefixed values
-- Bash parameter expansion automatically selects the right values
-- No manual copying or find-replace needed
+**File**: `.env` (tracked in git)
 
-See [Unified Environment Configuration Guide](unified_env_guide.md) for technical implementation details.
-
-### Development Mode
+The `.env` file is already configured for development and is tracked in git. No setup needed!
 
 **Configuration:**
+- `REPO_MODE=memory` - In-memory data (no DB required, resets on restart)
+- `SECURE_COOKIES=false` - HTTP cookies for localhost
+- `CADDY_PORT=1314` - App runs on port 1314
+- Dev dependencies enabled
+
+**To use PostgreSQL in development:**
 ```bash
-# In .env:
-DEV=true
-PROD=
+# Edit .env
+REPO_MODE=database
+
+# Restart
+just down && just dev
 ```
 
-**Characteristics:**
-- HTTP (no SSL required)
-- CORS allows localhost by default
-- In-memory test data (`REPO_MODE=memory`)
-- Backend hot-reload enabled
-- Frontend: http://localhost:1314
-- Backend: Internal only (accessed via Caddy)
+### Production
 
-**Network:**
-```
-Browser (localhost:1314)
-    ↓ HTTP
-Caddy (1314) → Frontend (3000 internal)
-            → Backend (8000 internal) → PostgreSQL (5432 internal)
-```
+**File**: `deployment/.env.prod` (gitignored, created from template)
 
-### Production Mode
-
-**Configuration:**
+**Setup:**
 ```bash
-# In .env:
-DEV=
-PROD=true
+# 1. Copy template
+cp deployment/.env.prod.example deployment/.env.prod
+
+# 2. Edit and set secrets
+vim deployment/.env.prod
+
+# Required changes:
+# - SECRET_KEY: Generate with `openssl rand -hex 32`
+# - POSTGRES_PASSWORD: Strong password (16+ chars)
+# - ALLOWED_ORIGINS: Your production domain with https://
+# - CADDY_DOMAIN: Your domain name
+
+# 3. Set secure permissions
+chmod 600 deployment/.env.prod
 ```
 
-**Characteristics:**
-- HTTPS required (via Caddy + Let's Encrypt)
-- Strict CORS validation
-- Database required (`REPO_MODE=database`)
-- Secure cookies enabled
-- Backend NOT exposed to internet
-- Frontend: https://yourdomain.com:1314 (or use reverse proxy on port 80/443)
-- Backend: Internal only
+---
 
-**Network:**
+## Docker Compose Files
+
+### File Structure
+
 ```
-Browser (yourdomain.com:1314)
-    ↓ HTTP/HTTPS
-Caddy (1314, SSL) → Frontend (3000 internal)
-                 → Backend (8000 internal) → PostgreSQL (5432 internal)
+bulq/
+├── docker-compose.yml           # Base configuration
+├── docker-compose.dev.yml       # Development overrides
+├── deployment/
+│   └── docker-compose.prod.yml  # Production overrides
 ```
 
-### Key Differences
+### Development (default)
 
-| Feature | Development | Production |
-|---------|------------|------------|
-| **Environment** | `DEV=true` | `PROD=true` |
-| **HTTPS** | Optional | Required (automatic) |
-| **Cookies** | `SECURE_COOKIES=false` | `SECURE_COOKIES=true` |
-| **CORS** | Auto (localhost) | Explicit domain |
-| **Database** | Memory or PostgreSQL | PostgreSQL only |
-| **Exposed Port** | 1314 | 1314 (or use reverse proxy) |
-| **Backend Port** | Internal only | Internal only |
-| **Log Format** | Structured | JSON |
+**Files used**: `docker-compose.yml` + `docker-compose.dev.yml`
 
-### Switching Between Modes
+```bash
+# Using justfile (recommended)
+just dev              # Start
+just dev --build      # Build and start
+just down             # Stop
+just logs             # View all logs
+just logs backend     # View backend logs
+just ps               # Show status
 
-**Development → Production:**
-1. Set production values in `.env`:
-   ```bash
-   PROD_SECRET_KEY=$(openssl rand -hex 32)
-   PROD_POSTGRES_PASSWORD=your-strong-password
-   PROD_ALLOWED_ORIGINS=https://yourdomain.com
-   ```
-2. Switch flags: `DEV=` and `PROD=true`
-3. Comment out backend volume in `docker-compose.yml`
-4. Deploy: `docker compose build && docker compose up -d`
+# Direct docker compose
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
 
-**Production → Development:**
-1. Switch flags: `DEV=true` and `PROD=`
-2. Uncomment backend volume in `docker-compose.yml`
-3. Restart: `docker compose down && docker compose up -d`
+**Dev-specific features:**
+- Backend code mounted for hot-reload (`./backend:/app`)
+- Development dependencies included
+- In-memory data by default
+
+### Production
+
+**Files used**: `docker-compose.yml` + `deployment/docker-compose.prod.yml`
+**Env file**: `deployment/.env.prod`
+
+```bash
+# Using justfile (recommended)
+just prod --build     # Build and start
+just prod             # Start (without build)
+just down             # Stop
+just logs             # View all logs
+just logs backend     # View backend logs
+just ps               # Show status
+
+# Direct docker compose
+docker compose \\
+  -f docker-compose.yml \\
+  -f deployment/docker-compose.prod.yml \\
+  --env-file deployment/.env.prod \\
+  up -d
+```
+
+**Prod-specific features:**
+- No code mounting (uses built image)
+- No development dependencies
+- Production logging (JSON format)
 
 ---
 
@@ -122,64 +138,60 @@ Caddy (1314, SSL) → Frontend (3000 internal)
 ### Prerequisites
 - Docker and Docker Compose
 - Git
+- (Optional) just command runner
 
 ### Installation
 
 1. **Clone repository:**
    ```bash
-   git clone https://github.com/yourusername/bulq.git
+   git clone https://github.com/nedrrelm/bulq.git
    cd bulq
    ```
 
-2. **Configure environment:**
+2. **Start application:**
    ```bash
-   cp .env.example .env
-   # Default dev settings work out of the box
-   ```
-
-3. **Start services:**
-   ```bash
+   just dev
+   # or
    docker compose up -d
    ```
 
-4. **Verify:**
+3. **Verify:**
    - Frontend: http://localhost:1314
    - Backend API: http://localhost:1314/api/docs
    - Backend health: http://localhost:1314/api/health
 
 ### Development Workflow
 
-**Full stack:**
+**Start/stop:**
 ```bash
-docker compose up -d
-docker compose logs -f
+just dev             # Start all services
+just dev --build     # Rebuild and start
+just down            # Stop all services
 ```
 
-**Backend only:**
+**View logs:**
 ```bash
-docker compose up -d backend
-docker compose logs -f backend
+just logs            # All services
+just logs backend    # Specific service
 ```
-
-**Rebuild after changes:**
-```bash
-docker compose up -d --build backend
-```
-
-**Backend hot-reload:**
-The backend volume mount (`./backend:/app`) enables automatic reloading when you edit Python files.
 
 ### Testing
 
 ```bash
-# Run all tests
-docker compose run --rm backend uv run --extra dev pytest tests/ -v
-
-# Run specific test
-docker compose run --rm backend uv run --extra dev pytest tests/test_auth.py -v
+# Run tests in backend container
+docker compose exec backend uv run --extra dev pytest tests/ -v
 
 # With coverage
-docker compose run --rm backend uv run --extra dev pytest tests/ --cov=app --cov-report=html
+docker compose exec backend uv run --extra dev pytest tests/ --cov=app --cov-report=html
+```
+
+### Linting
+
+```bash
+just lint
+# or
+docker compose exec backend uv run --extra dev ruff format app/
+docker compose exec backend uv run --extra dev ruff check app/ --fix
 ```
 
 ---
@@ -189,133 +201,161 @@ docker compose run --rm backend uv run --extra dev pytest tests/ --cov=app --cov
 ### Prerequisites
 
 1. **Server** with Docker and Docker Compose installed
-2. **Domain name** pointing to server IP (optional)
+2. **Domain name** pointing to server IP (optional but recommended)
 3. **Port 1314** open on firewall (or port 80/443 if using reverse proxy)
 4. **DNS A record**: `yourdomain.com → your.server.ip` (if using domain)
 
-### Deployment Steps
+### Initial Deployment
 
 #### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/bulq.git
+git clone https://github.com/nedrrelm/bulq.git
 cd bulq
 ```
 
-#### 2. Configure Environment
+#### 2. Configure Production Environment
 
 ```bash
-cp .env.example .env
+# Copy production template
+cp deployment/.env.prod.example deployment/.env.prod
 ```
 
-Edit `.env`:
+Edit `deployment/.env.prod`:
 
-**Set production values:**
+**Required changes:**
 ```bash
-# Generate strong secret
+# Generate secret key
 openssl rand -hex 32
-# Copy output to:
-PROD_SECRET_KEY=<paste-generated-key-here>
+# Paste result:
+SECRET_KEY=<generated-key>
 
 # Set strong database password
-PROD_POSTGRES_PASSWORD=YourStrong16+CharPassword
+POSTGRES_PASSWORD=YourStrong16+CharPassword
 
-# Update domain if different
-PROD_ALLOWED_ORIGINS=https://yourdomain.com
+# Update domain
+ALLOWED_ORIGINS=https://yourdomain.com
+CADDY_DOMAIN=yourdomain.com
 ```
 
-**Switch to production mode:**
+**Optional changes:**
 ```bash
-DEV=
-PROD=true
+# Port (default 1314, or use reverse proxy for 80/443)
+CADDY_PORT=1314
+
+# Logging
+LOG_LEVEL=INFO
 ```
 
-**Verify configuration:**
+**Set secure permissions:**
 ```bash
-grep "^PROD=" .env  # Should show: PROD=true
-grep "^DEV=" .env   # Should show: DEV= (empty)
+chmod 600 deployment/.env.prod
 ```
 
-#### 3. Update docker-compose.yml
-
-Comment out backend volume mount:
-```yaml
-backend:
-  # volumes:
-  #   - ./backend:/app
-```
-
-#### 4. Deploy
+#### 3. Deploy
 
 ```bash
-# Build and start
-docker compose build
-docker compose up -d
+# Using justfile (recommended)
+just prod --build
 
-# Check status
-docker compose ps
-
-# View logs
-docker compose logs -f
+# Or manually
+docker compose \\
+  -f docker-compose.yml \\
+  -f deployment/docker-compose.prod.yml \\
+  --env-file deployment/.env.prod \\
+  up -d --build
 ```
 
-#### 5. Verify Deployment
+#### 4. Verify Deployment
 
-**Check HTTPS certificate:**
+**Check services:**
 ```bash
+just ps
+# Should show all services running
+```
+
+**Test access:**
+```bash
+curl https://yourdomain.com:1314
+# or if using reverse proxy:
 curl https://yourdomain.com
 ```
 
 **Check API health:**
 ```bash
-curl https://yourdomain.com/auth/me
-# Should return 401 (not authenticated) - confirms backend working
+curl https://yourdomain.com:1314/api/health
+# Should return: {"status":"ok"}
 ```
 
 **Check logs:**
 ```bash
-docker compose logs backend | grep "ERROR"
+just logs
 ```
 
-### SSL Certificates
+### SSL/HTTPS Configuration
 
-Caddy automatically provisions and renews SSL certificates from Let's Encrypt.
+Caddy automatically provisions SSL certificates from Let's Encrypt when:
+- `CADDY_DOMAIN` is set to your actual domain (not `localhost`)
+- Port 80 is accessible (for ACME challenge)
+- Domain DNS points to your server
 
-**Certificate storage:** Docker volume `caddy_data`
+**Note**: If using port 1314 instead of 80/443, you may need a reverse proxy in front of Caddy for automatic SSL. See "Using Reverse Proxy" section below.
 
-**Manual renewal (if needed):**
-```bash
-docker compose exec frontend caddy reload --config /etc/caddy/Caddyfile
+### Using Reverse Proxy
+
+If you want to use standard ports (80/443) with other apps:
+
+**Example Nginx config:**
+```nginx
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name bulq.yourdomain.com;
+
+    # SSL config here
+
+    location / {
+        proxy_pass http://localhost:1314;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
 ### Database Backups
 
 **Manual backup:**
 ```bash
-docker compose exec db pg_dump -U bulq bulq > backup_$(date +%Y%m%d_%H%M%S).sql
+docker compose \\
+  -f docker-compose.yml \\
+  -f deployment/docker-compose.prod.yml \\
+  --env-file deployment/.env.prod \\
+  exec db pg_dump -U bulq bulq > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 **Restore backup:**
 ```bash
-docker compose exec -T db psql -U bulq bulq < backup_20250101_120000.sql
+docker compose \\
+  -f docker-compose.yml \\
+  -f deployment/docker-compose.prod.yml \\
+  --env-file deployment/.env.prod \\
+  exec -T db psql -U bulq bulq < backup_20250101_120000.sql
 ```
 
-**Automated backups:**
-Create `/opt/bulq/backup.sh`:
+**Automated backups** (add to cron):
 ```bash
 #!/bin/bash
 BACKUP_DIR="/opt/bulq/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-docker compose -f /opt/bulq/docker-compose.yml exec -T db pg_dump -U bulq bulq > "$BACKUP_DIR/bulq_$TIMESTAMP.sql"
+cd /opt/bulq
+docker compose -f docker-compose.yml -f deployment/docker-compose.prod.yml --env-file deployment/.env.prod exec -T db pg_dump -U bulq bulq > "$BACKUP_DIR/bulq_$TIMESTAMP.sql"
 gzip "$BACKUP_DIR/bulq_$TIMESTAMP.sql"
 find "$BACKUP_DIR" -name "bulq_*.sql.gz" -mtime +30 -delete
-```
-
-Add to cron:
-```bash
-chmod +x /opt/bulq/backup.sh
-crontab -e
-# Add: 0 2 * * * /opt/bulq/backup.sh >> /var/log/bulq-backup.log 2>&1
 ```
 
 ### Updating Application
@@ -323,73 +363,41 @@ crontab -e
 ```bash
 cd /opt/bulq
 git pull origin main
-docker compose build
-docker compose up -d
-docker compose logs -f
-```
-
-### Rollback Procedure
-
-```bash
-docker compose down
-git checkout <previous-tag-or-commit>
-docker compose exec -T db psql -U bulq bulq < backup_previous.sql
-docker compose build
-docker compose up -d
+just prod --build
 ```
 
 ---
 
 ## Troubleshooting
 
-### SSL Certificate Issues
-
-**Symptoms:** Caddy can't provision SSL certificate
-
-**Solutions:**
-1. Verify DNS: `dig yourdomain.com`
-2. Check ports: `sudo netstat -tlnp | grep :80`
-3. Check Caddy logs: `docker compose logs frontend | grep -i certificate`
-4. Ensure domain accessible from internet (not just locally)
-
 ### Backend Connection Failed
 
-**Symptoms:** Frontend shows "Backend connection failed"
+**Check services:**
+```bash
+just ps
+```
 
-**Solutions:**
-1. Check backend running: `docker compose ps backend`
-2. Check backend logs: `docker compose logs backend`
-3. Verify CORS: Check `ALLOWED_ORIGINS` in `.env`
-4. Test backend: `docker compose exec frontend wget -O- http://backend:8000/health`
+**Check logs:**
+```bash
+just logs
+just logs backend
+```
+
+**Verify CORS:**
+- Dev: `ALLOWED_ORIGINS` should be empty
+- Prod: `ALLOWED_ORIGINS` must match your domain exactly
 
 ### Database Connection Failed
 
-**Symptoms:** Backend logs show "could not connect to database"
+**Check database:**
+```bash
+docker compose exec db pg_isready -U bulq -d bulq
+```
 
-**Solutions:**
-1. Check database healthy: `docker compose ps db`
-2. Check database logs: `docker compose logs db`
-3. Verify `DATABASE_URL` in `.env`
-4. Test connection: `docker compose exec backend env | grep DATABASE_URL`
-
-### CORS Errors in Browser
-
-**Symptoms:** Browser console shows CORS errors
-
-**Solutions:**
-1. Verify `ALLOWED_ORIGINS` matches domain exactly (including `https://`)
-2. No trailing slash in domain
-3. Ensure `SECURE_COOKIES=true` when using HTTPS
-4. Check backend logs for CORS errors
-
-### WebSocket Connection Failed
-
-**Symptoms:** Real-time updates not working
-
-**Solutions:**
-1. Check Caddy config for `/ws/*` proxying
-2. Verify WebSocket URL in browser console
-3. Check backend logs for WebSocket errors
+**Check logs:**
+```bash
+just logs db
+```
 
 ### Port Already in Use
 
@@ -397,69 +405,35 @@ docker compose up -d
 lsof -i :1314  # Check if port is in use
 ```
 
-Kill conflicting process or change `CADDY_PORT` in `.env`.
+Kill conflicting process or change `CADDY_PORT` in `.env` (dev) or `deployment/.env.prod` (prod).
+
+### WebSocket Connection Failed
+
+**Check logs:**
+```bash
+just logs backend | grep -i websocket
+```
+
+**Verify Caddyfile** includes WebSocket proxy:
+```
+reverse_proxy /ws/* backend:8000
+```
 
 ---
 
-## Monitoring & Maintenance
-
-### View Logs
-
-```bash
-# All services
-docker compose logs -f
-
-# Specific service
-docker compose logs -f backend --tail=100
-
-# Search for errors
-docker compose logs backend | grep ERROR
-
-# JSON logs (production)
-docker compose logs backend | jq -r 'select(.level == "ERROR")'
-```
-
-### Health Checks
+## Health Checks
 
 ```bash
 # Check all services
-docker compose ps
+just ps
 
 # Database health
 docker compose exec db pg_isready -U bulq -d bulq
 
 # Backend health
-curl http://localhost:1314/api/health  # dev
-curl https://yourdomain.com:1314/api/health  # prod
+curl http://localhost:1314/api/health          # dev
+curl https://yourdomain.com:1314/api/health    # prod
 ```
-
-### Container Cleanup
-
-```bash
-# Remove unused images
-docker image prune -a
-
-# Remove unused volumes (careful!)
-docker volume prune
-
-# Full cleanup
-docker system prune -a --volumes
-```
-
-### Routine Maintenance
-
-**Daily:**
-- Monitor logs for errors
-- Check disk space: `df -h`
-
-**Weekly:**
-- Review backup logs
-- Check container health
-
-**Monthly:**
-- Update dependencies
-- Security patches
-- Performance review
 
 ---
 
@@ -467,20 +441,46 @@ docker system prune -a --volumes
 
 ### Production Deployment
 
-- [ ] `PROD=true` and `DEV=` (empty) in `.env`
-- [ ] Strong `PROD_SECRET_KEY` (32+ chars)
-- [ ] Strong `PROD_POSTGRES_PASSWORD` (16+ chars)
-- [ ] `ALLOWED_ORIGINS` set to production domain
+- [ ] Strong `SECRET_KEY` generated (32+ chars)
+- [ ] Strong `POSTGRES_PASSWORD` (16+ chars)
+- [ ] `ALLOWED_ORIGINS` set to production domain (with https://)
 - [ ] `SECURE_COOKIES=true`
-- [ ] Backend volume mount commented out
+- [ ] `deployment/.env.prod` permissions: `chmod 600`
 - [ ] Firewall: only port 1314 open (or 80/443 if using reverse proxy)
-- [ ] Database port (5432) NOT exposed
-- [ ] Backend port (8000) NOT exposed
-- [ ] Frontend port (3000) NOT exposed
-- [ ] `.env` permissions: `chmod 600 .env`
+- [ ] Database port (5432) NOT exposed to internet
+- [ ] Backend port (8000) NOT exposed to internet
+- [ ] Frontend internal port (3000) NOT exposed to internet
 - [ ] Automated backups configured
-- [ ] SSL certificate provisioned
+- [ ] SSL certificate provisioned (if using Caddy directly)
 - [ ] Upstream reverse proxy configured (if applicable)
+
+---
+
+## Architecture
+
+### Development
+```
+Browser (localhost:1314)
+    ↓ HTTP
+Caddy (1314) → Frontend (3000 internal) - hot reload enabled
+            → Backend (8000 internal) - hot reload enabled
+            → PostgreSQL (5432 internal) or in-memory
+```
+
+### Production
+```
+Browser (yourdomain.com:1314)
+    ↓ HTTPS
+Caddy (1314, SSL) → Frontend (3000 internal) - static build
+                 → Backend (8000 internal) - production
+                 → PostgreSQL (5432 internal)
+```
+
+**Key differences:**
+- Dev: Code mounted for hot-reload
+- Prod: Baked into image, no hot-reload
+- Dev: In-memory data by default
+- Prod: PostgreSQL required
 
 ---
 
@@ -489,10 +489,8 @@ docker system prune -a --volumes
 After successful deployment:
 
 1. **Monitor logs** for first 24 hours
-2. **Test all features** in production
+2. **Test all features** in production environment
 3. **Configure monitoring** (Prometheus, Grafana, etc.)
 4. **Set up alerts** (uptime, errors, disk space)
 5. **Document runbooks** for common issues
 6. **Create staging environment** for testing updates
-
-For technical details on the unified environment system, see [Unified Environment Configuration Guide](unified_env_guide.md).

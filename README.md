@@ -26,16 +26,20 @@ Bulq enables friend groups to coordinate bulk purchases and track savings throug
 ## Quick Start
 
 ```bash
-# Copy environment configuration
-cp .env.example .env
+# Clone and start (development mode)
+git clone https://github.com/nedrrelm/bulq.git
+cd bulq
+just dev
 
-# Start the application
+# Or without just
 docker compose up -d
 ```
 
 Access the application at `http://localhost:1314`
 
 Backend API documentation: `http://localhost:1314/api/docs`
+
+> **Note**: The `.env` file is already configured for development. No setup needed!
 
 ## Tech Stack
 
