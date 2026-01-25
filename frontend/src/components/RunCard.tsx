@@ -55,6 +55,18 @@ const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGro
     }
   }
 
+  // Determine the label for the date based on run state
+  const getDateLabel = (): string => {
+    switch (run.state) {
+      case 'completed':
+        return t('run:card.completed')
+      case 'cancelled':
+        return t('run:card.cancelled')
+      default:
+        return t('run:card.planned')
+    }
+  }
+
   const displayDate = getDisplayDate()
 
   const content = (
@@ -80,7 +92,7 @@ const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGro
         </div>
         {displayDate && (
           <div className="run-detail">
-            <span className="run-detail-label">{t('run:card.planned')}:</span>
+            <span className="run-detail-label">{getDateLabel()}:</span>
             <span className="run-detail-value">
               {new Date(displayDate).toLocaleDateString()}
             </span>

@@ -25,7 +25,16 @@ interface ActiveRun {
   group_name: string
   store_name: string
   leader_name: string
+  leader_is_removed?: boolean
   planned_on: string | null
+  planning_at: string | null
+  active_at: string | null
+  confirmed_at: string | null
+  shopping_at: string | null
+  adjusting_at: string | null
+  distributing_at: string | null
+  completed_at: string | null
+  cancelled_at: string | null
 }
 
 interface StorePageData {

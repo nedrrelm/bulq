@@ -218,6 +218,8 @@
   "card": {
     "group": "Група",
     "leader": "Вођа",
-    "planned": "Планирано"
+    "planned": "Планирано",
+    "completed": "Завршено",
+    "cancelled": "Отказано"
   }
 }
