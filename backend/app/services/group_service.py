@@ -285,6 +285,14 @@ class GroupService(BaseService):
                     leader_name=leader_name,
                     leader_is_removed=leader_is_removed,
                     planned_on=run.planned_on.isoformat() if run.planned_on else None,
+                    planning_at=run.planning_at.isoformat() if run.planning_at else None,
+                    active_at=run.active_at.isoformat() if run.active_at else None,
+                    confirmed_at=run.confirmed_at.isoformat() if run.confirmed_at else None,
+                    shopping_at=run.shopping_at.isoformat() if run.shopping_at else None,
+                    adjusting_at=run.adjusting_at.isoformat() if run.adjusting_at else None,
+                    distributing_at=run.distributing_at.isoformat() if run.distributing_at else None,
+                    completed_at=run.completed_at.isoformat() if run.completed_at else None,
+                    cancelled_at=run.cancelled_at.isoformat() if run.cancelled_at else None,
                 )
             )
 
@@ -361,8 +369,21 @@ class GroupService(BaseService):
                     leader_name=leader_name,
                     leader_is_removed=False,
                     planned_on=run.planned_on.isoformat() if run.planned_on else None,
+                    planning_at=run.planning_at.isoformat() if run.planning_at else None,
+                    active_at=run.active_at.isoformat() if run.active_at else None,
+                    confirmed_at=run.confirmed_at.isoformat() if run.confirmed_at else None,
+                    shopping_at=run.shopping_at.isoformat() if run.shopping_at else None,
+                    adjusting_at=run.adjusting_at.isoformat() if run.adjusting_at else None,
+                    distributing_at=run.distributing_at.isoformat() if run.distributing_at else None,
+                    completed_at=run.completed_at.isoformat() if run.completed_at else None,
+                    cancelled_at=run.cancelled_at.isoformat() if run.cancelled_at else None,
                 )
             )
+
+        # Sort by completed_at or cancelled_at descending (latest first)
+        run_responses.sort(
+            key=lambda r: r.completed_at or r.cancelled_at or '', reverse=True
+        )
 
         return run_responses
 

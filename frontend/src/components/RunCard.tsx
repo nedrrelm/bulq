@@ -12,6 +12,14 @@ interface Run {
   leader_name: string
   leader_is_removed?: boolean
   planned_on: string | null
+  planning_at: string | null
+  active_at: string | null
+  confirmed_at: string | null
+  shopping_at: string | null
+  adjusting_at: string | null
+  distributing_at: string | null
+  completed_at: string | null
+  cancelled_at: string | null
   group_name?: string
 }
 
@@ -24,6 +32,30 @@ interface RunCardProps {
 
 const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGroupName = false }: RunCardProps) {
   const { t } = useTranslation(['run'])
+
+  // Determine which date to display based on run state
+  const getDisplayDate = (): string | null => {
+    switch (run.state) {
+      case 'completed':
+        return run.completed_at
+      case 'cancelled':
+        return run.cancelled_at
+      case 'planning':
+        return run.planned_on || run.planning_at
+      case 'active':
+        return run.planned_on || run.active_at
+      case 'confirmed':
+        return run.planned_on || run.confirmed_at
+      case 'shopping':
+      case 'adjusting':
+      case 'distributing':
+        return run.planned_on || run.shopping_at || run.adjusting_at || run.distributing_at
+      default:
+        return run.planned_on
+    }
+  }
+
+  const displayDate = getDisplayDate()
 
   const content = (
     <div className="run-card-content">
@@ -46,11 +78,11 @@ const RunCard = memo(function RunCard({ run, onClick, showAsLink = true, showGro
             {run.leader_name}
           </span>
         </div>
-        {run.planned_on && (
+        {displayDate && (
           <div className="run-detail">
             <span className="run-detail-label">{t('run:card.planned')}:</span>
             <span className="run-detail-value">
-              {new Date(run.planned_on).toLocaleDateString()}
+              {new Date(displayDate).toLocaleDateString()}
             </span>
           </div>
         )}

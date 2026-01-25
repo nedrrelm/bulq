@@ -66,6 +66,14 @@ class RunResponse(BaseModel):
     leader_name: str
     leader_is_removed: bool = False
     planned_on: str | None
+    planning_at: str | None
+    active_at: str | None
+    confirmed_at: str | None
+    shopping_at: str | None
+    adjusting_at: str | None
+    distributing_at: str | None
+    completed_at: str | None
+    cancelled_at: str | None
 
     class Config:
         from_attributes = True

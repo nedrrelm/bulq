@@ -13,6 +13,10 @@ interface GroupItemProps {
       id: string
       store_name: string
       state: string
+      planned_on?: string | null
+      planning_at?: string | null
+      active_at?: string | null
+      confirmed_at?: string | null
     }>
   }
   onGroupClick: (groupId: string) => void
@@ -44,19 +48,37 @@ const GroupItem = memo(function GroupItem({ group, onGroupClick, onRunSelect }: 
 
         {group.active_runs.length > 0 && (
           <div className="active-runs">
-            {group.active_runs.map((run) => (
-              <div
-                key={run.id}
-                className="run-summary"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRunSelect(run.id)
-                }}
-              >
-                <span className="run-store">{run.store_name}</span>
-                <span className={`run-state state-${run.state}`}>{getStateLabel(run.state)}</span>
-              </div>
-            ))}
+            {group.active_runs.map((run) => {
+              // Get display date based on state
+              const displayDate = run.state === 'planning'
+                ? (run.planned_on || run.planning_at)
+                : run.state === 'active'
+                ? (run.planned_on || run.active_at)
+                : run.state === 'confirmed'
+                ? (run.planned_on || run.confirmed_at)
+                : run.planned_on
+
+              return (
+                <div
+                  key={run.id}
+                  className="run-summary"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRunSelect(run.id)
+                  }}
+                >
+                  <div>
+                    <span className="run-store">{run.store_name}</span>
+                    {displayDate && (
+                      <span className="run-date" style={{ fontSize: '0.85em', marginLeft: '0.5rem', opacity: 0.7 }}>
+                        {new Date(displayDate).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`run-state state-${run.state}`}>{getStateLabel(run.state)}</span>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

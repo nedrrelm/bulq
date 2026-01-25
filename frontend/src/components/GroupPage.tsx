@@ -26,6 +26,14 @@ type RunSummary = {
   leader_name: string
   leader_is_removed: boolean
   planned_on: string | null
+  planning_at: string | null
+  active_at: string | null
+  confirmed_at: string | null
+  shopping_at: string | null
+  adjusting_at: string | null
+  distributing_at: string | null
+  completed_at: string | null
+  cancelled_at: string | null
 }
 
 export default function GroupPage() {
@@ -103,8 +111,21 @@ export default function GroupPage() {
     .filter((run: RunSummary) => !['completed', 'cancelled'].includes(run.state))
     .sort((a: RunSummary, b: RunSummary) => (stateOrder[b.state] || 0) - (stateOrder[a.state] || 0))
 
-  const completedRuns = runs.filter((run: RunSummary) => run.state === 'completed')
-  const cancelledRuns = runs.filter((run: RunSummary) => run.state === 'cancelled')
+  const completedRuns = runs
+    .filter((run: RunSummary) => run.state === 'completed')
+    .sort((a: RunSummary, b: RunSummary) => {
+      const dateA = a.completed_at || ''
+      const dateB = b.completed_at || ''
+      return dateB.localeCompare(dateA) // Latest first
+    })
+
+  const cancelledRuns = runs
+    .filter((run: RunSummary) => run.state === 'cancelled')
+    .sort((a: RunSummary, b: RunSummary) => {
+      const dateA = a.cancelled_at || ''
+      const dateB = b.cancelled_at || ''
+      return dateB.localeCompare(dateA) // Latest first
+    })
 
   const handleNewRunClick = () => {
     newRunModal.open()
