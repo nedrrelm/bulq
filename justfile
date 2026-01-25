@@ -9,12 +9,22 @@ default:
 # Start development environment (supports --build, etc.)
 dev *args:
   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d {{args}}
-  @echo "\nDevelopment running at: http://localhost:1314"
+  @just links
 
 # Start production environment (supports --build, etc.)
 prod *args:
   docker compose -f docker-compose.yml -f deployment/docker-compose.prod.yml --env-file deployment/.env.prod up -d {{args}}
-  @echo "\nProduction running"
+  @just links
+
+# Show application URLs
+links:
+  #!/usr/bin/env bash
+  echo ""
+  echo "Application URLs:"
+  echo "  Frontend:  http://localhost:1314"
+  echo "  API docs:  http://localhost:1314/api/docs"
+  echo "  Health:    http://localhost:1314/api/health"
+  echo ""
 
 # View logs (works for both dev and prod)
 logs service="":
