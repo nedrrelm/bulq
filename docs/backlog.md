@@ -1,5 +1,15 @@
 # Backlog
 
+### Bugs
+
+1. sometimes users can't edit during adjusting (possibly when they pressed ready during planning)
+2. Can't make a new bid during adjusting on a product
+3. Allow leader to manage others' bids during adjusting
+
+### Features
+1. distribution groups
+
+
 Feature backlog and technical debt for Bulq development.
 
 ## 🚀 Critical: Production Readiness
