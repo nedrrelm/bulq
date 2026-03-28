@@ -432,6 +432,178 @@ class TestRunRoutes:
         response = ctx["client"].post(f"/runs/{run_id}/confirm")
         assert response.status_code == 200
 
+    def test_new_bid_on_surplus_product_during_adjusting(self, setup_run_context):
+        """Test that new bids are allowed on surplus (overbought) products during adjusting"""
+        ctx = setup_run_context
+        client = ctx["client"]
+
+        # Create run
+        run_response = client.post("/runs/create", json={
+            "group_id": ctx["group_id"],
+            "store_id": ctx["store_id"]
+        })
+        run_id = run_response.json()["id"]
+
+        # Place initial bid for 5 units
+        client.post(f"/runs/{run_id}/bids", json={
+            "product_id": ctx["product_id"],
+            "quantity": 5,
+            "interested_only": False
+        })
+
+        # Transition to shopping
+        client.post(f"/runs/{run_id}/toggle-ready")
+        client.post(f"/runs/{run_id}/confirm")
+        client.post(f"/runs/{run_id}/start-shopping")
+
+        # Mark product as purchased with MORE than requested (surplus scenario)
+        # Requested: 5, Purchased: 8 (surplus of 3)
+        shopping_items = client.get(f"/shopping/{run_id}/items").json()
+        item_id = shopping_items[0]["id"]
+        client.post(f"/shopping/{run_id}/items/{item_id}/mark-purchased", json={
+            "quantity": 8,
+            "price_per_unit": 10.0
+        })
+
+        # Complete shopping (should transition to adjusting because of surplus)
+        complete_response = client.post(f"/shopping/{run_id}/complete")
+        assert complete_response.status_code == 200
+
+        # Verify run is now in adjusting state
+        run_details = client.get(f"/runs/{run_id}").json()
+        assert run_details["state"] == "adjusting"
+
+        # Create a second user who didn't bid initially
+        client.post("/auth/logout")
+        client.post("/auth/register", json={
+            "name": "User2", "email": "user2@example.com", "password": "pass"
+        })
+        client.post("/auth/login", json={
+            "email": "user2@example.com", "password": "pass"
+        })
+
+        # Second user should be able to place NEW bid on surplus product
+        # (can claim up to 3 units from the surplus)
+        new_bid_response = client.post(f"/runs/{run_id}/bids", json={
+            "product_id": ctx["product_id"],
+            "quantity": 2,  # Claiming 2 out of 3 surplus units
+            "interested_only": False
+        })
+
+        assert new_bid_response.status_code == 200
+        assert new_bid_response.json()["quantity"] == 2
+
+    def test_new_bid_blocked_on_shortage_product_during_adjusting(self, setup_run_context):
+        """Test that new bids are blocked on shortage products during adjusting"""
+        ctx = setup_run_context
+        client = ctx["client"]
+
+        # Create run
+        run_response = client.post("/runs/create", json={
+            "group_id": ctx["group_id"],
+            "store_id": ctx["store_id"]
+        })
+        run_id = run_response.json()["id"]
+
+        # Place initial bid for 10 units
+        client.post(f"/runs/{run_id}/bids", json={
+            "product_id": ctx["product_id"],
+            "quantity": 10,
+            "interested_only": False
+        })
+
+        # Transition to shopping
+        client.post(f"/runs/{run_id}/toggle-ready")
+        client.post(f"/runs/{run_id}/confirm")
+        client.post(f"/runs/{run_id}/start-shopping")
+
+        # Mark product as purchased with LESS than requested (shortage scenario)
+        # Requested: 10, Purchased: 7 (shortage of 3)
+        shopping_items = client.get(f"/shopping/{run_id}/items").json()
+        item_id = shopping_items[0]["id"]
+        client.post(f"/shopping/{run_id}/items/{item_id}/mark-purchased", json={
+            "quantity": 7,
+            "price_per_unit": 10.0
+        })
+
+        # Complete shopping (should transition to adjusting because of shortage)
+        complete_response = client.post(f"/shopping/{run_id}/complete")
+        assert complete_response.status_code == 200
+
+        # Verify run is now in adjusting state
+        run_details = client.get(f"/runs/{run_id}").json()
+        assert run_details["state"] == "adjusting"
+
+        # Create a second user who didn't bid initially
+        client.post("/auth/logout")
+        client.post("/auth/register", json={
+            "name": "User2", "email": "user2@example.com", "password": "pass"
+        })
+        client.post("/auth/login", json={
+            "email": "user2@example.com", "password": "pass"
+        })
+
+        # Second user should NOT be able to place NEW bid on shortage product
+        new_bid_response = client.post(f"/runs/{run_id}/bids", json={
+            "product_id": ctx["product_id"],
+            "quantity": 1,
+            "interested_only": False
+        })
+
+        assert new_bid_response.status_code == 400
+        assert "surplus" in new_bid_response.json()["detail"].lower()
+
+    def test_new_bid_exceeds_surplus_during_adjusting(self, setup_run_context):
+        """Test that new bid cannot exceed available surplus during adjusting"""
+        ctx = setup_run_context
+        client = ctx["client"]
+
+        # Create run
+        run_response = client.post("/runs/create", json={
+            "group_id": ctx["group_id"],
+            "store_id": ctx["store_id"]
+        })
+        run_id = run_response.json()["id"]
+
+        # Place initial bid for 5 units
+        client.post(f"/runs/{run_id}/bids", json={
+            "product_id": ctx["product_id"],
+            "quantity": 5,
+            "interested_only": False
+        })
+
+        # Transition to shopping and create surplus
+        client.post(f"/runs/{run_id}/toggle-ready")
+        client.post(f"/runs/{run_id}/confirm")
+        client.post(f"/runs/{run_id}/start-shopping")
+
+        shopping_items = client.get(f"/shopping/{run_id}/items").json()
+        item_id = shopping_items[0]["id"]
+        client.post(f"/shopping/{run_id}/items/{item_id}/mark-purchased", json={
+            "quantity": 8,  # Surplus of 3
+            "price_per_unit": 10.0
+        })
+        client.post(f"/shopping/{run_id}/complete")
+
+        # Create second user
+        client.post("/auth/logout")
+        client.post("/auth/register", json={
+            "name": "User2", "email": "user2@example.com", "password": "pass"
+        })
+        client.post("/auth/login", json={
+            "email": "user2@example.com", "password": "pass"
+        })
+
+        # Try to bid for MORE than the surplus (should fail)
+        new_bid_response = client.post(f"/runs/{run_id}/bids", json={
+            "product_id": ctx["product_id"],
+            "quantity": 5,  # Trying to claim 5 but only 3 surplus available
+            "interested_only": False
+        })
+
+        assert new_bid_response.status_code == 400
+        assert "surplus" in new_bid_response.json()["detail"].lower()
+
 
 class TestShoppingRoutes:
     """Tests for shopping routes"""

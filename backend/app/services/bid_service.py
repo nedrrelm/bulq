@@ -322,13 +322,10 @@ class BidService(BaseService):
         # State-specific validation
         if run.state == RunState.ADJUSTING:
             if not existing_bid:
-                raise BadRequestError(
-                    code=CANNOT_BID_NEW_PRODUCT_IN_ADJUSTING,
-                    message='Cannot bid on new products in adjusting state',
-                    run_id=str(run.id),
-                    product_id=str(product_uuid),
-                )
-            self._validate_adjusting_bid(run.id, product_uuid, quantity, existing_bid)
+                # Check if product has surplus - new bids only allowed on surplus products
+                self._validate_new_bid_on_surplus(run.id, product_uuid, quantity)
+            else:
+                self._validate_adjusting_bid(run.id, product_uuid, quantity, existing_bid)
 
         return existing_bid
 
@@ -348,6 +345,72 @@ class BidService(BaseService):
                 max_products=MAX_PRODUCTS_PER_RUN,
                 current_products=len(unique_products),
             )
+
+    def _validate_new_bid_on_surplus(
+        self, run_id: UUID, product_uuid: UUID, quantity: float
+    ) -> None:
+        """Validate new bids during adjusting state - only allowed on surplus products.
+
+        Args:
+            run_id: Run UUID
+            product_uuid: Product UUID
+            quantity: Requested bid quantity
+
+        Raises:
+            BadRequestError: If product doesn't have surplus or quantity exceeds surplus
+        """
+        # Get shopping list to check if product has surplus
+        shopping_items = self.shopping_repo.get_shopping_list_items(run_id)
+        shopping_item = next(
+            (item for item in shopping_items if item.product_id == product_uuid), None
+        )
+
+        if not shopping_item:
+            raise BadRequestError(
+                code=BID_PRODUCT_NOT_IN_SHOPPING_LIST,
+                message='Product not in shopping list',
+                product_id=str(product_uuid),
+                run_id=str(run_id),
+            )
+
+        purchased_qty = shopping_item.purchased_quantity or 0
+        requested_qty = shopping_item.requested_quantity
+        difference = purchased_qty - requested_qty  # positive = surplus, negative = shortage
+
+        if difference <= 0:
+            # No surplus or shortage - cannot place new bids
+            raise BadRequestError(
+                code=CANNOT_BID_NEW_PRODUCT_IN_ADJUSTING,
+                message='Cannot place new bids during adjusting state on products without surplus. '
+                'New bids are only allowed on overbought products.',
+                run_id=str(run_id),
+                product_id=str(product_uuid),
+                purchased_quantity=purchased_qty,
+                requested_quantity=requested_qty,
+            )
+
+        # Surplus exists - validate quantity doesn't exceed available surplus
+        surplus = difference
+        if quantity > surplus:
+            raise BadRequestError(
+                code=BID_QUANTITY_EXCEEDS_PURCHASED,
+                message=f'Bid quantity ({quantity}) exceeds available surplus ({surplus}). '
+                f'Only {surplus} units are available from the overbought amount.',
+                quantity=quantity,
+                surplus=surplus,
+                purchased_quantity=purchased_qty,
+                requested_quantity=requested_qty,
+            )
+
+        logger.info(
+            'New bid allowed on surplus product during adjusting',
+            extra={
+                'run_id': str(run_id),
+                'product_id': str(product_uuid),
+                'quantity': quantity,
+                'surplus': surplus,
+            },
+        )
 
     def _validate_adjusting_bid(
         self, run_id: UUID, product_uuid: UUID, quantity: float, existing_bid: ProductBid
@@ -529,7 +592,7 @@ class BidService(BaseService):
             # Surplus scenario: cannot retract at all (need to increase bids, not reduce)
             raise BadRequestError(
                 code=BID_QUANTITY_EXCEEDS_PURCHASED,
-                message=f'Cannot retract bid when there is a surplus. Please increase your bid instead.',
+                message='Cannot retract bid when there is a surplus. Please increase your bid instead.',
                 current_quantity=current_bid.quantity,
             )
 

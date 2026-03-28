@@ -1098,7 +1098,7 @@ export default function RunPage() {
       <div className="products-section">
         <div className="products-header">
           <h3>{t('run:labels.products', { count: run.products.length })}</h3>
-          {((canBid && run.state !== 'adjusting') || (run.state === 'shopping' && (run.current_user_is_leader || run.helpers.includes(user?.id || '')))) && (
+          {(canBid || (run.state === 'shopping' && (run.current_user_is_leader || run.helpers.includes(user?.id || '')))) && (
             <button onClick={handleAddProduct} className="add-product-button">
               {t('run:actions.addProduct')}
             </button>
