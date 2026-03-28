@@ -1,7 +1,6 @@
 """Database product repository implementation."""
 
 from decimal import Decimal
-from typing import Any
 from uuid import UUID
 
 from sqlalchemy.orm import Session

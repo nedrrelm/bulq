@@ -4,7 +4,18 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.models import Group, LeaderReassignmentRequest, Notification, Product, ProductAvailability, ProductBid, Run, RunParticipation, Store, User, group_membership
+from app.core.models import (
+    Group,
+    LeaderReassignmentRequest,
+    Notification,
+    Product,
+    ProductAvailability,
+    ProductBid,
+    RunParticipation,
+    Store,
+    User,
+    group_membership,
+)
 from app.repositories.abstract.user import AbstractUserRepository
 
 
@@ -237,10 +248,7 @@ class DatabaseUserRepository(AbstractUserRepository):
         # Find all groups where old user is admin
         old_user_admin_groups = (
             self.db.query(group_membership.c.group_id)
-            .filter(
-                group_membership.c.user_id == old_user_id,
-                group_membership.c.is_group_admin == True
-            )
+            .filter(group_membership.c.user_id == old_user_id, group_membership.c.is_group_admin)
             .all()
         )
 
@@ -254,7 +262,7 @@ class DatabaseUserRepository(AbstractUserRepository):
             self.db.query(group_membership)
             .filter(
                 group_membership.c.user_id == new_user_id,
-                group_membership.c.group_id.in_(group_ids)
+                group_membership.c.group_id.in_(group_ids),
             )
             .update({group_membership.c.is_group_admin: True}, synchronize_session=False)
         )
@@ -271,10 +279,7 @@ class DatabaseUserRepository(AbstractUserRepository):
         )
         overlapping_runs = (
             self.db.query(RunParticipation.run_id)
-            .filter(
-                RunParticipation.user_id == user2_id,
-                RunParticipation.run_id.in_(user1_runs)
-            )
+            .filter(RunParticipation.user_id == user2_id, RunParticipation.run_id.in_(user1_runs))
             .all()
         )
         return [run_id for (run_id,) in overlapping_runs]

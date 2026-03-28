@@ -482,7 +482,9 @@ class ShoppingService(BaseService):
         next_order = max_order + 1
 
         # Mark as purchased
-        item = self.shopping_repo.mark_item_purchased(item_uuid, quantity, price_per_unit, total, next_order)
+        item = self.shopping_repo.mark_item_purchased(
+            item_uuid, quantity, price_per_unit, total, next_order
+        )
         if not item:
             raise NotFoundError(
                 code=SHOPPING_LIST_ITEM_NOT_FOUND,
@@ -586,7 +588,9 @@ class ShoppingService(BaseService):
         new_price_per_unit = new_total / new_quantity if new_quantity > 0 else 0
 
         # Update the shopping list item
-        updated_item = self.shopping_repo.add_more_purchased(item_uuid, quantity, total, new_price_per_unit)
+        updated_item = self.shopping_repo.add_more_purchased(
+            item_uuid, quantity, total, new_price_per_unit
+        )
         if not updated_item:
             raise NotFoundError(
                 code=SHOPPING_LIST_ITEM_NOT_FOUND,
@@ -690,7 +694,9 @@ class ShoppingService(BaseService):
             )
 
         # Update the shopping list item
-        updated_item = self.shopping_repo.update_item_purchase(item_uuid, quantity, price_per_unit, total)
+        updated_item = self.shopping_repo.update_item_purchase(
+            item_uuid, quantity, price_per_unit, total
+        )
         if not updated_item:
             raise NotFoundError(
                 code=SHOPPING_LIST_ITEM_NOT_FOUND,

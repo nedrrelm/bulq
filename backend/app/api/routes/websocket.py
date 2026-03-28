@@ -5,7 +5,7 @@ from app.api.websocket_manager import manager
 from app.infrastructure.auth import get_session
 from app.infrastructure.database import get_db
 from app.infrastructure.request_context import get_logger
-from app.repositories import get_user_repository, get_group_repository, get_run_repository
+from app.repositories import get_group_repository, get_run_repository, get_user_repository
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -22,7 +22,7 @@ async def get_current_user_ws(
     if not session_data:
         raise HTTPException(status_code=401, detail='Invalid or expired session')
 
-    user_repo = get_user_repository(db); group_repo = get_group_repository(db); run_repo = get_run_repository(db)
+    user_repo = get_user_repository(db)
     user = user_repo.get_user_by_id(session_data['user_id'])
     if not user:
         raise HTTPException(status_code=401, detail='User not found')
@@ -45,7 +45,9 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
         # Try to get session token from cookie or query parameter
         session_token = None
 
-        logger.debug('WebSocket connection attempt', extra={'endpoint': 'group', 'group_id': group_id})
+        logger.debug(
+            'WebSocket connection attempt', extra={'endpoint': 'group', 'group_id': group_id}
+        )
 
         # Try cookie first
         if 'cookie' in websocket.headers:
@@ -71,7 +73,8 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
             await websocket.close(code=1008, reason='Invalid or expired session')
             return
 
-        user_repo = get_user_repository(db); group_repo = get_group_repository(db); run_repo = get_run_repository(db)
+        user_repo = get_user_repository(db)
+        group_repo = get_group_repository(db)
         user_id = session_data['user_id']
 
         # Convert to UUID if it's a string
@@ -82,7 +85,10 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
 
         user = user_repo.get_user_by_id(user_id)
         if not user:
-            logger.warning('WebSocket auth failed: User not found', extra={'user_id': str(user_id), 'group_id': group_id})
+            logger.warning(
+                'WebSocket auth failed: User not found',
+                extra={'user_id': str(user_id), 'group_id': group_id},
+            )
             await websocket.close(code=1008, reason='User not found')
             return
 
@@ -97,7 +103,10 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
 
         group = group_repo.get_group_by_id(group_id_uuid)
         if not group:
-            logger.warning('WebSocket auth failed: Group not found', extra={'user_id': str(user_id), 'group_id': group_id})
+            logger.warning(
+                'WebSocket auth failed: Group not found',
+                extra={'user_id': str(user_id), 'group_id': group_id},
+            )
             await websocket.close(code=1008, reason='Group not found')
             return
 
@@ -105,11 +114,17 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
         user_groups = user_repo.get_user_groups(user)
         is_member = any(g.id == group_id_uuid for g in user_groups)
         if not is_member:
-            logger.warning('WebSocket auth failed: Not a member', extra={'user_id': str(user_id), 'group_id': group_id})
+            logger.warning(
+                'WebSocket auth failed: Not a member',
+                extra={'user_id': str(user_id), 'group_id': group_id},
+            )
             await websocket.close(code=1008, reason='Not a member of this group')
             return
 
-        logger.info('WebSocket connected', extra={'user_id': str(user_id), 'group_id': group_id, 'endpoint': 'group'})
+        logger.info(
+            'WebSocket connected',
+            extra={'user_id': str(user_id), 'group_id': group_id, 'endpoint': 'group'},
+        )
 
         # Connect to room
         room_id = f'group:{group_id}'
@@ -176,7 +191,8 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
             await websocket.close(code=1008, reason='Invalid or expired session')
             return
 
-        user_repo = get_user_repository(db); group_repo = get_group_repository(db); run_repo = get_run_repository(db)
+        user_repo = get_user_repository(db)
+        run_repo = get_run_repository(db)
         user_id = session_data['user_id']
 
         # Convert to UUID if it's a string
@@ -187,7 +203,10 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
         user = user_repo.get_user_by_id(user_id)
         if not user:
-            logger.warning('WebSocket auth failed: User not found', extra={'user_id': str(user_id), 'run_id': str(run_id)})
+            logger.warning(
+                'WebSocket auth failed: User not found',
+                extra={'user_id': str(user_id), 'run_id': str(run_id)},
+            )
             await websocket.close(code=1008, reason='User not found')
             return
 
@@ -200,18 +219,27 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
         run = run_repo.get_run_by_id(run_id)
         if not run:
-            logger.warning('WebSocket auth failed: Run not found', extra={'user_id': str(user_id), 'run_id': str(run_id)})
+            logger.warning(
+                'WebSocket auth failed: Run not found',
+                extra={'user_id': str(user_id), 'run_id': str(run_id)},
+            )
             await websocket.close(code=1008, reason='Run not found')
             return
 
         # Check if user is in the group that owns this run
         user_groups = user_repo.get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
-            logger.warning('WebSocket auth failed: Not authorized', extra={'user_id': str(user_id), 'run_id': str(run_id)})
+            logger.warning(
+                'WebSocket auth failed: Not authorized',
+                extra={'user_id': str(user_id), 'run_id': str(run_id)},
+            )
             await websocket.close(code=1008, reason='Not authorized for this run')
             return
 
-        logger.info('WebSocket connected', extra={'user_id': str(user_id), 'run_id': str(run_id), 'endpoint': 'run'})
+        logger.info(
+            'WebSocket connected',
+            extra={'user_id': str(user_id), 'run_id': str(run_id), 'endpoint': 'run'},
+        )
 
         # Connect to room
         room_id = f'run:{run_id}'
@@ -278,7 +306,7 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
             await websocket.close(code=1008, reason='Invalid or expired session')
             return
 
-        user_repo = get_user_repository(db); group_repo = get_group_repository(db); run_repo = get_run_repository(db)
+        user_repo = get_user_repository(db)
         user_id = session_data['user_id']
 
         # Convert to UUID if it's a string
@@ -289,7 +317,10 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
 
         user = user_repo.get_user_by_id(user_id)
         if not user:
-            logger.warning('WebSocket auth failed: User not found', extra={'user_id': str(user_id), 'endpoint': 'user'})
+            logger.warning(
+                'WebSocket auth failed: User not found',
+                extra={'user_id': str(user_id), 'endpoint': 'user'},
+            )
             await websocket.close(code=1008, reason='User not found')
             return
 

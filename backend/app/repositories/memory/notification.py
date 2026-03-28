@@ -32,7 +32,9 @@ class MemoryNotificationRepository(AbstractNotificationRepository):
         self, user_id: UUID, limit: int = 20, offset: int = 0
     ) -> list[Notification]:
         """Get notifications for a user (paginated)."""
-        user_notifications = [n for n in self.storage.notifications.values() if n.user_id == user_id]
+        user_notifications = [
+            n for n in self.storage.notifications.values() if n.user_id == user_id
+        ]
         user_notifications.sort(
             key=lambda n: n.created_at or datetime.min.replace(tzinfo=UTC), reverse=True
         )
@@ -40,13 +42,17 @@ class MemoryNotificationRepository(AbstractNotificationRepository):
 
     def get_unread_notifications(self, user_id: UUID) -> list[Notification]:
         """Get all unread notifications for a user."""
-        unread = [n for n in self.storage.notifications.values() if n.user_id == user_id and not n.read]
+        unread = [
+            n for n in self.storage.notifications.values() if n.user_id == user_id and not n.read
+        ]
         unread.sort(key=lambda n: n.created_at, reverse=True)
         return unread
 
     def get_unread_count(self, user_id: UUID) -> int:
         """Get count of unread notifications for a user."""
-        return sum(1 for n in self.storage.notifications.values() if n.user_id == user_id and not n.read)
+        return sum(
+            1 for n in self.storage.notifications.values() if n.user_id == user_id and not n.read
+        )
 
     def mark_notification_as_read(self, notification_id: UUID) -> bool:
         """Mark a notification as read."""

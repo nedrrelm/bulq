@@ -41,7 +41,7 @@ def create_seed_data(db_session=None):
     test_user.is_admin = True
 
     # Additional users for testing merge functionality
-    david = user_repo.create_user('David Williams', 'david', 'hashed_password')
+    user_repo.create_user('David Williams', 'david', 'hashed_password')
     emily = user_repo.create_user('Emily Brown', 'emily', 'hashed_password')
     frank = user_repo.create_user('Frank Miller', 'frank', 'hashed_password')
 
@@ -73,10 +73,18 @@ def create_seed_data(db_session=None):
         'Kirkland Paper Towels 12-pack', brand='Kirkland', unit='pack'
     )
     rotisserie_chicken = product_repo.create_product('Rotisserie Chicken', unit='each')
-    almond_butter = product_repo.create_product('Kirkland Almond Butter', brand='Kirkland', unit='kg')
-    frozen_berries = product_repo.create_product('Organic Frozen Berry Mix', brand='Organic', unit='kg')
-    toilet_paper = product_repo.create_product('Charmin Ultra Soft 24-pack', brand='Charmin', unit='pack')
-    coffee_beans = product_repo.create_product('Kirkland Colombian Coffee', brand='Kirkland', unit='kg')
+    almond_butter = product_repo.create_product(
+        'Kirkland Almond Butter', brand='Kirkland', unit='kg'
+    )
+    frozen_berries = product_repo.create_product(
+        'Organic Frozen Berry Mix', brand='Organic', unit='kg'
+    )
+    toilet_paper = product_repo.create_product(
+        'Charmin Ultra Soft 24-pack', brand='Charmin', unit='pack'
+    )
+    coffee_beans = product_repo.create_product(
+        'Kirkland Colombian Coffee', brand='Kirkland', unit='kg'
+    )
     laundry_pods = product_repo.create_product('Tide Pods 81-count', brand='Tide', unit='pack')
     ground_beef = product_repo.create_product('93/7 Ground Beef 3lbs', unit='kg')
     bananas = product_repo.create_product('Organic Bananas 3lbs', brand='Organic', unit='kg')
@@ -84,30 +92,42 @@ def create_seed_data(db_session=None):
 
     # Create product availabilities (link products to stores with prices)
     # Olive Oil - multiple prices from 2 days ago (for confirmed run at Costco)
-    availability = product_repo.create_product_availability(olive_oil.id, costco.id, 24.99, 'aisle 12')
+    availability = product_repo.create_product_availability(
+        olive_oil.id, costco.id, 24.99, 'aisle 12'
+    )
     availability.created_at = datetime.now(UTC) - timedelta(days=2)
     availability.updated_at = datetime.now(UTC) - timedelta(days=2)
 
-    availability = product_repo.create_product_availability(olive_oil.id, costco.id, 23.99, 'end cap display')
+    availability = product_repo.create_product_availability(
+        olive_oil.id, costco.id, 23.99, 'end cap display'
+    )
     availability.created_at = datetime.now(UTC) - timedelta(days=2)
     availability.updated_at = datetime.now(UTC) - timedelta(days=2)
 
     # Quinoa - one price from yesterday (for confirmed run at Costco)
-    availability = product_repo.create_product_availability(quinoa.id, costco.id, 18.99, 'organic section')
+    availability = product_repo.create_product_availability(
+        quinoa.id, costco.id, 18.99, 'organic section'
+    )
     availability.created_at = datetime.now(UTC) - timedelta(days=1)
     availability.updated_at = datetime.now(UTC) - timedelta(days=1)
 
     # Paper Towels - prices from 5 days ago (for confirmed run at Costco)
-    availability = product_repo.create_product_availability(paper_towels.id, costco.id, 19.99, 'household')
+    availability = product_repo.create_product_availability(
+        paper_towels.id, costco.id, 19.99, 'household'
+    )
     availability.created_at = datetime.now(UTC) - timedelta(days=5)
     availability.updated_at = datetime.now(UTC) - timedelta(days=5)
 
-    availability = product_repo.create_product_availability(paper_towels.id, costco.id, 21.49, 'regular price')
+    availability = product_repo.create_product_availability(
+        paper_towels.id, costco.id, 21.49, 'regular price'
+    )
     availability.created_at = datetime.now(UTC) - timedelta(days=5)
     availability.updated_at = datetime.now(UTC) - timedelta(days=5)
 
     # Other Costco products
-    availability = product_repo.create_product_availability(rotisserie_chicken.id, costco.id, 4.99, 'deli section')
+    availability = product_repo.create_product_availability(
+        rotisserie_chicken.id, costco.id, 4.99, 'deli section'
+    )
     availability.created_at = datetime.now(UTC) - timedelta(days=1)
     availability.updated_at = datetime.now(UTC) - timedelta(days=1)
 
@@ -115,7 +135,9 @@ def create_seed_data(db_session=None):
     availability.created_at = datetime.now(UTC) - timedelta(days=3)
     availability.updated_at = datetime.now(UTC) - timedelta(days=3)
 
-    availability = product_repo.create_product_availability(almond_butter.id, costco.id, 10.49, 'clearance')
+    availability = product_repo.create_product_availability(
+        almond_butter.id, costco.id, 10.49, 'clearance'
+    )
     availability.created_at = datetime.now(UTC) - timedelta(days=3)
     availability.updated_at = datetime.now(UTC) - timedelta(days=3)
 
@@ -147,7 +169,9 @@ def create_seed_data(db_session=None):
     availability.created_at = datetime.now(UTC) - timedelta(days=2)
     availability.updated_at = datetime.now(UTC) - timedelta(days=2)
 
-    availability = product_repo.create_product_availability(ground_beef.id, sams.id, 17.98, 'higher price today')
+    availability = product_repo.create_product_availability(
+        ground_beef.id, sams.id, 17.98, 'higher price today'
+    )
     availability.created_at = datetime.now(UTC) - timedelta(days=2)
     availability.updated_at = datetime.now(UTC) - timedelta(days=2)
 
@@ -444,7 +468,9 @@ def create_seed_data(db_session=None):
     # Distributing run - items purchased, being distributed
     test_distributing_p = run_repo.get_participation(test_user.id, run_distributing.id)
     test_distributing_p.is_ready = True
-    alice_distributing_p = run_repo.create_participation(alice.id, run_distributing.id, is_leader=False)
+    alice_distributing_p = run_repo.create_participation(
+        alice.id, run_distributing.id, is_leader=False
+    )
     alice_distributing_p.is_ready = True
     bob_distributing_p = run_repo.create_participation(bob.id, run_distributing.id, is_leader=False)
     bob_distributing_p.is_ready = True
@@ -482,13 +508,17 @@ def create_seed_data(db_session=None):
     shopping_item6.purchased_quantity = 3
     shopping_item6.purchase_order = 1
 
-    shopping_item7 = shopping_repo.create_shopping_list_item(run_distributing.id, toilet_paper.id, 1)
+    shopping_item7 = shopping_repo.create_shopping_list_item(
+        run_distributing.id, toilet_paper.id, 1
+    )
     shopping_item7.is_purchased = True
     shopping_item7.purchased_price_per_unit = 22.99
     shopping_item7.purchased_quantity = 1
     shopping_item7.purchase_order = 2
 
-    shopping_item8 = shopping_repo.create_shopping_list_item(run_distributing.id, coffee_beans.id, 2)
+    shopping_item8 = shopping_repo.create_shopping_list_item(
+        run_distributing.id, coffee_beans.id, 2
+    )
     shopping_item8.is_purchased = True
     shopping_item8.purchased_price_per_unit = 14.99
     shopping_item8.purchased_quantity = 2
@@ -556,7 +586,9 @@ def create_seed_data(db_session=None):
     bob_completed_2_p.picked_up_at = datetime.now(UTC) - timedelta(days=29)
 
     # Add Frank to this completed run (for testing user merge)
-    frank_completed_2_p = run_repo.create_participation(frank.id, run_completed_2.id, is_leader=False)
+    frank_completed_2_p = run_repo.create_participation(
+        frank.id, run_completed_2.id, is_leader=False
+    )
     frank_completed_2_p.is_ready = True
     frank_completed_2_p.picked_up_at = datetime.now(UTC) - timedelta(days=29)
 
@@ -578,7 +610,9 @@ def create_seed_data(db_session=None):
     shopping_item11.purchased_quantity = 1
     shopping_item11.purchase_order = 1
 
-    shopping_item12 = shopping_repo.create_shopping_list_item(run_completed_2.id, paper_towels.id, 1)
+    shopping_item12 = shopping_repo.create_shopping_list_item(
+        run_completed_2.id, paper_towels.id, 1
+    )
     shopping_item12.is_purchased = True
     shopping_item12.purchased_price_per_unit = 19.99
     shopping_item12.purchased_quantity = 1
@@ -595,7 +629,9 @@ def create_seed_data(db_session=None):
     alice_completed_3_p.is_ready = True
     alice_completed_3_p.picked_up_at = datetime.now(UTC) - timedelta(days=44)
 
-    carol_completed_3_p = run_repo.create_participation(carol.id, run_completed_3.id, is_leader=False)
+    carol_completed_3_p = run_repo.create_participation(
+        carol.id, run_completed_3.id, is_leader=False
+    )
     carol_completed_3_p.is_ready = True
     carol_completed_3_p.picked_up_at = datetime.now(UTC) - timedelta(days=44)
 
@@ -629,7 +665,9 @@ def create_seed_data(db_session=None):
     bob_completed_5_p.is_ready = True
     bob_completed_5_p.picked_up_at = datetime.now(UTC) - timedelta(days=74)
 
-    carol_completed_5_p = run_repo.create_participation(carol.id, run_completed_5.id, is_leader=False)
+    carol_completed_5_p = run_repo.create_participation(
+        carol.id, run_completed_5.id, is_leader=False
+    )
     carol_completed_5_p.is_ready = True
     carol_completed_5_p.picked_up_at = datetime.now(UTC) - timedelta(days=74)
 

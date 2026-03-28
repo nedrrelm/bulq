@@ -55,11 +55,11 @@ class StructuredFormatter(logging.Formatter):
 
         # Determine level color (if terminal supports it)
         level_colors = {
-            'DEBUG': '\033[36m',    # Cyan
-            'INFO': '\033[32m',     # Green
+            'DEBUG': '\033[36m',  # Cyan
+            'INFO': '\033[32m',  # Green
             'WARNING': '\033[33m',  # Yellow
-            'ERROR': '\033[31m',    # Red
-            'CRITICAL': '\033[35m', # Magenta
+            'ERROR': '\033[31m',  # Red
+            'CRITICAL': '\033[35m',  # Magenta
         }
         reset_color = '\033[0m'
         level_color = level_colors.get(record.levelname, '')

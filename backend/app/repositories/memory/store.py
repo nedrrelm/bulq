@@ -16,7 +16,9 @@ class MemoryStoreRepository(AbstractStoreRepository):
 
     def search_stores(self, query: str) -> list[Store]:
         query_lower = query.lower()
-        return [store for store in self.storage.stores.values() if query_lower in store.name.lower()]
+        return [
+            store for store in self.storage.stores.values() if query_lower in store.name.lower()
+        ]
 
     def get_all_stores(self, limit: int = None, offset: int = 0) -> list[Store]:
         stores = list(self.storage.stores.values())

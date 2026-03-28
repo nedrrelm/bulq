@@ -25,7 +25,6 @@ from app.core.run_state import RunState, state_machine
 from app.core.success_codes import (
     ADJUSTING_FINISHED,
     READY_TOGGLED,
-    READY_TOGGLED_RUN_CONFIRMED,
     RUN_CANCELLED,
     RUN_FORCE_CONFIRMED,
     SHOPPING_STARTED,
@@ -622,15 +621,16 @@ class RunStateService(BaseService):
                 if total_requested < shopping_item.purchased_quantity:
                     surplus = shopping_item.purchased_quantity - total_requested
                     # Find the leader's bid for this product
-                    run = self.run_repo.get_run_by_id(run_id)
                     participations = self.run_repo.get_run_participations(run_id)
-                    leader_participation = next(
-                        (p for p in participations if p.is_leader), None
-                    )
+                    leader_participation = next((p for p in participations if p.is_leader), None)
                     if leader_participation:
                         leader_bid = next(
-                            (bid for bid in product_bids if bid.participation_id == leader_participation.id),
-                            None
+                            (
+                                bid
+                                for bid in product_bids
+                                if bid.participation_id == leader_participation.id
+                            ),
+                            None,
                         )
                         if leader_bid:
                             # Leader has a bid, add surplus to their bid quantity and allocation
@@ -641,7 +641,7 @@ class RunStateService(BaseService):
                                 shopping_item.product_id,
                                 new_quantity,
                                 leader_bid.interested_only,
-                                leader_bid.comment
+                                leader_bid.comment,
                             )
                             # Update distributed quantities
                             self.bid_repo.update_bid_distributed_quantities(
@@ -653,7 +653,10 @@ class RunStateService(BaseService):
                             )
                             logger.info(
                                 f'Assigned surplus to leader (existing bid): product={shopping_item.product_id}, surplus={surplus}, new_quantity={new_quantity}',
-                                extra={'run_id': str(run_id), 'leader_id': str(leader_participation.user_id)},
+                                extra={
+                                    'run_id': str(run_id),
+                                    'leader_id': str(leader_participation.user_id),
+                                },
                             )
                         else:
                             # Leader doesn't have a bid, create one with the surplus
@@ -662,7 +665,7 @@ class RunStateService(BaseService):
                                 shopping_item.product_id,
                                 surplus,
                                 False,  # not interested_only
-                                None    # no comment
+                                None,  # no comment
                             )
                             # Set distributed quantities for the new bid
                             self.bid_repo.update_bid_distributed_quantities(
@@ -674,5 +677,8 @@ class RunStateService(BaseService):
                             )
                             logger.info(
                                 f'Assigned surplus to leader (new bid): product={shopping_item.product_id}, surplus={surplus}',
-                                extra={'run_id': str(run_id), 'leader_id': str(leader_participation.user_id)},
+                                extra={
+                                    'run_id': str(run_id),
+                                    'leader_id': str(leader_participation.user_id),
+                                },
                             )

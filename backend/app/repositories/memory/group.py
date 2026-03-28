@@ -19,7 +19,9 @@ class MemoryGroupRepository(AbstractGroupRepository):
             # Set up relationships
             group.creator = self.storage.users.get(group.created_by)
             member_ids = self.storage.group_memberships.get(group_id, [])
-            group.members = [self.storage.users.get(uid) for uid in member_ids if uid in self.storage.users]
+            group.members = [
+                self.storage.users.get(uid) for uid in member_ids if uid in self.storage.users
+            ]
         return group
 
     def get_group_by_invite_token(self, invite_token: str) -> Group | None:
@@ -28,7 +30,9 @@ class MemoryGroupRepository(AbstractGroupRepository):
                 # Set up relationships
                 group.creator = self.storage.users.get(group.created_by)
                 member_ids = self.storage.group_memberships.get(group.id, [])
-                group.members = [self.storage.users.get(uid) for uid in member_ids if uid in self.storage.users]
+                group.members = [
+                    self.storage.users.get(uid) for uid in member_ids if uid in self.storage.users
+                ]
                 return group
         return None
 
@@ -53,7 +57,10 @@ class MemoryGroupRepository(AbstractGroupRepository):
         return group
 
     def add_group_member(self, group_id: UUID, user: User, is_group_admin: bool = False) -> bool:
-        if group_id in self.storage.group_memberships and user.id not in self.storage.group_memberships[group_id]:
+        if (
+            group_id in self.storage.group_memberships
+            and user.id not in self.storage.group_memberships[group_id]
+        ):
             self.storage.group_memberships[group_id].append(user.id)
             self.storage.group_admin_status[(group_id, user.id)] = is_group_admin
             return True
@@ -61,7 +68,10 @@ class MemoryGroupRepository(AbstractGroupRepository):
 
     def remove_group_member(self, group_id: UUID, user_id: UUID) -> bool:
         """Remove a user from a group."""
-        if group_id in self.storage.group_memberships and user_id in self.storage.group_memberships[group_id]:
+        if (
+            group_id in self.storage.group_memberships
+            and user_id in self.storage.group_memberships[group_id]
+        ):
             self.storage.group_memberships[group_id].remove(user_id)
             # Remove admin status
             key = (group_id, user_id)
@@ -86,7 +96,9 @@ class MemoryGroupRepository(AbstractGroupRepository):
                         'id': str(user.id),
                         'name': user.name,
                         'username': user.username,
-                        'is_group_admin': self.storage.group_admin_status.get((group_id, user_id), False),
+                        'is_group_admin': self.storage.group_admin_status.get(
+                            (group_id, user_id), False
+                        ),
                     }
                 )
         return members
@@ -103,7 +115,10 @@ class MemoryGroupRepository(AbstractGroupRepository):
 
     def set_group_member_admin(self, group_id: UUID, user_id: UUID, is_admin: bool) -> bool:
         """Set the admin status of a group member."""
-        if group_id in self.storage.group_memberships and user_id in self.storage.group_memberships[group_id]:
+        if (
+            group_id in self.storage.group_memberships
+            and user_id in self.storage.group_memberships[group_id]
+        ):
             self.storage.group_admin_status[(group_id, user_id)] = is_admin
             return True
         return False
@@ -115,6 +130,8 @@ class MemoryGroupRepository(AbstractGroupRepository):
             # Set up relationships
             group.creator = self.storage.users.get(group.created_by)
             member_ids = self.storage.group_memberships.get(group.id, [])
-            group.members = [self.storage.users.get(uid) for uid in member_ids if uid in self.storage.users]
+            group.members = [
+                self.storage.users.get(uid) for uid in member_ids if uid in self.storage.users
+            ]
             groups.append(group)
         return groups

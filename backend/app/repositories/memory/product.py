@@ -2,7 +2,6 @@
 
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any
 from uuid import UUID, uuid4
 
 from app.core.models import Product, ProductAvailability
@@ -28,7 +27,9 @@ class MemoryProductRepository(AbstractProductRepository):
     def search_products(self, query: str) -> list[Product]:
         query_lower = query.lower()
         return [
-            product for product in self.storage.products.values() if query_lower in product.name.lower()
+            product
+            for product in self.storage.products.values()
+            if query_lower in product.name.lower()
         ]
 
     def get_product_by_id(self, product_id: UUID) -> Product | None:

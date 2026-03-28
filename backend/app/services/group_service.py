@@ -290,7 +290,9 @@ class GroupService(BaseService):
                     confirmed_at=run.confirmed_at.isoformat() if run.confirmed_at else None,
                     shopping_at=run.shopping_at.isoformat() if run.shopping_at else None,
                     adjusting_at=run.adjusting_at.isoformat() if run.adjusting_at else None,
-                    distributing_at=run.distributing_at.isoformat() if run.distributing_at else None,
+                    distributing_at=run.distributing_at.isoformat()
+                    if run.distributing_at
+                    else None,
                     completed_at=run.completed_at.isoformat() if run.completed_at else None,
                     cancelled_at=run.cancelled_at.isoformat() if run.cancelled_at else None,
                 )
@@ -374,16 +376,16 @@ class GroupService(BaseService):
                     confirmed_at=run.confirmed_at.isoformat() if run.confirmed_at else None,
                     shopping_at=run.shopping_at.isoformat() if run.shopping_at else None,
                     adjusting_at=run.adjusting_at.isoformat() if run.adjusting_at else None,
-                    distributing_at=run.distributing_at.isoformat() if run.distributing_at else None,
+                    distributing_at=run.distributing_at.isoformat()
+                    if run.distributing_at
+                    else None,
                     completed_at=run.completed_at.isoformat() if run.completed_at else None,
                     cancelled_at=run.cancelled_at.isoformat() if run.cancelled_at else None,
                 )
             )
 
         # Sort by completed_at or cancelled_at descending (latest first)
-        run_responses.sort(
-            key=lambda r: r.completed_at or r.cancelled_at or '', reverse=True
-        )
+        run_responses.sort(key=lambda r: r.completed_at or r.cancelled_at or '', reverse=True)
 
         return run_responses
 

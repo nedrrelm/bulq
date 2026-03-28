@@ -97,7 +97,9 @@ class AbstractUserRepository(ABC):
     @abstractmethod
     def bulk_update_product_availability_creator(self, old_user_id: UUID, new_user_id: UUID) -> int:
         """Update product availability creator from old user to new user. Returns count of updated records."""
-        raise NotImplementedError('Subclass must implement bulk_update_product_availability_creator')
+        raise NotImplementedError(
+            'Subclass must implement bulk_update_product_availability_creator'
+        )
 
     @abstractmethod
     def bulk_update_notifications(self, old_user_id: UUID, new_user_id: UUID) -> int:

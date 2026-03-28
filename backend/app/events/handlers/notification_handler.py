@@ -20,7 +20,9 @@ class NotificationEventHandler:
     stored in the database.
     """
 
-    def __init__(self, notification_repo: "DatabaseNotificationRepository | MemoryNotificationRepository") -> None:
+    def __init__(
+        self, notification_repo: 'DatabaseNotificationRepository | MemoryNotificationRepository'
+    ) -> None:
         """Initialize handler with notification repository.
 
         Args:

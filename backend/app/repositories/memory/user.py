@@ -44,7 +44,9 @@ class MemoryUserRepository(AbstractUserRepository):
                     # Set up relationships for compatibility
                     group.creator = self.storage.users.get(group.created_by)
                     group.members = [
-                        self.storage.users.get(uid) for uid in member_ids if uid in self.storage.users
+                        self.storage.users.get(uid)
+                        for uid in member_ids
+                        if uid in self.storage.users
                     ]
                     user_groups.append(group)
         return user_groups
@@ -104,7 +106,9 @@ class MemoryUserRepository(AbstractUserRepository):
                 total_spent += float(bid.distributed_quantity * bid.distributed_price_per_unit)
 
         # Get runs participated count (distinct runs)
-        user_participations = [p for p in self.storage.participations.values() if p.user_id == user_id]
+        user_participations = [
+            p for p in self.storage.participations.values() if p.user_id == user_id
+        ]
         runs_participated = len({p.run_id for p in user_participations})
 
         # Get runs where user was helper
@@ -223,16 +227,21 @@ class MemoryUserRepository(AbstractUserRepository):
         # Find groups where old user is admin
         for group_id in list(self.storage.group_memberships.keys()):
             old_user_is_admin = self.storage.group_admin_status.get((group_id, old_user_id), False)
-            if old_user_is_admin:
-                # Check if new user is a member of this group
-                if new_user_id in self.storage.group_memberships.get(group_id, []):
-                    # Make new user admin in this group
-                    self.storage.group_admin_status[(group_id, new_user_id)] = True
-                    count += 1
+            # Check if old user is admin and new user is a member of this group
+            if old_user_is_admin and new_user_id in self.storage.group_memberships.get(
+                group_id, []
+            ):
+                # Make new user admin in this group
+                self.storage.group_admin_status[(group_id, new_user_id)] = True
+                count += 1
         return count
 
     def check_overlapping_run_participations(self, user1_id: UUID, user2_id: UUID) -> list[UUID]:
         """Check if two users participate in any of the same runs. Returns list of overlapping run IDs."""
-        user1_runs = {p.run_id for p in self.storage.participations.values() if p.user_id == user1_id}
-        user2_runs = {p.run_id for p in self.storage.participations.values() if p.user_id == user2_id}
+        user1_runs = {
+            p.run_id for p in self.storage.participations.values() if p.user_id == user1_id
+        }
+        user2_runs = {
+            p.run_id for p in self.storage.participations.values() if p.user_id == user2_id
+        }
         return list(user1_runs & user2_runs)

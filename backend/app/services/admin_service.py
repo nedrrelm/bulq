@@ -668,7 +668,9 @@ class AdminService(BaseService):
         products_verified = self.user_repo.bulk_update_product_verifier(source_id, target_id)
         stores_created = self.user_repo.bulk_update_store_creator(source_id, target_id)
         stores_verified = self.user_repo.bulk_update_store_verifier(source_id, target_id)
-        availabilities_count = self.user_repo.bulk_update_product_availability_creator(source_id, target_id)
+        availabilities_count = self.user_repo.bulk_update_product_availability_creator(
+            source_id, target_id
+        )
         notifications_count = self.user_repo.bulk_update_notifications(source_id, target_id)
         reassignments_from = self.user_repo.bulk_update_reassignment_from_user(source_id, target_id)
         reassignments_to = self.user_repo.bulk_update_reassignment_to_user(source_id, target_id)

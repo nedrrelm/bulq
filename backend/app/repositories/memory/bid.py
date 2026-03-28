@@ -18,7 +18,9 @@ class MemoryBidRepository(AbstractBidRepository):
     def get_bids_by_run(self, run_id: UUID) -> list[ProductBid]:
         participations = [p for p in self.storage.participations.values() if p.run_id == run_id]
         participation_ids = {p.id for p in participations}
-        return [bid for bid in self.storage.bids.values() if bid.participation_id in participation_ids]
+        return [
+            bid for bid in self.storage.bids.values() if bid.participation_id in participation_ids
+        ]
 
     def get_bids_by_run_with_participations(self, run_id: UUID) -> list[ProductBid]:
         """Get bids with participation and user data eagerly loaded to avoid N+1 queries."""

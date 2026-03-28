@@ -618,7 +618,9 @@ class RunService(BaseService):
             purchased_qty = shopping_list_map[product.id].purchased_quantity
 
         # Get product availability/price for this store
-        availability = self.product_repo.get_availability_by_product_and_store(product.id, run.store_id)
+        availability = self.product_repo.get_availability_by_product_and_store(
+            product.id, run.store_id
+        )
         current_price = str(availability.price) if availability and availability.price else None
 
         return ProductResponse(
