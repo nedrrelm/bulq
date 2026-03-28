@@ -8,6 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build --base=${VITE_BASE_PATH:-/}",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "type-check": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
