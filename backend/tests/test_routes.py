@@ -11,42 +11,42 @@ class TestAuthRoutes:
     def test_register_and_login_flow(self, client):
         """Test complete registration and login flow"""
         # Register
-        register_response = client.post("/auth/register", json={
+        register_response = client.post("/api/auth/register", json={
             "name": "Flow User",
-            "email": "flow@example.com",
+            "username": "flowuser",
             "password": "securepassword"
         })
         assert register_response.status_code == 200
 
         # Login
-        login_response = client.post("/auth/login", json={
-            "email": "flow@example.com",
+        login_response = client.post("/api/auth/login", json={
+            "username": "flowuser",
             "password": "securepassword"
         })
         assert login_response.status_code == 200
-        assert "session" in login_response.cookies
+        assert "session_token" in login_response.cookies
 
         # Get current user
-        me_response = client.get("/auth/me")
+        me_response = client.get("/api/auth/me")
         assert me_response.status_code == 200
-        assert me_response.json()["email"] == "flow@example.com"
+        assert me_response.json()["username"] == "flowuser"
 
     def test_logout_flow(self, client):
         """Test logout invalidates session"""
         # Register and login
-        client.post("/auth/register", json={
-            "name": "User", "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/register", json={
+            "name": "User", "username": "testuser", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "testuser", "password": "password123"
         })
 
         # Logout
-        logout_response = client.post("/auth/logout")
+        logout_response = client.post("/api/auth/logout")
         assert logout_response.status_code == 200
 
         # Try to access protected route
-        me_response = client.get("/auth/me")
+        me_response = client.get("/api/auth/me")
         assert me_response.status_code == 401
 
 
@@ -56,20 +56,20 @@ class TestGroupRoutes:
     @pytest.fixture
     def authenticated_user(self, client):
         """Create and authenticate a user"""
-        client.post("/auth/register", json={
+        client.post("/api/auth/register", json={
             "name": "Test User",
-            "email": "test@example.com",
+            "username": "testuser",
             "password": "password"
         })
-        client.post("/auth/login", json={
-            "email": "test@example.com",
+        client.post("/api/auth/login", json={
+            "username": "testuser",
             "password": "password"
         })
         return client
 
     def test_create_group(self, authenticated_user):
         """Test creating a new group"""
-        response = authenticated_user.post("/groups/create", json={
+        response = authenticated_user.post("/api/groups/create", json={
             "name": "Test Group"
         })
 
@@ -82,13 +82,13 @@ class TestGroupRoutes:
     def test_get_my_groups(self, authenticated_user):
         """Test getting user's groups"""
         # Create a group
-        create_response = authenticated_user.post("/groups/create", json={
+        create_response = authenticated_user.post("/api/groups/create", json={
             "name": "My Group"
         })
         group_id = create_response.json()["id"]
 
         # Get groups
-        response = authenticated_user.get("/groups/my-groups")
+        response = authenticated_user.get("/api/groups/my-groups")
         assert response.status_code == 200
 
         groups = response.json()
@@ -98,13 +98,13 @@ class TestGroupRoutes:
     def test_get_group_details(self, authenticated_user):
         """Test getting group details"""
         # Create group
-        create_response = authenticated_user.post("/groups/create", json={
+        create_response = authenticated_user.post("/api/groups/create", json={
             "name": "Detail Group"
         })
         group_id = create_response.json()["id"]
 
         # Get details
-        response = authenticated_user.get(f"/groups/{group_id}")
+        response = authenticated_user.get(f"/api/groups/{group_id}")
         assert response.status_code == 200
 
         data = response.json()
@@ -115,14 +115,14 @@ class TestGroupRoutes:
     def test_regenerate_invite_token(self, authenticated_user):
         """Test regenerating group invite token"""
         # Create group
-        create_response = authenticated_user.post("/groups/create", json={
+        create_response = authenticated_user.post("/api/groups/create", json={
             "name": "Token Group"
         })
         group_id = create_response.json()["id"]
         original_token = create_response.json()["invite_token"]
 
         # Regenerate token
-        response = authenticated_user.post(f"/groups/{group_id}/regenerate-invite")
+        response = authenticated_user.post(f"/api/groups/{group_id}/regenerate-invite")
         assert response.status_code == 200
 
         new_token = response.json()["invite_token"]
@@ -131,26 +131,26 @@ class TestGroupRoutes:
     def test_join_group_by_token(self, client):
         """Test joining group via invite token"""
         # Create first user and group
-        client.post("/auth/register", json={
-            "name": "Creator", "email": "creator@example.com", "password": "pass"
+        client.post("/api/auth/register", json={
+            "name": "Creator", "username": "creator", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "creator@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "creator", "password": "password123"
         })
-        create_response = client.post("/groups/create", json={"name": "Join Group"})
+        create_response = client.post("/api/groups/create", json={"name": "Join Group"})
         invite_token = create_response.json()["invite_token"]
-        client.post("/auth/logout")
+        client.post("/api/auth/logout")
 
         # Create second user
-        client.post("/auth/register", json={
-            "name": "Joiner", "email": "joiner@example.com", "password": "pass"
+        client.post("/api/auth/register", json={
+            "name": "Joiner", "username": "joiner", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "joiner@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "joiner", "password": "password123"
         })
 
         # Join group
-        response = client.post(f"/groups/join/{invite_token}")
+        response = client.post(f"/api/groups/join/{invite_token}")
         assert response.status_code == 200
 
 
@@ -160,20 +160,20 @@ class TestStoreRoutes:
     @pytest.fixture
     def authenticated_user(self, client):
         """Create and authenticate a user"""
-        client.post("/auth/register", json={
-            "name": "User", "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/register", json={
+            "name": "User", "username": "testuser", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "testuser", "password": "password123"
         })
         return client
 
     def test_get_all_stores(self, authenticated_user):
         """Test getting all stores"""
         # Create a store first
-        authenticated_user.post("/stores/create", json={"name": "Test Store"})
+        authenticated_user.post("/api/stores/create", json={"name": "Test Store"})
 
-        response = authenticated_user.get("/stores")
+        response = authenticated_user.get("/api/stores")
         assert response.status_code == 200
 
         stores = response.json()
@@ -181,7 +181,7 @@ class TestStoreRoutes:
 
     def test_create_store(self, authenticated_user):
         """Test creating a store"""
-        response = authenticated_user.post("/stores/create", json={
+        response = authenticated_user.post("/api/stores/create", json={
             "name": "New Store"
         })
 
@@ -197,20 +197,20 @@ class TestProductRoutes:
     @pytest.fixture
     def authenticated_user_with_store(self, client):
         """Create authenticated user and a store"""
-        client.post("/auth/register", json={
-            "name": "User", "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/register", json={
+            "name": "User", "username": "testuser", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "testuser", "password": "password123"
         })
-        store_response = client.post("/stores/create", json={"name": "Test Store"})
+        store_response = client.post("/api/stores/create", json={"name": "Test Store"})
         return client, store_response.json()["id"]
 
     def test_create_product(self, authenticated_user_with_store):
         """Test creating a product"""
         client, store_id = authenticated_user_with_store
 
-        response = client.post("/products/create", json={
+        response = client.post("/api/products/create", json={
             "store_id": store_id,
             "name": "Test Product",
             "base_price": 29.99
@@ -226,15 +226,15 @@ class TestProductRoutes:
         client, store_id = authenticated_user_with_store
 
         # Create products
-        client.post("/products/create", json={
+        client.post("/api/products/create", json={
             "store_id": store_id, "name": "Olive Oil", "base_price": 15.99
         })
-        client.post("/products/create", json={
+        client.post("/api/products/create", json={
             "store_id": store_id, "name": "Coconut Oil", "base_price": 12.99
         })
 
         # Search
-        response = client.get("/products/search?query=oil")
+        response = client.get("/api/products/search?query=oil")
         assert response.status_code == 200
 
         results = response.json()
@@ -245,13 +245,13 @@ class TestProductRoutes:
         client, store_id = authenticated_user_with_store
 
         # Create product
-        create_response = client.post("/products/create", json={
+        create_response = client.post("/api/products/create", json={
             "store_id": store_id, "name": "Detail Product", "base_price": 19.99
         })
         product_id = create_response.json()["id"]
 
         # Get details
-        response = client.get(f"/products/{product_id}")
+        response = client.get(f"/api/products/{product_id}")
         assert response.status_code == 200
 
         data = response.json()
@@ -265,16 +265,16 @@ class TestRunRoutes:
     @pytest.fixture
     def setup_run_context(self, client):
         """Setup user, group, store, and product"""
-        client.post("/auth/register", json={
-            "name": "User", "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/register", json={
+            "name": "User", "username": "testuser", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "testuser", "password": "password123"
         })
 
-        group_response = client.post("/groups/create", json={"name": "Test Group"})
-        store_response = client.post("/stores/create", json={"name": "Test Store"})
-        product_response = client.post("/products/create", json={
+        group_response = client.post("/api/groups/create", json={"name": "Test Group"})
+        store_response = client.post("/api/stores/create", json={"name": "Test Store"})
+        product_response = client.post("/api/products/create", json={
             "store_id": store_response.json()["id"],
             "name": "Test Product",
             "base_price": 19.99
@@ -438,53 +438,53 @@ class TestRunRoutes:
         client = ctx["client"]
 
         # Create run
-        run_response = client.post("/runs/create", json={
+        run_response = client.post("/api/runs/create", json={
             "group_id": ctx["group_id"],
             "store_id": ctx["store_id"]
         })
         run_id = run_response.json()["id"]
 
         # Place initial bid for 5 units
-        client.post(f"/runs/{run_id}/bids", json={
+        client.post(f"/api/runs/{run_id}/bids", json={
             "product_id": ctx["product_id"],
             "quantity": 5,
             "interested_only": False
         })
 
         # Transition to shopping
-        client.post(f"/runs/{run_id}/toggle-ready")
-        client.post(f"/runs/{run_id}/confirm")
-        client.post(f"/runs/{run_id}/start-shopping")
+        client.post(f"/api/runs/{run_id}/toggle-ready")
+        client.post(f"/api/runs/{run_id}/confirm")
+        client.post(f"/api/runs/{run_id}/start-shopping")
 
         # Mark product as purchased with MORE than requested (surplus scenario)
         # Requested: 5, Purchased: 8 (surplus of 3)
-        shopping_items = client.get(f"/shopping/{run_id}/items").json()
+        shopping_items = client.get(f"/api/shopping/{run_id}/items").json()
         item_id = shopping_items[0]["id"]
-        client.post(f"/shopping/{run_id}/items/{item_id}/mark-purchased", json={
+        client.post(f"/api/shopping/{run_id}/items/{item_id}/mark-purchased", json={
             "quantity": 8,
             "price_per_unit": 10.0
         })
 
         # Complete shopping (should transition to adjusting because of surplus)
-        complete_response = client.post(f"/shopping/{run_id}/complete")
+        complete_response = client.post(f"/api/shopping/{run_id}/complete")
         assert complete_response.status_code == 200
 
         # Verify run is now in adjusting state
-        run_details = client.get(f"/runs/{run_id}").json()
+        run_details = client.get(f"/api/runs/{run_id}").json()
         assert run_details["state"] == "adjusting"
 
         # Create a second user who didn't bid initially
-        client.post("/auth/logout")
-        client.post("/auth/register", json={
-            "name": "User2", "email": "user2@example.com", "password": "pass"
+        client.post("/api/auth/logout")
+        client.post("/api/auth/register", json={
+            "name": "User2", "username": "user2", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user2@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "user2", "password": "password123"
         })
 
         # Second user should be able to place NEW bid on surplus product
         # (can claim up to 3 units from the surplus)
-        new_bid_response = client.post(f"/runs/{run_id}/bids", json={
+        new_bid_response = client.post(f"/api/runs/{run_id}/bids", json={
             "product_id": ctx["product_id"],
             "quantity": 2,  # Claiming 2 out of 3 surplus units
             "interested_only": False
@@ -499,52 +499,52 @@ class TestRunRoutes:
         client = ctx["client"]
 
         # Create run
-        run_response = client.post("/runs/create", json={
+        run_response = client.post("/api/runs/create", json={
             "group_id": ctx["group_id"],
             "store_id": ctx["store_id"]
         })
         run_id = run_response.json()["id"]
 
         # Place initial bid for 10 units
-        client.post(f"/runs/{run_id}/bids", json={
+        client.post(f"/api/runs/{run_id}/bids", json={
             "product_id": ctx["product_id"],
             "quantity": 10,
             "interested_only": False
         })
 
         # Transition to shopping
-        client.post(f"/runs/{run_id}/toggle-ready")
-        client.post(f"/runs/{run_id}/confirm")
-        client.post(f"/runs/{run_id}/start-shopping")
+        client.post(f"/api/runs/{run_id}/toggle-ready")
+        client.post(f"/api/runs/{run_id}/confirm")
+        client.post(f"/api/runs/{run_id}/start-shopping")
 
         # Mark product as purchased with LESS than requested (shortage scenario)
         # Requested: 10, Purchased: 7 (shortage of 3)
-        shopping_items = client.get(f"/shopping/{run_id}/items").json()
+        shopping_items = client.get(f"/api/shopping/{run_id}/items").json()
         item_id = shopping_items[0]["id"]
-        client.post(f"/shopping/{run_id}/items/{item_id}/mark-purchased", json={
+        client.post(f"/api/shopping/{run_id}/items/{item_id}/mark-purchased", json={
             "quantity": 7,
             "price_per_unit": 10.0
         })
 
         # Complete shopping (should transition to adjusting because of shortage)
-        complete_response = client.post(f"/shopping/{run_id}/complete")
+        complete_response = client.post(f"/api/shopping/{run_id}/complete")
         assert complete_response.status_code == 200
 
         # Verify run is now in adjusting state
-        run_details = client.get(f"/runs/{run_id}").json()
+        run_details = client.get(f"/api/runs/{run_id}").json()
         assert run_details["state"] == "adjusting"
 
         # Create a second user who didn't bid initially
-        client.post("/auth/logout")
-        client.post("/auth/register", json={
-            "name": "User2", "email": "user2@example.com", "password": "pass"
+        client.post("/api/auth/logout")
+        client.post("/api/auth/register", json={
+            "name": "User2", "username": "user2", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user2@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "user2", "password": "password123"
         })
 
         # Second user should NOT be able to place NEW bid on shortage product
-        new_bid_response = client.post(f"/runs/{run_id}/bids", json={
+        new_bid_response = client.post(f"/api/runs/{run_id}/bids", json={
             "product_id": ctx["product_id"],
             "quantity": 1,
             "interested_only": False
@@ -559,43 +559,43 @@ class TestRunRoutes:
         client = ctx["client"]
 
         # Create run
-        run_response = client.post("/runs/create", json={
+        run_response = client.post("/api/runs/create", json={
             "group_id": ctx["group_id"],
             "store_id": ctx["store_id"]
         })
         run_id = run_response.json()["id"]
 
         # Place initial bid for 5 units
-        client.post(f"/runs/{run_id}/bids", json={
+        client.post(f"/api/runs/{run_id}/bids", json={
             "product_id": ctx["product_id"],
             "quantity": 5,
             "interested_only": False
         })
 
         # Transition to shopping and create surplus
-        client.post(f"/runs/{run_id}/toggle-ready")
-        client.post(f"/runs/{run_id}/confirm")
-        client.post(f"/runs/{run_id}/start-shopping")
+        client.post(f"/api/runs/{run_id}/toggle-ready")
+        client.post(f"/api/runs/{run_id}/confirm")
+        client.post(f"/api/runs/{run_id}/start-shopping")
 
-        shopping_items = client.get(f"/shopping/{run_id}/items").json()
+        shopping_items = client.get(f"/api/shopping/{run_id}/items").json()
         item_id = shopping_items[0]["id"]
-        client.post(f"/shopping/{run_id}/items/{item_id}/mark-purchased", json={
+        client.post(f"/api/shopping/{run_id}/items/{item_id}/mark-purchased", json={
             "quantity": 8,  # Surplus of 3
             "price_per_unit": 10.0
         })
-        client.post(f"/shopping/{run_id}/complete")
+        client.post(f"/api/shopping/{run_id}/complete")
 
         # Create second user
-        client.post("/auth/logout")
-        client.post("/auth/register", json={
-            "name": "User2", "email": "user2@example.com", "password": "pass"
+        client.post("/api/auth/logout")
+        client.post("/api/auth/register", json={
+            "name": "User2", "username": "user2", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user2@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "user2", "password": "password123"
         })
 
         # Try to bid for MORE than the surplus (should fail)
-        new_bid_response = client.post(f"/runs/{run_id}/bids", json={
+        new_bid_response = client.post(f"/api/runs/{run_id}/bids", json={
             "product_id": ctx["product_id"],
             "quantity": 5,  # Trying to claim 5 but only 3 surplus available
             "interested_only": False
@@ -611,22 +611,22 @@ class TestShoppingRoutes:
     @pytest.fixture
     def setup_shopping_context(self, client):
         """Setup complete context for shopping"""
-        client.post("/auth/register", json={
-            "name": "User", "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/register", json={
+            "name": "User", "username": "testuser", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "testuser", "password": "password123"
         })
 
-        group_response = client.post("/groups/create", json={"name": "Test Group"})
-        store_response = client.post("/stores/create", json={"name": "Test Store"})
-        product_response = client.post("/products/create", json={
+        group_response = client.post("/api/groups/create", json={"name": "Test Group"})
+        store_response = client.post("/api/stores/create", json={"name": "Test Store"})
+        product_response = client.post("/api/products/create", json={
             "store_id": store_response.json()["id"],
             "name": "Test Product",
             "base_price": 19.99
         })
 
-        run_response = client.post("/runs/create", json={
+        run_response = client.post("/api/runs/create", json={
             "group_id": group_response.json()["id"],
             "store_id": store_response.json()["id"]
         })
@@ -665,22 +665,22 @@ class TestDistributionRoutes:
     @pytest.fixture
     def setup_distribution_context(self, client):
         """Setup context for distribution testing"""
-        client.post("/auth/register", json={
-            "name": "User", "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/register", json={
+            "name": "User", "username": "testuser", "password": "password123"
         })
-        client.post("/auth/login", json={
-            "email": "user@example.com", "password": "pass"
+        client.post("/api/auth/login", json={
+            "username": "testuser", "password": "password123"
         })
 
-        group_response = client.post("/groups/create", json={"name": "Test Group"})
-        store_response = client.post("/stores/create", json={"name": "Test Store"})
-        product_response = client.post("/products/create", json={
+        group_response = client.post("/api/groups/create", json={"name": "Test Group"})
+        store_response = client.post("/api/stores/create", json={"name": "Test Store"})
+        product_response = client.post("/api/products/create", json={
             "store_id": store_response.json()["id"],
             "name": "Test Product",
             "base_price": 19.99
         })
 
-        run_response = client.post("/runs/create", json={
+        run_response = client.post("/api/runs/create", json={
             "group_id": group_response.json()["id"],
             "store_id": store_response.json()["id"]
         })
@@ -709,12 +709,12 @@ class TestUnauthorizedAccess:
 
     def test_groups_require_auth(self, client):
         """Test that group routes require authentication"""
-        response = client.get("/groups/my-groups")
+        response = client.get("/api/groups/my-groups")
         assert response.status_code == 401
 
     def test_runs_require_auth(self, client):
         """Test that run routes require authentication"""
-        response = client.post("/runs/create", json={
+        response = client.post("/api/runs/create", json={
             "group_id": "fake-id",
             "store_id": "fake-id"
         })
@@ -722,5 +722,5 @@ class TestUnauthorizedAccess:
 
     def test_products_require_auth(self, client):
         """Test that product routes require authentication"""
-        response = client.get("/products/search?query=test")
+        response = client.get("/api/products/search?query=test")
         assert response.status_code == 401
