@@ -1,10 +1,6 @@
-"""
-Tests for WebSocket functionality and ConnectionManager.
-"""
-import pytest
-from fastapi.testclient import TestClient
+"""Tests for WebSocket functionality and ConnectionManager."""
+
 from app.api.websocket_manager import ConnectionManager, manager
-import json
 
 
 class TestConnectionManager:
@@ -17,15 +13,15 @@ class TestConnectionManager:
 
     def test_room_creation_on_connect(self):
         """Test that connecting creates a room"""
-        cm = ConnectionManager()
-        room_id = "test-room-123"
+        _cm = ConnectionManager()
+        _room_id = 'test-room-123'
 
         # Simulate connection
         class MockWebSocket:
             async def accept(self):
                 pass
 
-        ws = MockWebSocket()
+        _ws = MockWebSocket()
 
         # Note: In real test, we'd use async test framework
         # This is a simplified version showing the logic
@@ -33,7 +29,7 @@ class TestConnectionManager:
     def test_disconnect_removes_connection(self):
         """Test that disconnect removes connection from room"""
         cm = ConnectionManager()
-        room_id = "test-room-123"
+        room_id = 'test-room-123'
 
         class MockWebSocket:
             pass
@@ -51,7 +47,7 @@ class TestConnectionManager:
     def test_disconnect_cleans_empty_rooms(self):
         """Test that empty rooms are cleaned up"""
         cm = ConnectionManager()
-        room_id = "test-room-123"
+        room_id = 'test-room-123'
 
         class MockWebSocket:
             pass
@@ -79,7 +75,7 @@ class TestConnectionManager:
             pass
 
         ws = MockWebSocket()
-        cm.disconnect(ws, "nonexistent-room")  # Should not raise
+        cm.disconnect(ws, 'nonexistent-room')  # Should not raise
 
     def test_global_manager_exists(self):
         """Test that global manager instance exists"""
@@ -252,12 +248,12 @@ class TestWebSocketMessageFormats:
 
     def test_message_includes_timestamp(self):
         """Test that all broadcast messages include timestamp"""
-        cm = ConnectionManager()
-        message = {"type": "test", "data": "value"}
+        _cm = ConnectionManager()
+        message = {'type': 'test', 'data': 'value'}
 
         # Note: This requires async testing to actually validate
         # Just documenting the expected behavior
-        assert "timestamp" not in message  # Before sending
+        assert 'timestamp' not in message  # Before sending
         # After sending, message should have timestamp added
 
     def test_message_is_valid_json(self):

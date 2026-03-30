@@ -21,7 +21,7 @@ class NotificationEventHandler:
     """
 
     def __init__(
-        self, notification_repo: 'DatabaseNotificationRepository | MemoryNotificationRepository'
+        self, notification_repo: DatabaseNotificationRepository | MemoryNotificationRepository
     ) -> None:
         """Initialize handler with notification repository.
 

@@ -1,17 +1,17 @@
 repos:
-  # Python: Ruff via UV (automatically uses backend/pyproject.toml or setup/pyproject.toml)
+  # Python: Ruff via UV (checks all Python files)
   - repo: local
     hooks:
-      - id: ruff-check
-        name: Ruff Linter
-        entry: uvx ruff check --fix
+      - id: ruff-format
+        name: Ruff Format
+        entry: uvx ruff format
         language: system
         types: [python]
         require_serial: true
 
-      - id: ruff-format
-        name: Ruff Format
-        entry: uvx ruff format
+      - id: ruff-check
+        name: Ruff Linter
+        entry: uvx ruff check --fix
         language: system
         types: [python]
         require_serial: true
@@ -22,33 +22,6 @@ repos:
         language: system
         types: [python]
         files: ^backend/
-        pass_filenames: false
-
-  # Frontend: ESLint (via npm, already installed)
-  - repo: local
-    hooks:
-      - id: eslint
-        name: ESLint
-        entry: docker compose exec -T frontend npm run lint:fix
-        language: system
-        types_or: [javascript, jsx, ts, tsx]
-        files: ^frontend/
-        pass_filenames: false
-
-      - id: typescript-check
-        name: TypeScript Check
-        entry: docker compose exec -T frontend npm run type-check
-        language: system
-        types_or: [ts, tsx]
-        files: ^frontend/
-        pass_filenames: false
-
-      - id: frontend-tests
-        name: Frontend Unit Tests
-        entry: just test-front
-        language: system
-        types_or: [ts, tsx, javascript, jsx]
-        files: ^frontend/
         pass_filenames: false
 
   # Basic file checks (built-in, no installation needed)

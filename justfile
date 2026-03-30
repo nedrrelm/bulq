@@ -44,16 +44,12 @@ ps:
 
 # Lint and format backend Python code
 lint:
-  docker compose exec backend uv run --extra dev ruff format app/
-  docker compose exec backend uv run --extra dev ruff check app/ --fix
+  docker compose exec backend uv run --extra dev ruff format .
+  docker compose exec backend uv run --extra dev ruff check . --fix
 
 # Run backend tests
 test *args:
   docker compose exec -T -e TESTING=1 backend uv run --extra dev pytest {{args}}
-
-# Run frontend tests (excludes integration tests by default)
-test-front *args:
-  docker compose exec -T frontend npm test -- --run --exclude='**/integration/**' {{args}}
 
 # Run frontend type checking and linting
 check:

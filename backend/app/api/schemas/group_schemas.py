@@ -1,6 +1,6 @@
 """Schemas for group-related requests and responses."""
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CreateGroupRequest(BaseModel):
@@ -40,8 +40,7 @@ class GroupResponse(BaseModel):
     active_runs: list[RunSummary]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CreateGroupResponse(BaseModel):
@@ -75,8 +74,7 @@ class RunResponse(BaseModel):
     completed_at: str | None
     cancelled_at: str | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GroupDetailResponse(BaseModel):

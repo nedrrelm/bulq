@@ -1,9 +1,9 @@
 """Error response models for consistent API error responses."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ErrorDetail(BaseModel):
@@ -30,14 +30,12 @@ class ErrorResponse(BaseModel):
     )
     details: dict[str, Any] = Field(default_factory=dict, description='Additional error context')
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description='When the error occurred'
+        default_factory=lambda: datetime.now(UTC), description='When the error occurred'
     )
     path: str | None = Field(None, description='Request path that caused the error')
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'success': False,
                 'error': 'NotFoundError',
@@ -50,6 +48,7 @@ class ErrorResponse(BaseModel):
                 'path': '/api/runs/123e4567-e89b-12d3-a456-426614174000',
             }
         }
+    )
 
 
 class ValidationErrorResponse(ErrorResponse):
@@ -57,10 +56,8 @@ class ValidationErrorResponse(ErrorResponse):
 
     errors: list[ErrorDetail] = Field(default_factory=list, description='List of validation errors')
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'success': False,
                 'error': 'ValidationError',
@@ -76,3 +73,4 @@ class ValidationErrorResponse(ErrorResponse):
                 'path': '/runs/123/bids',
             }
         }
+    )

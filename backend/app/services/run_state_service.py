@@ -53,7 +53,7 @@ logger = get_logger(__name__)
 class RunStateService(BaseService):
     """Service for managing run state transitions."""
 
-    def __init__(self, db: Session, notification_service: 'RunNotificationService | None' = None):
+    def __init__(self, db: Session, notification_service: RunNotificationService | None = None):
         """Initialize service with database session.
 
         Args:
@@ -68,7 +68,7 @@ class RunStateService(BaseService):
         self.user_repo = get_user_repository(db)
         self._notification_service = notification_service
 
-    def set_notification_service(self, notification_service: 'RunNotificationService') -> None:
+    def set_notification_service(self, notification_service: RunNotificationService) -> None:
         """Set the notification service (for dependency injection after creation).
 
         Args:
@@ -162,14 +162,14 @@ class RunStateService(BaseService):
                 run_id=run_id,
             )
 
-        # Check if run is in active state
-        if run.state != RunState.ACTIVE:
+        # Check if run is in planning or active state
+        if run.state not in (RunState.PLANNING, RunState.ACTIVE):
             raise BadRequestError(
                 code=RUN_NOT_IN_ACTIVE_STATE,
-                message=f'Run must be in active state to confirm, currently in {run.state}',
+                message=f'Run must be in planning or active state to confirm, currently in {run.state}',
                 run_id=run_id,
                 current_state=run.state,
-                required_state=RunState.ACTIVE.value,
+                required_states='planning, active',
             )
 
         # Transition to confirmed state

@@ -1,6 +1,6 @@
 """Schemas for store-related requests and responses."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StoreResponse(BaseModel):
@@ -9,8 +9,7 @@ class StoreResponse(BaseModel):
     id: str
     name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CreateStoreRequest(BaseModel):
@@ -28,8 +27,7 @@ class StoreProductResponse(BaseModel):
     unit: str | None
     current_price: str | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StoreRunResponse(BaseModel):
@@ -43,8 +41,7 @@ class StoreRunResponse(BaseModel):
     leader_name: str
     planned_on: str | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StorePageResponse(BaseModel):

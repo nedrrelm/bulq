@@ -1,23 +1,22 @@
-"""
-Pytest configuration and shared fixtures for testing.
-"""
+"""Pytest configuration and shared fixtures for testing."""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
-from app.infrastructure.database import get_db
 from app.core.models import Base
-from app.infrastructure.auth import sessions  # Import sessions dict to clear between tests
+from app.infrastructure.database import get_db
+from app.infrastructure.session_store import InMemorySessionStore
+from app.main import app
 
 # Use in-memory SQLite for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+SQLALCHEMY_DATABASE_URL = 'sqlite:///:memory:'
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    connect_args={'check_same_thread': False},
     poolclass=StaticPool,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -36,10 +35,10 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def db():
-    """
-    Create fresh database for each test.
+    """Create fresh database for each test.
+
     Creates all tables before test and drops them after.
     """
     Base.metadata.create_all(bind=engine)
@@ -47,24 +46,25 @@ def db():
     Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def db_session(db):
-    """
-    Provide a database session for tests that need direct database access.
-    """
+    """Provide a database session for tests that need direct database access."""
     session = TestingSessionLocal()
     yield session
     session.close()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def client(db):
-    """
-    Provide a test client for making HTTP requests.
+    """Provide a test client for making HTTP requests.
+
     Automatically handles database setup/teardown via db fixture.
     """
-    # Clear sessions before each test
-    sessions.clear()
+    # Ensure we're using InMemorySessionStore for tests
+    import app.infrastructure.session_store as session_store_module
+
+    test_store = InMemorySessionStore()
+    session_store_module._session_store = test_store
 
     # Ensure clean database state
     Base.metadata.drop_all(bind=engine)
@@ -74,45 +74,44 @@ def client(db):
         yield c
 
     # Clear sessions after each test
-    sessions.clear()
+    if hasattr(test_store, 'sessions'):
+        test_store.sessions.clear()
 
 
 @pytest.fixture
 def authenticated_client(client):
-    """
-    Provide a test client with an authenticated user.
+    """Provide a test client with an authenticated user.
+
     Useful for tests that require authentication.
     """
-    # Register and login a user with unique email to avoid conflicts with seed data
-    client.post("/auth/register", json={
-        "name": "Authenticated Test User",
-        "email": "authenticated@test.com",
-        "password": "testpassword123"
-    })
-    client.post("/auth/login", json={
-        "email": "authenticated@test.com",
-        "password": "testpassword123"
-    })
+    # Register and login a user with unique username to avoid conflicts with seed data
+    client.post(
+        '/api/auth/register',
+        json={
+            'name': 'Authenticated Test User',
+            'username': 'authtest',
+            'password': 'testpassword123',
+        },
+    )
+    client.post('/api/auth/login', json={'username': 'authtest', 'password': 'testpassword123'})
 
     yield client
 
     # Logout after test
-    client.post("/auth/logout")
+    client.post('/api/auth/logout')
 
 
 @pytest.fixture
 def sample_user(db_session):
-    """
-    Create a sample user for testing.
+    """Create a sample user for testing.
+
     Returns the user object.
     """
     from app.core.models import User
     from app.infrastructure.auth import hash_password
 
     user = User(
-        name="Sample User",
-        email="sample@example.com",
-        password_hash=hash_password("password123")
+        name='Sample User', username='sampleuser', password_hash=hash_password('password123')
     )
     db_session.add(user)
     db_session.commit()
@@ -123,16 +122,14 @@ def sample_user(db_session):
 
 @pytest.fixture
 def sample_group(db_session, sample_user):
-    """
-    Create a sample group with the sample user as creator and member.
+    """Create a sample group with the sample user as creator and member.
+
     Returns the group object.
     """
     from app.core.models import Group, GroupMembership
 
     group = Group(
-        name="Sample Group",
-        created_by=sample_user.id,
-        invite_token="sample_invite_token_123"
+        name='Sample Group', created_by=sample_user.id, invite_token='sample_invite_token_123'
     )
     db_session.add(group)
     db_session.commit()
@@ -148,13 +145,13 @@ def sample_group(db_session, sample_user):
 
 @pytest.fixture
 def sample_store(db_session):
-    """
-    Create a sample store for testing.
+    """Create a sample store for testing.
+
     Returns the store object.
     """
     from app.core.models import Store
 
-    store = Store(name="Sample Store")
+    store = Store(name='Sample Store')
     db_session.add(store)
     db_session.commit()
     db_session.refresh(store)
@@ -164,18 +161,15 @@ def sample_store(db_session):
 
 @pytest.fixture
 def sample_product(db_session, sample_store):
-    """
-    Create a sample product for testing.
+    """Create a sample product for testing.
+
     Returns the product object.
     """
-    from app.core.models import Product
     from decimal import Decimal
 
-    product = Product(
-        store_id=sample_store.id,
-        name="Sample Product",
-        base_price=Decimal("19.99")
-    )
+    from app.core.models import Product
+
+    product = Product(store_id=sample_store.id, name='Sample Product', base_price=Decimal('19.99'))
     db_session.add(product)
     db_session.commit()
     db_session.refresh(product)
@@ -185,25 +179,18 @@ def sample_product(db_session, sample_store):
 
 @pytest.fixture
 def sample_run(db_session, sample_group, sample_store, sample_user):
-    """
-    Create a sample run with participation for testing.
+    """Create a sample run with participation for testing.
+
     Returns tuple of (run, participation).
     """
     from app.core.models import Run, RunParticipation
 
-    run = Run(
-        group_id=sample_group.id,
-        store_id=sample_store.id,
-        state="planning"
-    )
+    run = Run(group_id=sample_group.id, store_id=sample_store.id, state='planning')
     db_session.add(run)
     db_session.commit()
 
     participation = RunParticipation(
-        user_id=sample_user.id,
-        run_id=run.id,
-        is_leader=True,
-        is_ready=False
+        user_id=sample_user.id, run_id=run.id, is_leader=True, is_ready=False
     )
     db_session.add(participation)
     db_session.commit()
@@ -215,57 +202,53 @@ def sample_run(db_session, sample_group, sample_store, sample_user):
 
 
 @pytest.fixture
-def complete_test_setup(db_session, sample_user, sample_group, sample_store, sample_product, sample_run):
-    """
-    Provide a complete test setup with all entities created.
+def complete_test_setup(
+    db_session, sample_user, sample_group, sample_store, sample_product, sample_run
+):
+    """Provide a complete test setup with all entities created.
+
     Returns a dictionary with all entities.
     """
     run, participation = sample_run
 
     return {
-        "user": sample_user,
-        "group": sample_group,
-        "store": sample_store,
-        "product": sample_product,
-        "run": run,
-        "participation": participation,
-        "db_session": db_session
+        'user': sample_user,
+        'group': sample_group,
+        'store': sample_store,
+        'product': sample_product,
+        'run': run,
+        'participation': participation,
+        'db_session': db_session,
     }
 
 
 # Hooks for test execution
 
+
 def pytest_configure(config):
-    """
-    Configure pytest with custom markers.
-    """
+    """Configure pytest with custom markers."""
     config.addinivalue_line(
-        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+        'markers', 'slow: marks tests as slow (deselect with \'-m "not slow"\')'
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "unit: marks tests as unit tests"
-    )
-    config.addinivalue_line(
-        "markers", "websocket: marks tests that require WebSocket support"
-    )
+    config.addinivalue_line('markers', 'integration: marks tests as integration tests')
+    config.addinivalue_line('markers', 'unit: marks tests as unit tests')
+    config.addinivalue_line('markers', 'websocket: marks tests that require WebSocket support')
 
 
 def pytest_collection_modifyitems(config, items):
-    """
-    Automatically mark tests based on their location or name.
-    """
+    """Automatically mark tests based on their location or name."""
     for item in items:
         # Mark integration tests
-        if "test_routes" in str(item.fspath):
+        if 'test_routes' in str(item.fspath):
             item.add_marker(pytest.mark.integration)
 
         # Mark unit tests
-        if any(name in str(item.fspath) for name in ["test_models", "test_repository", "test_state_machine"]):
+        if any(
+            name in str(item.fspath)
+            for name in ['test_models', 'test_repository', 'test_state_machine']
+        ):
             item.add_marker(pytest.mark.unit)
 
         # Mark websocket tests
-        if "websocket" in item.nodeid.lower():
+        if 'websocket' in item.nodeid.lower():
             item.add_marker(pytest.mark.websocket)

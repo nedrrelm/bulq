@@ -30,6 +30,14 @@ SECURE_COOKIES = os.getenv('SECURE_COOKIES', 'false').lower() == 'true'
 if IS_PRODUCTION and not SECURE_COOKIES:
     raise RuntimeError('SECURE_COOKIES must be true in production (requires HTTPS)!')
 
+# Redis configuration (for session storage)
+REDIS_URL = os.getenv('REDIS_URL')
+SESSION_STORE_TYPE: Literal['redis', 'memory'] = os.getenv('SESSION_STORE_TYPE', 'redis')  # type: ignore
+
+# Validate Redis in production
+if IS_PRODUCTION and SESSION_STORE_TYPE == 'redis' and not REDIS_URL:
+    raise RuntimeError('REDIS_URL must be set when SESSION_STORE_TYPE=redis in production!')
+
 # CORS configuration
 ALLOWED_ORIGINS_RAW = os.getenv('ALLOWED_ORIGINS', '')
 

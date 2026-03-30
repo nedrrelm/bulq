@@ -172,15 +172,8 @@ async def startup_event():
             logger.error(f'Failed to create seed data: {e}', exc_info=True)
             raise
 
-    # Start background task for session cleanup
-    from .infrastructure.auth import cleanup_expired_sessions
+    # Start background task for database pool monitoring
     from .infrastructure.database import log_pool_status
-
-    async def session_cleanup_loop():
-        """Periodically clean up expired sessions to prevent memory leak."""
-        while True:
-            await asyncio.sleep(3600)  # Run every hour
-            cleanup_expired_sessions()
 
     async def pool_monitoring_loop():
         """Periodically log connection pool statistics."""
@@ -188,8 +181,13 @@ async def startup_event():
             await asyncio.sleep(300)  # Log every 5 minutes
             log_pool_status()
 
-    create_background_task(session_cleanup_loop(), task_name='session_cleanup_loop')
     create_background_task(pool_monitoring_loop(), task_name='pool_monitoring_loop')
+
+    # Initialize session store
+    from .infrastructure.session_store import init_session_store
+
+    init_session_store()
+    logger.info('📦 Session store initialized')
 
 
 @app.get('/')

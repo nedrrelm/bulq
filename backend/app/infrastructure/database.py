@@ -146,7 +146,7 @@ def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """Dependency to get database session."""
     db = SessionLocal()
     try:

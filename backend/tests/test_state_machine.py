@@ -1,7 +1,7 @@
-"""
-Tests for run state machine logic and business rules.
-"""
+"""Tests for run state machine logic and business rules."""
+
 import pytest
+
 from app.core.run_state import RunState, RunStateMachine, state_machine
 
 
@@ -107,8 +107,9 @@ class TestRunStateMachine:
         sm = RunStateMachine()
         transitions = sm.get_valid_transitions(RunState.PLANNING)
         assert RunState.ACTIVE in transitions
+        assert RunState.CONFIRMED in transitions
         assert RunState.CANCELLED in transitions
-        assert len(transitions) == 2
+        assert len(transitions) == 3
 
     def test_get_valid_transitions_active(self):
         """Test getting valid transitions from active state"""
@@ -162,21 +163,21 @@ class TestRunStateMachine:
 
     def test_validate_transition_failure(self):
         """Test validate_transition with invalid transition"""
+        from app.core.exceptions import BadRequestError
+
         sm = RunStateMachine()
-        with pytest.raises(ValueError) as exc:
+        with pytest.raises(BadRequestError) as exc:
             sm.validate_transition(RunState.PLANNING, RunState.SHOPPING)
-        assert "Invalid state transition" in str(exc.value)
+        assert 'Invalid state transition' in str(exc.value)
 
     def test_validate_transition_with_run_id(self):
         """Test validate_transition includes run_id in error"""
+        from app.core.exceptions import BadRequestError
+
         sm = RunStateMachine()
-        with pytest.raises(ValueError) as exc:
-            sm.validate_transition(
-                RunState.PLANNING,
-                RunState.COMPLETED,
-                run_id="test-run-123"
-            )
-        assert "Invalid state transition" in str(exc.value)
+        with pytest.raises(BadRequestError) as exc:
+            sm.validate_transition(RunState.PLANNING, RunState.COMPLETED, run_id='test-run-123')
+        assert 'Invalid state transition' in str(exc.value)
 
     def test_get_state_description(self):
         """Test getting state descriptions"""
@@ -187,9 +188,9 @@ class TestRunStateMachine:
 
     def test_state_enum_string_conversion(self):
         """Test that RunState enum can be used as string"""
-        assert str(RunState.PLANNING) == "planning"
-        assert str(RunState.ACTIVE) == "active"
-        assert str(RunState.COMPLETED) == "completed"
+        assert str(RunState.PLANNING) == 'planning'
+        assert str(RunState.ACTIVE) == 'active'
+        assert str(RunState.COMPLETED) == 'completed'
 
     def test_singleton_state_machine(self):
         """Test that singleton state_machine is available"""
@@ -277,7 +278,7 @@ class TestRunStateBusinessLogic:
             description = sm.get_state_description(state)
             assert description is not None
             assert len(description) > 0
-            assert description != "Unknown state"
+            assert description != 'Unknown state'
 
     def test_all_states_have_transition_rules(self):
         """Test that all states have defined transition rules"""

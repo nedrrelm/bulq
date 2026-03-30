@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
@@ -16,7 +16,7 @@ class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         # Base log data
         log_data = {
-            'timestamp': datetime.utcfromtimestamp(record.created).isoformat() + 'Z',
+            'timestamp': datetime.fromtimestamp(record.created, UTC).isoformat(),
             'level': record.levelname,
             'logger': record.name,
             'message': record.getMessage(),
@@ -51,7 +51,7 @@ class StructuredFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         # Format timestamp in a more readable way
-        timestamp = datetime.utcfromtimestamp(record.created).strftime('%H:%M:%S')
+        timestamp = datetime.fromtimestamp(record.created, UTC).strftime('%H:%M:%S')
 
         # Determine level color (if terminal supports it)
         level_colors = {
@@ -175,7 +175,7 @@ class LogContext:
         self.context = kwargs
         self.old_factory = None
 
-    def __enter__(self) -> 'LogContext':
+    def __enter__(self) -> LogContext:
         old_factory = logging.getLogRecordFactory()
         self.old_factory = old_factory
 

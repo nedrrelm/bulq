@@ -1,111 +1,91 @@
-import pytest
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from app.core.models import User, Group, Store, Product, Run, ProductBid, Base
+from app.core.models import Group, Product, ProductBid, Run, Store, User
 
 
-def test_user_creation(db):
-    from app.infrastructure.database import engine
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = SessionLocal()
-
-    user = User(name="Model Test User", email="modeltest@example.com", password_hash="hashed_password")
-    session.add(user)
-    session.commit()
+def test_user_creation(db_session):
+    user = User(name='Model Test User', username='modeltest', password_hash='hashed_password')
+    db_session.add(user)
+    db_session.commit()
 
     assert user.id is not None
-    assert user.name == "Model Test User"
-    assert user.email == "modeltest@example.com"
-
-    session.close()
+    assert user.name == 'Model Test User'
+    assert user.username == 'modeltest'
 
 
-def test_group_creation(db):
-    from app.infrastructure.database import engine
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = SessionLocal()
+def test_group_creation(db_session):
+    user = User(name='Group Creator', username='groupcreator', password_hash='hashed_password')
+    db_session.add(user)
+    db_session.commit()
 
-    user = User(name="Group Creator", email="groupcreator@example.com", password_hash="hashed_password")
-    session.add(user)
-    session.commit()
-
-    group = Group(name="Model Test Group", created_by=user.id)
-    session.add(group)
-    session.commit()
+    group = Group(name='Model Test Group', created_by=user.id)
+    db_session.add(group)
+    db_session.commit()
 
     assert group.id is not None
-    assert group.name == "Model Test Group"
+    assert group.name == 'Model Test Group'
     assert group.created_by == user.id
 
-    session.close()
 
+def test_store_and_product_creation(db_session):
+    from decimal import Decimal
 
-def test_store_and_product_creation(db):
-    from app.infrastructure.database import engine
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = SessionLocal()
+    from app.core.models import ProductAvailability
 
-    store = Store(name="Test Store")
-    session.add(store)
-    session.commit()
+    store = Store(name='Test Store')
+    db_session.add(store)
+    db_session.commit()
 
-    product = Product(
-        store_id=store.id,
-        name="Test Product",
-        base_price=29.99
+    product = Product(name='Test Product')
+    db_session.add(product)
+    db_session.commit()
+
+    # Create product availability at the store with price
+    availability = ProductAvailability(
+        product_id=product.id, store_id=store.id, price=Decimal('29.99')
     )
-    session.add(product)
-    session.commit()
+    db_session.add(availability)
+    db_session.commit()
 
     assert store.id is not None
-    assert product.store_id == store.id
-    assert float(product.base_price) == 29.99
+    assert product.id is not None
+    assert availability.price == Decimal('29.99')
+    assert availability.store_id == store.id
+    assert availability.product_id == product.id
 
-    session.close()
 
-
-def test_product_bid_creation(db):
-    from app.infrastructure.database import engine
+def test_product_bid_creation(db_session):
     from app.core.models import RunParticipation
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = SessionLocal()
 
     # Create required entities
-    user = User(name="Bid User", email="biduser@example.com", password_hash="hashed_password")
-    creator = User(name="Bid Creator", email="bidcreator@example.com", password_hash="hashed_password")
-    store = Store(name="Bid Test Store")
-    session.add_all([user, creator, store])
-    session.commit()
+    user = User(name='Bid User', username='biduser', password_hash='hashed_password')
+    creator = User(name='Bid Creator', username='bidcreator', password_hash='hashed_password')
+    store = Store(name='Bid Test Store')
+    db_session.add_all([user, creator, store])
+    db_session.commit()
 
-    group = Group(name="Bid Test Group", created_by=creator.id)
-    session.add(group)
-    session.commit()
+    group = Group(name='Bid Test Group', created_by=creator.id)
+    db_session.add(group)
+    db_session.commit()
 
-    product = Product(store_id=store.id, name="Bid Test Product", base_price=19.99)
-    session.add(product)
-    session.commit()
+    product = Product(name='Bid Test Product')
+    db_session.add(product)
+    db_session.commit()
 
-    run = Run(group_id=group.id, store_id=store.id, state="planning")
-    session.add(run)
-    session.commit()
+    run = Run(group_id=group.id, store_id=store.id, state='planning')
+    db_session.add(run)
+    db_session.commit()
 
     # Create participation for user
     participation = RunParticipation(user_id=user.id, run_id=run.id, is_leader=False)
-    session.add(participation)
-    session.commit()
+    db_session.add(participation)
+    db_session.commit()
 
     # Create product bid (using participation_id instead of user_id)
     bid = ProductBid(
-        participation_id=participation.id,
-        product_id=product.id,
-        quantity=5,
-        interested_only=False
+        participation_id=participation.id, product_id=product.id, quantity=5, interested_only=False
     )
-    session.add(bid)
-    session.commit()
+    db_session.add(bid)
+    db_session.commit()
 
     assert bid.id is not None
     assert bid.quantity == 5
     assert bid.interested_only is False
-
-    session.close()

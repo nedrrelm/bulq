@@ -3,7 +3,7 @@
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CreateRunRequest(BaseModel):
@@ -24,8 +24,7 @@ class CreateRunResponse(BaseModel):
     store_name: str
     leader_name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlaceBidRequest(BaseModel):
@@ -46,8 +45,7 @@ class UserBidResponse(BaseModel):
     interested_only: bool
     comment: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductResponse(BaseModel):
@@ -64,8 +62,7 @@ class ProductResponse(BaseModel):
     current_user_bid: UserBidResponse | None
     purchased_quantity: float | None = None  # For adjusting state
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ParticipantResponse(BaseModel):
@@ -78,8 +75,7 @@ class ParticipantResponse(BaseModel):
     is_ready: bool = False
     is_removed: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RunDetailResponse(BaseModel):
@@ -100,8 +96,7 @@ class RunDetailResponse(BaseModel):
     leader_name: str
     helpers: list[str] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StateChangeResponse(BaseModel):
@@ -155,8 +150,7 @@ class AvailableProductResponse(BaseModel):
     current_price: str | None
     has_store_availability: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlaceBidResponse(BaseModel):

@@ -84,8 +84,10 @@ class MemoryUserRepository(AbstractUserRepository):
         return True
 
     def verify_password(self, password: str, stored_hash: str) -> bool:
-        # In memory mode, accept any password for ease of testing
-        return True
+        # Use the same verification as database mode
+        from app.infrastructure.auth import verify_password as verify_pw
+
+        return verify_pw(password, stored_hash)
 
     def get_user_stats(self, user_id: UUID) -> dict:
         """Get user statistics including runs, bids, and spending."""

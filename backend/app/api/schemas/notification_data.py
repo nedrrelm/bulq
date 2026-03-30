@@ -8,7 +8,7 @@ All notification data should contain only raw data (IDs, names, values, states)
 without any pre-formatted messages.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RunStateChangedData(BaseModel):
@@ -23,10 +23,8 @@ class RunStateChangedData(BaseModel):
     new_state: str = Field(..., description='New state of the run')
     group_id: str = Field(..., description='ID of the group this run belongs to')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'run_id': '123e4567-e89b-12d3-a456-426614174000',
                 'store_name': 'Costco Downtown',
@@ -35,6 +33,7 @@ class RunStateChangedData(BaseModel):
                 'group_id': '123e4567-e89b-12d3-a456-426614174001',
             }
         }
+    )
 
 
 class LeaderReassignmentRequestData(BaseModel):
@@ -49,10 +48,8 @@ class LeaderReassignmentRequestData(BaseModel):
     request_id: str = Field(..., description='ID of the reassignment request')
     store_name: str = Field(..., description='Name of the store for this run')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'run_id': '123e4567-e89b-12d3-a456-426614174000',
                 'from_user_id': '123e4567-e89b-12d3-a456-426614174002',
@@ -61,6 +58,7 @@ class LeaderReassignmentRequestData(BaseModel):
                 'store_name': 'Costco Downtown',
             }
         }
+    )
 
 
 class LeaderReassignmentAcceptedData(BaseModel):
@@ -74,10 +72,8 @@ class LeaderReassignmentAcceptedData(BaseModel):
     new_leader_name: str = Field(..., description='Name of the new leader')
     store_name: str = Field(..., description='Name of the store for this run')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'run_id': '123e4567-e89b-12d3-a456-426614174000',
                 'new_leader_id': '123e4567-e89b-12d3-a456-426614174004',
@@ -85,6 +81,7 @@ class LeaderReassignmentAcceptedData(BaseModel):
                 'store_name': 'Costco Downtown',
             }
         }
+    )
 
 
 class LeaderReassignmentDeclinedData(BaseModel):
@@ -98,10 +95,8 @@ class LeaderReassignmentDeclinedData(BaseModel):
     declined_by_name: str = Field(..., description='Name of the user who declined')
     store_name: str = Field(..., description='Name of the store for this run')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'run_id': '123e4567-e89b-12d3-a456-426614174000',
                 'declined_by_id': '123e4567-e89b-12d3-a456-426614174004',
@@ -109,6 +104,7 @@ class LeaderReassignmentDeclinedData(BaseModel):
                 'store_name': 'Costco Downtown',
             }
         }
+    )
 
 
 # WebSocket message data models
@@ -127,10 +123,8 @@ class BidUpdatedData(BaseModel):
     interested_only: bool = Field(..., description='Whether bid is interest-only')
     new_total: float = Field(..., description='New total quantity for product')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'product_id': '123e4567-e89b-12d3-a456-426614174000',
                 'user_id': '123e4567-e89b-12d3-a456-426614174001',
@@ -140,6 +134,7 @@ class BidUpdatedData(BaseModel):
                 'new_total': 15.0,
             }
         }
+    )
 
 
 class BidRetractedData(BaseModel):
@@ -152,16 +147,15 @@ class BidRetractedData(BaseModel):
     user_id: str = Field(..., description='ID of the user who retracted the bid')
     new_total: float = Field(..., description='New total quantity for product')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'product_id': '123e4567-e89b-12d3-a456-426614174000',
                 'user_id': '123e4567-e89b-12d3-a456-426614174001',
                 'new_total': 10.0,
             }
         }
+    )
 
 
 class ReadyToggledData(BaseModel):
@@ -173,15 +167,14 @@ class ReadyToggledData(BaseModel):
     user_id: str = Field(..., description='ID of the user who toggled ready')
     is_ready: bool = Field(..., description='New ready status')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'user_id': '123e4567-e89b-12d3-a456-426614174001',
                 'is_ready': True,
             }
         }
+    )
 
 
 class StateChangedData(BaseModel):
@@ -193,15 +186,14 @@ class StateChangedData(BaseModel):
     run_id: str = Field(..., description='ID of the run')
     new_state: str = Field(..., description='New state of the run')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'run_id': '123e4567-e89b-12d3-a456-426614174000',
                 'new_state': 'confirmed',
             }
         }
+    )
 
 
 class RunCreatedData(BaseModel):
@@ -216,10 +208,8 @@ class RunCreatedData(BaseModel):
     state: str = Field(..., description='Initial state of the run')
     leader_name: str = Field(..., description='Name of the run leader')
 
-    class Config:
-        """Pydantic config."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'run_id': '123e4567-e89b-12d3-a456-426614174000',
                 'store_id': '123e4567-e89b-12d3-a456-426614174005',
@@ -228,3 +218,4 @@ class RunCreatedData(BaseModel):
                 'leader_name': 'John Doe',
             }
         }
+    )

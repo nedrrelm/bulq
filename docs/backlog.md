@@ -33,10 +33,7 @@ These items must be completed before production deployment.
    - Need automated backup to cloud storage
    - Need monitoring/alerting for backup failures
 
-3. **Replace in-memory sessions with Redis** (2-3 days) - **CRITICAL**
-   - Current: Sessions stored in Python dict at `app/infrastructure/auth.py:12`
-   - Impact: Cannot scale horizontally, session loss on restart
-   - Risk: Production blocker - acknowledged in code comment
+3. Dynamic front container + linters and tests
 
 4. **Add CSRF protection** (1 day)
    - No CSRF tokens in cookie-based auth
@@ -46,10 +43,6 @@ These items must be completed before production deployment.
 5. **Add database indices** (1 day)
    - Tables: Run (group_id, state), RunParticipation (run_id, user_id), ProductBid (participation_id)
    - Impact: Slow queries, N+1 problems
-
-6. **Fix containers running as root** (2 hours)
-   - Both backend and frontend Dockerfiles lack non-root user
-   - Security: Containers should use non-root users
 
 7. **Add .dockerignore files** (15 minutes) ⚡ **QUICK WIN**
    - Backend and frontend missing .dockerignore

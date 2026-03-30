@@ -1,11 +1,13 @@
 """Tests for event bus functionality."""
 
 import asyncio
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from app.events.event_bus import EventBus
-from app.events.domain_events import BidPlacedEvent, RunCreatedEvent
+from unittest.mock import AsyncMock
 from uuid import uuid4
+
+import pytest
+
+from app.events.domain_events import BidPlacedEvent, RunCreatedEvent
+from app.events.event_bus import EventBus
 
 
 @pytest.fixture
@@ -30,7 +32,7 @@ async def test_subscribe_and_emit(event_bus):
         run_id=uuid4(),
         product_id=uuid4(),
         user_id=uuid4(),
-        user_name="Test User",
+        user_name='Test User',
         quantity=5.0,
         interested_only=False,
         new_total=10.0,
@@ -58,9 +60,9 @@ async def test_multiple_handlers_for_same_event(event_bus):
         run_id=uuid4(),
         group_id=uuid4(),
         store_id=uuid4(),
-        store_name="Test Store",
-        state="planning",
-        leader_name="Test Leader",
+        store_name='Test Store',
+        state='planning',
+        leader_name='Test Leader',
     )
     event_bus.emit(event)
 
@@ -87,7 +89,7 @@ def test_emit_with_no_subscribers(event_bus):
         run_id=uuid4(),
         product_id=uuid4(),
         user_id=uuid4(),
-        user_name="Test User",
+        user_name='Test User',
         quantity=5.0,
         interested_only=False,
         new_total=10.0,

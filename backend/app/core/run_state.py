@@ -1,6 +1,6 @@
 """Run state machine for managing run state transitions."""
 
-from enum import Enum
+from enum import StrEnum
 
 from app.core import error_codes
 from app.core.exceptions import BadRequestError
@@ -9,7 +9,7 @@ from app.infrastructure.request_context import get_logger
 logger = get_logger(__name__)
 
 
-class RunState(str, Enum):
+class RunState(StrEnum):
     """Run state enum that can be used as both string and enum."""
 
     PLANNING = 'planning'
@@ -31,12 +31,12 @@ class RunStateMachine:
 
     # Define valid state transitions
     VALID_TRANSITIONS = {
-        RunState.PLANNING: [RunState.ACTIVE, RunState.CANCELLED],
+        RunState.PLANNING: [RunState.ACTIVE, RunState.CONFIRMED, RunState.CANCELLED],
         RunState.ACTIVE: [RunState.CONFIRMED, RunState.PLANNING, RunState.CANCELLED],
         RunState.CONFIRMED: [RunState.SHOPPING, RunState.ACTIVE, RunState.CANCELLED],
         RunState.SHOPPING: [RunState.ADJUSTING, RunState.DISTRIBUTING, RunState.CANCELLED],
         RunState.ADJUSTING: [RunState.DISTRIBUTING, RunState.CANCELLED],
-        RunState.DISTRIBUTING: [RunState.COMPLETED, RunState.CANCELLED],
+        RunState.DISTRIBUTING: [RunState.COMPLETED],  # Cannot cancel once distributing
         RunState.COMPLETED: [],  # Terminal state
         RunState.CANCELLED: [],  # Terminal state
     }

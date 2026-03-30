@@ -1,15 +1,13 @@
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import bcrypt
 
 from app.infrastructure.config import SESSION_EXPIRY_HOURS
 from app.infrastructure.request_context import get_logger
+from app.infrastructure.session_store import get_store
 
 logger = get_logger(__name__)
-
-# In-memory session storage (use Redis in production)
-sessions: dict[str, dict] = {}
 
 
 def hash_password(password: str) -> str:
@@ -28,56 +26,27 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_session(user_id: str) -> str:
     """Create a new session and return session token."""
     session_token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(UTC) + timedelta(hours=SESSION_EXPIRY_HOURS)
-
-    sessions[session_token] = {
+    session_data = {
         'user_id': user_id,
-        'expires_at': expires_at,
+        'expires_at': datetime.now(UTC),
         'created_at': datetime.now(UTC),
     }
+
+    # Store with TTL in seconds
+    ttl_seconds = SESSION_EXPIRY_HOURS * 3600
+    store = get_store()
+    store.set(session_token, session_data, ttl_seconds)
 
     return session_token
 
 
 def get_session(session_token: str) -> dict | None:
     """Get session data if valid, None if expired or invalid."""
-    if session_token not in sessions:
-        return None
-
-    session = sessions[session_token]
-
-    # Check if session is expired
-    if datetime.now(UTC) > session['expires_at']:
-        del sessions[session_token]
-        return None
-
-    return session
+    store = get_store()
+    return store.get(session_token)
 
 
 def delete_session(session_token: str) -> bool:
     """Delete a session (logout)."""
-    if session_token in sessions:
-        del sessions[session_token]
-        return True
-    return False
-
-
-def cleanup_expired_sessions() -> int:
-    """Remove expired sessions from memory.
-
-    Returns:
-        Number of sessions cleaned up
-    """
-    now = datetime.now(UTC)
-    expired_tokens = [token for token, session in sessions.items() if now > session['expires_at']]
-
-    for token in expired_tokens:
-        del sessions[token]
-
-    if expired_tokens:
-        logger.info(
-            'Cleaned up expired sessions',
-            extra={'expired_count': len(expired_tokens), 'active_count': len(sessions)},
-        )
-
-    return len(expired_tokens)
+    store = get_store()
+    return store.delete(session_token)

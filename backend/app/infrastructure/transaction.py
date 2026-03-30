@@ -17,9 +17,7 @@ logger = get_logger(__name__)
 
 
 @contextmanager
-def transaction(
-    db: Session, description: str = 'database operation'
-) -> Generator[None, None, None]:
+def transaction(db: Session, description: str = 'database operation') -> Generator[None]:
     """Context manager for explicit transaction management.
 
     Wraps a block of code in a database transaction. Commits on success,
@@ -101,7 +99,7 @@ def transactional(description: str | None = None) -> Callable:
 
 
 @contextmanager
-def savepoint(db: Session, name: str = 'savepoint') -> Generator[None, None, None]:
+def savepoint(db: Session, name: str = 'savepoint') -> Generator[None]:
     """Context manager for nested transactions using SAVEPOINTs.
 
     Use this for operations that need sub-transaction semantics within

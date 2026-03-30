@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SuccessResponse(BaseModel):
@@ -12,14 +12,8 @@ class SuccessResponse(BaseModel):
     The frontend should translate the code into user-facing text.
     """
 
-    success: bool = Field(True, description='Always true for success responses')
-    code: str = Field(..., description='Machine-readable success code for frontend localization')
-    details: dict[str, Any] = Field(default_factory=dict, description='Additional context data')
-
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             'example': {
                 'success': True,
                 'code': 'BID_PLACED',
@@ -30,3 +24,8 @@ class SuccessResponse(BaseModel):
                 },
             }
         }
+    )
+
+    success: bool = Field(True, description='Always true for success responses')
+    code: str = Field(..., description='Machine-readable success code for frontend localization')
+    details: dict[str, Any] = Field(default_factory=dict, description='Additional context data')

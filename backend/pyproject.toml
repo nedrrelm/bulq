@@ -16,6 +16,7 @@ dependencies = [
     "websockets>=12.0",
     "bcrypt>=4.0.0",
     "alembic>=1.17.0",
+    "redis>=5.2.0",
 ]
 
 [project.optional-dependencies]
@@ -56,6 +57,7 @@ ignore = [
     "D105", # missing docstring in magic method
     "D106", # missing docstring in public nested class
     "D107", # missing docstring in __init__
+    "D415", # first line should end with a period, question mark, or exclamation point
 ]
 
 [tool.ruff.lint.isort]

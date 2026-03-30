@@ -18,6 +18,23 @@ services:
     networks:
       - bulq-network
 
+  redis:
+    image: redis:7-alpine
+    # Only expose to internal network, not to host
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bulq-network
+    command: redis-server --appendonly yes
+
   backend:
     build:
       context: ./backend
@@ -71,6 +88,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   bulq-network:
