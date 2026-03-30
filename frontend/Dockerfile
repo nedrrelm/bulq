@@ -1,6 +1,10 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:23-alpine AS builder
 
+# Switch to non-root user (node user exists in base image with UID 1000)
+USER node
+
+# WORKDIR will be created with node ownership
 WORKDIR /app
 
 # Build argument for base path
@@ -8,13 +12,13 @@ ARG VITE_BASE_PATH=/
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
 
 # Copy package files
-COPY package*.json ./
+COPY --chown=node:node package*.json ./
 
 # Install dependencies (including dev dependencies for building)
 RUN npm ci
 
-# Copy source code
-COPY . .
+# Copy source code with correct ownership
+COPY --chown=node:node . .
 
 # Build the application
 RUN npm run build
