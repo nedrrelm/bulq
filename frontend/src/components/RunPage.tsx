@@ -617,7 +617,7 @@ export default function RunPage() {
           <div className="info-grid">
             <div className="info-item">
               <label>{t('run:labels.leader')}:</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className="flex-center-gap-sm">
                 <span className={run.participants.find(p => p.is_leader)?.is_removed ? 'removed-user' : ''}>
                   {run.participants.find(p => p.is_leader)?.user_name || t('common:labels.unknown')}
                 </span>
@@ -648,7 +648,7 @@ export default function RunPage() {
             </div>
             <div className="info-item">
               <label>{t('run:labels.helpers')}:</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className="flex-center-gap-sm">
                 <span>{run.helpers.length > 0 ? run.helpers.join(', ') : t('common:labels.none')}</span>
                 {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
                   <button
@@ -665,7 +665,7 @@ export default function RunPage() {
             {run.comment && (
               <div className="info-item" style={{ gridColumn: '1 / -1' }}>
                 <label>{t('run:labels.comment')}:</label>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <div className="flex-start-gap-sm">
                   <span style={{ flex: 1 }}>{run.comment}</span>
                   {run.current_user_is_leader && run.state !== 'completed' && run.state !== 'cancelled' && (
                     <button
@@ -700,23 +700,23 @@ export default function RunPage() {
 
         {/* Total Run Price Summary */}
         {runPriceSummary && run.state !== 'cancelled' && (
-          <div className="info-card" style={{ marginTop: '1rem' }}>
+          <div className="info-card" className="mt-md">
             <h3>{t('run:labels.totalRunPrice')}</h3>
             {runPriceSummary.type === 'estimated' && (
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
                 {runPriceSummary.total.toFixed(2)} RSD
-                <span style={{ fontSize: '0.875rem', fontWeight: 'normal', color: 'var(--color-text-secondary)', marginLeft: '0.5rem' }}>
+                <span className="text-sm font-normal text-secondary ml-sm">
                   ({t('run:labels.estimated')})
                 </span>
               </div>
             )}
             {runPriceSummary.type === 'split' && (
               <div>
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+                <div className="mb-sm">
+                  <div className="text-sm text-secondary">
                     {t('run:labels.purchased')}: <strong style={{ color: 'var(--color-success)' }}>{runPriceSummary.purchased.toFixed(2)} RSD</strong>
                   </div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+                  <div className="text-sm text-secondary">
                     {t('run:labels.remainingEstimate')}: <strong>{runPriceSummary.remaining.toFixed(2)} RSD</strong>
                   </div>
                 </div>
@@ -790,7 +790,7 @@ export default function RunPage() {
                 <>
                   <h3>{t('run:labels.readyToConfirm')}</h3>
                   <p>{t('run:labels.allParticipantsReady')}</p>
-                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div className="flex-gap-md flex-wrap">
                     <button
                       onClick={() => setShowForceConfirmPopup(true)}
                       className="btn btn-primary btn-lg"
@@ -806,7 +806,7 @@ export default function RunPage() {
                 <>
                   <h3>{t('run:labels.waitingForParticipants')}</h3>
                   <p>{t('run:labels.notAllParticipantsReady')}</p>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>
+                  <p className="text-sm text-secondary mt-sm">
                     {t('run:labels.canForceConfirmIfNeeded')}{' '}
                     <button
                       onClick={() => setShowForceConfirmPopup(true)}
@@ -833,7 +833,7 @@ export default function RunPage() {
           <div className="info-card">
             <h3>{t('run:labels.readyToShop')}</h3>
             <p>{t('run:labels.allParticipantsReady')}</p>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="flex-gap-md flex-wrap">
               <button
                 onClick={handleStartShopping}
                 className="btn btn-primary btn-lg"
@@ -857,7 +857,7 @@ export default function RunPage() {
           <div className="info-card">
             <h3>{t('run:labels.shoppingInProgress')}</h3>
             <p>{t('run:labels.currentlyShopping')}</p>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="flex-gap-md flex-wrap">
               <button
                 onClick={() => navigate(`/shopping/${runId}`)}
                 className="btn btn-success btn-lg"
@@ -880,7 +880,7 @@ export default function RunPage() {
           <div className="info-card">
             <h3>{t('run:labels.adjustingBids')}</h3>
             <p>{t('run:labels.adjustingBidsDescription')}</p>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="flex-gap-md flex-wrap">
               <button
                 onClick={handleFinishAdjusting}
                 className="btn btn-primary btn-lg"
@@ -918,7 +918,7 @@ export default function RunPage() {
                 ? t('run:labels.distribution')
                 : t('run:labels.userBreakdown')}
               {!shouldFetchDistribution && (
-                <span style={{ fontSize: '0.8em', color: 'var(--color-text-secondary)', marginLeft: '0.5rem' }}>
+                <span className="text-sm text-secondary ml-sm">
                   ({t('run:labels.estimated')})
                 </span>
               )}

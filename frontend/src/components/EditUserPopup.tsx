@@ -188,7 +188,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
               pattern="[a-zA-Z0-9_-]+"
               required
             />
-            <small style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
+            <small className="text-hint mt-xs">
               {t('admin:edit.user.usernameHint')}
             </small>
           </div>
@@ -221,20 +221,20 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
               />
               <span>{t('admin:edit.user.fields.admin')}</span>
             </label>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem', marginLeft: '1.5rem' }}>
+            <p className="text-hint mt-xs ml-lg">
               {t('admin:edit.user.adminNote')}
             </p>
           </div>
 
-        <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
+        <hr className="divider" />
 
         {/* Merge Section */}
         <div className="form-group">
           <label htmlFor="merge-target" className="form-label">{t('admin:edit.user.mergeTitle')}</label>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+          <p className="text-description mb-sm">
             {t('admin:edit.user.mergeDescription')}
           </p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="flex-gap-sm">
             <input
               id="merge-target"
               type="text"
@@ -262,18 +262,17 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
           </div>
         </div>
 
-        <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
+        <hr className="divider" />
 
         {/* Delete Section */}
         <div className="form-group">
-          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin:edit.dangerZone')}</label>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+          <label className="form-label label-danger">{t('admin:edit.dangerZone')}</label>
+          <p className="text-description mb-sm">
             {t('admin:edit.user.deleteWarning')}
           </p>
           <button
             type="button"
-            className="btn"
-            style={{ backgroundColor: 'var(--color-danger)', color: 'white' }}
+            className="btn btn-danger"
             onClick={() => showConfirm(
               t('admin:edit.user.deleteConfirm', { name: user.name }),
               handleDelete,

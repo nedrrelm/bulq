@@ -178,15 +178,15 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
             </div>
           </div>
 
-        <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
+        <hr className="divider" />
 
         {/* Merge Section */}
         <div className="form-group">
           <label htmlFor="merge-target" className="form-label">{t('admin:edit.product.mergeTitle')}</label>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+          <p className="text-description mb-sm">
             {t('admin:edit.product.mergeDescription')}
           </p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="flex-gap-sm">
             <input
               id="merge-target"
               type="text"
@@ -213,18 +213,17 @@ export default function EditProductPopup({ product, onClose, onSuccess }: EditPr
           </div>
         </div>
 
-        <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
+        <hr className="divider" />
 
         {/* Delete Section */}
         <div className="form-group">
-          <label className="form-label" style={{ color: 'var(--color-danger)' }}>{t('admin:edit.dangerZone')}</label>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+          <label className="form-label label-danger">{t('admin:edit.dangerZone')}</label>
+          <p className="text-description mb-sm">
             {t('admin:edit.product.deleteWarning')}
           </p>
           <button
             type="button"
-            className="btn"
-            style={{ backgroundColor: 'var(--color-danger)', color: 'white' }}
+            className="btn btn-danger"
             onClick={() => showConfirm(
               t('admin:edit.product.deleteConfirm', { name: product.name }),
               handleDelete,

@@ -711,3 +711,138 @@
   min-width: 120px;
   text-align: center;
 }
+
+/* ============================================
+   SPACING UTILITIES
+   ============================================ */
+/* Margin Top */
+.mt-xs { margin-top: 0.25rem; }
+.mt-sm { margin-top: 0.5rem; }
+.mt-md { margin-top: 1rem; }
+.mt-lg { margin-top: 1.5rem; }
+.mt-xl { margin-top: 2rem; }
+
+/* Margin Bottom */
+.mb-0 { margin-bottom: 0; }
+.mb-xs { margin-bottom: 0.25rem; }
+.mb-sm { margin-bottom: 0.5rem; }
+.mb-md { margin-bottom: 1rem; }
+.mb-lg { margin-bottom: 1.5rem; }
+.mb-xl { margin-bottom: 2rem; }
+
+/* Margin Left */
+.ml-sm { margin-left: 0.5rem; }
+.ml-md { margin-left: 1rem; }
+.ml-lg { margin-left: 1.5rem; }
+
+/* Margin Right */
+.mr-sm { margin-right: 0.5rem; }
+.mr-md { margin-right: 1rem; }
+
+/* Padding */
+.py-xl {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.pl-lg {
+  padding-left: 1.5rem;
+}
+
+/* ============================================
+   FLEX LAYOUT UTILITIES
+   ============================================ */
+.flex-gap-sm {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.flex-gap-md {
+  display: flex;
+  gap: 1rem;
+}
+
+.flex-center-gap-sm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flex-start-gap-sm {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+/* ============================================
+   TEXT COLOR & STYLE UTILITIES
+   ============================================ */
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-light {
+  color: var(--color-text-light);
+}
+
+.text-danger {
+  color: var(--color-danger);
+}
+
+.text-description {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.text-hint {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+/* ============================================
+   COMPONENT-SPECIFIC UTILITIES
+   ============================================ */
+/* Horizontal Divider */
+.divider {
+  margin: 2rem 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Alert Warning */
+.alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* Label Danger */
+.label-danger {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* List Styles */
+.list-secondary {
+  color: var(--color-text-secondary);
+  padding-left: 1.5rem;
+}
+
+.list-compact {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  padding-left: 1.5rem;
+}
+
+/* Empty/Loading State Text */
+.empty-state-text {
+  color: var(--color-text-light);
+  padding: 2rem 0;
+  text-align: center;
+}

@@ -125,15 +125,15 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
         </small>
 
         {exactMatch && (
-          <div className="alert alert-error" style={{ marginTop: '0.5rem' }}>
+          <div className="alert alert-error mt-sm">
             {t('store:validation.alreadyExists', { name: exactMatch.name })}
           </div>
         )}
 
         {hasNonExactSimilar && (
-          <div className="alert" style={{ marginTop: '0.5rem', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
+          <div className="alert-warning mt-sm">
             <strong>{t('store:validation.similarFound')}:</strong>
-            <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.5rem' }}>
+            <ul className="list-compact">
               {similarStores.map(store => (
                 <li key={store.id}>{store.name}</li>
               ))}

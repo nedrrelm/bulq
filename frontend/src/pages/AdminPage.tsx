@@ -289,7 +289,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => setEditingUser(user)}
                           className="btn-small"
-                          style={{ marginRight: '0.5rem' }}
+                          className="mr-sm"
                         >
                           {t('common:edit')}
                         </button>
@@ -359,7 +359,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => setEditingProduct(product)}
                           className="btn-small"
-                          style={{ marginRight: '0.5rem' }}
+                          className="mr-sm"
                         >
                           {t('common:edit')}
                         </button>
@@ -429,7 +429,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => setEditingStore(store)}
                           className="btn-small"
-                          style={{ marginRight: '0.5rem' }}
+                          className="mr-sm"
                         >
                           {t('common:edit')}
                         </button>

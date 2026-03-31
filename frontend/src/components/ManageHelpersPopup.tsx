@@ -93,22 +93,22 @@ export default function ManageHelpersPopup({ run, onClose }: ManageHelpersPopupP
       }
     >
       <h2>{t('run:helpers.title')}</h2>
-      <p className="text-sm" style={{ color: 'var(--color-text-light)', marginBottom: '1.5rem' }}>
+      <p className="text-sm text-light mb-lg">
         {t('run:helpers.description')}
       </p>
 
       {error && (
-        <div className="error-message" style={{ marginBottom: '1rem' }}>
+        <div className="error-message mb-md">
           {error}
         </div>
       )}
 
       {loadingMembers ? (
-        <p className="text-center" style={{ color: 'var(--color-text-light)', padding: '2rem 0' }}>
+        <p className="empty-state-text">
           {t('run:helpers.loadingMembers')}
         </p>
       ) : eligibleMembers.length === 0 ? (
-        <p className="text-center" style={{ color: 'var(--color-text-light)', padding: '2rem 0' }}>
+        <p className="empty-state-text">
           {t('run:helpers.noMembersAvailable')}
         </p>
       ) : (

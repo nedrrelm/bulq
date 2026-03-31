@@ -93,7 +93,7 @@ export default function ProfilePage() {
 
       {/* Success Message */}
       {successMessage && (
-        <div className="alert alert-success" style={{ marginBottom: '2rem' }}>
+        <div className="alert alert-success" className="mb-xl">
           {successMessage}
         </div>
       )}

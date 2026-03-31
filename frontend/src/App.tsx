@@ -505,7 +505,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           href="https://github.com/nedrrelm/bulq"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: 'var(--color-primary)' }}
+          className="text-primary"
         >
           {t('common:footer.sourceCode')}
         </a>

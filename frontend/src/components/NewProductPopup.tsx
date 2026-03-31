@@ -238,20 +238,20 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
             />
 
             {exactMatch && (
-              <div className="alert alert-error" style={{ marginTop: '0.5rem' }}>
+              <div className="alert alert-error mt-sm">
                 {t('product:validation.alreadyExists', { name: exactMatch.brand ? `${exactMatch.brand} ${exactMatch.name}` : exactMatch.name })}
               </div>
             )}
 
             {hasNonExactSimilar && (
-              <div className="alert" style={{ marginTop: '0.5rem', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
+              <div className="alert-warning mt-sm">
                 <strong>{t('product:validation.similarFound')}:</strong>
-                <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.5rem' }}>
+                <ul className="list-compact">
                   {similarProducts.map(product => (
                     <li key={product.id}>
                       {product.brand ? `${product.brand} ${product.name}` : product.name}
                       {product.stores && product.stores.length > 0 && (
-                        <span style={{ fontSize: '0.85em', color: '#666' }}>
+                        <span className="text-hint text-secondary">
                           {' '}({t('product:validation.atStores', { stores: product.stores.map(s => s.store_name).join(', ') })})
                         </span>
                       )}

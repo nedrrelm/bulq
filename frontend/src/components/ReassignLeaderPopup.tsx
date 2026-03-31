@@ -84,7 +84,7 @@ export default function ReassignLeaderPopup({
       }
     >
       <h2>{t('run:reassign.title')}</h2>
-      <p className="text-sm" style={{ color: 'var(--color-text-light)', marginBottom: '1.5rem' }}>
+      <p className="text-sm text-light mb-lg">
         {t('run:reassign.description')}
       </p>
 
@@ -110,7 +110,7 @@ export default function ReassignLeaderPopup({
       </div>
 
       {eligibleParticipants.length === 0 && (
-        <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
+        <div className="alert alert-info mb-md">
           {t('run:reassign.noParticipantsAvailable')}
         </div>
       )}

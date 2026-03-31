@@ -44,19 +44,19 @@ export default function ForceConfirmPopup({ runId, onClose, onSuccess }: ForceCo
         disabled: submitting
       }}
     >
-      <div style={{ marginBottom: '1.5rem' }}>
-        <p style={{ marginBottom: '1rem' }}>
+      <div className="mb-lg">
+        <p className="mb-md">
           <strong>{t('run:forceConfirm.warning')}</strong> {t('run:forceConfirm.warningDescription')}
         </p>
-        <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
+        <p className="mb-md text-secondary">
           {t('run:forceConfirm.useThisIf')}
         </p>
-        <ul style={{ marginLeft: '1.5rem', color: 'var(--color-text-secondary)' }}>
+        <ul className="list-secondary">
           <li>{t('run:forceConfirm.reason1')}</li>
           <li>{t('run:forceConfirm.reason2')}</li>
           <li>{t('run:forceConfirm.reason3')}</li>
         </ul>
-        <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+        <p className="mt-md text-description">
           {t('run:forceConfirm.consequence')}
         </p>
       </div>

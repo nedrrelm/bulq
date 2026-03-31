@@ -55,23 +55,6 @@ These items must be completed before production deployment.
 **Priority**: High
 **Impact**: 20-25% code reduction (~3,000-4,000 lines)
 
-1. **Create BaseModal component** (2-3 days)
-   - 16 popup components with 80-90% identical code (~2,000 lines)
-   - All have same: modal overlay, focus trap, error state, submit handling
-   - Files: All `*Popup.tsx` components
-   - Pattern: Same 30-40 lines in every popup
-
-2. **Create form validation hook** (1-2 days)
-   - Same validation pattern repeated in 8 files
-   - Pattern: validate length, alphanumeric, set error state
-   - Solution: `useFormValidation()` hook
-   - Files: All popup components with forms
-
-3. **Replace inline styles with CSS utilities** (2-3 hours) ⚡ **QUICK WIN**
-   - 99 inline style objects across 20 files
-   - Examples: dividers, alerts, hints all styled inline
-   - Solution: Add utility classes to `utilities.css`
-   - Common patterns: `.divider`, `.alert-warning`, `.hint-text`
 
 4. **Create admin CRUD factory** (1 day)
    - `admin.ts` has identical patterns for users/products/stores (150 lines)
