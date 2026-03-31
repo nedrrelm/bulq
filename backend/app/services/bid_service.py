@@ -29,6 +29,7 @@ from app.events.domain_events import BidPlacedEvent, BidRetractedEvent
 from app.events.event_bus import event_bus
 from app.infrastructure.config import MAX_PRODUCTS_PER_RUN
 from app.infrastructure.request_context import get_logger
+from app.infrastructure.transaction import transactional
 from app.repositories import (
     get_bid_repository,
     get_product_repository,
@@ -162,8 +163,11 @@ class BidService(BaseService):
             group_id=str(run.group_id),
         )
 
+    @transactional('retract bid')
     def retract_bid(self, run_id: str, product_id: str, user: User) -> RetractBidResponse:
         """Retract a user's bid on a product in a run.
+
+        This operation is atomic - validation, bid deletion, and total recalculation succeed together or all roll back.
 
         Args:
             run_id: Run ID as string

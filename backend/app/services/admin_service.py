@@ -44,6 +44,7 @@ from app.core.success_codes import (
     USER_VERIFIED,
     USERS_MERGED,
 )
+from app.infrastructure.transaction import transactional
 from app.repositories import (
     get_group_repository,
     get_product_repository,
@@ -478,11 +479,14 @@ class AdminService(BaseService):
 
     # ==================== Merge Methods ====================
 
+    @transactional('merge products')
     def merge_products(self, source_id: UUID, target_id: UUID, admin_user: User) -> dict[str, Any]:
         """Merge one product into another.
 
         All bids, availabilities, and shopping list items from source will be moved to target.
         Source product will be deleted.
+
+        This operation is atomic - all updates and the deletion succeed together or all roll back.
 
         Args:
             source_id: ID of product to merge from (will be deleted)
@@ -541,11 +545,14 @@ class AdminService(BaseService):
             details={'source_name': source.name, 'target_name': target.name},
         )
 
+    @transactional('merge stores')
     def merge_stores(self, source_id: UUID, target_id: UUID, admin_user: User) -> dict[str, Any]:
         """Merge one store into another.
 
         All runs and product availabilities from source will be moved to target.
         Source store will be deleted.
+
+        This operation is atomic - all updates and the deletion succeed together or all roll back.
 
         Args:
             source_id: ID of store to merge from (will be deleted)
@@ -599,11 +606,14 @@ class AdminService(BaseService):
             details={'source_name': source.name, 'target_name': target.name},
         )
 
+    @transactional('merge users')
     def merge_users(self, source_id: UUID, target_id: UUID, admin_user: User) -> dict[str, Any]:
         """Merge one user into another.
 
         All data from source will be moved to target (participations, groups, created/verified items, notifications).
         Source user will be deleted.
+
+        This operation is atomic - all updates and the deletion succeed together or all roll back.
 
         Args:
             source_id: ID of user to merge from (will be deleted)
@@ -705,8 +715,11 @@ class AdminService(BaseService):
 
     # ==================== Delete Methods ====================
 
+    @transactional('delete product')
     def delete_product(self, product_id: UUID, admin_user: User) -> dict[str, str]:
         """Delete a product.
+
+        This operation is atomic - validation and deletion succeed together or all roll back.
 
         Args:
             product_id: ID of product to delete
@@ -748,8 +761,11 @@ class AdminService(BaseService):
             details={'product_name': product.name},
         )
 
+    @transactional('delete store')
     def delete_store(self, store_id: UUID, admin_user: User) -> dict[str, str]:
         """Delete a store.
+
+        This operation is atomic - validation and deletion succeed together or all roll back.
 
         Args:
             store_id: ID of store to delete
@@ -791,8 +807,11 @@ class AdminService(BaseService):
             details={'store_name': store.name},
         )
 
+    @transactional('delete user')
     def delete_user(self, user_id: UUID, admin_user: User) -> dict[str, str]:
         """Delete a user.
+
+        This operation is atomic - validation and deletion succeed together or all roll back.
 
         Args:
             user_id: ID of user to delete

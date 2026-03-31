@@ -28,10 +28,6 @@ These items must be completed before production deployment.
    - Bid placement: 20 requests/minute
    - General API: 100 requests/minute
 
-2. **Database Backups** - Automated daily backups with pg_dump, S3 storage, retention policy
-   - Manual backup script documented
-   - Need automated backup to cloud storage
-   - Need monitoring/alerting for backup failures
 
 3. Dynamic front container + linters and tests
 
@@ -44,16 +40,6 @@ These items must be completed before production deployment.
    - Tables: Run (group_id, state), RunParticipation (run_id, user_id), ProductBid (participation_id)
    - Impact: Slow queries, N+1 problems
 
-7. **Add .dockerignore files** (15 minutes) ⚡ **QUICK WIN**
-   - Backend and frontend missing .dockerignore
-   - Impact: 430MB build context → ~50MB, much faster builds
-   - Files: `backend/.dockerignore`, `frontend/.dockerignore`
-
-8. **Add consistent transaction management** (1-2 days)
-   - Transaction decorator exists but not consistently used
-   - Services have multi-step operations without explicit transactions
-   - Risk: Partial state updates on errors
-   - Files: All service files
 
 9. **Test DatabaseRepository** (2 days) - **CRITICAL**
    - DatabaseRepository used in production but has NO tests

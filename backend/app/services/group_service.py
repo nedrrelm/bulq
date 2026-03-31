@@ -43,7 +43,7 @@ from app.events.domain_events import MemberJoinedEvent, MemberRemovedEvent
 from app.events.event_bus import event_bus
 from app.infrastructure.config import MAX_GROUPS_PER_USER, MAX_MEMBERS_PER_GROUP
 from app.infrastructure.request_context import get_logger
-from app.infrastructure.transaction import transaction
+from app.infrastructure.transaction import transaction, transactional
 from app.repositories import (
     get_bid_repository,
     get_group_repository,
@@ -141,8 +141,11 @@ class GroupService(BaseService):
 
         return group_responses
 
+    @transactional('create group')
     def create_group(self, name: str, user: User) -> CreateGroupResponse:
         """Create a new group and add the creator as an admin member.
+
+        This operation is atomic - group creation and member addition succeed together or all roll back.
 
         Args:
             name: The name of the group
@@ -472,8 +475,11 @@ class GroupService(BaseService):
             creator_name=group.creator.name if group.creator else 'Unknown',
         )
 
+    @transactional('join group')
     def join_group(self, invite_token: str, user: User) -> JoinGroupResponse:
         """Join a group using an invite token.
+
+        This operation is atomic - validation, member addition, and event broadcast succeed together or all roll back.
 
         Args:
             invite_token: The invite token to use

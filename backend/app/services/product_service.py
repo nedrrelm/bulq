@@ -21,6 +21,7 @@ from app.core.error_codes import (
 )
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.models import Product
+from app.infrastructure.transaction import transactional
 from app.repositories import (
     get_product_repository,
     get_run_repository,
@@ -171,6 +172,7 @@ class ProductService(BaseService):
             stores=stores_data,
         )
 
+    @transactional('create product')
     def create_product(
         self,
         name: str,
@@ -185,6 +187,8 @@ class ProductService(BaseService):
 
         Optionally create a product availability if store_id is provided.
         Returns (product, availability) tuple.
+
+        This operation is atomic - product creation and availability creation (if provided) succeed together or all roll back.
         """
         # Validate inputs
         if not name or not name.strip():
