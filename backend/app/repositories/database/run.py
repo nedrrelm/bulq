@@ -21,13 +21,15 @@ class DatabaseRunRepository(AbstractRunRepository):
         self.db = db
 
     def get_runs_by_group(self, group_id: UUID) -> list[Run]:
-        """Get all runs for a group."""
-        return self.db.query(Run).filter(Run.group_id == group_id).all()
+        """Get all runs for a group with store eagerly loaded."""
+        return (
+            self.db.query(Run).filter(Run.group_id == group_id).options(joinedload(Run.store)).all()
+        )
 
     def get_completed_cancelled_runs_by_group(
         self, group_id: UUID, limit: int = 10, offset: int = 0
     ) -> list[Run]:
-        """Get completed and cancelled runs for a group (paginated)."""
+        """Get completed and cancelled runs for a group (paginated) with store eagerly loaded."""
         # Query runs that are completed or cancelled
         query = self.db.query(Run).filter(
             Run.group_id == group_id, Run.state.in_([RunState.COMPLETED, RunState.CANCELLED])
@@ -44,7 +46,7 @@ class DatabaseRunRepository(AbstractRunRepository):
             )
         )
 
-        return query.limit(limit).offset(offset).all()
+        return query.options(joinedload(Run.store)).limit(limit).offset(offset).all()
 
     def get_run_by_id(self, run_id: UUID) -> Run | None:
         """Get run by ID."""

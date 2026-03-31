@@ -59,11 +59,6 @@ These items improve maintainability, performance, and code quality. Not producti
 **Priority**: High
 **Impact**: 15-20% code reduction (~1,500 lines)
 
-4. **Fix N+1 query problems** (2 days)
-   - `get_runs_by_group()` doesn't eager load relationships
-   - Store lookups fetch all stores then filter (10+ occurrences)
-   - Solution: Add `joinedload()`, create `get_store_by_id()` repository method
-   - Files: `repositories/database/run.py`, `repositories/database/store.py`
 
 5. **Split large service files** (2-3 days)
    - `group_service.py`: 1,106 lines

@@ -331,8 +331,7 @@ class RunStateService(BaseService):
         self._transition_run_state(run, RunState.CANCELLED)
 
         # Get store name for event
-        all_stores = self.store_repo.get_all_stores()
-        store = next((s for s in all_stores if s.id == run.store_id), None)
+        store = self.store_repo.get_store_by_id(run.store_id)
         store_name = store.name if store else 'Unknown Store'
 
         # Emit run cancelled event
@@ -377,8 +376,7 @@ class RunStateService(BaseService):
 
         if notify:
             # Get store name for event
-            all_stores = self.store_repo.get_all_stores()
-            store = next((s for s in all_stores if s.id == run.store_id), None)
+            store = self.store_repo.get_store_by_id(run.store_id)
             store_name = store.name if store else 'Unknown Store'
 
             # Emit domain event for state change

@@ -139,8 +139,7 @@ class RunService(BaseService):
         )
 
         # Verify store exists
-        all_stores = self.store_repo.get_all_stores()
-        store = next((s for s in all_stores if s.id == store_uuid), None)
+        store = self.store_repo.get_store_by_id(store_uuid)
         if not store:
             raise NotFoundError(code=STORE_NOT_FOUND, message='Store not found', store_id=store_id)
 
@@ -214,8 +213,7 @@ class RunService(BaseService):
 
         # Get related entities
         group = self.group_repo.get_group_by_id(run.group_id)
-        all_stores = self.store_repo.get_all_stores()
-        store = next((s for s in all_stores if s.id == run.store_id), None)
+        store = self.store_repo.get_store_by_id(run.store_id)
 
         if not group or not store:
             raise NotFoundError(

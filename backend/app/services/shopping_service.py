@@ -1015,8 +1015,7 @@ class ShoppingService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        all_stores = self.store_repo.get_all_stores()
-        store = next((s for s in all_stores if s.id == run.store_id), None)
+        store = self.store_repo.get_store_by_id(run.store_id)
         store_name = store.name if store else 'Unknown Store'
 
         # Get all participants of this run
