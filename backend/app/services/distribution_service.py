@@ -30,6 +30,8 @@ from app.core.exceptions import (
 from app.core.models import Product, ProductBid, User
 from app.core.run_state import RunState, state_machine
 from app.core.success_codes import BID_MARKED_PICKED_UP, DISTRIBUTION_COMPLETED
+from app.events.domain_events import DistributionUpdatedEvent
+from app.events.event_bus import event_bus
 from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transaction
 from app.repositories import (
@@ -266,6 +268,12 @@ class DistributionService(BaseService):
                 'run_id': str(bid.participation.run_id),
             },
         )
+
+        # Emit event for WebSocket broadcast
+        event_bus.emit(
+            DistributionUpdatedEvent(run_id=run_id, bid_id=bid_id, action='marked_picked_up')
+        )
+
         return SuccessResponse(
             code=BID_MARKED_PICKED_UP,
             details={

@@ -11,7 +11,6 @@ from app.api.schemas import (
     SuccessResponse,
     UpdateAvailabilityPriceRequest,
 )
-from app.api.websocket_manager import manager
 from app.core.models import User
 from app.infrastructure.request_context import get_logger
 
@@ -37,16 +36,6 @@ async def add_product_to_shopping_list(
 ):
     """Add a product to the shopping list (shopping state only, leader/helper only)."""
     result = await service.add_product_to_shopping_list(run_id, product_id, quantity, current_user)
-
-    # Broadcast shopping list update to all connected clients for this run
-    await manager.broadcast(
-        f'run:{run_id}',
-        {
-            'type': 'shopping_item_updated',
-            'data': {'run_id': run_id, 'action': 'product_added'},
-        },
-    )
-
     return result
 
 
@@ -62,16 +51,6 @@ async def update_availability_price(
     result = await service.add_availability_price(
         run_id, item_id, request.price, request.notes, request.minimum_quantity, current_user
     )
-
-    # Broadcast shopping item update to all connected clients for this run
-    await manager.broadcast(
-        f'run:{run_id}',
-        {
-            'type': 'shopping_item_updated',
-            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'price_added'},
-        },
-    )
-
     return result
 
 
@@ -87,16 +66,6 @@ async def mark_purchased(
     result = await service.mark_purchased(
         run_id, item_id, request.quantity, request.price_per_unit, request.total, current_user
     )
-
-    # Broadcast shopping item update to all connected clients for this run
-    await manager.broadcast(
-        f'run:{run_id}',
-        {
-            'type': 'shopping_item_updated',
-            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'marked_purchased'},
-        },
-    )
-
     return result
 
 
@@ -112,16 +81,6 @@ async def add_more_purchase(
     result = await service.add_more_purchased(
         run_id, item_id, request.quantity, request.price_per_unit, request.total, current_user
     )
-
-    # Broadcast shopping item update to all connected clients for this run
-    await manager.broadcast(
-        f'run:{run_id}',
-        {
-            'type': 'shopping_item_updated',
-            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'added_more'},
-        },
-    )
-
     return result
 
 
@@ -137,16 +96,6 @@ async def update_purchase(
     result = await service.update_purchase(
         run_id, item_id, request.quantity, request.price_per_unit, request.total, current_user
     )
-
-    # Broadcast shopping item update to all connected clients for this run
-    await manager.broadcast(
-        f'run:{run_id}',
-        {
-            'type': 'shopping_item_updated',
-            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'purchase_updated'},
-        },
-    )
-
     return result
 
 
@@ -159,16 +108,6 @@ async def unpurchase_item(
 ):
     """Reset an item to unpurchased state."""
     result = await service.unpurchase_item(run_id, item_id, current_user)
-
-    # Broadcast shopping item update to all connected clients for this run
-    await manager.broadcast(
-        f'run:{run_id}',
-        {
-            'type': 'shopping_item_updated',
-            'data': {'run_id': run_id, 'item_id': item_id, 'action': 'unpurchased'},
-        },
-    )
-
     return result
 
 

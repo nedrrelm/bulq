@@ -6,6 +6,9 @@ from app.infrastructure.request_context import get_logger
 from ..domain_events import (
     BidPlacedEvent,
     BidRetractedEvent,
+    CommentUpdatedEvent,
+    DistributionUpdatedEvent,
+    HelperToggledEvent,
     MemberJoinedEvent,
     MemberLeftEvent,
     MemberRemovedEvent,
@@ -13,6 +16,7 @@ from ..domain_events import (
     RunCancelledEvent,
     RunCreatedEvent,
     RunStateChangedEvent,
+    ShoppingItemUpdatedEvent,
 )
 
 logger = get_logger(__name__)
@@ -314,5 +318,114 @@ class WebSocketEventHandler:
                     'user_id': str(event.user_id),
                     'error': str(e),
                 },
+                exc_info=True,
+            )
+
+    async def handle_shopping_item_updated(self, event: ShoppingItemUpdatedEvent) -> None:
+        """Broadcast shopping item update to run participants.
+
+        Args:
+            event: ShoppingItemUpdatedEvent containing update details
+        """
+        try:
+            data = {'run_id': str(event.run_id), 'action': event.action}
+            if event.item_id:
+                data['item_id'] = str(event.item_id)
+
+            await self._ws_manager.broadcast(
+                f'run:{event.run_id}',
+                {'type': 'shopping_item_updated', 'data': data},
+            )
+            logger.debug(
+                'Broadcast shopping item updated event',
+                extra={'run_id': str(event.run_id), 'action': event.action},
+            )
+        except Exception as e:
+            logger.error(
+                'Failed to broadcast shopping item updated event',
+                extra={'run_id': str(event.run_id), 'action': event.action, 'error': str(e)},
+                exc_info=True,
+            )
+
+    async def handle_distribution_updated(self, event: DistributionUpdatedEvent) -> None:
+        """Broadcast distribution update to run participants.
+
+        Args:
+            event: DistributionUpdatedEvent containing update details
+        """
+        try:
+            await self._ws_manager.broadcast(
+                f'run:{event.run_id}',
+                {
+                    'type': 'distribution_updated',
+                    'data': {
+                        'run_id': str(event.run_id),
+                        'bid_id': str(event.bid_id),
+                        'action': event.action,
+                    },
+                },
+            )
+            logger.debug(
+                'Broadcast distribution updated event',
+                extra={'run_id': str(event.run_id), 'bid_id': str(event.bid_id)},
+            )
+        except Exception as e:
+            logger.error(
+                'Failed to broadcast distribution updated event',
+                extra={
+                    'run_id': str(event.run_id),
+                    'bid_id': str(event.bid_id),
+                    'error': str(e),
+                },
+                exc_info=True,
+            )
+
+    async def handle_helper_toggled(self, event: HelperToggledEvent) -> None:
+        """Broadcast helper toggle to run participants.
+
+        Args:
+            event: HelperToggledEvent containing toggle details
+        """
+        try:
+            await self._ws_manager.broadcast(
+                f'run:{event.run_id}',
+                {
+                    'type': 'helper_toggled',
+                    'data': {'run_id': str(event.run_id), 'user_id': str(event.user_id)},
+                },
+            )
+            logger.debug(
+                'Broadcast helper toggled event',
+                extra={'run_id': str(event.run_id), 'user_id': str(event.user_id)},
+            )
+        except Exception as e:
+            logger.error(
+                'Failed to broadcast helper toggled event',
+                extra={'run_id': str(event.run_id), 'user_id': str(event.user_id), 'error': str(e)},
+                exc_info=True,
+            )
+
+    async def handle_comment_updated(self, event: CommentUpdatedEvent) -> None:
+        """Broadcast comment update to run participants.
+
+        Args:
+            event: CommentUpdatedEvent containing comment details
+        """
+        try:
+            await self._ws_manager.broadcast(
+                f'run:{event.run_id}',
+                {
+                    'type': 'comment_updated',
+                    'data': {'run_id': str(event.run_id), 'comment': event.comment},
+                },
+            )
+            logger.debug(
+                'Broadcast comment updated event',
+                extra={'run_id': str(event.run_id)},
+            )
+        except Exception as e:
+            logger.error(
+                'Failed to broadcast comment updated event',
+                extra={'run_id': str(event.run_id), 'error': str(e)},
                 exc_info=True,
             )

@@ -48,6 +48,9 @@ async def lifespan(app: FastAPI):
     from .events.domain_events import (
         BidPlacedEvent,
         BidRetractedEvent,
+        CommentUpdatedEvent,
+        DistributionUpdatedEvent,
+        HelperToggledEvent,
         MemberJoinedEvent,
         MemberLeftEvent,
         MemberRemovedEvent,
@@ -55,6 +58,7 @@ async def lifespan(app: FastAPI):
         RunCancelledEvent,
         RunCreatedEvent,
         RunStateChangedEvent,
+        ShoppingItemUpdatedEvent,
     )
     from .events.event_bus import event_bus
     from .events.handlers.notification_handler import NotificationEventHandler
@@ -74,6 +78,10 @@ async def lifespan(app: FastAPI):
     event_bus.subscribe(MemberJoinedEvent, ws_handler.handle_member_joined)
     event_bus.subscribe(MemberRemovedEvent, ws_handler.handle_member_removed)
     event_bus.subscribe(MemberLeftEvent, ws_handler.handle_member_left)
+    event_bus.subscribe(ShoppingItemUpdatedEvent, ws_handler.handle_shopping_item_updated)
+    event_bus.subscribe(DistributionUpdatedEvent, ws_handler.handle_distribution_updated)
+    event_bus.subscribe(HelperToggledEvent, ws_handler.handle_helper_toggled)
+    event_bus.subscribe(CommentUpdatedEvent, ws_handler.handle_comment_updated)
 
     # Note: NotificationEventHandler needs repository which is per-request
     # We'll create a handler factory that gets repo from database session

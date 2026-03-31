@@ -102,3 +102,37 @@ class MemberLeftEvent(DomainEvent):
 
     group_id: UUID
     user_id: UUID
+
+
+@dataclass
+class ShoppingItemUpdatedEvent(DomainEvent):
+    """Event emitted when a shopping list item is updated."""
+
+    run_id: UUID
+    item_id: UUID | None  # None for product_added action
+    action: str  # product_added, price_added, marked_purchased, added_more, purchase_updated, unpurchased
+
+
+@dataclass
+class DistributionUpdatedEvent(DomainEvent):
+    """Event emitted when distribution status is updated."""
+
+    run_id: UUID
+    bid_id: UUID
+    action: str  # marked_picked_up
+
+
+@dataclass
+class HelperToggledEvent(DomainEvent):
+    """Event emitted when a helper status is toggled."""
+
+    run_id: UUID
+    user_id: UUID
+
+
+@dataclass
+class CommentUpdatedEvent(DomainEvent):
+    """Event emitted when a run comment is updated."""
+
+    run_id: UUID
+    comment: str | None

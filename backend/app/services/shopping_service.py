@@ -37,6 +37,8 @@ from app.core.success_codes import (
     SHOPPING_COMPLETED_DISTRIBUTING,
     SHOPPING_COMPLETED_NO_PURCHASES,
 )
+from app.events.domain_events import ShoppingItemUpdatedEvent
+from app.events.event_bus import event_bus
 from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transaction
 from app.repositories import (
@@ -336,6 +338,11 @@ class ShoppingService(BaseService):
             },
         )
 
+        # Emit event for WebSocket broadcast
+        event_bus.emit(
+            ShoppingItemUpdatedEvent(run_id=run_uuid, item_id=None, action='product_added')
+        )
+
         return SuccessResponse(
             code='PRODUCT_ADDED_TO_SHOPPING_LIST',
             details={
@@ -412,6 +419,11 @@ class ShoppingService(BaseService):
             notes=notes,
             minimum_quantity=minimum_quantity,
             user_id=user.id,
+        )
+
+        # Emit event for WebSocket broadcast
+        event_bus.emit(
+            ShoppingItemUpdatedEvent(run_id=run_uuid, item_id=item_uuid, action='price_added')
         )
 
         return SuccessResponse(
@@ -494,6 +506,11 @@ class ShoppingService(BaseService):
         # Update ProductAvailability if the price differs from today's prices
         await self._update_product_availability_if_needed(
             item.product_id, run.store_id, price_per_unit, user.id
+        )
+
+        # Emit event for WebSocket broadcast
+        event_bus.emit(
+            ShoppingItemUpdatedEvent(run_id=run_uuid, item_id=item_uuid, action='marked_purchased')
         )
 
         return MarkPurchasedResponse(
@@ -615,6 +632,11 @@ class ShoppingService(BaseService):
             },
         )
 
+        # Emit event for WebSocket broadcast
+        event_bus.emit(
+            ShoppingItemUpdatedEvent(run_id=run_uuid, item_id=item_uuid, action='added_more')
+        )
+
         return SuccessResponse(
             code=ADDITIONAL_PURCHASE_ADDED,
             details={
@@ -720,6 +742,11 @@ class ShoppingService(BaseService):
             },
         )
 
+        # Emit event for WebSocket broadcast
+        event_bus.emit(
+            ShoppingItemUpdatedEvent(run_id=run_uuid, item_id=item_uuid, action='purchase_updated')
+        )
+
         return SuccessResponse(
             code='PURCHASE_UPDATED',
             details={
@@ -798,6 +825,11 @@ class ShoppingService(BaseService):
                 'item_id': item_id,
                 'user_id': str(user.id),
             },
+        )
+
+        # Emit event for WebSocket broadcast
+        event_bus.emit(
+            ShoppingItemUpdatedEvent(run_id=run_uuid, item_id=item_uuid, action='unpurchased')
         )
 
         return SuccessResponse(

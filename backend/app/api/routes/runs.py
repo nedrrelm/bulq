@@ -150,12 +150,6 @@ async def toggle_helper(
 ):
     """Toggle helper status for a run participant (leader only)."""
     result = service.toggle_helper(run_id, user_id, current_user)
-
-    # Broadcast helper status change to all participants
-    await manager.broadcast(
-        f'run:{run_id}', {'type': 'helper_toggled', 'data': {'run_id': run_id, 'user_id': user_id}}
-    )
-
     return result
 
 
@@ -209,13 +203,6 @@ async def update_run_comment(
 ):
     """Update the comment/description for a run (leader only)."""
     result = service.update_run_comment(run_id, request.comment, current_user)
-
-    # Broadcast comment update to all participants
-    await manager.broadcast(
-        f'run:{run_id}',
-        {'type': 'comment_updated', 'data': {'run_id': run_id, 'comment': request.comment}},
-    )
-
     return result
 
 

@@ -7,7 +7,6 @@ from app.api.schemas import (
     StateChangeResponse,
     SuccessResponse,
 )
-from app.api.websocket_manager import manager
 from app.core.models import User
 from app.utils.validation import validate_uuid
 
@@ -35,16 +34,6 @@ async def mark_picked_up(
     bid_uuid = validate_uuid(bid_id, 'Bid')
 
     result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
-
-    # Broadcast distribution update to all connected clients for this run
-    await manager.broadcast(
-        f'run:{run_id}',
-        {
-            'type': 'distribution_updated',
-            'data': {'run_id': run_id, 'bid_id': bid_id, 'action': 'marked_picked_up'},
-        },
-    )
-
     return result
 
 

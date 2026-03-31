@@ -38,7 +38,7 @@ from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import Product, ProductBid, Run, User
 from app.core.run_state import RunState, state_machine
 from app.core.success_codes import HELPER_ADDED, HELPER_REMOVED, RUN_COMMENT_UPDATED
-from app.events.domain_events import RunCreatedEvent
+from app.events.domain_events import CommentUpdatedEvent, HelperToggledEvent, RunCreatedEvent
 from app.events.event_bus import event_bus
 from app.infrastructure.config import MAX_ACTIVE_RUNS_PER_GROUP
 from app.infrastructure.request_context import get_logger
@@ -420,6 +420,9 @@ class RunService(BaseService):
             extra={'run_id': run_id, 'user_id': str(user.id)},
         )
 
+        # Emit event for WebSocket broadcast
+        event_bus.emit(CommentUpdatedEvent(run_id=run_uuid, comment=comment))
+
         return SuccessResponse(
             code=RUN_COMMENT_UPDATED,
             details={'run_id': run_id},
@@ -750,6 +753,9 @@ class RunService(BaseService):
             # Toggle helper status
             new_helper_status = not target_participation.is_helper
             self.run_repo.update_participation_helper(target_user_uuid, run_uuid, new_helper_status)
+
+        # Emit event for WebSocket broadcast
+        event_bus.emit(HelperToggledEvent(run_id=run_uuid, user_id=target_user_uuid))
 
         return SuccessResponse(
             code=HELPER_ADDED if new_helper_status else HELPER_REMOVED,
