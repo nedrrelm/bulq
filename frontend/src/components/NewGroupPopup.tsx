@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { groupsApi } from '../api'
 import type { Group } from '../api'
-import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { getErrorMessage } from '../utils/errorHandling'
 import BaseModal from './BaseModal'
+import { useFormValidation, validators, sanitizeString } from '../hooks/useFormValidation'
 
 interface NewGroupPopupProps {
   onClose: () => void
@@ -17,62 +17,36 @@ const MIN_LENGTH = 2
 export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps) {
   const { t } = useTranslation(['common', 'groups'])
   const [groupName, setGroupName] = useState('')
-  const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [serverError, setServerError] = useState('')
 
-  const validateGroupName = (value: string): boolean => {
-    setError('')
-
-    const trimmed = value.trim()
-
-    if (trimmed.length === 0) {
-      setError(t('groups:validation.nameRequired'))
-      return false
-    }
-
-    const lengthValidation = validateLength(trimmed, MIN_LENGTH, MAX_LENGTH, t('groups:fields.name'))
-    if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || t('groups:validation.invalidName'))
-      return false
-    }
-
-    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', t('groups:fields.name'))
-    if (!alphanumericValidation.isValid) {
-      setError(alphanumericValidation.error || t('groups:validation.invalidCharacters'))
-      return false
-    }
-
-    return true
-  }
-
-  const handleNameChange = (value: string) => {
-    // Limit input to max length
-    const sanitized = sanitizeString(value, MAX_LENGTH)
-    setGroupName(sanitized)
-    setError('') // Clear error on change
-  }
-
-  const handleBlur = () => {
-    if (groupName.trim()) {
-      validateGroupName(groupName)
-    }
-  }
+  const { error, validate, handleChange, handleBlur } = useFormValidation({
+    value: groupName,
+    onChange: setGroupName,
+    validators: [
+      validators.required(t('groups:validation.nameRequired')),
+      validators.length(MIN_LENGTH, MAX_LENGTH, t('groups:fields.name')),
+      validators.alphanumeric('- _&\'', t('groups:fields.name'))
+    ],
+    sanitize: (v) => sanitizeString(v, MAX_LENGTH),
+    validateOnBlur: true
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateGroupName(groupName)) {
+    if (!validate()) {
       return
     }
 
     try {
       setSubmitting(true)
-      setError('')
+      setServerError('')
 
       const newGroup = await groupsApi.createGroup({ name: groupName.trim() })
       onSuccess(newGroup)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to create group'))
+      setServerError(getErrorMessage(err, 'Failed to create group'))
       setSubmitting(false)
     }
   }
@@ -82,7 +56,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
       isOpen={true}
       onClose={onClose}
       title={t('groups:create.title')}
-      error={error}
+      error={error || serverError}
       submitButton={{
         text: submitting ? t('groups:create.submitting') : t('groups:create.submit'),
         onClick: handleSubmit,
@@ -97,7 +71,7 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
           type="text"
           className={`form-input ${error ? 'input-error' : ''}`}
           value={groupName}
-          onChange={(e) => handleNameChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           onBlur={handleBlur}
           placeholder={t('groups:create.namePlaceholder')}
           autoFocus

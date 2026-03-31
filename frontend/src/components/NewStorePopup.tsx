@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { storesApi } from '../api'
 import type { Store } from '../api'
-import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { getErrorMessage } from '../utils/errorHandling'
 import BaseModal from './BaseModal'
+import { useFormValidation, validators, sanitizeString } from '../hooks/useFormValidation'
 
 interface NewStorePopupProps {
   onClose: () => void
@@ -17,9 +17,21 @@ const MIN_LENGTH = 2
 export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps) {
   const { t } = useTranslation(['common', 'store'])
   const [storeName, setStoreName] = useState('')
-  const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [serverError, setServerError] = useState('')
   const [similarStores, setSimilarStores] = useState<Store[]>([])
+
+  const { error, validate, handleChange, handleBlur } = useFormValidation({
+    value: storeName,
+    onChange: setStoreName,
+    validators: [
+      validators.required(t('store:validation.nameRequired')),
+      validators.length(MIN_LENGTH, MAX_LENGTH, t('store:fields.name')),
+      validators.alphanumeric('- _&\'', t('store:fields.name'), true)
+    ],
+    sanitize: (v) => sanitizeString(v, MAX_LENGTH),
+    validateOnBlur: true
+  })
 
   // Check for similar stores as user types
   useEffect(() => {
@@ -46,48 +58,10 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
     return () => clearTimeout(timeoutId)
   }, [storeName])
 
-  const validateStoreName = (value: string): boolean => {
-    setError('')
-
-    const trimmed = value.trim()
-
-    if (trimmed.length === 0) {
-      setError(t('store:validation.nameRequired'))
-      return false
-    }
-
-    const lengthValidation = validateLength(trimmed, MIN_LENGTH, MAX_LENGTH, t('store:fields.name'))
-    if (!lengthValidation.isValid) {
-      setError(lengthValidation.error || t('store:validation.nameInvalid'))
-      return false
-    }
-
-    const alphanumericValidation = validateAlphanumeric(trimmed, '- _&\'', t('store:fields.name'), true)
-    if (!alphanumericValidation.isValid) {
-      setError(alphanumericValidation.error || t('store:validation.nameInvalidCharacters'))
-      return false
-    }
-
-    return true
-  }
-
-  const handleNameChange = (value: string) => {
-    // Limit input to max length
-    const sanitized = sanitizeString(value, MAX_LENGTH)
-    setStoreName(sanitized)
-    setError('') // Clear error on change
-  }
-
-  const handleBlur = () => {
-    if (storeName.trim()) {
-      validateStoreName(storeName)
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateStoreName(storeName)) {
+    if (!validate()) {
       return
     }
 
@@ -97,18 +71,18 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
     )
 
     if (exactMatch) {
-      setError(t('store:validation.alreadyExists', { name: exactMatch.name }))
+      setServerError(t('store:validation.alreadyExists', { name: exactMatch.name }))
       return
     }
 
     try {
       setSubmitting(true)
-      setError('')
+      setServerError('')
 
       const newStore = await storesApi.createStore({ name: storeName.trim() })
       onSuccess(newStore)
     } catch (err) {
-      setError(getErrorMessage(err, t('store:errors.createFailed')))
+      setServerError(getErrorMessage(err, t('store:errors.createFailed')))
       setSubmitting(false)
     }
   }
@@ -125,7 +99,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
       isOpen={true}
       onClose={onClose}
       title={t('store:create.title')}
-      error={error}
+      error={error || serverError}
       submitButton={{
         text: submitting ? t('store:actions.creating') : t('store:actions.create'),
         onClick: handleSubmit,
@@ -140,7 +114,7 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
           type="text"
           className={`form-input ${error ? 'input-error' : ''}`}
           value={storeName}
-          onChange={(e) => handleNameChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           onBlur={handleBlur}
           placeholder={t('store:fields.namePlaceholder')}
           autoFocus

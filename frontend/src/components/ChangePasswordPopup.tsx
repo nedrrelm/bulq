@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/auth'
 import { getErrorMessage } from '../utils/errorHandling'
 import BaseModal from './BaseModal'
+import { useFormValidation, validators } from '../hooks/useFormValidation'
 
 interface ChangePasswordPopupProps {
   onClose: () => void
@@ -14,20 +15,32 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [serverError, setServerError] = useState('')
+
+  const { errors, validateAll } = useFormValidation({
+    fields: {
+      newPassword: {
+        value: newPassword,
+        onChange: setNewPassword,
+        validators: [
+          validators.minLength(6, t('profile:fields.newPassword'))
+        ]
+      },
+      confirmPassword: {
+        value: confirmPassword,
+        onChange: setConfirmPassword,
+        validators: [
+          validators.match(newPassword, t('profile:validation.passwordMismatch'))
+        ]
+      }
+    }
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
 
-    if (newPassword.length < 6) {
-      setError(t('profile:validation.passwordMinLength'))
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError(t('profile:validation.passwordMismatch'))
+    if (!validateAll()) {
       return
     }
 
@@ -36,17 +49,19 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
       await authApi.changePassword(currentPassword, newPassword)
       onSuccess()
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to change password'))
+      setServerError(getErrorMessage(err, 'Failed to change password'))
       setSubmitting(false)
     }
   }
+
+  const displayError = errors.newPassword || errors.confirmPassword || serverError
 
   return (
     <BaseModal
       isOpen={true}
       onClose={onClose}
       title={t('profile:changePassword.title')}
-      error={error}
+      error={displayError}
       submitButton={{
         text: submitting ? t('profile:changePassword.changing') : t('common:buttons.save'),
         onClick: handleSubmit,

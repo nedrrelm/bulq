@@ -4,6 +4,7 @@ import { authApi } from '../api/auth'
 import type { User } from '../schemas/user'
 import { getErrorMessage } from '../utils/errorHandling'
 import BaseModal from './BaseModal'
+import { useFormValidation, validators } from '../hooks/useFormValidation'
 
 interface ChangeUsernamePopupProps {
   onClose: () => void
@@ -14,20 +15,22 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
   const { t } = useTranslation(['common', 'profile'])
   const [newUsername, setNewUsername] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
-  const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [serverError, setServerError] = useState('')
+
+  const { error, validate } = useFormValidation({
+    value: newUsername,
+    onChange: setNewUsername,
+    validators: [
+      validators.minLength(3, t('profile:fields.username')),
+      validators.pattern(/^[a-zA-Z0-9_-]+$/, t('profile:validation.usernameInvalidChars'))
+    ]
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
 
-    if (newUsername.length < 3) {
-      setError(t('profile:validation.usernameMinLength'))
-      return
-    }
-
-    if (!/^[a-zA-Z0-9_-]+$/.test(newUsername)) {
-      setError(t('profile:validation.usernameInvalidChars'))
+    if (!validate()) {
       return
     }
 
@@ -36,7 +39,7 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
       const updatedUser = await authApi.changeUsername(currentPassword, newUsername)
       onSuccess(updatedUser)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to change username'))
+      setServerError(getErrorMessage(err, 'Failed to change username'))
       setSubmitting(false)
     }
   }
@@ -46,7 +49,7 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
       isOpen={true}
       onClose={onClose}
       title={t('profile:changeUsername.title')}
-      error={error}
+      error={error || serverError}
       submitButton={{
         text: submitting ? t('profile:changeUsername.changing') : t('common:buttons.save'),
         onClick: handleSubmit,
