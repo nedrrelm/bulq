@@ -56,22 +56,6 @@ These items must be completed before production deployment.
 **Impact**: 20-25% code reduction (~3,000-4,000 lines)
 
 
-4. **Create admin CRUD factory** (1 day)
-   - `admin.ts` has identical patterns for users/products/stores (150 lines)
-   - Functions duplicated: getAll, toggleVerification, update, merge, delete
-   - Solution: Generic `createAdminApi<T>(entityPath)` factory
-   - Impact: 150 lines → 50 lines
-
-6. **Extract admin edit sections** (1 day)
-   - Merge and delete sections identical in 3 edit popups (~300 lines)
-   - Solution: Reusable `MergeSection` and `DeleteSection` components
-   - Files: `EditProductPopup.tsx`, `EditStorePopup.tsx`, `EditUserPopup.tsx`
-
-7. **Create useSimilarEntities hook** (1 day)
-   - Debounced entity checking logic duplicated in NewProductPopup, NewStorePopup
-   - Pattern: Check for similar entities with 300ms debounce
-   - Solution: Generic `useSimilarEntities<T>()` hook
-
 8. **Reorganize component structure** (1-2 days)
    - 40+ components in flat directory
    - Solution: Group by feature (common/, popups/, pages/, layout/)
