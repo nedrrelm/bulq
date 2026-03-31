@@ -147,11 +147,9 @@ class RunStateService(BaseService):
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user has access to this run (member of the group)
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT, message='Not authorized to modify this run', run_id=run_id
-            )
+        self._verify_run_access(
+            user, run, NOT_RUN_PARTICIPANT, 'Not authorized to modify this run', run_id=run_id
+        )
 
         # Check if user is the run leader
         participation = self.run_repo.get_participation(user.id, run_uuid)
@@ -208,11 +206,9 @@ class RunStateService(BaseService):
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user has access to this run (member of the group)
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT, message='Not authorized to modify this run', run_id=run_id
-            )
+        self._verify_run_access(
+            user, run, NOT_RUN_PARTICIPANT, 'Not authorized to modify this run', run_id=run_id
+        )
 
         # Only allow starting shopping from confirmed state - use state machine
         run_state = RunState(run.state)
@@ -319,11 +315,9 @@ class RunStateService(BaseService):
             )
 
         # Verify user has access to this run (member of the group)
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT, message='Not authorized to cancel this run', run_id=run_id
-            )
+        self._verify_run_access(
+            user, run, NOT_RUN_PARTICIPANT, 'Not authorized to cancel this run', run_id=run_id
+        )
 
         # Check if user is the run leader
         participation = self.run_repo.get_participation(user.id, run_uuid)
@@ -413,11 +407,9 @@ class RunStateService(BaseService):
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT, message='Not authorized to modify this run', run_id=run_id
-            )
+        self._verify_run_access(
+            user, run, NOT_RUN_PARTICIPANT, 'Not authorized to modify this run', run_id=run_id
+        )
 
         # Check if toggling ready is allowed using state machine
         run_state = RunState(run.state)
@@ -484,11 +476,9 @@ class RunStateService(BaseService):
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT, message='Not authorized to modify this run', run_id=run_id
-            )
+        self._verify_run_access(
+            user, run, NOT_RUN_PARTICIPANT, 'Not authorized to modify this run', run_id=run_id
+        )
 
         # Check if finishing adjusting is allowed using state machine
         run_state = RunState(run.state)

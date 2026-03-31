@@ -130,13 +130,13 @@ class RunService(BaseService):
         if not group:
             raise NotFoundError(code=GROUP_NOT_FOUND, message='Group not found', group_id=group_id)
 
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == group_uuid for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_GROUP_MEMBER,
-                message='Not authorized to create runs for this group',
-                group_id=group_id,
-            )
+        self._verify_group_membership(
+            user,
+            group_uuid,
+            NOT_GROUP_MEMBER,
+            'Not authorized to create runs for this group',
+            group_id=group_id,
+        )
 
         # Verify store exists
         all_stores = self.store_repo.get_all_stores()
@@ -452,11 +452,9 @@ class RunService(BaseService):
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_GROUP_MEMBER, message='Not authorized to view this run', run_id=run_id
-            )
+        self._verify_run_access(
+            user, run, NOT_GROUP_MEMBER, 'Not authorized to view this run', run_id=run_id
+        )
 
         # Get all products
         all_products = self.product_repo.get_all_products()
@@ -504,13 +502,9 @@ class RunService(BaseService):
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=str(run_uuid))
 
         # Verify user has access to this run (member of the group)
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT,
-                message='Not authorized to view this run',
-                run_id=str(run_uuid),
-            )
+        self._verify_run_access(
+            user, run, NOT_RUN_PARTICIPANT, 'Not authorized to view this run', run_id=str(run_uuid)
+        )
 
         return run
 
@@ -727,14 +721,14 @@ class RunService(BaseService):
                 code=USER_NOT_FOUND, message='User not found', user_id=target_user_id
             )
 
-        target_user_groups = self.user_repo.get_user_groups(target_user)
-        if not any(g.id == run.group_id for g in target_user_groups):
-            raise BadRequestError(
-                code=HELPER_NOT_GROUP_MEMBER,
-                message='User is not a member of this group',
-                user_id=target_user_id,
-                group_id=str(run.group_id),
-            )
+        self._verify_group_membership(
+            target_user,
+            run.group_id,
+            HELPER_NOT_GROUP_MEMBER,
+            'User is not a member of this group',
+            user_id=target_user_id,
+            group_id=str(run.group_id),
+        )
 
         # Get or create target user's participation
         target_participation = self.run_repo.get_participation(target_user_uuid, run_uuid)

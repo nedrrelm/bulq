@@ -59,12 +59,6 @@ These items improve maintainability, performance, and code quality. Not producti
 **Priority**: High
 **Impact**: 15-20% code reduction (~1,500 lines)
 
-3. **Extract authorization helpers** (1-2 days)
-   - 16 duplicate group membership checks across services
-   - Pattern: Same 6-line authorization check repeated
-   - Solution: Create `_verify_group_membership()` in BaseService
-   - Files: All service files
-
 4. **Fix N+1 query problems** (2 days)
    - `get_runs_by_group()` doesn't eager load relationships
    - Store lookups fetch all stores then filter (10+ occurrences)

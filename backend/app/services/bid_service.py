@@ -21,7 +21,7 @@ from app.core.error_codes import (
     RUN_MAX_PRODUCTS_EXCEEDED,
     RUN_NOT_FOUND,
 )
-from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from app.core.exceptions import BadRequestError, NotFoundError
 from app.core.models import Product, ProductBid, Run, RunParticipation, User
 from app.core.run_state import RunState, state_machine
 from app.core.success_codes import BID_PLACED, BID_RETRACTED
@@ -273,13 +273,9 @@ class BidService(BaseService):
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=str(run_uuid))
 
         # Verify user has access to this run (member of the group)
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT,
-                message='Not authorized to view this run',
-                run_id=str(run_uuid),
-            )
+        self._verify_run_access(
+            user, run, NOT_RUN_PARTICIPANT, 'Not authorized to view this run', run_id=str(run_uuid)
+        )
 
         return run
 
@@ -527,13 +523,13 @@ class BidService(BaseService):
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT,
-                message='Not authorized to modify bids on this run',
-                run_id=run_id,
-            )
+        self._verify_run_access(
+            user,
+            run,
+            NOT_RUN_PARTICIPANT,
+            'Not authorized to modify bids on this run',
+            run_id=run_id,
+        )
 
         # Check if run allows bid retraction using state machine
         run_state = RunState(run.state)

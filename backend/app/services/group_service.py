@@ -201,8 +201,7 @@ class GroupService(BaseService):
             )
 
         # Check if user is a member of the group
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == group_uuid for g in user_groups):
+        if not self._is_group_member(user, group_uuid):
             logger.warning(
                 "User attempted to access group they're not a member of",
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
@@ -252,13 +251,13 @@ class GroupService(BaseService):
             )
 
         # Check if user is a member of the group
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == group_uuid for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_GROUP_MEMBER,
-                message='Not a member of this group',
-                group_id=str(group_uuid),
-            )
+        self._verify_group_membership(
+            user,
+            group_uuid,
+            NOT_GROUP_MEMBER,
+            'Not a member of this group',
+            group_id=str(group_uuid),
+        )
 
         # Get runs for the group
         logger.debug(
@@ -333,13 +332,13 @@ class GroupService(BaseService):
             )
 
         # Check if user is a member of the group
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == group_uuid for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_GROUP_MEMBER,
-                message='Not a member of this group',
-                group_id=str(group_uuid),
-            )
+        self._verify_group_membership(
+            user,
+            group_uuid,
+            NOT_GROUP_MEMBER,
+            'Not a member of this group',
+            group_id=str(group_uuid),
+        )
 
         # Get paginated completed/cancelled runs for the group
         logger.debug(
@@ -615,13 +614,13 @@ class GroupService(BaseService):
             )
 
         # Check if user is a member of the group
-        user_groups = self.user_repo.get_user_groups(user)
-        if not any(g.id == group_uuid for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_GROUP_MEMBER,
-                message='Not a member of this group',
-                group_id=str(group_uuid),
-            )
+        self._verify_group_membership(
+            user,
+            group_uuid,
+            NOT_GROUP_MEMBER,
+            'Not a member of this group',
+            group_id=str(group_uuid),
+        )
 
         # Get members with admin status
         members = self.group_repo.get_group_members_with_admin_status(group_uuid)

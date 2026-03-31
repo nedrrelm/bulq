@@ -134,11 +134,9 @@ class DistributionService(BaseService):
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        user_groups = self.user_repo.get_user_groups(current_user)
-        if not any(g.id == run.group_id for g in user_groups):
-            raise ForbiddenError(
-                code=NOT_RUN_PARTICIPANT, message='Not authorized to view this run', run_id=run_id
-            )
+        self._verify_run_access(
+            current_user, run, NOT_RUN_PARTICIPANT, 'Not authorized to view this run', run_id=run_id
+        )
 
         # Check if viewing distribution is allowed using state machine
         run_state = RunState(run.state)
