@@ -1,17 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { groupsApi } from '../../api'
 import type { CreateGroupRequest, GroupDetails } from '../../api'
+import { createQueryKeys } from '../../utils/queryKeys'
 
 // Query Keys
-export const groupKeys = {
-  all: ['groups'] as const,
-  lists: () => [...groupKeys.all, 'list'] as const,
-  list: () => [...groupKeys.lists()] as const,
-  details: () => [...groupKeys.all, 'detail'] as const,
-  detail: (id: string) => [...groupKeys.details(), id] as const,
-  runs: (id: string) => [...groupKeys.detail(id), 'runs'] as const,
-  members: (id: string) => [...groupKeys.detail(id), 'members'] as const,
-}
+export const groupKeys = createQueryKeys('groups', {
+  nested: {
+    runs: 'runs',
+    members: 'members'
+  }
+})
 
 // ==================== Queries ====================
 

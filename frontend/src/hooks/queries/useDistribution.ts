@@ -1,13 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { distributionApi } from '../../api'
 import { runKeys } from './useRuns'
+import { createQueryKeys } from '../../utils/queryKeys'
 
 // Query Keys
-export const distributionKeys = {
-  all: ['distribution'] as const,
-  lists: () => [...distributionKeys.all, 'list'] as const,
-  list: (runId: string) => [...distributionKeys.lists(), runId] as const,
-}
+export const distributionKeys = createQueryKeys('distribution')
 
 // ==================== Queries ====================
 

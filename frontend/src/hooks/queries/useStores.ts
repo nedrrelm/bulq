@@ -1,14 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { storesApi } from '../../api'
+import { createQueryKeys } from '../../utils/queryKeys'
 
 // Query Keys
-export const storeKeys = {
-  all: ['stores'] as const,
-  lists: () => [...storeKeys.all, 'list'] as const,
-  list: () => [...storeKeys.lists()] as const,
-  details: () => [...storeKeys.all, 'detail'] as const,
-  detail: (id: string) => [...storeKeys.details(), id] as const,
-}
+export const storeKeys = createQueryKeys('stores')
 
 // ==================== Queries ====================
 

@@ -2,18 +2,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { runsApi } from '../../api'
 import { groupKeys } from './useGroups'
 import type { Run } from '../../schemas/run'
+import { createQueryKeys } from '../../utils/queryKeys'
 
 // Query Keys
-export const runKeys = {
-  all: ['runs'] as const,
-  lists: () => [...runKeys.all, 'list'] as const,
-  list: (filters?: any) => [...runKeys.lists(), filters] as const,
-  details: () => [...runKeys.all, 'detail'] as const,
-  detail: (id: string) => [...runKeys.details(), id] as const,
-  participations: (id: string) => [...runKeys.detail(id), 'participations'] as const,
-  bids: (id: string) => [...runKeys.detail(id), 'bids'] as const,
-  availableProducts: (id: string) => [...runKeys.detail(id), 'available-products'] as const,
-}
+export const runKeys = createQueryKeys('runs', {
+  nested: {
+    participations: 'participations',
+    bids: 'bids',
+    availableProducts: 'available-products'
+  }
+})
 
 // ==================== Queries ====================
 

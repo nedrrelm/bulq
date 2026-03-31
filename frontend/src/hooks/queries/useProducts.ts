@@ -1,15 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productsApi } from '../../api'
+import { createQueryKeys } from '../../utils/queryKeys'
 
 // Query Keys
-export const productKeys = {
-  all: ['products'] as const,
-  lists: () => [...productKeys.all, 'list'] as const,
-  list: (filters?: any) => [...productKeys.lists(), filters] as const,
-  details: () => [...productKeys.all, 'detail'] as const,
-  detail: (id: string) => [...productKeys.details(), id] as const,
-  byStore: (storeId: string) => [...productKeys.lists(), { storeId }] as const,
-}
+export const productKeys = createQueryKeys('products', {
+  filters: {
+    byStore: (storeId: string) => ({ storeId })
+  }
+})
 
 // ==================== Queries ====================
 

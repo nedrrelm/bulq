@@ -62,11 +62,6 @@ These items must be completed before production deployment.
    - Solution: Generic `createAdminApi<T>(entityPath)` factory
    - Impact: 150 lines → 50 lines
 
-5. **Create query key factory** (1-2 hours) ⚡ **QUICK WIN**
-   - Query key structure duplicated in 4 hooks files
-   - Solution: `createQueryKeys(entity)` utility function
-   - Files: `hooks/queries/useProducts.ts`, `useStores.ts`, `useGroups.ts`, `useRuns.ts`
-
 6. **Extract admin edit sections** (1 day)
    - Merge and delete sections identical in 3 edit popups (~300 lines)
    - Solution: Reusable `MergeSection` and `DeleteSection` components
