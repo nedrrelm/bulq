@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { storesApi } from '../api'
 import type { Store } from '../api'
 import { getErrorMessage } from '../utils/errorHandling'
 import BaseModal from './BaseModal'
 import { useFormValidation, validators, sanitizeString } from '../hooks/useFormValidation'
+import { useSimilarEntities } from '../hooks/useSimilarEntities'
 
 interface NewStorePopupProps {
   onClose: () => void
@@ -19,7 +20,6 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
   const [storeName, setStoreName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState('')
-  const [similarStores, setSimilarStores] = useState<Store[]>([])
 
   const { error, validate, handleChange, handleBlur } = useFormValidation({
     value: storeName,
@@ -34,29 +34,11 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
   })
 
   // Check for similar stores as user types
-  useEffect(() => {
-    const checkSimilar = async () => {
-      const trimmed = storeName.trim()
-
-      // Only check if we have at least MIN_LENGTH characters
-      if (trimmed.length < MIN_LENGTH) {
-        setSimilarStores([])
-        return
-      }
-
-      try {
-        const similar = await storesApi.checkSimilar(trimmed)
-        setSimilarStores(similar)
-      } catch (err) {
-        // Silently fail - this is a nice-to-have feature
-        setSimilarStores([])
-      }
-    }
-
-    // Debounce the API call
-    const timeoutId = setTimeout(checkSimilar, 300)
-    return () => clearTimeout(timeoutId)
-  }, [storeName])
+  const { similar: similarStores, exactMatch, hasNonExactSimilar } = useSimilarEntities({
+    searchValue: storeName,
+    fetcher: storesApi.checkSimilar,
+    minLength: MIN_LENGTH
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,10 +48,6 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
     }
 
     // Check for exact match
-    const exactMatch = similarStores.find(
-      s => s.name.toLowerCase() === storeName.trim().toLowerCase()
-    )
-
     if (exactMatch) {
       setServerError(t('store:validation.alreadyExists', { name: exactMatch.name }))
       return
@@ -86,13 +64,6 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
       setSubmitting(false)
     }
   }
-
-  // Check if there's an exact match
-  const exactMatch = similarStores.find(
-    s => s.name.toLowerCase() === storeName.trim().toLowerCase()
-  )
-
-  const hasNonExactSimilar = similarStores.length > 0 && !exactMatch
 
   return (
     <BaseModal

@@ -7,6 +7,7 @@ import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
 import BaseModal from './BaseModal'
+import { useSimilarEntities } from '../hooks/useSimilarEntities'
 
 interface NewProductPopupProps {
   onClose: () => void
@@ -29,7 +30,6 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [loadingStores, setLoadingStores] = useState(true)
-  const [similarProducts, setSimilarProducts] = useState<ProductSearchResult[]>([])
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
   useEffect(() => {
@@ -48,30 +48,16 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
     fetchStores()
   }, [])
 
-  // Check for similar products as user types
-  useEffect(() => {
-    const checkSimilar = async () => {
-      const trimmed = productName.trim()
-
-      // Only check if we have at least MIN_NAME_LENGTH characters
-      if (trimmed.length < MIN_NAME_LENGTH) {
-        setSimilarProducts([])
-        return
-      }
-
-      try {
-        const similar = await productsApi.checkSimilar(trimmed)
-        setSimilarProducts(similar)
-      } catch (err) {
-        // Silently fail - this is a nice-to-have feature
-        setSimilarProducts([])
-      }
-    }
-
-    // Debounce the API call
-    const timeoutId = setTimeout(checkSimilar, 300)
-    return () => clearTimeout(timeoutId)
-  }, [productName])
+  // Check for similar products as user types (matches on name and brand)
+  const { similar: similarProducts, exactMatch, hasNonExactSimilar } = useSimilarEntities({
+    searchValue: productName,
+    fetcher: productsApi.checkSimilar,
+    minLength: MIN_NAME_LENGTH,
+    getComparisonValue: (product) =>
+      `${product.name}|${product.brand || ''}`.toLowerCase(),
+    getInputComparisonValue: (name) =>
+      `${name}|${brand.trim()}`.toLowerCase()
+  })
 
   const validateProductName = (value: string): boolean => {
     const trimmed = value.trim()
@@ -174,11 +160,6 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
     }
 
     // Check for exact match
-    const exactMatch = similarProducts.find(
-      p => p.name.toLowerCase() === productName.trim().toLowerCase() &&
-           (brand.trim() === '' || p.brand?.toLowerCase() === brand.trim().toLowerCase())
-    )
-
     if (exactMatch) {
       const matchName = exactMatch.brand
         ? `${exactMatch.brand} ${exactMatch.name}`
@@ -199,14 +180,6 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
     // Check for price if store is selected
     checkStoreAndPrice()
   }
-
-  // Check if there's an exact match
-  const exactMatch = similarProducts.find(
-    p => p.name.toLowerCase() === productName.trim().toLowerCase() &&
-         (brand.trim() === '' || p.brand?.toLowerCase() === brand.trim().toLowerCase())
-  )
-
-  const hasNonExactSimilar = similarProducts.length > 0 && !exactMatch
 
   return (
     <>
