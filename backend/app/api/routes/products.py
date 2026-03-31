@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import ProductServiceDep
@@ -11,9 +9,10 @@ from app.api.schemas import (
     ProductDetailResponse,
     ProductSearchResult,
 )
-from app.core.error_codes import INVALID_ID_FORMAT, PRODUCT_NOT_FOUND
-from app.core.exceptions import BadRequestError, NotFoundError
+from app.core.error_codes import PRODUCT_NOT_FOUND
+from app.core.exceptions import NotFoundError
 from app.core.models import User
+from app.utils.validation import validate_uuid
 
 router = APIRouter(prefix='/products', tags=['products'])
 
@@ -51,36 +50,33 @@ async def create_product(
     current_user: User = Depends(require_auth),
 ):
     """Create a new product and optionally link to a store with price."""
-    try:
-        store_uuid = UUID(request.store_id) if request.store_id else None
+    store_uuid = validate_uuid(request.store_id, 'Store') if request.store_id else None
 
-        product, availability = service.create_product(
-            name=request.name,
-            brand=request.brand,
-            unit=request.unit,
-            store_id=store_uuid,
-            price=request.price,
-            minimum_quantity=request.minimum_quantity,
-            user_id=current_user.id,
+    product, availability = service.create_product(
+        name=request.name,
+        brand=request.brand,
+        unit=request.unit,
+        store_id=store_uuid,
+        price=request.price,
+        minimum_quantity=request.minimum_quantity,
+        user_id=current_user.id,
+    )
+
+    availability_info = None
+    if availability:
+        availability_info = AvailabilityInfo(
+            store_id=str(availability.store_id),
+            price=float(availability.price) if availability.price else None,
+            notes=availability.notes,
         )
 
-        availability_info = None
-        if availability:
-            availability_info = AvailabilityInfo(
-                store_id=str(availability.store_id),
-                price=float(availability.price) if availability.price else None,
-                notes=availability.notes,
-            )
-
-        return CreateProductResponse(
-            id=str(product.id),
-            name=product.name,
-            brand=product.brand,
-            unit=product.unit,
-            availability=availability_info,
-        )
-    except ValueError as e:
-        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+    return CreateProductResponse(
+        id=str(product.id),
+        name=product.name,
+        brand=product.brand,
+        unit=product.unit,
+        availability=availability_info,
+    )
 
 
 @router.get('/{product_id}', response_model=ProductDetailResponse)
@@ -91,7 +87,7 @@ async def get_product_details(
 
     Shows the product across different stores and historical prices recorded during shopping.
     """
-    result = service.get_product_details(UUID(product_id))
+    result = service.get_product_details(validate_uuid(product_id, 'Product'))
     if not result:
         raise NotFoundError(
             code=PRODUCT_NOT_FOUND, message='Product not found', product_id=product_id

@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends
 
 from app.api.dependencies import DistributionServiceDep
@@ -10,9 +8,8 @@ from app.api.schemas import (
     SuccessResponse,
 )
 from app.api.websocket_manager import manager
-from app.core.error_codes import INVALID_ID_FORMAT
-from app.core.exceptions import BadRequestError
 from app.core.models import User
+from app.utils.validation import validate_uuid
 
 router = APIRouter(prefix='/distribution', tags=['distribution'])
 
@@ -22,12 +19,7 @@ async def get_distribution_data(
     run_id: str, service: DistributionServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get distribution data aggregated by user."""
-    # Validate run ID
-    try:
-        run_uuid = UUID(run_id)
-    except ValueError as e:
-        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
-
+    run_uuid = validate_uuid(run_id, 'Run')
     return service.get_distribution_summary(run_uuid, current_user)
 
 
@@ -39,12 +31,8 @@ async def mark_picked_up(
     current_user: User = Depends(require_auth),
 ):
     """Mark a product as picked up by a user."""
-    # Validate IDs
-    try:
-        run_uuid = UUID(run_id)
-        bid_uuid = UUID(bid_id)
-    except ValueError as e:
-        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+    run_uuid = validate_uuid(run_id, 'Run')
+    bid_uuid = validate_uuid(bid_id, 'Bid')
 
     result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
 
@@ -65,11 +53,6 @@ async def complete_distribution(
     run_id: str, service: DistributionServiceDep, current_user: User = Depends(require_auth)
 ):
     """Complete distribution - transition from distributing to completed state (leader only)."""
-    # Validate run ID
-    try:
-        run_uuid = UUID(run_id)
-    except ValueError as e:
-        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
-
+    run_uuid = validate_uuid(run_id, 'Run')
     # Complete distribution via service (events are emitted by service)
     return service.complete_distribution(run_uuid, current_user)

@@ -59,18 +59,6 @@ These items improve maintainability, performance, and code quality. Not producti
 **Priority**: High
 **Impact**: 15-20% code reduction (~1,500 lines)
 
-1. **Create service dependency injection** (2-3 days)
-   - 67 duplicate service instantiations across routes
-   - Pattern: `service = XService(db)` repeated in every route handler
-   - Solution: Use FastAPI `Depends()` pattern
-   - Files: All route files in `app/api/routes/`
-
-2. **Standardize UUID validation** (1 day)
-   - 31 manual UUID validations with try/except blocks
-   - Helper exists at `app/utils/validation.py:13` but underused
-   - Impact: Inconsistent error handling, security risk
-   - Files: Routes and services throughout codebase
-
 3. **Extract authorization helpers** (1-2 days)
    - 16 duplicate group membership checks across services
    - Pattern: Same 6-line authorization check repeated

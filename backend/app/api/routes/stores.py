@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import StoreServiceDep
@@ -9,9 +7,8 @@ from app.api.schemas import (
     StorePageResponse,
     StoreResponse,
 )
-from app.core.error_codes import INVALID_ID_FORMAT
-from app.core.exceptions import BadRequestError
 from app.core.models import User
+from app.utils.validation import validate_uuid
 
 router = APIRouter(prefix='/stores', tags=['stores'])
 
@@ -49,11 +46,7 @@ async def get_store_page(
     store_id: str, service: StoreServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get store page data including store info, products, and active runs."""
-    try:
-        store_uuid = UUID(store_id)
-    except ValueError as e:
-        raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
-
+    store_uuid = validate_uuid(store_id, 'Store')
     return service.get_store_page_data(store_uuid, current_user.id)
 
 

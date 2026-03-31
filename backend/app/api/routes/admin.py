@@ -1,7 +1,5 @@
 """Admin routes for managing users, products, and stores."""
 
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -23,6 +21,7 @@ from app.core.error_codes import NOT_SYSTEM_ADMIN
 from app.core.exceptions import ForbiddenError
 from app.core.models import User
 from app.infrastructure.database import get_db
+from app.utils.validation import validate_uuid
 
 router = APIRouter(prefix='/admin', tags=['admin'])
 
@@ -54,7 +53,7 @@ async def toggle_user_verification(
     user_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Toggle user verification status."""
-    return service.toggle_user_verification(UUID(user_id), admin_user)
+    return service.toggle_user_verification(validate_uuid(user_id, 'User'), admin_user)
 
 
 @router.get('/groups', response_model=list[AdminGroupResponse])
@@ -87,7 +86,7 @@ async def toggle_product_verification(
     product_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Toggle product verification status."""
-    return service.toggle_product_verification(UUID(product_id), admin_user)
+    return service.toggle_product_verification(validate_uuid(product_id, 'Product'), admin_user)
 
 
 @router.get('/stores', response_model=list[AdminStoreResponse])
@@ -108,7 +107,7 @@ async def toggle_store_verification(
     store_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Toggle store verification status."""
-    return service.toggle_store_verification(UUID(store_id), admin_user)
+    return service.toggle_store_verification(validate_uuid(store_id, 'Store'), admin_user)
 
 
 # ==================== Update Routes ====================
@@ -122,7 +121,9 @@ async def update_product(
     admin_user: User = Depends(require_admin),
 ):
     """Update product fields."""
-    return service.update_product(UUID(product_id), data.model_dump(), admin_user)
+    return service.update_product(
+        validate_uuid(product_id, 'Product'), data.model_dump(), admin_user
+    )
 
 
 @router.put('/stores/{store_id}', response_model=AdminStoreResponse)
@@ -133,7 +134,7 @@ async def update_store(
     admin_user: User = Depends(require_admin),
 ):
     """Update store fields."""
-    return service.update_store(UUID(store_id), data.model_dump(), admin_user)
+    return service.update_store(validate_uuid(store_id, 'Store'), data.model_dump(), admin_user)
 
 
 @router.put('/users/{user_id}', response_model=AdminUserResponse)
@@ -144,7 +145,7 @@ async def update_user(
     admin_user: User = Depends(require_admin),
 ):
     """Update user fields."""
-    return service.update_user(UUID(user_id), data.model_dump(), admin_user)
+    return service.update_user(validate_uuid(user_id, 'User'), data.model_dump(), admin_user)
 
 
 # ==================== Merge Routes ====================
@@ -158,7 +159,9 @@ async def merge_products(
     admin_user: User = Depends(require_admin),
 ):
     """Merge one product into another. All bids and availabilities will be transferred."""
-    return service.merge_products(UUID(source_id), UUID(target_id), admin_user)
+    return service.merge_products(
+        validate_uuid(source_id, 'Product'), validate_uuid(target_id, 'Product'), admin_user
+    )
 
 
 @router.post('/stores/{source_id}/merge/{target_id}', response_model=MergeResponse)
@@ -169,7 +172,9 @@ async def merge_stores(
     admin_user: User = Depends(require_admin),
 ):
     """Merge one store into another. All runs and availabilities will be transferred."""
-    return service.merge_stores(UUID(source_id), UUID(target_id), admin_user)
+    return service.merge_stores(
+        validate_uuid(source_id, 'Store'), validate_uuid(target_id, 'Store'), admin_user
+    )
 
 
 @router.post('/users/{source_id}/merge/{target_id}', response_model=MergeResponse)
@@ -180,7 +185,9 @@ async def merge_users(
     admin_user: User = Depends(require_admin),
 ):
     """Merge one user into another. All data will be transferred."""
-    return service.merge_users(UUID(source_id), UUID(target_id), admin_user)
+    return service.merge_users(
+        validate_uuid(source_id, 'User'), validate_uuid(target_id, 'User'), admin_user
+    )
 
 
 # ==================== Delete Routes ====================
@@ -191,7 +198,7 @@ async def delete_product(
     product_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Delete a product. Cannot delete if it has associated bids."""
-    return service.delete_product(UUID(product_id), admin_user)
+    return service.delete_product(validate_uuid(product_id, 'Product'), admin_user)
 
 
 @router.delete('/stores/{store_id}', response_model=DeleteResponse)
@@ -199,7 +206,7 @@ async def delete_store(
     store_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Delete a store. Cannot delete if it has associated runs."""
-    return service.delete_store(UUID(store_id), admin_user)
+    return service.delete_store(validate_uuid(store_id, 'Store'), admin_user)
 
 
 @router.delete('/users/{user_id}', response_model=DeleteResponse)
@@ -207,7 +214,7 @@ async def delete_user(
     user_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Delete a user. Cannot delete yourself or other admins."""
-    return service.delete_user(UUID(user_id), admin_user)
+    return service.delete_user(validate_uuid(user_id, 'User'), admin_user)
 
 
 @router.get('/settings/registration')
