@@ -6,7 +6,8 @@ import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
 import BaseModal from './BaseModal'
-import { translateSuccess } from '../utils/translation'
+import { AdminMergeSection } from './admin/AdminMergeSection'
+import { AdminDeleteSection } from './admin/AdminDeleteSection'
 
 interface EditStorePopupProps {
   store: AdminStore
@@ -22,7 +23,6 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
   const [storeName, setStoreName] = useState(store.name)
   const [address, setAddress] = useState(store.address || '')
   const [chain, setChain] = useState(store.chain || '')
-  const [mergeTargetId, setMergeTargetId] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
@@ -80,36 +80,6 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
       onSuccess()
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to update store'))
-      setSubmitting(false)
-    }
-  }
-
-  const handleMerge = async () => {
-    if (!mergeTargetId.trim()) {
-      setError(t('admin:edit.store.errors.mergeTargetRequired'))
-      return
-    }
-
-    try {
-      setSubmitting(true)
-      const response = await adminApi.mergeStores(store.id, mergeTargetId.trim())
-      const successMsg = translateSuccess(response.code, response.details)
-      alert(`${successMsg}\n${t('admin:edit.affectedRecords')}: ${response.affected_records}`)
-      onSuccess()
-    } catch (err) {
-      setError(getErrorMessage(err, t('admin:edit.store.errors.mergeFailed')))
-      setSubmitting(false)
-    }
-  }
-
-  const handleDelete = async () => {
-    try {
-      setSubmitting(true)
-      const response = await adminApi.deleteStore(store.id)
-      alert(translateSuccess(response.code, response.details))
-      onSuccess()
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to delete store'))
       setSubmitting(false)
     }
   }
@@ -178,60 +148,29 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
 
         <hr className="divider" />
 
-        {/* Merge Section */}
-        <div className="form-group">
-          <label htmlFor="merge-target" className="form-label">{t('admin:edit.store.mergeTitle')}</label>
-          <p className="text-description mb-sm">
-            {t('admin:edit.store.mergeDescription')}
-          </p>
-          <div className="flex-gap-sm">
-            <input
-              id="merge-target"
-              type="text"
-              className="form-input"
-              value={mergeTargetId}
-              onChange={(e) => {
-                setMergeTargetId(e.target.value)
-                setError('')
-              }}
-              placeholder={t('admin:edit.store.mergePlaceholder')}
-              disabled={submitting}
-            />
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => showConfirm(
-                t('admin:edit.store.mergeConfirm', { name: store.name }),
-                handleMerge
-              )}
-              disabled={submitting || !mergeTargetId.trim()}
-            >
-              {t('admin:edit.store.mergeButton')}
-            </button>
-          </div>
-        </div>
+        <AdminMergeSection
+          entityType="store"
+          entityId={store.id}
+          entityName={store.name}
+          mergeHandler={adminApi.mergeStores}
+          onSuccess={onSuccess}
+          onError={setError}
+          disabled={submitting}
+          showConfirm={showConfirm}
+        />
 
         <hr className="divider" />
 
-        {/* Delete Section */}
-        <div className="form-group">
-          <label className="form-label label-danger">{t('admin:edit.dangerZone')}</label>
-          <p className="text-description mb-sm">
-            {t('admin:edit.store.deleteWarning')}
-          </p>
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={() => showConfirm(
-              t('admin:edit.store.deleteConfirm', { name: store.name }),
-              handleDelete,
-              { danger: true }
-            )}
-            disabled={submitting}
-          >
-            {t('admin:edit.store.deleteButton')}
-          </button>
-        </div>
+        <AdminDeleteSection
+          entityType="store"
+          entityId={store.id}
+          entityName={store.name}
+          deleteHandler={adminApi.deleteStore}
+          onSuccess={onSuccess}
+          onError={setError}
+          disabled={submitting}
+          showConfirm={showConfirm}
+        />
       </BaseModal>
 
       {confirmState && (

@@ -6,9 +6,10 @@ import { validateLength, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
-import { translateSuccess } from '../utils/translation'
 import { runKeys } from '../hooks/queries/useRuns'
 import BaseModal from './BaseModal'
+import { AdminMergeSection } from './admin/AdminMergeSection'
+import { AdminDeleteSection } from './admin/AdminDeleteSection'
 
 interface EditUserPopupProps {
   user: AdminUser
@@ -28,7 +29,6 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
   const [username, setUsername] = useState(user.username)
   const [isAdmin, setIsAdmin] = useState(user.is_admin)
   const [verified, setVerified] = useState(user.verified)
-  const [mergeTargetId, setMergeTargetId] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { confirmState, showConfirm, hideConfirm, handleConfirm} = useConfirm()
@@ -106,38 +106,12 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
     }
   }
 
-  const handleMerge = async () => {
-    if (!mergeTargetId.trim()) {
-      setError(t('admin:edit.user.errors.mergeTargetRequired'))
-      return
-    }
-
-    try {
-      setSubmitting(true)
-      const response = await adminApi.mergeUsers(user.id, mergeTargetId.trim())
-      const successMsg = translateSuccess(response.code, response.details)
-      alert(`${successMsg}\n${t('admin:edit.affectedRecords')}: ${response.affected_records}`)
-
-      // Invalidate all run queries to refresh participant names
-      queryClient.invalidateQueries({ queryKey: runKeys.all })
-
-      onSuccess()
-    } catch (err) {
-      setError(getErrorMessage(err, t('admin:edit.user.errors.mergeFailed')))
-      setSubmitting(false)
-    }
-  }
-
-  const handleDelete = async () => {
-    try {
-      setSubmitting(true)
-      const response = await adminApi.deleteUser(user.id)
-      alert(translateSuccess(response.code, response.details))
-      onSuccess()
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to delete user'))
-      setSubmitting(false)
-    }
+  // Custom merge handler that also invalidates run queries
+  const handleUserMerge = async (sourceId: string, targetId: string) => {
+    const response = await adminApi.mergeUsers(sourceId, targetId)
+    // Invalidate all run queries to refresh participant names
+    queryClient.invalidateQueries({ queryKey: runKeys.all })
+    return response
   }
 
   return (
@@ -228,61 +202,29 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
 
         <hr className="divider" />
 
-        {/* Merge Section */}
-        <div className="form-group">
-          <label htmlFor="merge-target" className="form-label">{t('admin:edit.user.mergeTitle')}</label>
-          <p className="text-description mb-sm">
-            {t('admin:edit.user.mergeDescription')}
-          </p>
-          <div className="flex-gap-sm">
-            <input
-              id="merge-target"
-              type="text"
-              className="form-input"
-              value={mergeTargetId}
-              onChange={(e) => {
-                setMergeTargetId(e.target.value)
-                setError('')
-              }}
-              placeholder={t('admin:edit.user.mergePlaceholder')}
-              disabled={submitting}
-            />
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => showConfirm(
-                t('admin:edit.user.mergeConfirm', { sourceName: user.name }),
-                handleMerge,
-                { danger: true }
-              )}
-              disabled={submitting || !mergeTargetId.trim()}
-            >
-              {t('admin:edit.user.mergeButton')}
-            </button>
-          </div>
-        </div>
+        <AdminMergeSection
+          entityType="user"
+          entityId={user.id}
+          entityName={user.name}
+          mergeHandler={handleUserMerge}
+          onSuccess={onSuccess}
+          onError={setError}
+          disabled={submitting}
+          showConfirm={(msg, onConfirm) => showConfirm(msg, onConfirm, { danger: true })}
+        />
 
         <hr className="divider" />
 
-        {/* Delete Section */}
-        <div className="form-group">
-          <label className="form-label label-danger">{t('admin:edit.dangerZone')}</label>
-          <p className="text-description mb-sm">
-            {t('admin:edit.user.deleteWarning')}
-          </p>
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={() => showConfirm(
-              t('admin:edit.user.deleteConfirm', { name: user.name }),
-              handleDelete,
-              { danger: true }
-            )}
-            disabled={submitting}
-          >
-            {t('admin:edit.user.deleteButton')}
-          </button>
-        </div>
+        <AdminDeleteSection
+          entityType="user"
+          entityId={user.id}
+          entityName={user.name}
+          deleteHandler={adminApi.deleteUser}
+          onSuccess={onSuccess}
+          onError={setError}
+          disabled={submitting}
+          showConfirm={showConfirm}
+        />
       </BaseModal>
 
       {confirmState && (
