@@ -12,7 +12,9 @@ from app.repositories import (
     get_store_repository,
     get_user_repository,
 )
-from app.services.group_service import GroupService
+from app.services.group_invite_service import GroupInviteService
+from app.services.group_management_service import GroupManagementService
+from app.services.group_query_service import GroupQueryService
 from app.services.product_service import ProductService
 from app.services.run_service import RunService
 from app.services.store_service import StoreService
@@ -161,7 +163,7 @@ class TestGroupService:
     @pytest.mark.asyncio
     async def test_create_group_success(self, db_session, user):
         """Test successful group creation"""
-        service = GroupService(db_session)
+        service = GroupManagementService(db_session)
         result = service.create_group('New Group', user)
 
         assert result.name == 'New Group'
@@ -170,7 +172,7 @@ class TestGroupService:
 
     def test_get_user_groups(self, db_session, user, group):
         """Test getting user's groups"""
-        service = GroupService(db_session)
+        service = GroupQueryService(db_session)
         groups = service.get_user_groups(user)
 
         assert len(groups) >= 1
@@ -178,7 +180,7 @@ class TestGroupService:
 
     def test_get_group_details(self, db_session, user, group):
         """Test getting group details"""
-        service = GroupService(db_session)
+        service = GroupQueryService(db_session)
         details = service.get_group_details(str(group.id), user)
 
         assert details.id == str(group.id)
@@ -194,14 +196,14 @@ class TestGroupService:
         other_group = group_repo.create_group(name='Other Group', created_by=other_user.id)
         group_repo.add_group_member(other_group.id, other_user, is_group_admin=False)
 
-        service = GroupService(db_session)
+        service = GroupQueryService(db_session)
         with pytest.raises(ForbiddenError):
             service.get_group_details(str(other_group.id), user)
 
     @pytest.mark.asyncio
     async def test_regenerate_invite_token(self, db_session, user, group):
         """Test regenerating invite token"""
-        service = GroupService(db_session)
+        service = GroupInviteService(db_session)
         original_token = group.invite_token
 
         result = service.regenerate_invite_token(str(group.id), user)
@@ -215,7 +217,7 @@ class TestGroupService:
         user_repo = get_user_repository(db_session)
         new_user = user_repo.create_user(name='New User', username='newuser', password_hash='hash')
 
-        service = GroupService(db_session)
+        service = GroupInviteService(db_session)
         result = service.join_group(group.invite_token, new_user)
 
         assert result.group_id == str(group.id)
@@ -224,14 +226,14 @@ class TestGroupService:
 
     def test_join_group_invalid_token(self, db_session, user):
         """Test joining group with invalid token"""
-        service = GroupService(db_session)
+        service = GroupInviteService(db_session)
         with pytest.raises(NotFoundError):
             service.join_group('invalid-token', user)
 
     @pytest.mark.asyncio
     async def test_join_group_already_member(self, db_session, user, group):
         """Test joining group when already a member"""
-        service = GroupService(db_session)
+        service = GroupInviteService(db_session)
         with pytest.raises(BadRequestError):
             service.join_group(group.invite_token, user)
 

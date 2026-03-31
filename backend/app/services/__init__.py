@@ -1,7 +1,10 @@
 from .admin_service import AdminService
 from .bid_service import BidService
 from .distribution_service import DistributionService
-from .group_service import GroupService
+from .group_invite_service import GroupInviteService
+from .group_management_service import GroupManagementService
+from .group_membership_service import GroupMembershipService
+from .group_query_service import GroupQueryService
 from .notification_service import NotificationService
 from .product_service import ProductService
 from .reassignment_service import ReassignmentService
@@ -12,16 +15,19 @@ from .shopping_service import ShoppingService
 from .store_service import StoreService
 
 __all__ = [
-    'RunService',
-    'BidService',
-    'RunStateService',
-    'RunNotificationService',
-    'GroupService',
-    'ShoppingService',
-    'DistributionService',
-    'ProductService',
-    'StoreService',
-    'NotificationService',
-    'ReassignmentService',
     'AdminService',
+    'BidService',
+    'DistributionService',
+    'GroupInviteService',
+    'GroupManagementService',
+    'GroupMembershipService',
+    'GroupQueryService',
+    'NotificationService',
+    'ProductService',
+    'ReassignmentService',
+    'RunNotificationService',
+    'RunService',
+    'RunStateService',
+    'ShoppingService',
+    'StoreService',
 ]

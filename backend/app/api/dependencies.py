@@ -22,7 +22,10 @@ from app.services import (
     AdminService,
     BidService,
     DistributionService,
-    GroupService,
+    GroupInviteService,
+    GroupManagementService,
+    GroupMembershipService,
+    GroupQueryService,
     NotificationService,
     ProductService,
     ReassignmentService,
@@ -110,16 +113,52 @@ def get_run_service(
     return RunService(db, bid_service, notification_service, state_service)
 
 
-def get_group_service(db: Session = Depends(get_db)) -> GroupService:
-    """Provide GroupService instance with injected database session.
+def get_group_query_service(db: Session = Depends(get_db)) -> GroupQueryService:
+    """Provide GroupQueryService instance with injected database session.
 
     Args:
         db: Database session injected by FastAPI
 
     Returns:
-        GroupService instance
+        GroupQueryService instance
     """
-    return GroupService(db)
+    return GroupQueryService(db)
+
+
+def get_group_management_service(db: Session = Depends(get_db)) -> GroupManagementService:
+    """Provide GroupManagementService instance with injected database session.
+
+    Args:
+        db: Database session injected by FastAPI
+
+    Returns:
+        GroupManagementService instance
+    """
+    return GroupManagementService(db)
+
+
+def get_group_invite_service(db: Session = Depends(get_db)) -> GroupInviteService:
+    """Provide GroupInviteService instance with injected database session.
+
+    Args:
+        db: Database session injected by FastAPI
+
+    Returns:
+        GroupInviteService instance
+    """
+    return GroupInviteService(db)
+
+
+def get_group_membership_service(db: Session = Depends(get_db)) -> GroupMembershipService:
+    """Provide GroupMembershipService instance with injected database session.
+
+    Args:
+        db: Database session injected by FastAPI
+
+    Returns:
+        GroupMembershipService instance
+    """
+    return GroupMembershipService(db)
 
 
 def get_shopping_service(db: Session = Depends(get_db)) -> ShoppingService:
@@ -204,13 +243,16 @@ def get_distribution_service(db: Session = Depends(get_db)) -> DistributionServi
 
 AdminServiceDep = Annotated[AdminService, Depends(get_admin_service)]
 BidServiceDep = Annotated[BidService, Depends(get_bid_service)]
-RunNotificationServiceDep = Annotated[RunNotificationService, Depends(get_run_notification_service)]
-RunStateServiceDep = Annotated[RunStateService, Depends(get_run_state_service)]
-RunServiceDep = Annotated[RunService, Depends(get_run_service)]
-GroupServiceDep = Annotated[GroupService, Depends(get_group_service)]
-ShoppingServiceDep = Annotated[ShoppingService, Depends(get_shopping_service)]
-ReassignmentServiceDep = Annotated[ReassignmentService, Depends(get_reassignment_service)]
+DistributionServiceDep = Annotated[DistributionService, Depends(get_distribution_service)]
+GroupQueryServiceDep = Annotated[GroupQueryService, Depends(get_group_query_service)]
+GroupManagementServiceDep = Annotated[GroupManagementService, Depends(get_group_management_service)]
+GroupInviteServiceDep = Annotated[GroupInviteService, Depends(get_group_invite_service)]
+GroupMembershipServiceDep = Annotated[GroupMembershipService, Depends(get_group_membership_service)]
 NotificationServiceDep = Annotated[NotificationService, Depends(get_notification_service)]
 ProductServiceDep = Annotated[ProductService, Depends(get_product_service)]
+ReassignmentServiceDep = Annotated[ReassignmentService, Depends(get_reassignment_service)]
+RunNotificationServiceDep = Annotated[RunNotificationService, Depends(get_run_notification_service)]
+RunServiceDep = Annotated[RunService, Depends(get_run_service)]
+RunStateServiceDep = Annotated[RunStateService, Depends(get_run_state_service)]
+ShoppingServiceDep = Annotated[ShoppingService, Depends(get_shopping_service)]
 StoreServiceDep = Annotated[StoreService, Depends(get_store_service)]
-DistributionServiceDep = Annotated[DistributionService, Depends(get_distribution_service)]

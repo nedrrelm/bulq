@@ -50,35 +50,6 @@ These items must be completed before production deployment.
 
 ## 🔧 Technical Debt & Code Quality
 
-These items improve maintainability, performance, and code quality. Not production blockers but should be addressed soon.
-
----
-
-### Backend Code Duplication
-
-**Priority**: High
-**Impact**: 15-20% code reduction (~1,500 lines)
-
-
-5. **Split large service files** (2-3 days)
-   - `group_service.py`: 1,106 lines
-   - `shopping_service.py`: 1,073 lines
-   - `run_service.py`: 919 lines
-   - Solution: Split into focused service classes (e.g., GroupMembershipService, GroupManagementService)
-
-6. **Standardize WebSocket broadcasting** (1 day)
-   - Two patterns exist: direct broadcast in routes vs service-level
-   - 13 total broadcasts split between patterns
-   - Solution: Choose one consistent pattern
-   - Files: `routes/runs.py`, `routes/shopping.py`, `routes/distribution.py`
-
-7. **Add get_store_by_id() to repository** (2 hours)
-   - Currently fetching all stores then filtering (10+ occurrences)
-   - Performance: N+1 query pattern
-   - Files: `repositories/abstract/store.py`, `repositories/database/store.py`
-
----
-
 ### Frontend Code Duplication
 
 **Priority**: High
