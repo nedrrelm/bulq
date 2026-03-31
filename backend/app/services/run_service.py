@@ -68,11 +68,20 @@ class RunService(BaseService):
     for complex run operations.
     """
 
-    def __init__(self, db: Session):
-        """Initialize service with database session.
+    def __init__(
+        self,
+        db: Session,
+        bid_service: BidService | None = None,
+        notification_service: RunNotificationService | None = None,
+        state_service: RunStateService | None = None,
+    ):
+        """Initialize service with database session and optional sub-services.
 
         Args:
             db: SQLAlchemy database session
+            bid_service: Optional BidService instance (for dependency injection)
+            notification_service: Optional RunNotificationService instance (for dependency injection)
+            state_service: Optional RunStateService instance (for dependency injection)
         """
         super().__init__(db)
         self.bid_repo = get_bid_repository(db)
@@ -82,9 +91,11 @@ class RunService(BaseService):
         self.shopping_repo = get_shopping_repository(db)
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
-        self.bid_service = BidService(db)
-        self.notification_service = RunNotificationService(db)
-        self.state_service = RunStateService(db, self.notification_service)
+
+        # Use injected services or create new instances (for backward compatibility)
+        self.bid_service = bid_service or BidService(db)
+        self.notification_service = notification_service or RunNotificationService(db)
+        self.state_service = state_service or RunStateService(db, self.notification_service)
 
     def create_run(
         self, group_id: str, store_id: str, user: User, comment: str | None = None

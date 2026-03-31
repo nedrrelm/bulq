@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
 
+from app.api.dependencies import ProductServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     GroupSearchResult,
@@ -8,26 +8,23 @@ from app.api.schemas import (
     StoreSearchResult,
 )
 from app.core.models import User
-from app.infrastructure.database import get_db
-from app.services import ProductService
 
 router = APIRouter(prefix='/search', tags=['search'])
 
 
 @router.get('', response_model=SearchResponse)
 async def search_all(
+    service: ProductServiceDep,
     q: str = Query(..., min_length=1, description='Search query'),
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
 ):
     """Consolidated search across products, stores, and groups.
 
     Returns up to 3 results per category.
     """
     # Search products
-    product_service = ProductService(db)
-    repo = product_service.repo
-    all_products = product_service.search_products(q)
+    repo = service.repo
+    all_products = service.search_products(q)
     products = all_products[:3]  # Limit to 3
 
     # Search stores

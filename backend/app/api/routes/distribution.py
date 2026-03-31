@@ -1,8 +1,8 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
+from app.api.dependencies import DistributionServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     DistributionUser,
@@ -13,19 +13,15 @@ from app.api.websocket_manager import manager
 from app.core.error_codes import INVALID_ID_FORMAT
 from app.core.exceptions import BadRequestError
 from app.core.models import User
-from app.infrastructure.database import get_db
-from app.services import DistributionService
 
 router = APIRouter(prefix='/distribution', tags=['distribution'])
 
 
 @router.get('/{run_id}', response_model=list[DistributionUser])
 async def get_distribution_data(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: DistributionServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get distribution data aggregated by user."""
-    service = DistributionService(db)
-
     # Validate run ID
     try:
         run_uuid = UUID(run_id)
@@ -39,12 +35,10 @@ async def get_distribution_data(
 async def mark_picked_up(
     run_id: str,
     bid_id: str,
+    service: DistributionServiceDep,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
 ):
     """Mark a product as picked up by a user."""
-    service = DistributionService(db)
-
     # Validate IDs
     try:
         run_uuid = UUID(run_id)
@@ -68,11 +62,9 @@ async def mark_picked_up(
 
 @router.post('/{run_id}/complete', response_model=StateChangeResponse)
 async def complete_distribution(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: DistributionServiceDep, current_user: User = Depends(require_auth)
 ):
     """Complete distribution - transition from distributing to completed state (leader only)."""
-    service = DistributionService(db)
-
     # Validate run ID
     try:
         run_uuid = UUID(run_id)

@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import AdminServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     AdminGroupResponse,
@@ -22,7 +23,6 @@ from app.core.error_codes import NOT_SYSTEM_ADMIN
 from app.core.exceptions import ForbiddenError
 from app.core.models import User
 from app.infrastructure.database import get_db
-from app.services import AdminService
 
 router = APIRouter(prefix='/admin', tags=['admin'])
 
@@ -38,83 +38,76 @@ def require_admin(current_user: User = Depends(require_auth)) -> User:
 
 @router.get('/users', response_model=list[AdminUserResponse])
 async def get_users(
+    service: AdminServiceDep,
     search: str | None = Query(None),
     verified: bool | None = Query(None),
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Get all users with optional search and filtering (paginated, max 100 per page)."""
-    service = AdminService(db)
     return service.get_users(search, verified, limit, offset)
 
 
 @router.post('/users/{user_id}/verify', response_model=VerificationToggleResponse)
 async def toggle_user_verification(
-    user_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+    user_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Toggle user verification status."""
-    service = AdminService(db)
     return service.toggle_user_verification(UUID(user_id), admin_user)
 
 
 @router.get('/groups', response_model=list[AdminGroupResponse])
 async def get_groups(
+    service: AdminServiceDep,
     search: str | None = Query(None),
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Get all groups with optional search (paginated, max 100 per page)."""
-    service = AdminService(db)
     return service.get_groups(search, limit, offset)
 
 
 @router.get('/products', response_model=list[AdminProductResponse])
 async def get_products(
+    service: AdminServiceDep,
     search: str | None = Query(None),
     verified: bool | None = Query(None),
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Get all products with optional search and filtering (paginated, max 100 per page)."""
-    service = AdminService(db)
     return service.get_products(search, verified, limit, offset)
 
 
 @router.post('/products/{product_id}/verify', response_model=VerificationToggleResponse)
 async def toggle_product_verification(
-    product_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+    product_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Toggle product verification status."""
-    service = AdminService(db)
     return service.toggle_product_verification(UUID(product_id), admin_user)
 
 
 @router.get('/stores', response_model=list[AdminStoreResponse])
 async def get_stores(
+    service: AdminServiceDep,
     search: str | None = Query(None),
     verified: bool | None = Query(None),
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Get all stores with optional search and filtering (paginated, max 100 per page)."""
-    service = AdminService(db)
     return service.get_stores(search, verified, limit, offset)
 
 
 @router.post('/stores/{store_id}/verify', response_model=VerificationToggleResponse)
 async def toggle_store_verification(
-    store_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+    store_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Toggle store verification status."""
-    service = AdminService(db)
     return service.toggle_store_verification(UUID(store_id), admin_user)
 
 
@@ -125,11 +118,10 @@ async def toggle_store_verification(
 async def update_product(
     product_id: str,
     data: UpdateProductRequest,
+    service: AdminServiceDep,
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Update product fields."""
-    service = AdminService(db)
     return service.update_product(UUID(product_id), data.model_dump(), admin_user)
 
 
@@ -137,11 +129,10 @@ async def update_product(
 async def update_store(
     store_id: str,
     data: UpdateStoreRequest,
+    service: AdminServiceDep,
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Update store fields."""
-    service = AdminService(db)
     return service.update_store(UUID(store_id), data.model_dump(), admin_user)
 
 
@@ -149,11 +140,10 @@ async def update_store(
 async def update_user(
     user_id: str,
     data: UpdateUserRequest,
+    service: AdminServiceDep,
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Update user fields."""
-    service = AdminService(db)
     return service.update_user(UUID(user_id), data.model_dump(), admin_user)
 
 
@@ -164,11 +154,10 @@ async def update_user(
 async def merge_products(
     source_id: str,
     target_id: str,
+    service: AdminServiceDep,
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Merge one product into another. All bids and availabilities will be transferred."""
-    service = AdminService(db)
     return service.merge_products(UUID(source_id), UUID(target_id), admin_user)
 
 
@@ -176,11 +165,10 @@ async def merge_products(
 async def merge_stores(
     source_id: str,
     target_id: str,
+    service: AdminServiceDep,
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Merge one store into another. All runs and availabilities will be transferred."""
-    service = AdminService(db)
     return service.merge_stores(UUID(source_id), UUID(target_id), admin_user)
 
 
@@ -188,11 +176,10 @@ async def merge_stores(
 async def merge_users(
     source_id: str,
     target_id: str,
+    service: AdminServiceDep,
     admin_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
 ):
     """Merge one user into another. All data will be transferred."""
-    service = AdminService(db)
     return service.merge_users(UUID(source_id), UUID(target_id), admin_user)
 
 
@@ -201,28 +188,25 @@ async def merge_users(
 
 @router.delete('/products/{product_id}', response_model=DeleteResponse)
 async def delete_product(
-    product_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+    product_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Delete a product. Cannot delete if it has associated bids."""
-    service = AdminService(db)
     return service.delete_product(UUID(product_id), admin_user)
 
 
 @router.delete('/stores/{store_id}', response_model=DeleteResponse)
 async def delete_store(
-    store_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+    store_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Delete a store. Cannot delete if it has associated runs."""
-    service = AdminService(db)
     return service.delete_store(UUID(store_id), admin_user)
 
 
 @router.delete('/users/{user_id}', response_model=DeleteResponse)
 async def delete_user(
-    user_id: str, admin_user: User = Depends(require_admin), db: Session = Depends(get_db)
+    user_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
 ):
     """Delete a user. Cannot delete yourself or other admins."""
-    service = AdminService(db)
     return service.delete_user(UUID(user_id), admin_user)
 
 

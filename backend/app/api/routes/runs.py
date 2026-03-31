@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
+from app.api.dependencies import RunServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     AvailableProductResponse,
@@ -18,9 +18,7 @@ from app.api.schemas import (
 )
 from app.api.websocket_manager import manager
 from app.core.models import User
-from app.infrastructure.database import get_db
 from app.infrastructure.request_context import get_logger
-from app.services import RunService
 
 router = APIRouter(prefix='/runs', tags=['runs'])
 logger = get_logger(__name__)
@@ -29,21 +27,18 @@ logger = get_logger(__name__)
 @router.post('/create', response_model=CreateRunResponse)
 async def create_run(
     request: CreateRunRequest,
+    service: RunServiceDep,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
 ):
     """Create a new run for a group."""
-    service = RunService(db)
     return service.create_run(request.group_id, request.store_id, current_user, request.comment)
 
 
 @router.get('/{run_id}', response_model=RunDetailResponse)
 async def get_run_details(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get detailed information about a specific run."""
-    service = RunService(db)
-
     return service.get_run_details(run_id, current_user)
 
 
@@ -51,11 +46,10 @@ async def get_run_details(
 async def place_bid(
     run_id: str,
     bid_request: PlaceBidRequest,
+    service: RunServiceDep,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
 ):
     """Place or update a bid on a product in a run."""
-    service = RunService(db)
     result = service.place_bid(
         run_id,
         bid_request.product_id,
@@ -71,29 +65,26 @@ async def place_bid(
 async def retract_bid(
     run_id: str,
     product_id: str,
+    service: RunServiceDep,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
 ):
     """Retract a bid on a product in a run."""
-    service = RunService(db)
     return service.retract_bid(run_id, product_id, current_user)
 
 
 @router.post('/{run_id}/ready', response_model=ReadyToggleResponse)
 async def toggle_ready(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Toggle the current user's ready status for a run."""
-    service = RunService(db)
     return service.toggle_ready(run_id, current_user)
 
 
 @router.post('/{run_id}/force-confirm', response_model=StateChangeResponse)
 async def force_confirm(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Force confirm run - transition from active to confirmed state without waiting for all users (leader only)."""
-    service = RunService(db)
     # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
@@ -109,10 +100,9 @@ async def force_confirm(
 
 @router.post('/{run_id}/start-shopping', response_model=StateChangeResponse)
 async def start_shopping(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Start shopping - transition from confirmed to shopping state (leader only)."""
-    service = RunService(db)
     # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
@@ -129,16 +119,15 @@ async def start_shopping(
 @router.post('/{run_id}/finish-adjusting', response_model=StateChangeResponse)
 async def finish_adjusting(
     run_id: str,
+    service: RunServiceDep,
     force: bool = False,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
 ):
     """Finish adjusting bids - transition from adjusting to distributing state (leader only).
 
     Query params:
         force: If true, skip quantity verification and proceed anyway
     """
-    service = RunService(db)
     # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
@@ -156,11 +145,10 @@ async def finish_adjusting(
 async def toggle_helper(
     run_id: str,
     user_id: str,
+    service: RunServiceDep,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
 ):
     """Toggle helper status for a run participant (leader only)."""
-    service = RunService(db)
     result = service.toggle_helper(run_id, user_id, current_user)
 
     # Broadcast helper status change to all participants
@@ -173,20 +161,17 @@ async def toggle_helper(
 
 @router.get('/{run_id}/available-products', response_model=list[AvailableProductResponse])
 async def get_available_products(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get products available for bidding (products from the store that don't have bids yet)."""
-    service = RunService(db)
-
     return service.get_available_products(run_id, current_user)
 
 
 @router.post('/{run_id}/transition-shopping', response_model=StateChangeResponse)
 async def transition_to_shopping(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Transition to shopping state (alias for start-shopping)."""
-    service = RunService(db)
     # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
@@ -202,10 +187,9 @@ async def transition_to_shopping(
 
 @router.post('/{run_id}/cancel', response_model=CancelRunResponse)
 async def cancel_run(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Cancel a run. Leader only. Can be done from any state except completed/cancelled."""
-    service = RunService(db)
     # Set WebSocket manager for broadcasting (state service handles state change notifications)
     service.notification_service.set_websocket_manager(manager)
 
@@ -220,11 +204,10 @@ async def cancel_run(
 async def update_run_comment(
     run_id: str,
     request: UpdateRunCommentRequest,
+    service: RunServiceDep,
     current_user: User = Depends(require_auth),
-    db: Session = Depends(get_db),
 ):
     """Update the comment/description for a run (leader only)."""
-    service = RunService(db)
     result = service.update_run_comment(run_id, request.comment, current_user)
 
     # Broadcast comment update to all participants
@@ -238,12 +221,11 @@ async def update_run_comment(
 
 @router.get('/{run_id}/export')
 async def export_run_state(
-    run_id: str, current_user: User = Depends(require_auth), db: Session = Depends(get_db)
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Export current state of run as JSON (leader and helpers only).
 
     Available for runs in confirmed, shopping, adjusting, or distributing states.
     Returns structured JSON with per-product and per-user breakdowns.
     """
-    service = RunService(db)
     return service.export_run_state(run_id, current_user)
