@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import '../styles/components/BidPopup.css'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateDecimal, parseDecimal } from '../utils/validation'
 import { formatQuantity } from '../utils/format'
+import BaseModal from './BaseModal'
 
 interface BidPopupProps {
   productName: string
@@ -23,9 +23,6 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
   const [comment, setComment] = useState(currentComment || '')
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
-  const modalRef = useRef<HTMLDivElement>(null)
-
-  useModalFocusTrap(modalRef, true, onCancel)
 
   useEffect(() => {
     // Autofocus the input when component mounts
@@ -80,17 +77,20 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
     setError('') // Clear error on change
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onCancel()
-    }
-  }
-
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div ref={modalRef} className="modal modal-sm" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
-        <h3>{adjustingMode ? t('run:bid.adjustTitle') : t('run:bid.title')}</h3>
-        <p className="product-name">{productName}</p>
+    <BaseModal
+      isOpen={true}
+      onClose={onCancel}
+      size="sm"
+      showHeader={false}
+      error={error}
+      submitButton={{
+        text: currentQuantity !== undefined ? t('run:actions.updateBid') : t('run:actions.placeBid'),
+        onClick: handleSubmit
+      }}
+    >
+      <h3>{adjustingMode ? t('run:bid.adjustTitle') : t('run:bid.title')}</h3>
+      <p className="product-name">{productName}</p>
 
         {adjustingMode && (
           <div className="adjusting-mode-notice">
@@ -111,8 +111,7 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
+        <div className="form-group">
             <label htmlFor="quantity">{t('run:fields.quantity')}:</label>
             <input
               ref={inputRef}
@@ -155,16 +154,6 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
             <small className="input-hint">{t('run:bid.commentCounter', { count: comment.length })}</small>
           </div>
 
-          <div className="button-group">
-            <button type="button" onClick={onCancel} className="cancel-button">
-              {t('common:buttons.cancel')}
-            </button>
-            <button type="submit" className="submit-button">
-              {currentQuantity !== undefined ? t('run:actions.updateBid') : t('run:actions.placeBid')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    </BaseModal>
   )
 }

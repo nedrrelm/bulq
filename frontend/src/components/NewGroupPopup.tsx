@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { groupsApi } from '../api'
 import type { Group } from '../api'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { getErrorMessage } from '../utils/errorHandling'
+import BaseModal from './BaseModal'
 
 interface NewGroupPopupProps {
   onClose: () => void
@@ -19,9 +19,6 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
   const [groupName, setGroupName] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const modalRef = useRef<HTMLDivElement>(null)
-
-  useModalFocusTrap(modalRef, true, onClose)
 
   const validateGroupName = (value: string): boolean => {
     setError('')
@@ -81,56 +78,35 @@ export default function NewGroupPopup({ onClose, onSuccess }: NewGroupPopupProps
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{t('groups:create.title')}</h2>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          {error && (
-            <div className="alert alert-error">
-              {error}
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="group-name" className="form-label">{t('groups:fields.name')} *</label>
-            <input
-              id="group-name"
-              type="text"
-              className={`form-input ${error ? 'input-error' : ''}`}
-              value={groupName}
-              onChange={(e) => handleNameChange(e.target.value)}
-              onBlur={handleBlur}
-              placeholder={t('groups:create.namePlaceholder')}
-              autoFocus
-              disabled={submitting}
-            />
-            <small className="input-hint">
-              {t('groups:validation.nameHint')}
-            </small>
-          </div>
-
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              {t('common:buttons.cancel')}
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={submitting}
-            >
-              {submitting ? t('groups:create.submitting') : t('groups:create.submit')}
-            </button>
-          </div>
-        </form>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={t('groups:create.title')}
+      error={error}
+      submitButton={{
+        text: submitting ? t('groups:create.submitting') : t('groups:create.submit'),
+        onClick: handleSubmit,
+        loading: submitting,
+        disabled: submitting
+      }}
+    >
+      <div className="form-group">
+        <label htmlFor="group-name" className="form-label">{t('groups:fields.name')} *</label>
+        <input
+          id="group-name"
+          type="text"
+          className={`form-input ${error ? 'input-error' : ''}`}
+          value={groupName}
+          onChange={(e) => handleNameChange(e.target.value)}
+          onBlur={handleBlur}
+          placeholder={t('groups:create.namePlaceholder')}
+          autoFocus
+          disabled={submitting}
+        />
+        <small className="input-hint">
+          {t('groups:validation.nameHint')}
+        </small>
       </div>
-    </div>
+    </BaseModal>
   )
 }

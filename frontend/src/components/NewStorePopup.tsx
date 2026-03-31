@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { storesApi } from '../api'
 import type { Store } from '../api'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { getErrorMessage } from '../utils/errorHandling'
+import BaseModal from './BaseModal'
 
 interface NewStorePopupProps {
   onClose: () => void
@@ -20,9 +20,6 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [similarStores, setSimilarStores] = useState<Store[]>([])
-  const modalRef = useRef<HTMLDivElement>(null)
-
-  useModalFocusTrap(modalRef, true, onClose)
 
   // Check for similar stores as user types
   useEffect(() => {
@@ -124,73 +121,52 @@ export default function NewStorePopup({ onClose, onSuccess }: NewStorePopupProps
   const hasNonExactSimilar = similarStores.length > 0 && !exactMatch
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{t('store:create.title')}</h2>
-        </div>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={t('store:create.title')}
+      error={error}
+      submitButton={{
+        text: submitting ? t('store:actions.creating') : t('store:actions.create'),
+        onClick: handleSubmit,
+        loading: submitting,
+        disabled: submitting
+      }}
+    >
+      <div className="form-group">
+        <label htmlFor="store-name" className="form-label">{t('store:fields.name')} *</label>
+        <input
+          id="store-name"
+          type="text"
+          className={`form-input ${error ? 'input-error' : ''}`}
+          value={storeName}
+          onChange={(e) => handleNameChange(e.target.value)}
+          onBlur={handleBlur}
+          placeholder={t('store:fields.namePlaceholder')}
+          autoFocus
+          disabled={submitting}
+        />
+        <small className="input-hint">
+          {t('store:validation.nameHint')}
+        </small>
 
-        <form onSubmit={handleSubmit}>
-          {error && (
-            <div className="alert alert-error">
-              {error}
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="store-name" className="form-label">{t('store:fields.name')} *</label>
-            <input
-              id="store-name"
-              type="text"
-              className={`form-input ${error ? 'input-error' : ''}`}
-              value={storeName}
-              onChange={(e) => handleNameChange(e.target.value)}
-              onBlur={handleBlur}
-              placeholder={t('store:fields.namePlaceholder')}
-              autoFocus
-              disabled={submitting}
-            />
-            <small className="input-hint">
-              {t('store:validation.nameHint')}
-            </small>
-
-            {exactMatch && (
-              <div className="alert alert-error" style={{ marginTop: '0.5rem' }}>
-                {t('store:validation.alreadyExists', { name: exactMatch.name })}
-              </div>
-            )}
-
-            {hasNonExactSimilar && (
-              <div className="alert" style={{ marginTop: '0.5rem', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
-                <strong>{t('store:validation.similarFound')}:</strong>
-                <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.5rem' }}>
-                  {similarStores.map(store => (
-                    <li key={store.id}>{store.name}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {exactMatch && (
+          <div className="alert alert-error" style={{ marginTop: '0.5rem' }}>
+            {t('store:validation.alreadyExists', { name: exactMatch.name })}
           </div>
+        )}
 
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              {t('common:buttons.cancel')}
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={submitting}
-            >
-              {submitting ? t('store:actions.creating') : t('store:actions.create')}
-            </button>
+        {hasNonExactSimilar && (
+          <div className="alert" style={{ marginTop: '0.5rem', backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
+            <strong>{t('store:validation.similarFound')}:</strong>
+            <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.5rem' }}>
+              {similarStores.map(store => (
+                <li key={store.id}>{store.name}</li>
+              ))}
+            </ul>
           </div>
-        </form>
+        )}
       </div>
-    </div>
+    </BaseModal>
   )
 }

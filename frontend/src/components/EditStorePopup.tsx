@@ -1,11 +1,11 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { adminApi, type AdminStore } from '../api/admin'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
+import BaseModal from './BaseModal'
 import { translateSuccess } from '../utils/translation'
 
 interface EditStorePopupProps {
@@ -25,10 +25,8 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
   const [mergeTargetId, setMergeTargetId] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const modalRef = useRef<HTMLDivElement>(null)
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
-  useModalFocusTrap(modalRef, true, onClose)
 
   const validateStoreName = (value: string): boolean => {
     setError('')
@@ -117,18 +115,20 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{t('admin:edit.store.title')}</h2>
-        </div>
-
-        <form onSubmit={handleUpdate}>
-          {error && (
-            <div className="alert alert-error">
-              {error}
-            </div>
-          )}
+    <>
+      <BaseModal
+        isOpen={true}
+        onClose={onClose}
+        title={t('admin:edit.store.title')}
+        error={error}
+        size="scrollable"
+        submitButton={{
+          text: submitting ? t('common:saving') : t('common:saveChanges'),
+          onClick: handleUpdate,
+          loading: submitting,
+          disabled: submitting
+        }}
+      >
 
           <div className="form-group">
             <label htmlFor="store-name" className="form-label">{t('admin:edit.store.fields.name')} *</label>
@@ -175,25 +175,6 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
               disabled={submitting}
             />
           </div>
-
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              {t('common:cancel')}
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={submitting}
-            >
-              {submitting ? t('common:saving') : t('common:saveChanges')}
-            </button>
-          </div>
-        </form>
 
         <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
 
@@ -252,7 +233,7 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
             {t('admin:edit.store.deleteButton')}
           </button>
         </div>
-      </div>
+      </BaseModal>
 
       {confirmState && (
         <ConfirmDialog
@@ -262,6 +243,6 @@ export default function EditStorePopup({ store, onClose, onSuccess }: EditStoreP
           danger={confirmState.danger}
         />
       )}
-    </div>
+    </>
   )
 }

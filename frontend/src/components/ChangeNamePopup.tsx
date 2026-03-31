@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/auth'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import type { User } from '../schemas/user'
 import { getErrorMessage } from '../utils/errorHandling'
+import BaseModal from './BaseModal'
 
 interface ChangeNamePopupProps {
   onClose: () => void
@@ -16,9 +16,6 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
   const [currentPassword, setCurrentPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const modalRef = useRef<HTMLDivElement>(null)
-
-  useModalFocusTrap(modalRef, true, onClose)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,73 +37,52 @@ export default function ChangeNamePopup({ onClose, onSuccess }: ChangeNamePopupP
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalRef} className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{t('profile:changeName.title')}</h2>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          {error && (
-            <div className="alert alert-error">
-              {error}
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="new-name" className="form-label">{t('profile:fields.name')} *</label>
-            <input
-              id="new-name"
-              type="text"
-              className="form-input"
-              value={newName}
-              onChange={(e) => {
-                setNewName(e.target.value)
-                setError('')
-              }}
-              placeholder={t('profile:fields.name')}
-              disabled={submitting}
-              required
-              autoFocus
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="current-password" className="form-label">{t('profile:fields.currentPassword')} *</label>
-            <input
-              id="current-password"
-              type="password"
-              className="form-input"
-              value={currentPassword}
-              onChange={(e) => {
-                setCurrentPassword(e.target.value)
-                setError('')
-              }}
-              placeholder={t('profile:fields.currentPassword')}
-              disabled={submitting}
-              required
-            />
-          </div>
-
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              {t('common:buttons.cancel')}
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={submitting}
-            >
-              {submitting ? t('profile:changeName.changing') : t('common:buttons.save')}
-            </button>
-          </div>
-        </form>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={t('profile:changeName.title')}
+      error={error}
+      submitButton={{
+        text: submitting ? t('profile:changeName.changing') : t('common:buttons.save'),
+        onClick: handleSubmit,
+        loading: submitting,
+        disabled: submitting
+      }}
+    >
+      <div className="form-group">
+        <label htmlFor="new-name" className="form-label">{t('profile:fields.name')} *</label>
+        <input
+          id="new-name"
+          type="text"
+          className="form-input"
+          value={newName}
+          onChange={(e) => {
+            setNewName(e.target.value)
+            setError('')
+          }}
+          placeholder={t('profile:fields.name')}
+          disabled={submitting}
+          required
+          autoFocus
+        />
       </div>
-    </div>
+
+      <div className="form-group">
+        <label htmlFor="current-password" className="form-label">{t('profile:fields.currentPassword')} *</label>
+        <input
+          id="current-password"
+          type="password"
+          className="form-input"
+          value={currentPassword}
+          onChange={(e) => {
+            setCurrentPassword(e.target.value)
+            setError('')
+          }}
+          placeholder={t('profile:fields.currentPassword')}
+          disabled={submitting}
+          required
+        />
+      </div>
+    </BaseModal>
   )
 }

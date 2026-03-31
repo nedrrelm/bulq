@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next'
 import '../styles/components/NewRunPopup.css'
 import { storesApi, runsApi } from '../api'
 import type { Store } from '../api'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import NewStorePopup from './NewStorePopup'
 import { getErrorMessage } from '../utils/errorHandling'
 import { logger } from '../utils/logger'
+import BaseModal from './BaseModal'
 
 interface NewRunPopupProps {
   groupId: string
@@ -22,11 +22,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showNewStorePopup, setShowNewStorePopup] = useState(false)
-  const overlayRef = useRef<HTMLDivElement>(null)
   const selectRef = useRef<HTMLSelectElement>(null)
-  const modalRef = useRef<HTMLDivElement>(null)
-
-  useModalFocusTrap(modalRef, true, onClose)
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -77,12 +73,6 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     }
   }
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
   const handleNewStoreSuccess = (newStore: Store) => {
     setShowNewStorePopup(false)
     // Add the new store to the list and select it
@@ -91,90 +81,82 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   }
 
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick} tabIndex={-1} ref={overlayRef}>
-      <div ref={modalRef} className="modal modal-sm new-run-popup" onClick={(e) => e.stopPropagation()}>
+    <>
+      <BaseModal
+        isOpen={true}
+        onClose={onClose}
+        size="sm"
+        className="new-run-popup"
+        showHeader={false}
+        error={error}
+        submitButton={{
+          text: loading ? t('run:actions.creating') : t('run:actions.createRun'),
+          onClick: handleSubmit,
+          variant: 'success',
+          loading: loading,
+          disabled: loading || !selectedStoreId
+        }}
+      >
         <h3>{t('run:create.title')}</h3>
         <p className="popup-description">{t('run:create.description')}</p>
 
-        {error && <div className="alert alert-error">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="store" className="form-label">{t('run:fields.store')}</label>
-            <select
-              id="store"
-              className="form-input"
-              value={selectedStoreId}
-              onChange={(e) => setSelectedStoreId(e.target.value)}
-              disabled={loading || stores.length === 0}
-              required
-              ref={selectRef}
-            >
-              {stores.length === 0 && <option value="">{t('run:create.noStoresAvailable')}</option>}
-              {Array.isArray(stores) && stores.map(store => (
-                <option key={store.id} value={store.id}>
-                  {store.name}
-                </option>
-              ))}
-            </select>
-            {stores.length === 0 && (
-              <button
-                type="button"
-                onClick={() => setShowNewStorePopup(true)}
-                className="btn btn-primary btn-sm create-store-button"
-              >
-                {t('run:actions.createNewStore')}
-              </button>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="comment" className="form-label">{t('run:fields.comment')}</label>
-            <textarea
-              id="comment"
-              className="form-input"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder={t('run:create.commentPlaceholder')}
-              disabled={loading}
-              maxLength={500}
-              rows={2}
-            />
-            <span className="char-counter">{comment.length}/500</span>
-          </div>
-
-          {stores.length > 0 && (
-            <div className="form-group">
-              <button
-                type="button"
-                onClick={() => setShowNewStorePopup(true)}
-                className="btn btn-secondary btn-sm"
-                disabled={loading}
-              >
-                {t('run:actions.createNewStore')}
-              </button>
-            </div>
-          )}
-
-          <div className="button-group">
+        <div className="form-group">
+          <label htmlFor="store" className="form-label">{t('run:fields.store')}</label>
+          <select
+            id="store"
+            className="form-input"
+            value={selectedStoreId}
+            onChange={(e) => setSelectedStoreId(e.target.value)}
+            disabled={loading || stores.length === 0}
+            required
+            ref={selectRef}
+          >
+            {stores.length === 0 && <option value="">{t('run:create.noStoresAvailable')}</option>}
+            {Array.isArray(stores) && stores.map(store => (
+              <option key={store.id} value={store.id}>
+                {store.name}
+              </option>
+            ))}
+          </select>
+          {stores.length === 0 && (
             <button
               type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="btn btn-secondary btn-md cancel-button"
+              onClick={() => setShowNewStorePopup(true)}
+              className="btn btn-primary btn-sm create-store-button"
             >
-              {t('common:buttons.cancel')}
+              {t('run:actions.createNewStore')}
             </button>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="comment" className="form-label">{t('run:fields.comment')}</label>
+          <textarea
+            id="comment"
+            className="form-input"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder={t('run:create.commentPlaceholder')}
+            disabled={loading}
+            maxLength={500}
+            rows={2}
+          />
+          <span className="char-counter">{comment.length}/500</span>
+        </div>
+
+        {stores.length > 0 && (
+          <div className="form-group">
             <button
-              type="submit"
-              disabled={loading || !selectedStoreId}
-              className="btn btn-success btn-md submit-button"
+              type="button"
+              onClick={() => setShowNewStorePopup(true)}
+              className="btn btn-secondary btn-sm"
+              disabled={loading}
             >
-              {loading ? t('run:actions.creating') : t('run:actions.createRun')}
+              {t('run:actions.createNewStore')}
             </button>
           </div>
-        </form>
-      </div>
+        )}
+      </BaseModal>
 
       {showNewStorePopup && (
         <NewStorePopup
@@ -182,6 +164,6 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
           onSuccess={handleNewStoreSuccess}
         />
       )}
-    </div>
+    </>
   )
 }

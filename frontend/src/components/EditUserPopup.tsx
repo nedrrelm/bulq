@@ -1,14 +1,14 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { adminApi, type AdminUser } from '../api/admin'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
 import { translateSuccess } from '../utils/translation'
 import { runKeys } from '../hooks/queries/useRuns'
+import BaseModal from './BaseModal'
 
 interface EditUserPopupProps {
   user: AdminUser
@@ -31,10 +31,8 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
   const [mergeTargetId, setMergeTargetId] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const modalRef = useRef<HTMLDivElement>(null)
   const { confirmState, showConfirm, hideConfirm, handleConfirm} = useConfirm()
 
-  useModalFocusTrap(modalRef, true, onClose)
 
   const validateUserName = (value: string): boolean => {
     const trimmed = value.trim()
@@ -143,18 +141,20 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{t('admin:edit.user.title')}</h2>
-        </div>
-
-        <form onSubmit={handleUpdate}>
-          {error && (
-            <div className="alert alert-error">
-              {error}
-            </div>
-          )}
+    <>
+      <BaseModal
+        isOpen={true}
+        onClose={onClose}
+        title={t('admin:edit.user.title')}
+        error={error}
+        size="scrollable"
+        submitButton={{
+          text: submitting ? t('common:saving') : t('common:saveChanges'),
+          onClick: handleUpdate,
+          loading: submitting,
+          disabled: submitting
+        }}
+      >
 
           <div className="form-group">
             <label htmlFor="user-name" className="form-label">{t('admin:edit.user.fields.name')} *</label>
@@ -226,25 +226,6 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
             </p>
           </div>
 
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              {t('common:cancel')}
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={submitting}
-            >
-              {submitting ? t('common:saving') : t('common:saveChanges')}
-            </button>
-          </div>
-        </form>
-
         <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
 
         {/* Merge Section */}
@@ -303,7 +284,7 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
             {t('admin:edit.user.deleteButton')}
           </button>
         </div>
-      </div>
+      </BaseModal>
 
       {confirmState && (
         <ConfirmDialog
@@ -313,6 +294,6 @@ export default function EditUserPopup({ user, onClose, onSuccess }: EditUserPopu
           danger={confirmState.danger}
         />
       )}
-    </div>
+    </>
   )
 }

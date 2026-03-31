@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import '../styles/components/AddProductPopup.css'
 import { runsApi } from '../api'
 import type { AvailableProduct } from '../types/product'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import NewProductPopup from './NewProductPopup'
 import { getErrorMessage } from '../utils/errorHandling'
+import BaseModal from './BaseModal'
 
 interface AddProductPopupProps {
   runId: string
@@ -23,9 +23,6 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [showNewProductPopup, setShowNewProductPopup] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const modalRef = useRef<HTMLDivElement>(null)
-
-  useModalFocusTrap(modalRef, true, onCancel)
 
   useEffect(() => {
     const fetchAvailableProducts = async () => {
@@ -106,8 +103,38 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
   }
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div ref={modalRef} className="modal modal-md add-product-popup" onClick={(e) => e.stopPropagation()}>
+    <>
+      <BaseModal
+        isOpen={true}
+        onClose={onCancel}
+        size="md"
+        className="add-product-popup"
+        showHeader={false}
+        asForm={false}
+        error={error}
+        cancelButton={{
+          text: t('common:buttons.cancel'),
+          onClick: onCancel,
+          variant: 'secondary'
+        }}
+        customActions={
+          <>
+            {!loading && !error && filteredProducts.length > 0 && (
+              <>
+                <button
+                  onClick={() => setShowNewProductPopup(true)}
+                  className="btn btn-secondary"
+                >
+                  {t('product:actions.createNew')}
+                </button>
+                <p className="keyboard-hint">
+                  {t('product:addToRun.keyboardHint')}
+                </p>
+              </>
+            )}
+          </>
+        }
+      >
         <h3>{t('product:addToRun.title')}</h3>
         <p className="popup-description">{t('product:addToRun.description')}</p>
 
@@ -184,27 +211,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
           </div>
         )}
 
-        <div className="popup-footer">
-          <button onClick={onCancel} className="cancel-button">
-            {t('common:buttons.cancel')}
-          </button>
-          {!loading && !error && filteredProducts.length === 0 ? null : (
-            <>
-              <button
-                onClick={() => setShowNewProductPopup(true)}
-                className="btn btn-secondary"
-              >
-                {t('product:actions.createNew')}
-              </button>
-              {filteredProducts.length > 0 && (
-                <p className="keyboard-hint">
-                  {t('product:addToRun.keyboardHint')}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      </BaseModal>
 
       {showNewProductPopup && (
         <NewProductPopup
@@ -212,6 +219,6 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
           onSuccess={handleNewProductSuccess}
         />
       )}
-    </div>
+    </>
   )
 }

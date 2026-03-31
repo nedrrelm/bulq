@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { storesApi, productsApi } from '../api'
 import type { Store, ProductSearchResult } from '../api'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { validateLength, validateAlphanumeric, validateDecimal, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
+import BaseModal from './BaseModal'
 
 interface NewProductPopupProps {
   onClose: () => void
@@ -30,10 +30,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
   const [submitting, setSubmitting] = useState(false)
   const [loadingStores, setLoadingStores] = useState(true)
   const [similarProducts, setSimilarProducts] = useState<ProductSearchResult[]>([])
-  const modalRef = useRef<HTMLDivElement>(null)
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
-
-  useModalFocusTrap(modalRef, true, onClose)
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -212,18 +209,20 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
   const hasNonExactSimilar = similarProducts.length > 0 && !exactMatch
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalRef} className="modal modal-scrollable" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{t('product:create.title')}</h2>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          {error && (
-            <div className="alert alert-error">
-              {error}
-            </div>
-          )}
+    <>
+      <BaseModal
+        isOpen={true}
+        onClose={onClose}
+        title={t('product:create.title')}
+        error={error}
+        size="scrollable"
+        submitButton={{
+          text: submitting ? t('product:actions.creating') : t('product:actions.create'),
+          onClick: handleSubmit,
+          loading: submitting,
+          disabled: submitting || loadingStores
+        }}
+      >
 
           <div className="form-group">
             <label htmlFor="product-name" className="form-label">{t('product:fields.name')} *</label>
@@ -355,25 +354,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
             </div>
           </div>
 
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              {t('common:buttons.cancel')}
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={submitting || loadingStores}
-            >
-              {submitting ? t('product:actions.creating') : t('product:actions.create')}
-            </button>
-          </div>
-        </form>
-      </div>
+      </BaseModal>
 
       {confirmState && (
         <ConfirmDialog
@@ -383,6 +364,6 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
           danger={confirmState.danger}
         />
       )}
-    </div>
+    </>
   )
 }
