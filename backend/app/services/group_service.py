@@ -71,6 +71,29 @@ class GroupService(BaseService):
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
 
+    def _get_store_name(self, run) -> str:
+        """Get store name from run, handling both database and memory repositories.
+
+        For database repository: Uses already-joined store relationship
+        For memory repository: Fetches store by ID
+
+        Args:
+            run: Run object with store_id
+
+        Returns:
+            Store name or 'Unknown Store' if not found
+        """
+        try:
+            # Try to access joined store (works for database repository)
+            if hasattr(run, 'store') and run.store is not None:
+                return run.store.name
+        except AttributeError:
+            pass
+
+        # Fallback: fetch store by ID (for memory repository or unjoined data)
+        store = self.store_repo.get_store_by_id(run.store_id)
+        return store.name if store else 'Unknown Store'
+
     def get_user_groups(self, user: User) -> list[GroupResponse]:
         """Get all groups the user is a member of with run counts.
 
@@ -84,10 +107,6 @@ class GroupService(BaseService):
 
         # Get groups where the user is a member
         groups = self.user_repo.get_user_groups(user)
-
-        # Get all stores for lookups
-        all_stores = self.store_repo.get_all_stores()
-        store_lookup = {store.id: store.name for store in all_stores}
 
         # State ordering for sorting (reverse order: distributing > adjusting > shopping > confirmed > active > planning)
         state_order = {
@@ -118,7 +137,7 @@ class GroupService(BaseService):
             active_runs_summary = [
                 RunSummary(
                     id=str(run.id),
-                    store_name=store_lookup.get(run.store_id, 'Unknown Store'),
+                    store_name=self._get_store_name(run),
                     state=run.state,
                 )
                 for run in sorted_active_runs
@@ -266,9 +285,6 @@ class GroupService(BaseService):
         runs = self.run_repo.get_runs_by_group(group_uuid)
 
         # Convert to response format with store names
-        all_stores = self.store_repo.get_all_stores()
-        store_lookup = {store.id: store.name for store in all_stores}
-
         run_responses = []
         for run in runs:
             # Get leader from participations
@@ -282,7 +298,7 @@ class GroupService(BaseService):
                     id=str(run.id),
                     group_id=str(run.group_id),
                     store_id=str(run.store_id),
-                    store_name=store_lookup.get(run.store_id, 'Unknown Store'),
+                    store_name=self._get_store_name(run),
                     state=run.state,
                     leader_name=leader_name,
                     leader_is_removed=leader_is_removed,
@@ -353,9 +369,6 @@ class GroupService(BaseService):
         runs = self.run_repo.get_completed_cancelled_runs_by_group(group_uuid, limit, offset)
 
         # Convert to response format with store names
-        all_stores = self.store_repo.get_all_stores()
-        store_lookup = {store.id: store.name for store in all_stores}
-
         run_responses = []
         for run in runs:
             # Get leader from participations
@@ -368,7 +381,7 @@ class GroupService(BaseService):
                     id=str(run.id),
                     group_id=str(run.group_id),
                     store_id=str(run.store_id),
-                    store_name=store_lookup.get(run.store_id, 'Unknown Store'),
+                    store_name=self._get_store_name(run),
                     state=run.state,
                     leader_name=leader_name,
                     leader_is_removed=False,

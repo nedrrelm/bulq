@@ -105,10 +105,10 @@ class ProductService(BaseService):
 
         # Collect price data by store
         stores_data = []
-        all_stores = {s.id: s for s in self.store_repo.get_all_stores()}
 
         for store_id, store_availabilities in stores_map.items():
-            store = all_stores.get(store_id)
+            # Fetch only the specific store needed (not all stores)
+            store = self.store_repo.get_store_by_id(store_id)
             if not store:
                 continue
 
