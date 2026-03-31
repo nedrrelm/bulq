@@ -120,7 +120,7 @@ class ValidationError(AppException):
         raise ValidationError(code='BID_QUANTITY_NEGATIVE', quantity=-5)
     """
 
-    default_status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    default_status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
 
     def __init__(self, code: str, message: str | None = None, **details: Any):
         """Initialize ValidationError.

@@ -1,5 +1,6 @@
 import asyncio
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -35,44 +36,11 @@ from .utils.background_tasks import create_background_task
 log_level = os.getenv('LOG_LEVEL', 'INFO')
 setup_logging(level=log_level)
 
-app = FastAPI(title='Bulq API', version='0.1.0')
 
-# Add middleware
-app.add_middleware(RequestLoggingMiddleware)
-
-# Register exception handlers
-app.add_exception_handler(AppException, app_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
-app.add_exception_handler(Exception, generic_exception_handler)
-
-# Include routers with /api prefix to avoid conflicts with frontend routes
-app.include_router(auth_router, prefix='/api')
-app.include_router(groups_router, prefix='/api')
-app.include_router(runs_router, prefix='/api')
-app.include_router(stores_router, prefix='/api')
-app.include_router(shopping_router, prefix='/api')
-app.include_router(distribution_router, prefix='/api')
-app.include_router(products_router, prefix='/api')
-app.include_router(search_router, prefix='/api')
-app.include_router(notifications_router, prefix='/api')
-app.include_router(reassignment_router, prefix='/api')
-app.include_router(admin_router, prefix='/api')
-app.include_router(websocket_router, prefix='/api')
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*'],
-)
-
-
-@app.on_event('startup')
-async def startup_event():
-    """Create database tables, seed data, and setup event handlers on startup."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup logic
     create_tables()
 
     # Register event handlers for domain events
@@ -143,8 +111,6 @@ async def startup_event():
         logger.error(f'Failed to initialize default settings: {e}', exc_info=True)
 
     # Create seed data if in development
-    import os
-
     if os.getenv('ENV') == 'development':
         try:
             from .infrastructure.config import REPO_MODE
@@ -188,6 +154,46 @@ async def startup_event():
 
     init_session_store()
     logger.info('📦 Session store initialized')
+
+    # Yield control to the application
+    yield
+
+    # Shutdown logic (currently none, but can be added here)
+
+
+app = FastAPI(title='Bulq API', version='0.1.0', lifespan=lifespan)
+
+# Add middleware
+app.add_middleware(RequestLoggingMiddleware)
+
+# Register exception handlers
+app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
+
+# Include routers with /api prefix to avoid conflicts with frontend routes
+app.include_router(auth_router, prefix='/api')
+app.include_router(groups_router, prefix='/api')
+app.include_router(runs_router, prefix='/api')
+app.include_router(stores_router, prefix='/api')
+app.include_router(shopping_router, prefix='/api')
+app.include_router(distribution_router, prefix='/api')
+app.include_router(products_router, prefix='/api')
+app.include_router(search_router, prefix='/api')
+app.include_router(notifications_router, prefix='/api')
+app.include_router(reassignment_router, prefix='/api')
+app.include_router(admin_router, prefix='/api')
+app.include_router(websocket_router, prefix='/api')
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
 
 @app.get('/')
