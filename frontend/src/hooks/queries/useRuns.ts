@@ -252,7 +252,7 @@ export function useAddProduct(runId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (_productId: string) => runsApi.getAvailableProducts(runId),
+    mutationFn: () => runsApi.getAvailableProducts(runId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: runKeys.availableProducts(runId) })
     },

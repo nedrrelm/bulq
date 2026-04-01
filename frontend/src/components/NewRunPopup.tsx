@@ -46,7 +46,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     }
 
     fetchStores()
-  }, [])
+  }, [t])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

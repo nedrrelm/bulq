@@ -128,7 +128,7 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
     setIsConnected(false)
   }, [])
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: unknown) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(typeof message === 'string' ? message : JSON.stringify(message))
     } else {

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { authApi } from '../api/auth'
-import type { UserStats } from '../schemas/user'
+import type { UserStats, User } from '../schemas/user'
 import { Package, DollarSign, Users, ShoppingCart, HandHelping, Crown } from 'lucide-react'
 import ChangeNamePopup from '../components/ChangeNamePopup'
 import ChangeUsernamePopup from '../components/ChangeUsernamePopup'
@@ -40,14 +40,14 @@ export default function ProfilePage() {
     }
   }
 
-  const handleNameSuccess = (updatedUser: any) => {
+  const handleNameSuccess = (updatedUser: User) => {
     updateUser(updatedUser)
     setShowNamePopup(false)
     setSuccessMessage(t('profile:messages.nameChanged'))
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
-  const handleUsernameSuccess = (updatedUser: any) => {
+  const handleUsernameSuccess = (updatedUser: User) => {
     updateUser(updatedUser)
     setShowUsernamePopup(false)
     setSuccessMessage(t('profile:messages.usernameChanged'))

@@ -1,9 +1,8 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback } from 'react'
 import {
   validateLength,
   validateAlphanumeric,
   validateDecimal,
-  validateRequired,
   sanitizeString,
   type ValidationResult
 } from '../utils/validation'
@@ -321,13 +320,14 @@ function useMultiFieldValidation(fields: Record<string, FieldConfig> = {}) {
  * ```
  */
 export function useFormValidation(options: UseFormValidationOptions) {
-  // Multi-field mode
-  if (options.fields) {
-    return useMultiFieldValidation(options.fields)
-  }
+  // Always call both hooks - React requires hooks to be called in the same order
+  const multiFieldResult = useMultiFieldValidation(options.fields || {})
+  const singleFieldResult = useSingleFieldValidation(
+    options.fields ? { value: '', onChange: () => {}, validators: [] } : options as SingleFieldOptions
+  )
 
-  // Single field mode
-  return useSingleFieldValidation(options)
+  // Return the appropriate result based on the mode
+  return options.fields ? multiFieldResult : singleFieldResult
 }
 
 // Export validators library

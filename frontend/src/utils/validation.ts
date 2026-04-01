@@ -157,7 +157,7 @@ export function sanitizeString(value: string, maxLength: number = 255): string {
 /**
  * Debounce function for input handlers
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: never[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {

@@ -9,7 +9,7 @@ import ErrorBoundary from './ErrorBoundary'
 // Lazy load popup components for better code splitting
 const NewRunPopup = lazy(() => import('./NewRunPopup'))
 import { useWebSocket } from '../hooks/useWebSocket'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
@@ -41,14 +41,9 @@ export default function GroupPage() {
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
 
-  // Redirect if no groupId
-  if (!groupId) {
-    navigate('/')
-    return null
-  }
   // Use React Query for data fetching
-  const { data: group, isLoading: groupLoading, error: groupError } = useGroup(groupId)
-  const { data: runs = [], isLoading: runsLoading, error: runsError } = useGroupRuns(groupId)
+  const { data: group, isLoading: groupLoading, error: groupError } = useGroup(groupId || '')
+  const { data: runs = [], isLoading: runsLoading, error: runsError } = useGroupRuns(groupId || '')
   const queryClient = useQueryClient()
 
   const loading = groupLoading || runsLoading
@@ -87,7 +82,7 @@ export default function GroupPage() {
       queryClient.invalidateQueries({ queryKey: groupKeys.runs(groupId) })
       queryClient.invalidateQueries({ queryKey: groupKeys.detail(groupId) })
     }
-  }, [groupId, user, showToast, queryClient, navigate])
+  }, [groupId, user, showToast, queryClient, navigate, t])
 
   useWebSocket(
     groupId ? `${WS_BASE_URL}/ws/groups/${groupId}` : null,
@@ -96,6 +91,11 @@ export default function GroupPage() {
     }
   )
 
+  // Early return after all hooks have been called
+  if (!groupId) {
+    navigate('/')
+    return null
+  }
 
   // State ordering for sorting (reverse order: distributing > adjusting > shopping > confirmed > active > planning)
   const stateOrder: Record<string, number> = {

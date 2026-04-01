@@ -7,6 +7,7 @@ import { WS_BASE_URL } from '../config'
 import { shoppingApi } from '../api'
 import type { ShoppingListItem } from '../api'
 import type { AvailableProduct } from '../types'
+import type { WebSocketMessage } from '../types/websocket'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { useWebSocket } from '../hooks/useWebSocket'
 import Toast from './Toast'
@@ -56,13 +57,7 @@ export default function ShoppingPage() {
   const { runId } = useParams<{ runId: string }>()
   const navigate = useNavigate()
 
-  // Redirect if no runId
-  if (!runId) {
-    navigate('/')
-    return null
-  }
-
-  const { data: items = [], isLoading: loading, error: queryError } = useShoppingList(runId)
+  const { data: items = [], isLoading: loading, error: queryError } = useShoppingList(runId || '')
   const queryClient = useQueryClient()
 
   const error = getErrorMessage(queryError, '')
@@ -79,10 +74,10 @@ export default function ShoppingPage() {
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
 
   // WebSocket for real-time updates
-  const handleWebSocketMessage = useCallback((message: any) => {
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     if (message.type === 'shopping_item_updated') {
       // Invalidate shopping list to refetch with updates
-      queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId) })
+      queryClient.invalidateQueries({ queryKey: shoppingKeys.list(runId || '') })
     }
   }, [queryClient, runId])
 
@@ -92,6 +87,12 @@ export default function ShoppingPage() {
       onMessage: handleWebSocketMessage
     }
   )
+
+  // Early return after all hooks have been called
+  if (!runId) {
+    navigate('/')
+    return null
+  }
 
   const handleAddPrice = (item: ShoppingListItem) => {
     setSelectedItem(item)
@@ -181,7 +182,7 @@ export default function ShoppingPage() {
     setShowBidPopup(true)
   }
 
-  const handleSubmitBid = async (quantity: number, _interestedOnly: boolean, _comment: string | null) => {
+  const handleSubmitBid = async (quantity: number) => {
     try {
       await shoppingApi.addProductToShoppingList(runId, selectedProductId, quantity)
       // Invalidate shopping list and run details to refetch

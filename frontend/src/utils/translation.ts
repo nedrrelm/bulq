@@ -118,7 +118,7 @@ function successCodeToKey(code: string): string {
  * translateError('PASSWORD_TOO_SHORT', { min_length: 8 })
  * // => "Password must be at least 8 characters"
  */
-export function translateError(code: string | undefined, details?: Record<string, any>): string {
+export function translateError(code: string | undefined, details?: Record<string, unknown>): string {
   if (!code) {
     return i18n.t('errors:generic.unknown_error')
   }
@@ -158,7 +158,7 @@ export function translateError(code: string | undefined, details?: Record<string
  * translateSuccess('MEMBER_PROMOTED', { member_name: 'John' })
  * // => "John is now a group admin"
  */
-export function translateSuccess(code: string | undefined, details?: Record<string, any>): string {
+export function translateSuccess(code: string | undefined, details?: Record<string, unknown>): string {
   if (!code) {
     return i18n.t('success:general.operation_successful')
   }
@@ -191,6 +191,6 @@ export function translateSuccess(code: string | undefined, details?: Record<stri
  * @param params - Optional interpolation parameters
  * @returns Translated text
  */
-export function t(key: string, params?: Record<string, any>): string {
+export function t(key: string, params?: Record<string, unknown>): string {
   return i18n.t(`common:${key}`, params)
 }

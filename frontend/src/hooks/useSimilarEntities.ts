@@ -146,7 +146,7 @@ export function useSimilarEntities<T extends Entity>({
       try {
         const results = await fetcher(trimmed)
         setSimilar(results)
-      } catch (err) {
+      } catch {
         // Silently fail - this is a nice-to-have feature
         // We don't want to disrupt the user experience if the API fails
         setSimilar([])

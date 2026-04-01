@@ -31,8 +31,8 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
         setError('')
 
         const productsData = await runsApi.getAvailableProducts(runId)
-        setProducts(productsData as any)
-        setFilteredProducts(productsData as any)
+        setProducts(productsData)
+        setFilteredProducts(productsData)
       } catch (err) {
         setError(getErrorMessage(err, t('product:errors.loadFailed')))
       } finally {
@@ -41,7 +41,7 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
     }
 
     fetchAvailableProducts()
-  }, [runId])
+  }, [runId, t])
 
   useEffect(() => {
     // Autofocus the input when component mounts
@@ -73,8 +73,8 @@ export default function AddProductPopup({ runId, onProductSelected, onCancel }: 
     try {
       setLoading(true)
       const productsData = await runsApi.getAvailableProducts(runId)
-      setProducts(productsData as any)
-      setFilteredProducts(productsData as any)
+      setProducts(productsData)
+      setFilteredProducts(productsData)
     } catch (err) {
       setError(getErrorMessage(err, t('product:errors.reloadFailed')))
     } finally {

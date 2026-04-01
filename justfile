@@ -51,12 +51,12 @@ lint:
 test *args:
   docker compose exec -T -e TESTING=1 backend uv run --extra dev pytest {{args}}
 
-# Run frontend type checking and linting
+# Run frontend type checking and linting (auto-fixes safe issues)
 check:
   @echo "🔍 TypeScript type checking..."
-  cd frontend && npm run type-check
+  docker compose exec -T frontend npm run type-check
   @echo ""
-  @echo "🔍 ESLint checking..."
+  @echo "🔧 ESLint checking (with auto-fix)..."
   docker compose exec -T frontend npm run lint
 
 # Run all checks (lint + test backend, check frontend)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNotifications } from '../contexts/NotificationContext'
+import { useNotifications } from '../hooks/useNotifications'
 import { NotificationItem } from '../components/NotificationItem'
 import LoadingSpinner from '../components/LoadingSpinner'
 

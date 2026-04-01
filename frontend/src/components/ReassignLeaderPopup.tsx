@@ -48,7 +48,7 @@ export default function ReassignLeaderPopup({
       await reassignmentApi.requestReassignment(runId, selectedUserId)
       onSuccess()
       onClose()
-    } catch (err: any) {
+    } catch (err) {
       setError(getErrorMessage(err, t('run:errors.reassignmentFailed')))
     } finally {
       setSubmitting(false)

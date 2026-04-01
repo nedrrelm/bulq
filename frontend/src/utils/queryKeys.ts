@@ -64,7 +64,7 @@ export interface QueryKeyOptions {
    * Functions that return filter objects for list queries
    * @example { byStore: (storeId: string) => ({ storeId }) }
    */
-  filters?: Record<string, (...args: any[]) => any>
+  filters?: Record<string, (...args: unknown[]) => unknown>
 }
 
 /**
@@ -76,7 +76,7 @@ export interface StandardQueryKeys<TEntity extends string> {
   /** Base key for all list queries */
   lists: () => readonly [TEntity, 'list']
   /** List query with optional filters */
-  list: (filters?: any) => readonly [TEntity, 'list', any?]
+  list: (filters?: unknown) => readonly [TEntity, 'list', unknown?]
   /** Base key for all detail queries */
   details: () => readonly [TEntity, 'detail']
   /** Detail query for a specific ID */
@@ -100,7 +100,7 @@ export type CustomKeys<T extends Record<string, (base: readonly string[]) => rea
 /**
  * Filter keys
  */
-export type FilterKeys<T extends Record<string, (...args: any[]) => any>> = {
+export type FilterKeys<T extends Record<string, (...args: unknown[]) => unknown>> = {
   [K in keyof T]: (...args: Parameters<T[K]>) => readonly unknown[]
 }
 
@@ -109,15 +109,15 @@ export type FilterKeys<T extends Record<string, (...args: any[]) => any>> = {
  */
 export type QueryKeys<
   TEntity extends string,
-  TOptions extends QueryKeyOptions = {}
+  TOptions extends QueryKeyOptions = QueryKeyOptions
 > = StandardQueryKeys<TEntity> &
-  (TOptions['nested'] extends Record<string, string> ? NestedKeys<TOptions['nested']> : {}) &
+  (TOptions['nested'] extends Record<string, string> ? NestedKeys<TOptions['nested']> : Record<string, never>) &
   (TOptions['custom'] extends Record<string, (base: readonly string[]) => readonly unknown[]>
     ? CustomKeys<TOptions['custom']>
-    : {}) &
-  (TOptions['filters'] extends Record<string, (...args: any[]) => any>
+    : Record<string, never>) &
+  (TOptions['filters'] extends Record<string, (...args: unknown[]) => unknown>
     ? FilterKeys<TOptions['filters']>
-    : {})
+    : Record<string, never>)
 
 /**
  * Create a set of query keys for an entity
@@ -137,7 +137,7 @@ export type QueryKeys<
  */
 export function createQueryKeys<
   TEntity extends string,
-  TOptions extends QueryKeyOptions = {}
+  TOptions extends QueryKeyOptions = QueryKeyOptions
 >(
   entity: TEntity,
   options?: TOptions
@@ -149,7 +149,7 @@ export function createQueryKeys<
   const standard: StandardQueryKeys<TEntity> = {
     all,
     lists: () => [...all, 'list'] as const,
-    list: (filters?: any) => {
+    list: (filters?: unknown) => {
       const base = [...all, 'list'] as const
       return filters !== undefined ? [...base, filters] as const : base
     },
@@ -177,7 +177,7 @@ export function createQueryKeys<
   const filters = options?.filters
     ? Object.entries(options.filters).reduce((acc, [key, fn]) => ({
         ...acc,
-        [key]: (...args: any[]) => [...standard.lists(), fn(...args)] as const
+        [key]: (...args: unknown[]) => [...standard.lists(), fn(...args)] as const
       }), {} as FilterKeys<NonNullable<TOptions['filters']>>)
     : {}
 

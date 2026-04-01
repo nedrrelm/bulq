@@ -39,17 +39,17 @@ export function useMarkPickedUp(runId: string) {
       const previousData = queryClient.getQueryData(distributionKeys.list(runId))
 
       // Optimistically update
-      queryClient.setQueryData(distributionKeys.list(runId), (old: any) => {
+      queryClient.setQueryData(distributionKeys.list(runId), (old: DistributionUser[] | undefined) => {
         if (!old) return old
-        return old.map((user: any) => ({
+        return old.map((user) => ({
           ...user,
-          products: user.products.map((product: any) =>
+          products: user.products.map((product) =>
             product.bid_id === bidId
               ? { ...product, is_picked_up: true }
               : product
           ),
           // Update all_picked_up flag
-          all_picked_up: user.products.every((p: any) =>
+          all_picked_up: user.products.every((p) =>
             p.bid_id === bidId ? true : p.is_picked_up
           )
         }))

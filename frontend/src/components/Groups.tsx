@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import '../styles/components/Groups.css'
 import { WS_BASE_URL } from '../config'
 import { reassignmentApi } from '../api'
-import type { Group, Store } from '../api'
 import type { PendingReassignments } from '../types'
 import type { WebSocketMessage } from '../types/websocket'
 import GroupItem from './GroupItem'
@@ -90,13 +89,13 @@ export default function Groups({ onGroupSelect, onRunSelect }: GroupsProps) {
     onGroupSelect(groupId)
   }
 
-  const handleNewGroupSuccess = (_newGroup: Group) => {
+  const handleNewGroupSuccess = () => {
     setShowNewGroupPopup(false)
     // Invalidate groups query to refetch with new group
     queryClient.invalidateQueries({ queryKey: groupKeys.list() })
   }
 
-  const handleNewStoreSuccess = (_newStore: Store) => {
+  const handleNewStoreSuccess = () => {
     setShowNewStorePopup(false)
     // Store has been added, no need to update state here
     // It will be available when creating new runs

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import '../styles/components/StorePage.css'
@@ -58,11 +58,7 @@ function StorePage({ storeId, onBack }: StorePageProps) {
   const [error, setError] = useState<string | null>(null)
   const [showNewProductPopup, setShowNewProductPopup] = useState(false)
 
-  useEffect(() => {
-    fetchStoreData()
-  }, [storeId])
-
-  const fetchStoreData = async () => {
+  const fetchStoreData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -85,7 +81,11 @@ function StorePage({ storeId, onBack }: StorePageProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [storeId, t])
+
+  useEffect(() => {
+    fetchStoreData()
+  }, [storeId, fetchStoreData])
 
   if (loading) {
     return <LoadingSpinner />

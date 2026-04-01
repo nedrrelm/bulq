@@ -29,7 +29,7 @@ export interface MergeResponse {
   source_id: string
   target_id: string
   affected_records: number
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 /**
@@ -39,7 +39,7 @@ export interface DeleteResponse {
   success: boolean
   code: string
   deleted_id: string
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 /**
@@ -59,7 +59,7 @@ export interface AdminEntityApiOptions {
  */
 export interface AdminEntityApi<
   TEntity extends AdminEntity,
-  TUpdateData extends Record<string, any> = Record<string, any>
+  TUpdateData extends Record<string, unknown> = Record<string, unknown>
 > {
   /**
    * Get all entities with optional filtering
@@ -122,7 +122,7 @@ export interface AdminEntityApi<
  */
 export function createAdminEntityApi<
   TEntity extends AdminEntity,
-  TUpdateData extends Record<string, any> = Record<string, any>
+  TUpdateData extends Record<string, unknown> = Record<string, unknown>
 >(
   entityPath: string,
   options: AdminEntityApiOptions = {}

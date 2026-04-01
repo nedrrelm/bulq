@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-rout
 import { useTranslation } from 'react-i18next'
 import './styles/App.css'
 import './styles/dark-mode.css'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthContext'
+import { useAuth } from './hooks/useAuth'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { searchApi } from './api'
 import type { SearchResults } from './api'
@@ -165,8 +166,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const [searching, setSearching] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  if (!user) return null
-
   const performSearch = async (query: string) => {
     if (query.trim().length < 2) {
       setSearchResults(null)
@@ -215,6 +214,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [])
+
+  // Early return after all hooks have been called
+  if (!user) return null
 
   const hasResults = searchResults && (
     (searchResults.products?.length ?? 0) > 0 ||

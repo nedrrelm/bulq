@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { storesApi, productsApi } from '../api'
-import type { Store, ProductSearchResult } from '../api'
+import type { Store } from '../api'
 import { validateLength, validateAlphanumeric, validateDecimal, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from './ConfirmDialog'
@@ -46,7 +46,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
     }
 
     fetchStores()
-  }, [])
+  }, [t])
 
   // Check for similar products as user types (matches on name and brand)
   const { similar: similarProducts, exactMatch, hasNonExactSimilar } = useSimilarEntities({

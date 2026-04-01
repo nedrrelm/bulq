@@ -7,12 +7,13 @@ import type { GroupManageDetails, GroupMember } from '../schemas/group'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { WS_BASE_URL } from '../config'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { NAVIGATION_DELAY_AFTER_ACTION_MS } from '../constants'
 import { getErrorMessage } from '../utils/errorHandling'
+import type { WebSocketMessage } from '../types/websocket'
 import { logger } from '../utils/logger'
 
 export default function ManageGroupPage() {
@@ -20,11 +21,6 @@ export default function ManageGroupPage() {
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
 
-  // Redirect if no groupId
-  if (!groupId) {
-    navigate('/')
-    return null
-  }
   const [group, setGroup] = useState<GroupManageDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -33,6 +29,7 @@ export default function ManageGroupPage() {
   const { user } = useAuth()
 
   useEffect(() => {
+    if (!groupId) return;
     const fetchGroupMembers = async () => {
       try {
         setLoading(true)
@@ -47,10 +44,10 @@ export default function ManageGroupPage() {
     }
 
     fetchGroupMembers()
-  }, [groupId])
+  }, [groupId, t])
 
   // WebSocket handler for real-time updates
-  const handleWebSocketMessage = useCallback((message: any) => {
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     if (message.type === 'member_removed' || message.type === 'member_left') {
       // Use the appropriate user_id field based on message type
       const userId = message.type === 'member_removed'
@@ -108,7 +105,7 @@ export default function ManageGroupPage() {
         showToast(t('group:manage.messages.memberPromoted', { memberName: message.data.promoted_user_name }), 'success')
       }
     }
-  }, [group, user, showToast])
+  }, [group, user, showToast, t, groupId, navigate])
 
   useWebSocket(
     groupId ? `${WS_BASE_URL}/ws/groups/${groupId}` : null,
@@ -116,6 +113,12 @@ export default function ManageGroupPage() {
       onMessage: handleWebSocketMessage
     }
   )
+
+  // Early return after all hooks have been called
+  if (!groupId) {
+    navigate('/')
+    return null
+  }
 
   const onBack = () => {
     navigate(`/groups/${groupId}`)

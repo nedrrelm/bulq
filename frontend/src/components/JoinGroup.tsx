@@ -5,7 +5,7 @@ import '../styles/components/JoinGroup.css'
 import { API_BASE_URL } from '../config'
 import { getErrorMessage } from '../utils/errorHandling'
 import { redirectStorage } from '../utils/redirectStorage'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useJoinGroup } from '../hooks/queries/useGroups'
 
 interface JoinGroupProps {
@@ -65,7 +65,7 @@ export default function JoinGroup({ inviteToken, onJoinSuccess }: JoinGroupProps
     }
 
     fetchGroupInfo()
-  }, [inviteToken, user])
+  }, [inviteToken, user, t])
 
   const handleJoin = () => {
     setError('')

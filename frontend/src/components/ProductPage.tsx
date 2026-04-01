@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import '../styles/components/ProductPage.css'
 import { productsApi } from '../api'
@@ -49,7 +49,19 @@ interface ProductPageProps {
 const STORE_COLORS = ['#667eea', '#f56565', '#48bb78', '#ed8936', '#9f7aea', '#38b2ac', '#ed64a6']
 
 // Custom tooltip component
-function CustomTooltip(props: any) {
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: Array<{
+    payload: {
+      store_name: string
+      price: number
+      timestamp: string
+      notes?: string
+    }
+  }>
+}
+
+function CustomTooltip(props: CustomTooltipProps) {
   const { active, payload } = props
   if (!active || !payload || !payload.length || !payload[0]) {
     return null
@@ -155,23 +167,23 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const fetchProduct = async () => {
+  const fetchProduct = useCallback(async () => {
     try {
       setLoading(true)
       setError('')
 
       const data = await productsApi.getProduct(productId)
-      setProduct(data as any)
+      setProduct(data)
     } catch (err) {
       setError(getErrorMessage(err, t('product:errors.loadFailed')))
     } finally {
       setLoading(false)
     }
-  }
+  }, [productId, t])
 
   useEffect(() => {
     fetchProduct()
-  }, [productId])
+  }, [productId, fetchProduct])
 
   if (loading) {
     return <LoadingSpinner />

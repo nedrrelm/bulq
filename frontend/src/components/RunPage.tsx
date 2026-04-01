@@ -8,6 +8,7 @@ import { WS_BASE_URL } from '../config'
 import { runsApi, reassignmentApi, shoppingApi } from '../api'
 import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
+import type { WebSocketMessage } from '../types/websocket'
 import { shoppingKeys } from '../hooks/queries'
 import ErrorBoundary from './ErrorBoundary'
 import { getErrorMessage } from '../utils/errorHandling'
@@ -27,9 +28,9 @@ import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
-import { useNotifications } from '../contexts/NotificationContext'
+import { useNotifications } from '../hooks/useNotifications'
 import { useRun, runKeys, useToggleReady, useStartShopping, useFinishAdjusting } from '../hooks/queries'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { handleError, formatErrorForDisplay } from '../utils/errorHandling'
 import { useDistribution, useMarkPickedUp, useCompleteDistribution, distributionKeys } from '../hooks/queries/useDistribution'
 import type { DistributionUser } from '../schemas/distribution'
@@ -46,26 +47,18 @@ export default function RunPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  // Redirect if no runId or user
-  if (!runId || !user) {
-    navigate('/')
-    return null
-  }
-
-  const userId = user.id
-
   // Use React Query for run data
-  const { data: run, isLoading: loading, error: queryError } = useRun(runId)
+  const { data: run, isLoading: loading, error: queryError } = useRun(runId || '')
   const queryClient = useQueryClient()
-  const toggleReadyMutation = useToggleReady(runId)
-  const startShoppingMutation = useStartShopping(runId)
-  const finishAdjustingMutation = useFinishAdjusting(runId)
+  const toggleReadyMutation = useToggleReady(runId || '')
+  const startShoppingMutation = useStartShopping(runId || '')
+  const finishAdjustingMutation = useFinishAdjusting(runId || '')
 
   // Distribution data (only fetched when in distributing or completed state)
   const shouldFetchDistribution = run?.state === 'distributing' || run?.state === 'completed'
-  const { data: allUsers = [] } = useDistribution(runId, { enabled: shouldFetchDistribution })
-  const markPickedUpMutation = useMarkPickedUp(runId)
-  const completeDistributionMutation = useCompleteDistribution(runId)
+  const { data: allUsers = [] } = useDistribution(runId || '', { enabled: shouldFetchDistribution })
+  const markPickedUpMutation = useMarkPickedUp(runId || '')
+  const completeDistributionMutation = useCompleteDistribution(runId || '')
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
 
   const error = getErrorMessage(queryError, '')
@@ -84,6 +77,7 @@ export default function RunPage() {
   const { refreshUnreadCount } = useNotifications()
 
   const fetchReassignmentRequest = useCallback(async () => {
+    if (!runId) return
     try {
       const response = await reassignmentApi.getRunRequest(runId)
       setReassignmentRequest(response.request)
@@ -121,7 +115,7 @@ export default function RunPage() {
   }
 
   // WebSocket for real-time updates
-  const handleWebSocketMessage = useCallback((message: any) => {
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     if (!run) return
 
     // For all WebSocket messages, invalidate the run query to refetch
@@ -155,7 +149,7 @@ export default function RunPage() {
         refreshUnreadCount()
       }
     }
-  }, [run, userId, showToast, fetchReassignmentRequest, queryClient, runId, refreshUnreadCount])
+  }, [run, userId, showToast, fetchReassignmentRequest, queryClient, runId, refreshUnreadCount, t])
 
   useWebSocket(
     runId ? `${WS_BASE_URL}/ws/runs/${runId}` : null,
@@ -164,6 +158,7 @@ export default function RunPage() {
     }
   )
 
+  const userId = user?.id
   const canBid = run?.state === 'planning' || run?.state === 'active' || run?.state === 'adjusting'
 
   const handlePlaceBid = (product: Product) => {
@@ -470,7 +465,7 @@ export default function RunPage() {
     if (run.state === 'adjusting') {
       // Adjusting: Show purchased + remaining estimate
       let purchasedTotal = 0
-      let remainingEstimate = 0
+      const remainingEstimate = 0
 
       run.products.forEach(product => {
         const price = product.current_price ? parseFloat(product.current_price) : 0
@@ -523,6 +518,12 @@ export default function RunPage() {
       cancelAction,
       { danger: true }
     )
+  }
+
+  // Redirect if no runId or user
+  if (!runId || !user) {
+    navigate('/')
+    return null
   }
 
   if (loading) {

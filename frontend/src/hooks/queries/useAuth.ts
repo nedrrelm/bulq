@@ -25,7 +25,7 @@ export function useCurrentUser() {
 
       try {
         return await authApi.getCurrentUser()
-      } catch (error) {
+      } catch {
         // Return null for auth errors to show login page
         return null
       }

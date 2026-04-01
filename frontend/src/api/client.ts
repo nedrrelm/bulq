@@ -4,15 +4,15 @@ import { z } from 'zod'
 export class ApiError extends Error {
   status: number
   code?: string
-  details?: any
-  data?: any
+  details?: unknown
+  data?: unknown
 
   constructor(
     message: string,
     status: number,
     code?: string,
-    details?: any,
-    data?: any
+    details?: unknown,
+    data?: unknown
   ) {
     super(message)
     this.name = 'ApiError'
@@ -46,7 +46,7 @@ export class ValidationError extends Error {
 interface RequestOptions {
   method?: string
   headers?: Record<string, string>
-  body?: any
+  body?: unknown
   credentials?: RequestCredentials
   schema?: z.ZodSchema
 }
@@ -85,8 +85,8 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`
       let errorCode: string | undefined
-      let errorDetails: any
-      let errorData: any
+      let errorDetails: unknown
+      let errorData: unknown
 
       if (isJson) {
         try {
@@ -161,18 +161,18 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 }
 
 export const api = {
-  get: <T = any>(endpoint: string, schema?: z.ZodSchema) =>
+  get: <T = unknown>(endpoint: string, schema?: z.ZodSchema) =>
     request<T>(endpoint, { method: 'GET', schema }),
 
-  post: <T = any>(endpoint: string, data?: any, schema?: z.ZodSchema) =>
+  post: <T = unknown>(endpoint: string, data?: unknown, schema?: z.ZodSchema) =>
     request<T>(endpoint, { method: 'POST', body: data, schema }),
 
-  put: <T = any>(endpoint: string, data?: any, schema?: z.ZodSchema) =>
+  put: <T = unknown>(endpoint: string, data?: unknown, schema?: z.ZodSchema) =>
     request<T>(endpoint, { method: 'PUT', body: data, schema }),
 
-  patch: <T = any>(endpoint: string, data?: any, schema?: z.ZodSchema) =>
+  patch: <T = unknown>(endpoint: string, data?: unknown, schema?: z.ZodSchema) =>
     request<T>(endpoint, { method: 'PATCH', body: data, schema }),
 
-  delete: <T = any>(endpoint: string, schema?: z.ZodSchema) =>
+  delete: <T = unknown>(endpoint: string, schema?: z.ZodSchema) =>
     request<T>(endpoint, { method: 'DELETE', schema })
 }

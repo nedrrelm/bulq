@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { Bell } from 'lucide-react'
-import { useNotifications } from '../contexts/NotificationContext'
+import { useNotifications } from '../hooks/useNotifications'
 import { NotificationDropdown } from './NotificationDropdown'
 import { useClickOutside } from '../hooks/useClickOutside'
 
