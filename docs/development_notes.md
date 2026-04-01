@@ -107,7 +107,7 @@ The easiest way to run the application is using docker compose:
 docker compose up -d
 ```
 
-This will start both the backend service on `http://localhost:8000` and frontend on `http://localhost:3000`.
+This will start all services with Caddy as the reverse proxy on `http://localhost:1314`.
 
 ### Backend Setup
 
@@ -131,10 +131,10 @@ docker run -p 8000:8000 bulq-backend
 docker compose up -d backend
 ```
 
-The backend API will be available at `http://localhost:8000` with automatic API documentation at `http://localhost:8000/docs`.
+The backend API will be available at `http://localhost:1314/api` with automatic API documentation at `http://localhost:1314/api/docs`.
 
 **Backend Features:**
-- CORS configured for frontend communication (`localhost:3000`)
+- CORS configured for Caddy reverse proxy (`localhost:1314`)
 - Health check endpoint at `/health`
 - Automatic API documentation with FastAPI
 
@@ -160,7 +160,7 @@ docker run -p 3000:3000 bulq-frontend
 docker compose up -d frontend
 ```
 
-The frontend will be available at `http://localhost:3000` and includes a backend connection test.
+The frontend will be available at `http://localhost:1314` (proxied through Caddy).
 
 **Technology Stack:**
 - **Package Manager**: npm with Volta for Node.js version management
@@ -260,10 +260,11 @@ Note: Dev dependencies (including ruff) are installed when `BUILD_DEV_DEPS=true`
 3. Verify CORS configuration in backend
 
 **Port conflicts**
-- Backend: 8000 (internal only with reverse proxy)
-- Frontend: 3000 (development), 80/443 (production)
+- Caddy: 1314 (only port exposed to host)
+- Backend: 8000 (internal Docker network only)
+- Frontend: 5173 (internal Docker network only, Vite dev server)
 - Stop services: `docker compose down`
-- Check processes: `lsof -i :3000` or `lsof -i :8000`
+- Check processes: `lsof -i :1314`
 
 **Container build issues**
 - Clean rebuild: `docker compose build --no-cache`

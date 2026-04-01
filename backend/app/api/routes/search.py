@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
 
-from app.api.dependencies import ProductServiceDep
+from app.api.dependencies import ProductServiceDep, StoreServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     GroupSearchResult,
@@ -8,13 +9,17 @@ from app.api.schemas import (
     StoreSearchResult,
 )
 from app.core.models import User
+from app.infrastructure.database import get_db
+from app.repositories import get_user_repository
 
 router = APIRouter(prefix='/search', tags=['search'])
 
 
 @router.get('', response_model=SearchResponse)
 async def search_all(
-    service: ProductServiceDep,
+    product_service: ProductServiceDep,
+    store_service: StoreServiceDep,
+    db: Session = Depends(get_db),
     q: str = Query(..., min_length=1, description='Search query'),
     current_user: User = Depends(require_auth),
 ):
@@ -23,19 +28,19 @@ async def search_all(
     Returns up to 3 results per category.
     """
     # Search products
-    repo = service.repo
-    all_products = service.search_products(q)
+    all_products = product_service.search_products(q)
     products = all_products[:3]  # Limit to 3
 
     # Search stores
-    all_stores = repo.search_stores(q)
+    all_stores = store_service.store_repo.search_stores(q)
     stores = [
         StoreSearchResult(id=str(store.id), name=store.name, address=store.address)
         for store in all_stores[:3]  # Limit to 3
     ]
 
     # Search groups (only user's groups - Group objects from repository)
-    user_groups = repo.get_user_groups(current_user)
+    user_repo = get_user_repository(db)
+    user_groups = user_repo.get_user_groups(current_user)
     matching_groups = []
     for group in user_groups:
         if q.lower() in group.name.lower():

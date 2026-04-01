@@ -62,8 +62,9 @@ services:
       args:
         VITE_BASE_PATH: ${VITE_BASE_PATH}
     # Expose frontend only to internal network (accessed via Caddy)
+    # Port depends on target: 5173 for dev (Vite), N/A for prod (static files)
     expose:
-      - "3000"
+      - "5173"
     env_file:
       - .env
     depends_on:

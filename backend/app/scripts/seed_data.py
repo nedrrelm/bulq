@@ -3,6 +3,10 @@
 from datetime import UTC, datetime, timedelta
 
 from app.core.run_state import RunState
+from app.infrastructure.auth import hash_password
+
+# Test password for all seed data users: "password"
+TEST_PASSWORD_HASH = hash_password('password')
 
 
 def create_seed_data(db_session=None):
@@ -33,17 +37,17 @@ def create_seed_data(db_session=None):
     bid_repo = get_bid_repository(db_session)
     shopping_repo = get_shopping_repository(db_session)
 
-    # Create test users
-    alice = user_repo.create_user('Alice Johnson', 'alice', 'hashed_password')
-    bob = user_repo.create_user('Bob Smith', 'bob', 'hashed_password')
-    carol = user_repo.create_user('Carol Davis', 'carol', 'hashed_password')
-    test_user = user_repo.create_user('Test User', 'test', 'hashed_password')
+    # Create test users (all use password: "password")
+    alice = user_repo.create_user('Alice Johnson', 'alice', TEST_PASSWORD_HASH)
+    bob = user_repo.create_user('Bob Smith', 'bob', TEST_PASSWORD_HASH)
+    carol = user_repo.create_user('Carol Davis', 'carol', TEST_PASSWORD_HASH)
+    test_user = user_repo.create_user('Test User', 'test', TEST_PASSWORD_HASH)
     test_user.is_admin = True
 
     # Additional users for testing merge functionality
-    user_repo.create_user('David Williams', 'david', 'hashed_password')
-    emily = user_repo.create_user('Emily Brown', 'emily', 'hashed_password')
-    frank = user_repo.create_user('Frank Miller', 'frank', 'hashed_password')
+    user_repo.create_user('David Williams', 'david', TEST_PASSWORD_HASH)
+    emily = user_repo.create_user('Emily Brown', 'emily', TEST_PASSWORD_HASH)
+    frank = user_repo.create_user('Frank Miller', 'frank', TEST_PASSWORD_HASH)
 
     # Create test groups
     friends_group = group_repo.create_group('Test Friends', alice.id)

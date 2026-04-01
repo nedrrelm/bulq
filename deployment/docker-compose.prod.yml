@@ -9,6 +9,22 @@ services:
       - ENV=production
 
   frontend:
-    # Production frontend builds are already included in the image
+    build:
+      context: ./frontend
+      target: prod  # Use prod stage with built static files
+    volumes:
+      # Share built static files with Caddy via named volume
+      - frontend-dist:/srv
     environment:
       - ENV=production
+
+  caddy:
+    volumes:
+      # Use production Caddyfile
+      - ./deployment/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      # Mount frontend dist files (read-only)
+      - frontend-dist:/srv:ro
+
+volumes:
+  # Named volume for frontend static files
+  frontend-dist:

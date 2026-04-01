@@ -42,8 +42,9 @@ if IS_PRODUCTION and SESSION_STORE_TYPE == 'redis' and not REDIS_URL:
 ALLOWED_ORIGINS_RAW = os.getenv('ALLOWED_ORIGINS', '')
 
 # Development defaults
+# All traffic goes through Caddy reverse proxy on port 1314
 if not ALLOWED_ORIGINS_RAW and not IS_PRODUCTION:
-    ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:5173']
+    ALLOWED_ORIGINS = ['http://localhost:1314']
 # Production validation
 elif not ALLOWED_ORIGINS_RAW and IS_PRODUCTION:
     raise RuntimeError(

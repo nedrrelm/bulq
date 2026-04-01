@@ -7,7 +7,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173
+    host: '0.0.0.0',  // Listen on all interfaces for Docker
+    port: 5173,
+    strictPort: true,  // Fail if port is already in use
+    // HMR configuration for Docker + Caddy proxy
+    hmr: {
+      // Use the same host/port - Caddy will proxy WebSocket connections
+      clientPort: 1314  // Port exposed by Caddy to browser
+    }
   },
   build: {
     sourcemap: true  // Enable source maps for production debugging

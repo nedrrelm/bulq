@@ -382,8 +382,8 @@ class TestAllowedOrigins:
 
             importlib.reload(config)
 
-            assert 'http://localhost:3000' in config.ALLOWED_ORIGINS
-            assert 'http://localhost:5173' in config.ALLOWED_ORIGINS
+            # All traffic goes through Caddy reverse proxy on port 1314
+            assert 'http://localhost:1314' in config.ALLOWED_ORIGINS
 
     def test_allowed_origins_parsed_from_comma_separated_string(self):
         """Test that ALLOWED_ORIGINS is parsed from comma-separated string."""

@@ -1,38 +1,61 @@
-# Build stage
-FROM node:23-alpine AS builder
+# ============================================
+# Stage: base - Common dependencies
+# ============================================
+FROM node:23-alpine AS base
 
-# Switch to non-root user (node user exists in base image with UID 1000)
+# Switch to non-root user (node user exists in base image)
 USER node
 
-# WORKDIR will be created with node ownership
 WORKDIR /app
+
+# Copy package files
+COPY --chown=node:node package*.json ./
+
+# Install all dependencies (includes dev dependencies)
+RUN npm ci
+
+# ============================================
+# Stage: dev - Development with Vite dev server
+# ============================================
+FROM base AS dev
+
+# Copy source code
+COPY --chown=node:node . .
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Run Vite dev server
+CMD ["npm", "run", "dev"]
+
+# ============================================
+# Stage: builder - Build production artifacts
+# ============================================
+FROM base AS builder
 
 # Build argument for base path
 ARG VITE_BASE_PATH=/
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
 
-# Copy package files
-COPY --chown=node:node package*.json ./
-
-# Install dependencies (including dev dependencies for building)
-RUN npm ci
-
-# Copy source code with correct ownership
+# Copy source code
 COPY --chown=node:node . .
 
 # Build the application
 RUN npm run build
 
-# Production stage
-FROM caddy:2-alpine
+# Output: /app/dist
 
-# Copy built application
-COPY --from=builder /app/dist /srv
+# ============================================
+# Stage: prod - Production (minimal image with built files)
+# ============================================
+FROM alpine:latest AS prod
 
-# Copy Caddy configuration
-COPY Caddyfile /etc/caddy/Caddyfile
+# Create directory for static files
+WORKDIR /srv
 
-# Expose port 3000 (dev) or 80 (prod) - controlled by docker-compose
-EXPOSE 3000 80
+# Copy built files from builder stage
+COPY --from=builder /app/dist .
 
-# Caddy will start automatically
+# This container exists to provide built files via volume to Caddy
+# It doesn't need to do anything, just maintain the volume
+CMD ["sleep", "infinity"]

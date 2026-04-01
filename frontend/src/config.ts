@@ -1,13 +1,10 @@
 // API Configuration
-// Development: Direct connection to backend at localhost:8000/api
-// Production: Proxied through Caddy (relative URLs with /api prefix)
-export const API_BASE_URL = import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD ? '/api' : 'http://localhost:8000/api')
+// All requests go through Caddy reverse proxy (localhost:1314 in dev, production domain in prod)
+// Using relative URLs ensures requests go to same origin (Caddy), which proxies to backend
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 // WebSocket Configuration
-// Development: Direct WebSocket connection to backend at localhost:8000/api
-// Production: WebSocket through Caddy using current domain with /api prefix
+// WebSocket connections also go through Caddy reverse proxy
+// Use current page protocol/host to construct WebSocket URL
 export const WS_BASE_URL = import.meta.env.VITE_WS_URL ||
-  (import.meta.env.PROD
-    ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api`
-    : 'ws://localhost:8000/api')
+  `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api`

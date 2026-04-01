@@ -1,0 +1,55 @@
+# Caddy Reverse Proxy Configuration for Bulq - PRODUCTION
+# Serves static frontend files and routes backend traffic
+
+{
+    # Disable automatic HTTPS (will be handled by deployment setup)
+    # Enable for automatic Let's Encrypt if Caddy is exposed directly
+    auto_https off
+}
+
+:80 {
+    # Enable gzip compression
+    encode gzip
+
+    # Security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        X-XSS-Protection "1; mode=block"
+    }
+
+    # Backend API - route /api/* to FastAPI
+    reverse_proxy /api/* backend:8000 {
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # WebSocket connections for backend
+    reverse_proxy /ws/* backend:8000 {
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Frontend - serve static files with SPA fallback
+    handle /* {
+        root * /srv
+
+        # Serve static assets with long-term caching
+        @assets {
+            path /assets/*
+        }
+        header @assets Cache-Control "public, max-age=31536000, immutable"
+
+        # Try to serve file, fallback to index.html for SPA routing
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Access logs
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}

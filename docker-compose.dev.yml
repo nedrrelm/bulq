@@ -9,3 +9,16 @@ services:
       - ./backend:/app
     environment:
       - ENV=development
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev  # Use dev stage with Vite dev server
+    volumes:
+      # Mount source code for hot-reload in development
+      - ./frontend:/app
+      # Use anonymous volume for node_modules to avoid host/container conflicts
+      - /app/node_modules
+    # No ports exposed - all traffic goes through Caddy reverse proxy
+    environment:
+      - ENV=development
