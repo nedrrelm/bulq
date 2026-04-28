@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { reassignmentApi } from '../api'
 import '../styles/components/ReassignLeaderPopup.css'
 import { getErrorMessage } from '../utils/errorHandling'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 
 interface Participant {
   user_id: string

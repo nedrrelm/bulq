@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import '../styles/components/ProductPage.css'
+import '../styles/pages/ProductPage.css'
 import { productsApi } from '../api'
-import LoadingSpinner from './LoadingSpinner'
+import LoadingSpinner from '../components/common/LoadingSpinner'
 import '../styles/components/LoadingSpinner.css'
-import ErrorAlert from './ErrorAlert'
+import ErrorAlert from '../components/common/ErrorAlert'
 import { getErrorMessage } from '../utils/errorHandling'
 import {
   ScatterChart,

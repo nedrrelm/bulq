@@ -1,7 +1,7 @@
 import '../styles/components/CommentsPopup.css'
 import { useTranslation } from 'react-i18next'
 import type { UserBid } from '../schemas/run'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 
 interface CommentsPopupProps {
   productName: string

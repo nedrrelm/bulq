@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { adminApi, type AdminStore } from '../api/admin'
 import { validateLength, validateAlphanumeric, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
-import ConfirmDialog from './ConfirmDialog'
+import ConfirmDialog from '../common/ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
-import BaseModal from './BaseModal'
-import { AdminMergeSection } from './admin/AdminMergeSection'
-import { AdminDeleteSection } from './admin/AdminDeleteSection'
+import BaseModal from '../common/BaseModal'
+import { AdminMergeSection } from '../admin/AdminMergeSection'
+import { AdminDeleteSection } from '../admin/AdminDeleteSection'
 
 interface EditStorePopupProps {
   store: AdminStore

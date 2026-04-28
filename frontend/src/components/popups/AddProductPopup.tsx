@@ -5,7 +5,7 @@ import { runsApi } from '../api'
 import type { AvailableProduct } from '../types/product'
 import NewProductPopup from './NewProductPopup'
 import { getErrorMessage } from '../utils/errorHandling'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 
 interface AddProductPopupProps {
   runId: string

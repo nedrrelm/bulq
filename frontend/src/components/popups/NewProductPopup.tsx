@@ -4,9 +4,9 @@ import { storesApi, productsApi } from '../api'
 import type { Store } from '../api'
 import { validateLength, validateAlphanumeric, validateDecimal, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
-import ConfirmDialog from './ConfirmDialog'
+import ConfirmDialog from '../common/ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 import { useSimilarEntities } from '../hooks/useSimilarEntities'
 
 interface NewProductPopupProps {

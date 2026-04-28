@@ -4,7 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import './index.css'
 import './i18n/config' // Initialize i18n
 import App from './App.tsx'
-import ErrorBoundary from './components/ErrorBoundary'
+import ErrorBoundary from './components/common/ErrorBoundary'
 
 // Create QueryClient with optimized defaults
 const queryClient = new QueryClient({

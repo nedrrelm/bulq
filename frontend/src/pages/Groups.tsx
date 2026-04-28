@@ -1,21 +1,21 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import '../styles/components/Groups.css'
+import '../styles/pages/Groups.css'
 import { WS_BASE_URL } from '../config'
 import { reassignmentApi } from '../api'
 import type { PendingReassignments } from '../types'
 import type { WebSocketMessage } from '../types/websocket'
-import GroupItem from './GroupItem'
+import GroupItem from '../components/GroupItem'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useGroups, groupKeys } from '../hooks/queries'
 import { getErrorMessage } from '../utils/errorHandling'
 import { logger } from '../utils/logger'
 
 // Lazy load popup components for better code splitting
-const NewGroupPopup = lazy(() => import('./NewGroupPopup'))
-const NewStorePopup = lazy(() => import('./NewStorePopup'))
-const NewProductPopup = lazy(() => import('./NewProductPopup'))
+const NewGroupPopup = lazy(() => import('../components/popups/NewGroupPopup'))
+const NewStorePopup = lazy(() => import('../components/popups/NewStorePopup'))
+const NewProductPopup = lazy(() => import('../components/popups/NewProductPopup'))
 
 // Using Group type from API layer
 

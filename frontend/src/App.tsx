@@ -11,20 +11,20 @@ import type { SearchResults } from './api'
 import { debounce } from './utils/validation'
 import { logger } from './utils/logger'
 import { redirectStorage } from './utils/redirectStorage'
-import Login from './components/Login'
-import Groups from './components/Groups'
-import ErrorBoundary from './components/ErrorBoundary'
-import { NotificationBadge } from './components/NotificationBadge'
-import { ProfileButton } from './components/ProfileButton'
+import Login from './pages/Login'
+import Groups from './pages/Groups'
+import ErrorBoundary from './components/common/ErrorBoundary'
+import { NotificationBadge } from './components/layout/NotificationBadge'
+import { ProfileButton } from './components/layout/ProfileButton'
 
 // Lazy load route components for code splitting
-const GroupPage = lazy(() => import('./components/GroupPage'))
-const ManageGroupPage = lazy(() => import('./components/ManageGroupPage'))
-const RunPage = lazy(() => import('./components/RunPage'))
-const JoinGroup = lazy(() => import('./components/JoinGroup'))
-const ShoppingPage = lazy(() => import('./components/ShoppingPage'))
-const ProductPage = lazy(() => import('./components/ProductPage'))
-const StorePage = lazy(() => import('./components/StorePage'))
+const GroupPage = lazy(() => import('./pages/GroupPage'))
+const ManageGroupPage = lazy(() => import('./pages/ManageGroupPage'))
+const RunPage = lazy(() => import('./pages/RunPage'))
+const JoinGroup = lazy(() => import('./pages/JoinGroup'))
+const ShoppingPage = lazy(() => import('./pages/ShoppingPage'))
+const ProductPage = lazy(() => import('./pages/ProductPage'))
+const StorePage = lazy(() => import('./pages/StorePage'))
 const NotificationPage = lazy(() => import('./pages/NotificationPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))

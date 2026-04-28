@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/auth'
 import type { User } from '../schemas/user'
 import { getErrorMessage } from '../utils/errorHandling'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 import { useFormValidation, validators } from '../hooks/useFormValidation'
 
 interface ChangeUsernamePopupProps {

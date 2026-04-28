@@ -2,20 +2,20 @@ import { useCallback, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import '../styles/components/GroupPage.css'
+import '../styles/pages/GroupPage.css'
 import { WS_BASE_URL } from '../config'
-import ErrorBoundary from './ErrorBoundary'
+import ErrorBoundary from '../components/common/ErrorBoundary'
 
 // Lazy load popup components for better code splitting
-const NewRunPopup = lazy(() => import('./NewRunPopup'))
+const NewRunPopup = lazy(() => import('../components/popups/NewRunPopup'))
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useAuth } from '../hooks/useAuth'
-import Toast from './Toast'
-import ConfirmDialog from './ConfirmDialog'
+import Toast from '../components/common/Toast'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useModal } from '../hooks/useModal'
-import RunCard from './RunCard'
+import RunCard from '../components/RunCard'
 import { useGroup, useGroupRuns, groupKeys } from '../hooks/queries'
 import { getErrorMessage } from '../utils/errorHandling'
 

@@ -4,12 +4,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { adminApi, type AdminUser } from '../api/admin'
 import { validateLength, sanitizeString } from '../utils/validation'
 import { useConfirm } from '../hooks/useConfirm'
-import ConfirmDialog from './ConfirmDialog'
+import ConfirmDialog from '../common/ConfirmDialog'
 import { getErrorMessage } from '../utils/errorHandling'
 import { runKeys } from '../hooks/queries/useRuns'
-import BaseModal from './BaseModal'
-import { AdminMergeSection } from './admin/AdminMergeSection'
-import { AdminDeleteSection } from './admin/AdminDeleteSection'
+import BaseModal from '../common/BaseModal'
+import { AdminMergeSection } from '../admin/AdminMergeSection'
+import { AdminDeleteSection } from '../admin/AdminDeleteSection'
 
 interface EditUserPopupProps {
   user: AdminUser

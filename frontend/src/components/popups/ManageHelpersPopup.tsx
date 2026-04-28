@@ -6,7 +6,7 @@ import { runKeys } from '../hooks/queries'
 import type { RunDetail } from '../api'
 import '../styles/components/ManageHelpersPopup.css'
 import { formatErrorForDisplay } from '../utils/errorHandling'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 
 interface ManageHelpersPopupProps {
   run: RunDetail

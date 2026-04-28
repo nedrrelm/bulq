@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { storesApi } from '../api'
 import type { Store } from '../api'
 import { getErrorMessage } from '../utils/errorHandling'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 import { useFormValidation, validators, sanitizeString } from '../hooks/useFormValidation'
 import { useSimilarEntities } from '../hooks/useSimilarEntities'
 

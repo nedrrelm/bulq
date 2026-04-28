@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
-import '../styles/components/Login.css'
+import '../styles/pages/Login.css'
 import { authApi } from '../api'
 import type { User } from '../types/user'
 import { sanitizeString } from '../utils/validation'

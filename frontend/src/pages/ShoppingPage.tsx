@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import '../styles/components/ShoppingPage.css'
+import '../styles/pages/ShoppingPage.css'
 import { WS_BASE_URL } from '../config'
 import { shoppingApi } from '../api'
 import type { ShoppingListItem } from '../api'
@@ -10,8 +10,8 @@ import type { AvailableProduct } from '../types'
 import type { WebSocketMessage } from '../types/websocket'
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
 import { useWebSocket } from '../hooks/useWebSocket'
-import Toast from './Toast'
-import ConfirmDialog from './ConfirmDialog'
+import Toast from '../components/common/Toast'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { validateDecimal, parseDecimal, sanitizeString } from '../utils/validation'
@@ -19,8 +19,8 @@ import { useShoppingList, shoppingKeys, runKeys } from '../hooks/queries'
 import { formatErrorForDisplay, getErrorMessage } from '../utils/errorHandling'
 import { MAX_NOTES_LENGTH } from '../constants'
 
-const AddProductPopup = lazy(() => import('./AddProductPopup'))
-const BidPopup = lazy(() => import('./BidPopup'))
+const AddProductPopup = lazy(() => import('../components/popups/AddProductPopup'))
+const BidPopup = lazy(() => import('../components/popups/BidPopup'))
 
 // Using ShoppingListItem type from API layer
 

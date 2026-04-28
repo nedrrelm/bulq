@@ -6,7 +6,7 @@ import type { Store } from '../api'
 import NewStorePopup from './NewStorePopup'
 import { getErrorMessage } from '../utils/errorHandling'
 import { logger } from '../utils/logger'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 
 interface NewRunPopupProps {
   groupId: string

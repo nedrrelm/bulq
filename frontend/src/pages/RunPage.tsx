@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import '../styles/components/RunPage.css'
+import '../styles/pages/RunPage.css'
 import '../styles/run-states.css'
 import { WS_BASE_URL } from '../config'
 import { runsApi, reassignmentApi, shoppingApi } from '../api'
@@ -10,22 +10,22 @@ import type { RunDetail } from '../api'
 import type { AvailableProduct, LeaderReassignmentRequest } from '../types'
 import type { WebSocketMessage } from '../types/websocket'
 import { shoppingKeys } from '../hooks/queries'
-import ErrorBoundary from './ErrorBoundary'
+import ErrorBoundary from '../components/common/ErrorBoundary'
 import { getErrorMessage } from '../utils/errorHandling'
 
 // Lazy load popup components for better code splitting
-const BidPopup = lazy(() => import('./BidPopup'))
-const AddProductPopup = lazy(() => import('./AddProductPopup'))
-const ReassignLeaderPopup = lazy(() => import('./ReassignLeaderPopup'))
-const ManageHelpersPopup = lazy(() => import('./ManageHelpersPopup'))
-const ForceConfirmPopup = lazy(() => import('./ForceConfirmPopup'))
-const CommentsPopup = lazy(() => import('./CommentsPopup'))
-import RunProductItem from './RunProductItem'
-import DownloadRunStateButton from './DownloadRunStateButton'
+const BidPopup = lazy(() => import('../components/popups/BidPopup'))
+const AddProductPopup = lazy(() => import('../components/popups/AddProductPopup'))
+const ReassignLeaderPopup = lazy(() => import('../components/popups/ReassignLeaderPopup'))
+const ManageHelpersPopup = lazy(() => import('../components/popups/ManageHelpersPopup'))
+const ForceConfirmPopup = lazy(() => import('../components/popups/ForceConfirmPopup'))
+const CommentsPopup = lazy(() => import('../components/popups/CommentsPopup'))
+import RunProductItem from '../components/RunProductItem'
+import DownloadRunStateButton from '../components/DownloadRunStateButton'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
-import Toast from './Toast'
-import ConfirmDialog from './ConfirmDialog'
+import Toast from '../components/common/Toast'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useNotifications } from '../hooks/useNotifications'

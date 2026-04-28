@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import '../styles/components/BidPopup.css'
 import { validateDecimal, parseDecimal } from '../utils/validation'
 import { formatQuantity } from '../utils/format'
-import BaseModal from './BaseModal'
+import BaseModal from '../common/BaseModal'
 
 interface BidPopupProps {
   productName: string

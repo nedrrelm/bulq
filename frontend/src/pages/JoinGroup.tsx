@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import '../styles/components/JoinGroup.css'
+import '../styles/pages/JoinGroup.css'
 import { API_BASE_URL } from '../config'
 import { getErrorMessage } from '../utils/errorHandling'
 import { redirectStorage } from '../utils/redirectStorage'
