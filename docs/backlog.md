@@ -48,19 +48,6 @@ These items must be completed before production deployment.
 
 ## 🔧 Technical Debt & Code Quality
 
-### Frontend Code Duplication
-
-**Priority**: High
-**Impact**: 20-25% code reduction (~3,000-4,000 lines)
-
-
-8. **Reorganize component structure** (1-2 days)
-   - 40+ components in flat directory
-   - Solution: Group by feature (common/, popups/, pages/, layout/)
-   - Improves: Navigation, maintainability, imports
-
----
-
 ### Infrastructure & CI/CD
 
 **Priority**: High
