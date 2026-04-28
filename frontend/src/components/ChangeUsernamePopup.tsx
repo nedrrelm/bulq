@@ -66,7 +66,7 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
           value={newUsername}
           onChange={(e) => {
             setNewUsername(e.target.value)
-            setError('')
+            setServerError('')
           }}
           placeholder={t('profile:fields.username')}
           disabled={submitting}
@@ -89,7 +89,7 @@ export default function ChangeUsernamePopup({ onClose, onSuccess }: ChangeUserna
           value={currentPassword}
           onChange={(e) => {
             setCurrentPassword(e.target.value)
-            setError('')
+            setServerError('')
           }}
           placeholder={t('profile:fields.currentPassword')}
           disabled={submitting}

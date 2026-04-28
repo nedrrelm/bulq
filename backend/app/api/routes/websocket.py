@@ -36,6 +36,8 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
     # IMPORTANT: Accept the WebSocket connection FIRST
     await websocket.accept()
 
+    db = None
+    room_id = None
     try:
         # Get database session manually
         from app.infrastructure.database import SessionLocal
@@ -146,10 +148,12 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
                 await websocket.send_text('pong')
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket, room_id)
+        if room_id:
+            manager.disconnect(websocket, room_id)
         logger.debug('WebSocket disconnected', extra={'group_id': group_id, 'endpoint': 'group'})
     finally:
-        db.close()
+        if db:
+            db.close()
 
 
 @router.websocket('/ws/runs/{run_id}')
@@ -158,6 +162,8 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
     # IMPORTANT: Accept the WebSocket connection FIRST
     await websocket.accept()
 
+    db = None
+    room_id = None
     try:
         # Get database session manually
         from app.infrastructure.database import SessionLocal
@@ -261,10 +267,12 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
                 await websocket.send_text('pong')
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket, room_id)
+        if room_id:
+            manager.disconnect(websocket, room_id)
         logger.debug('WebSocket disconnected', extra={'run_id': str(run_id), 'endpoint': 'run'})
     finally:
-        db.close()
+        if db:
+            db.close()
 
 
 @router.websocket('/ws/user')
@@ -273,6 +281,8 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
     # IMPORTANT: Accept the WebSocket connection FIRST
     await websocket.accept()
 
+    db = None
+    room_id = None
     try:
         # Get database session manually
         from app.infrastructure.database import SessionLocal
@@ -345,8 +355,9 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
                 await websocket.send_text('pong')
 
     except WebSocketDisconnect:
-        room_id_disconnect = f'user:{user_id}'
-        manager.disconnect(websocket, room_id_disconnect)
-        logger.debug('WebSocket disconnected', extra={'user_id': str(user_id), 'endpoint': 'user'})
+        if room_id:
+            manager.disconnect(websocket, room_id)
+        logger.debug('WebSocket disconnected', extra={'endpoint': 'user'})
     finally:
-        db.close()
+        if db:
+            db.close()

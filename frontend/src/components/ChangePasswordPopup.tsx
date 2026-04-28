@@ -78,7 +78,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           value={currentPassword}
           onChange={(e) => {
             setCurrentPassword(e.target.value)
-            setError('')
+            setServerError('')
           }}
           placeholder={t('profile:fields.currentPassword')}
           disabled={submitting}
@@ -96,7 +96,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           value={newPassword}
           onChange={(e) => {
             setNewPassword(e.target.value)
-            setError('')
+            setServerError('')
           }}
           placeholder={t('profile:fields.newPassword')}
           disabled={submitting}
@@ -114,7 +114,7 @@ export default function ChangePasswordPopup({ onClose, onSuccess }: ChangePasswo
           value={confirmPassword}
           onChange={(e) => {
             setConfirmPassword(e.target.value)
-            setError('')
+            setServerError('')
           }}
           placeholder={t('profile:fields.confirmPassword')}
           disabled={submitting}
