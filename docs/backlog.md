@@ -5,8 +5,9 @@
 1. sometimes users can't edit during adjusting (possibly when they pressed ready during planning)
 
 ### Features
-1. distribution groups
-
+1. distribution groups for each run (split total into multiple pickup points)
+2. Allow leaders to set a fee for the run
+3. Create buyers clubs and sellers clubs
 
 Feature backlog and technical debt for Bulq development.
 
@@ -27,9 +28,6 @@ These items must be completed before production deployment.
    - Login/registration: 5 requests/minute
    - Bid placement: 20 requests/minute
    - General API: 100 requests/minute
-
-
-3. Dynamic front container + linters and tests
 
 4. **Add CSRF protection** (1 day)
    - No CSRF tokens in cookie-based auth
