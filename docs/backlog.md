@@ -327,3 +327,65 @@ These items must be completed before production deployment.
 - Separate workflows for seller vs buyer groups
 
 ---
+
+## 🔍 Code Audit Findings (2026-04-28)
+
+Findings from a full-codebase audit. Needs triage.
+
+---
+
+### Bugs
+
+1. **`setError` undefined in ChangePasswordPopup** — `frontend/src/components/ChangePasswordPopup.tsx` lines 81, 99, 117 call `setError('')` but the state setter is `setServerError`. Runtime crash on any input change.
+
+2. **`setError` undefined in ChangeUsernamePopup** — `frontend/src/components/ChangeUsernamePopup.tsx` lines 69, 92 — same issue.
+
+3. **WebSocket `room_id`/`user_id` NameError risk** — `backend/app/api/routes/websocket.py` — all three endpoints reference `room_id` or `user_id` in `except WebSocketDisconnect` blocks, but those variables are assigned inside the `try` block. If an exception fires before assignment, `NameError` occurs.
+
+---
+
+### Backend Code Smells
+
+4. **WebSocket endpoint code duplication (~200 lines)** — `backend/app/api/routes/websocket.py` — three endpoints (group, run, user) share ~90% identical auth/connection/heartbeat logic. Extract a shared helper.
+
+5. **Broad `except Exception` in auth.py** — `backend/app/infrastructure/auth.py:22` — `verify_password` catches all exceptions and returns False. Should catch `ValueError`/`TypeError` specifically so real bcrypt errors aren't silently swallowed.
+
+6. **Broad `except Exception` in reassignment_service** — `backend/app/services/reassignment_service.py` — multiple bare `except Exception` blocks mask specific failures.
+
+7. **Broad `except Exception` in websocket_handler** — `backend/app/events/handlers/websocket_handler.py` — 10+ occurrences catching generic exceptions.
+
+8. **BidService.place_bid god method** — `backend/app/services/bid_service.py:59-150` — handles validation, participation management, state transitions, and event emission. Should split into focused methods.
+
+---
+
+### Frontend Code Smells
+
+9. **RunPage god component (1,428 lines)** — `frontend/src/components/RunPage.tsx` — 8 modal state variables, 3 large useMemo blocks, inline sub-component. Should extract into smaller components.
+
+10. **ShoppingPage large component (798 lines)** — `frontend/src/components/ShoppingPage.tsx` — too many responsibilities.
+
+11. **41 components in flat directory** — `frontend/src/components/` — no feature-based grouping. Reorganize into runs/, groups/, shopping/, common/, admin/.
+
+12. **Change*Popup duplication** — ChangeNamePopup, ChangePasswordPopup, ChangeUsernamePopup share identical structure. Could consolidate into a generic form popup.
+
+13. **Missing memoization** — e.g. `NotificationDropdown` creates new array every render with `notifications.slice(0, 3)` without useMemo.
+
+14. **Accessibility gaps** — only ~9 aria attributes across entire frontend. Missing aria-labels on icon buttons, incomplete focus management in modals.
+
+---
+
+### Infrastructure & Config
+
+15. **Source maps enabled in production** — `frontend/vite.config.ts:20` — `sourcemap: true` exposes source code in prod builds.
+
+16. **HMR port hardcoded** — `frontend/vite.config.ts:16` — `clientPort: 1314` should read from env var.
+
+17. **Missing HSTS header in prod Caddyfile** — `deployment/Caddyfile.prod` — no `Strict-Transport-Security`.
+
+18. **Missing CSP header** — neither dev nor prod Caddyfile has a Content-Security-Policy header.
+
+19. **No CI/CD pipeline** — no `.github/workflows/` directory. Tests only run via pre-commit hooks.
+
+20. **Pre-commit runs full test suite** — `.pre-commit-config.yaml` — backend-tests hook runs all tests on every commit, slowing commits. Should move to CI.
+
+---
