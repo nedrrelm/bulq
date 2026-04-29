@@ -27,12 +27,6 @@
         header_up X-Forwarded-Proto {scheme}
     }
 
-    # WebSocket connections for backend
-    reverse_proxy /ws/* backend:8000 {
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-    }
-
     # Frontend - serve static files with SPA fallback
     handle /* {
         root * /srv

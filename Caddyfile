@@ -25,12 +25,6 @@
         header_up X-Forwarded-Proto {scheme}
     }
 
-    # WebSocket connections for backend
-    reverse_proxy /ws/* backend:8000 {
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-    }
-
     # Frontend - proxy to Vite dev server
     reverse_proxy /* frontend:5173 {
         # Enable WebSocket support for Vite HMR

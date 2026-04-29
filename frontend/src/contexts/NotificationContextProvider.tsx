@@ -71,7 +71,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // Connect to WebSocket for real-time notifications
   useWebSocket(
-    user ? `${WS_BASE_URL}/ws/notifications` : null,
+    user ? `${WS_BASE_URL}/ws/user` : null,
     {
       onMessage: handleWebSocketMessage,
       reconnectInterval: 3000,
