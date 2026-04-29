@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import '../styles/components/AddProductPopup.css'
-import { runsApi } from '../api'
-import type { AvailableProduct } from '../types/product'
+import '../../styles/components/AddProductPopup.css'
+import { runsApi } from '../../api'
+import type { AvailableProduct } from '../../types/product'
 import NewProductPopup from './NewProductPopup'
-import { getErrorMessage } from '../utils/errorHandling'
+import { getErrorMessage } from '../../utils/errorHandling'
 import BaseModal from '../common/BaseModal'
 
 interface AddProductPopupProps {

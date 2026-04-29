@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react'
-import '../styles/components/ErrorBoundary.css'
-import { logger } from '../utils/logger'
+import '../../styles/components/ErrorBoundary.css'
+import { logger } from '../../utils/logger'
 
 interface Props {
   children: ReactNode

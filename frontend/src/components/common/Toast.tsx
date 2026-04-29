@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import '../styles/components/Toast.css'
+import '../../styles/components/Toast.css'
 
 export type ToastType = 'success' | 'error' | 'info'
 

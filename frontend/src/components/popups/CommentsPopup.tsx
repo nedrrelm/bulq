@@ -1,6 +1,6 @@
-import '../styles/components/CommentsPopup.css'
+import '../../styles/components/CommentsPopup.css'
 import { useTranslation } from 'react-i18next'
-import type { UserBid } from '../schemas/run'
+import type { UserBid } from '../../schemas/run'
 import BaseModal from '../common/BaseModal'
 
 interface CommentsPopupProps {

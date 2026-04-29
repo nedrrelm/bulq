@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
 import { Bell } from 'lucide-react'
-import { useNotifications } from '../hooks/useNotifications'
+import { useNotifications } from '../../hooks/useNotifications'
 import { NotificationDropdown } from './NotificationDropdown'
-import { useClickOutside } from '../hooks/useClickOutside'
+import { useClickOutside } from '../../hooks/useClickOutside'
 
 export function NotificationBadge() {
   const { unreadCount, fetchNotifications } = useNotifications()

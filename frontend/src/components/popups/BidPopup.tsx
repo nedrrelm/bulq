@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import '../styles/components/BidPopup.css'
-import { validateDecimal, parseDecimal } from '../utils/validation'
-import { formatQuantity } from '../utils/format'
+import '../../styles/components/BidPopup.css'
+import { validateDecimal, parseDecimal } from '../../utils/validation'
+import { formatQuantity } from '../../utils/format'
 import BaseModal from '../common/BaseModal'
 
 interface BidPopupProps {

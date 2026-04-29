@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { authApi } from '../api/auth'
-import { getErrorMessage } from '../utils/errorHandling'
+import { authApi } from '../../api/auth'
+import { getErrorMessage } from '../../utils/errorHandling'
 import BaseModal from '../common/BaseModal'
-import { useFormValidation, validators } from '../hooks/useFormValidation'
+import { useFormValidation, validators } from '../../hooks/useFormValidation'
 
 interface ChangePasswordPopupProps {
   onClose: () => void

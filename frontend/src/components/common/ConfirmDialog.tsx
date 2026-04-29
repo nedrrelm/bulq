@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import '../styles/components/ConfirmDialog.css'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import '../../styles/components/ConfirmDialog.css'
+import { useModalFocusTrap } from '../../hooks/useModalFocusTrap'
 
 interface ConfirmDialogProps {
   message: string

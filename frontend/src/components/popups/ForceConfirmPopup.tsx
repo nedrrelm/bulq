@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { runsApi } from '../api'
-import { getErrorMessage } from '../utils/errorHandling'
+import { runsApi } from '../../api'
+import { getErrorMessage } from '../../utils/errorHandling'
 import BaseModal from '../common/BaseModal'
 
 interface ForceConfirmPopupProps {

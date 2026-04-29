@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
-import ErrorBoundary from './ErrorBoundary'
+import ErrorBoundary from './common/ErrorBoundary'
 import { getStateLabel } from '../utils/runStates'
 
 interface GroupItemProps {

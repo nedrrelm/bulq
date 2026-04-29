@@ -290,8 +290,6 @@ These items must be completed before production deployment.
 
 ### Frontend Code Smells
 
-9. **RunPage god component (1,428 lines)** — `frontend/src/components/RunPage.tsx` — 8 modal state variables, 3 large useMemo blocks, inline sub-component. Should extract into smaller components.
-
 10. **ShoppingPage large component (798 lines)** — `frontend/src/components/ShoppingPage.tsx` — too many responsibilities.
 
 12. **Change*Popup duplication** — ChangeNamePopup, ChangePasswordPopup, ChangeUsernamePopup share identical structure. Could consolidate into a generic form popup.

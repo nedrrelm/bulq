@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { storesApi } from '../api'
-import type { Store } from '../api'
-import { getErrorMessage } from '../utils/errorHandling'
+import { storesApi } from '../../api'
+import type { Store } from '../../api'
+import { getErrorMessage } from '../../utils/errorHandling'
 import BaseModal from '../common/BaseModal'
-import { useFormValidation, validators, sanitizeString } from '../hooks/useFormValidation'
-import { useSimilarEntities } from '../hooks/useSimilarEntities'
+import { useFormValidation, validators, sanitizeString } from '../../hooks/useFormValidation'
+import { useSimilarEntities } from '../../hooks/useSimilarEntities'
 
 interface NewStorePopupProps {
   onClose: () => void

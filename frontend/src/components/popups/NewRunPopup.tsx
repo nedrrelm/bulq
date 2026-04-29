@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import '../styles/components/NewRunPopup.css'
-import { storesApi, runsApi } from '../api'
-import type { Store } from '../api'
+import '../../styles/components/NewRunPopup.css'
+import { storesApi, runsApi } from '../../api'
+import type { Store } from '../../api'
 import NewStorePopup from './NewStorePopup'
-import { getErrorMessage } from '../utils/errorHandling'
-import { logger } from '../utils/logger'
+import { getErrorMessage } from '../../utils/errorHandling'
+import { logger } from '../../utils/logger'
 import BaseModal from '../common/BaseModal'
 
 interface NewRunPopupProps {

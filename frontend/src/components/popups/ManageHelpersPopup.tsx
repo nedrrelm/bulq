@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { runsApi, groupsApi } from '../api'
-import { runKeys } from '../hooks/queries'
-import type { RunDetail } from '../api'
-import '../styles/components/ManageHelpersPopup.css'
-import { formatErrorForDisplay } from '../utils/errorHandling'
+import { runsApi, groupsApi } from '../../api'
+import { runKeys } from '../../hooks/queries'
+import type { RunDetail } from '../../api'
+import '../../styles/components/ManageHelpersPopup.css'
+import { formatErrorForDisplay } from '../../utils/errorHandling'
 import BaseModal from '../common/BaseModal'
 
 interface ManageHelpersPopupProps {

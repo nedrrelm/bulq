@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useNotifications } from '../hooks/useNotifications'
+import { useNotifications } from '../../hooks/useNotifications'
 import { NotificationItem } from './NotificationItem'
 
 interface NotificationDropdownProps {

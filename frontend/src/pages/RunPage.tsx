@@ -75,6 +75,8 @@ export default function RunPage() {
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
   const { refreshUnreadCount } = useNotifications()
 
+  const userId = user?.id
+
   const fetchReassignmentRequest = useCallback(async () => {
     if (!runId) return
     try {
@@ -157,7 +159,6 @@ export default function RunPage() {
     }
   )
 
-  const userId = user?.id
   const canBid = run?.state === 'planning' || run?.state === 'active' || run?.state === 'adjusting'
 
   const handlePlaceBid = (product: Product) => {

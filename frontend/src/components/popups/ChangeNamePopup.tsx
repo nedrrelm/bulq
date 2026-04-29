@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { authApi } from '../api/auth'
-import type { User } from '../schemas/user'
-import { getErrorMessage } from '../utils/errorHandling'
+import { authApi } from '../../api/auth'
+import type { User } from '../../schemas/user'
+import { getErrorMessage } from '../../utils/errorHandling'
 import BaseModal from '../common/BaseModal'
 
 interface ChangeNamePopupProps {

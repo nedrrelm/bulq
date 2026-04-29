@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { groupsApi } from '../api'
-import type { Group } from '../api'
-import { getErrorMessage } from '../utils/errorHandling'
+import { groupsApi } from '../../api'
+import type { Group } from '../../api'
+import { getErrorMessage } from '../../utils/errorHandling'
 import BaseModal from '../common/BaseModal'
-import { useFormValidation, validators, sanitizeString } from '../hooks/useFormValidation'
+import { useFormValidation, validators, sanitizeString } from '../../hooks/useFormValidation'
 
 interface NewGroupPopupProps {
   onClose: () => void
