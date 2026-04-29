@@ -192,52 +192,35 @@ class ReassignmentService(BaseService):
         )
 
         # Broadcast to target user
-        try:
-            await ws_manager.broadcast(
-                f'user:{to_user_id}',
-                {
-                    'type': 'new_notification',
-                    'data': {
-                        'id': str(notification.id),
-                        'type': 'leader_reassignment_request',
-                        'data': notification_data,
-                        'read': False,
-                        'created_at': notification.created_at.isoformat() + 'Z'
-                        if notification.created_at
-                        else None,
-                    },
+        await ws_manager.broadcast(
+            f'user:{to_user_id}',
+            {
+                'type': 'new_notification',
+                'data': {
+                    'id': str(notification.id),
+                    'type': 'leader_reassignment_request',
+                    'data': notification_data,
+                    'read': False,
+                    'created_at': notification.created_at.isoformat() + 'Z'
+                    if notification.created_at
+                    else None,
                 },
-            )
-        except Exception as e:
-            logger.warning(
-                'Failed to broadcast notification to user',
-                extra={'error': str(e), 'user_id': str(to_user_id), 'run_id': str(run_id)},
-            )
+            },
+        )
 
         # Broadcast to run participants
-        try:
-            await ws_manager.broadcast(
-                f'run:{run_id}',
-                {
-                    'type': 'reassignment_requested',
-                    'data': {
-                        'run_id': str(run_id),
-                        'from_user_id': str(from_user.id),
-                        'to_user_id': str(to_user_id),
-                        'request_id': str(request_id),
-                    },
-                },
-            )
-        except Exception as e:
-            logger.warning(
-                'Failed to broadcast reassignment request',
-                extra={
-                    'error': str(e),
+        await ws_manager.broadcast(
+            f'run:{run_id}',
+            {
+                'type': 'reassignment_requested',
+                'data': {
                     'run_id': str(run_id),
                     'from_user_id': str(from_user.id),
                     'to_user_id': str(to_user_id),
+                    'request_id': str(request_id),
                 },
-            )
+            },
+        )
 
     async def accept_reassignment(
         self, request_id: UUID, accepting_user: User
@@ -368,55 +351,35 @@ class ReassignmentService(BaseService):
         )
 
         # Broadcast to old leader
-        try:
-            await ws_manager.broadcast(
-                f'user:{request.from_user_id}',
-                {
-                    'type': 'new_notification',
-                    'data': {
-                        'id': str(notification.id),
-                        'type': 'leader_reassignment_accepted',
-                        'data': notification_data,
-                        'read': False,
-                        'created_at': notification.created_at.isoformat() + 'Z'
-                        if notification.created_at
-                        else None,
-                    },
+        await ws_manager.broadcast(
+            f'user:{request.from_user_id}',
+            {
+                'type': 'new_notification',
+                'data': {
+                    'id': str(notification.id),
+                    'type': 'leader_reassignment_accepted',
+                    'data': notification_data,
+                    'read': False,
+                    'created_at': notification.created_at.isoformat() + 'Z'
+                    if notification.created_at
+                    else None,
                 },
-            )
-        except Exception as e:
-            logger.warning(
-                'Failed to broadcast notification to user',
-                extra={
-                    'error': str(e),
-                    'user_id': str(request.from_user_id),
-                    'run_id': str(request.run_id),
-                },
-            )
+            },
+        )
 
         # Broadcast to run participants
-        try:
-            await ws_manager.broadcast(
-                f'run:{request.run_id}',
-                {
-                    'type': 'reassignment_accepted',
-                    'data': {
-                        'run_id': str(request.run_id),
-                        'old_leader_id': str(request.from_user_id),
-                        'new_leader_id': str(accepting_user.id),
-                        'request_id': str(request_id),
-                    },
-                },
-            )
-        except Exception as e:
-            logger.warning(
-                'Failed to broadcast reassignment acceptance',
-                extra={
-                    'error': str(e),
+        await ws_manager.broadcast(
+            f'run:{request.run_id}',
+            {
+                'type': 'reassignment_accepted',
+                'data': {
                     'run_id': str(request.run_id),
+                    'old_leader_id': str(request.from_user_id),
+                    'new_leader_id': str(accepting_user.id),
                     'request_id': str(request_id),
                 },
-            )
+            },
+        )
 
     async def decline_reassignment(
         self, request_id: UUID, declining_user: User
@@ -519,55 +482,35 @@ class ReassignmentService(BaseService):
         )
 
         # Broadcast to original leader
-        try:
-            await ws_manager.broadcast(
-                f'user:{request.from_user_id}',
-                {
-                    'type': 'new_notification',
-                    'data': {
-                        'id': str(notification.id),
-                        'type': 'leader_reassignment_declined',
-                        'data': notification_data,
-                        'read': False,
-                        'created_at': notification.created_at.isoformat() + 'Z'
-                        if notification.created_at
-                        else None,
-                    },
+        await ws_manager.broadcast(
+            f'user:{request.from_user_id}',
+            {
+                'type': 'new_notification',
+                'data': {
+                    'id': str(notification.id),
+                    'type': 'leader_reassignment_declined',
+                    'data': notification_data,
+                    'read': False,
+                    'created_at': notification.created_at.isoformat() + 'Z'
+                    if notification.created_at
+                    else None,
                 },
-            )
-        except Exception as e:
-            logger.warning(
-                'Failed to broadcast notification to user',
-                extra={
-                    'error': str(e),
-                    'user_id': str(request.from_user_id),
-                    'run_id': str(request.run_id),
-                },
-            )
+            },
+        )
 
         # Broadcast to run participants
-        try:
-            await ws_manager.broadcast(
-                f'run:{request.run_id}',
-                {
-                    'type': 'reassignment_declined',
-                    'data': {
-                        'run_id': str(request.run_id),
-                        'from_user_id': str(request.from_user_id),
-                        'declined_by_id': str(declining_user.id),
-                        'request_id': str(request_id),
-                    },
-                },
-            )
-        except Exception as e:
-            logger.warning(
-                'Failed to broadcast reassignment decline',
-                extra={
-                    'error': str(e),
+        await ws_manager.broadcast(
+            f'run:{request.run_id}',
+            {
+                'type': 'reassignment_declined',
+                'data': {
                     'run_id': str(request.run_id),
+                    'from_user_id': str(request.from_user_id),
+                    'declined_by_id': str(declining_user.id),
                     'request_id': str(request_id),
                 },
-            )
+            },
+        )
 
     def cancel_reassignment(self, request_id: UUID, cancelling_user: User) -> ReassignmentResponse:
         """Cancel a pending reassignment request.

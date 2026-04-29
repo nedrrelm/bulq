@@ -53,22 +53,6 @@ These items must be completed before production deployment.
 **Priority**: High
 **Impact**: Automated quality gates, security scanning
 
-1. **Add GitHub Actions CI pipeline** (30 minutes) ⚡ **QUICK WIN**
-   - No CI/CD detected (`.github/workflows/` missing)
-   - Need: Backend tests, frontend lint/build, Docker builds
-   - Impact: Automated testing on every push/PR
-   - File: `.github/workflows/ci.yml`
-
-2. **Add Dependabot** (10 minutes) ⚡ **QUICK WIN**
-   - No automated dependency updates
-   - Security vulnerabilities may go unnoticed
-   - File: `.github/dependabot.yml`
-
-3. **Add security scanning** (15 minutes) ⚡ **QUICK WIN**
-   - No Trivy or similar scanning for Docker images
-   - Add to GitHub Actions workflow
-   - Scans: Python dependencies, npm packages, Docker base images
-
 4. **Add healthchecks to services** (15 minutes) ⚡ **QUICK WIN**
    - Only DB has healthcheck in `docker-compose.yml`
    - Backend and frontend missing
@@ -131,21 +115,10 @@ These items must be completed before production deployment.
 
 **Priority**: Medium
 
-1. **Add API versioning** (1 day)
-   - All routes at `/api/*` with no version
-   - Risk: Breaking changes require coordinated deployments
-   - Solution: Add `/api/v1/` prefix
-   - File: `app/main.py:50-61`
-
 2. **Add pagination to all list endpoints** (1 day)
    - Some routes support limit/offset, others don't
    - Inconsistent API design
    - Target: All list endpoints
-
-3. **Enhance OpenAPI documentation** (1-2 days)
-   - No custom examples or descriptions
-   - Add comprehensive docstrings and examples
-   - Add response examples for all endpoints
 
 4. **Add audit logging for admin actions** (1 day)
    - Admin operations not specifically logged
@@ -315,31 +288,9 @@ These items must be completed before production deployment.
 
 ---
 
-## 🔍 Code Audit Findings (2026-04-28)
-
-Findings from a full-codebase audit. Needs triage.
-
----
-
-### Bugs
-
-1. **`setError` undefined in ChangePasswordPopup** — `frontend/src/components/ChangePasswordPopup.tsx` lines 81, 99, 117 call `setError('')` but the state setter is `setServerError`. Runtime crash on any input change.
-
-2. **`setError` undefined in ChangeUsernamePopup** — `frontend/src/components/ChangeUsernamePopup.tsx` lines 69, 92 — same issue.
-
-3. **WebSocket `room_id`/`user_id` NameError risk** — `backend/app/api/routes/websocket.py` — all three endpoints reference `room_id` or `user_id` in `except WebSocketDisconnect` blocks, but those variables are assigned inside the `try` block. If an exception fires before assignment, `NameError` occurs.
-
----
-
 ### Backend Code Smells
 
 4. **WebSocket endpoint code duplication (~200 lines)** — `backend/app/api/routes/websocket.py` — three endpoints (group, run, user) share ~90% identical auth/connection/heartbeat logic. Extract a shared helper.
-
-5. **Broad `except Exception` in auth.py** — `backend/app/infrastructure/auth.py:22` — `verify_password` catches all exceptions and returns False. Should catch `ValueError`/`TypeError` specifically so real bcrypt errors aren't silently swallowed.
-
-6. **Broad `except Exception` in reassignment_service** — `backend/app/services/reassignment_service.py` — multiple bare `except Exception` blocks mask specific failures.
-
-7. **Broad `except Exception` in websocket_handler** — `backend/app/events/handlers/websocket_handler.py` — 10+ occurrences catching generic exceptions.
 
 8. **BidService.place_bid god method** — `backend/app/services/bid_service.py:59-150` — handles validation, participation management, state transitions, and event emission. Should split into focused methods.
 

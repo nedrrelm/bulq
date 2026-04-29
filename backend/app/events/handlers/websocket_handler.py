@@ -43,35 +43,24 @@ class WebSocketEventHandler:
         Args:
             event: BidPlacedEvent containing bid details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'run:{event.run_id}',
-                {
-                    'type': 'bid_updated',
-                    'data': {
-                        'product_id': str(event.product_id),
-                        'user_id': str(event.user_id),
-                        'user_name': event.user_name,
-                        'quantity': float(event.quantity),
-                        'interested_only': event.interested_only,
-                        'new_total': float(event.new_total),
-                    },
-                },
-            )
-            logger.debug(
-                'Broadcast bid placed event',
-                extra={'run_id': str(event.run_id), 'product_id': str(event.product_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast bid placed event',
-                extra={
-                    'run_id': str(event.run_id),
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {
+                'type': 'bid_updated',
+                'data': {
                     'product_id': str(event.product_id),
-                    'error': str(e),
+                    'user_id': str(event.user_id),
+                    'user_name': event.user_name,
+                    'quantity': float(event.quantity),
+                    'interested_only': event.interested_only,
+                    'new_total': float(event.new_total),
                 },
-                exc_info=True,
-            )
+            },
+        )
+        logger.debug(
+            'Broadcast bid placed event',
+            extra={'run_id': str(event.run_id), 'product_id': str(event.product_id)},
+        )
 
     async def handle_bid_retracted(self, event: BidRetractedEvent) -> None:
         """Broadcast bid retraction to run participants.
@@ -79,32 +68,21 @@ class WebSocketEventHandler:
         Args:
             event: BidRetractedEvent containing retraction details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'run:{event.run_id}',
-                {
-                    'type': 'bid_retracted',
-                    'data': {
-                        'product_id': str(event.product_id),
-                        'user_id': str(event.user_id),
-                        'new_total': float(event.new_total),
-                    },
-                },
-            )
-            logger.debug(
-                'Broadcast bid retracted event',
-                extra={'run_id': str(event.run_id), 'product_id': str(event.product_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast bid retracted event',
-                extra={
-                    'run_id': str(event.run_id),
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {
+                'type': 'bid_retracted',
+                'data': {
                     'product_id': str(event.product_id),
-                    'error': str(e),
+                    'user_id': str(event.user_id),
+                    'new_total': float(event.new_total),
                 },
-                exc_info=True,
-            )
+            },
+        )
+        logger.debug(
+            'Broadcast bid retracted event',
+            extra={'run_id': str(event.run_id), 'product_id': str(event.product_id)},
+        )
 
     async def handle_ready_toggled(self, event: ReadyToggledEvent) -> None:
         """Broadcast ready status toggle to run participants.
@@ -112,24 +90,17 @@ class WebSocketEventHandler:
         Args:
             event: ReadyToggledEvent containing ready status
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'run:{event.run_id}',
-                {
-                    'type': 'ready_toggled',
-                    'data': {'user_id': str(event.user_id), 'is_ready': event.is_ready},
-                },
-            )
-            logger.debug(
-                'Broadcast ready toggled event',
-                extra={'run_id': str(event.run_id), 'user_id': str(event.user_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast ready toggled event',
-                extra={'run_id': str(event.run_id), 'user_id': str(event.user_id), 'error': str(e)},
-                exc_info=True,
-            )
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {
+                'type': 'ready_toggled',
+                'data': {'user_id': str(event.user_id), 'is_ready': event.is_ready},
+            },
+        )
+        logger.debug(
+            'Broadcast ready toggled event',
+            extra={'run_id': str(event.run_id), 'user_id': str(event.user_id)},
+        )
 
     async def handle_run_state_changed(self, event: RunStateChangedEvent) -> None:
         """Broadcast state change to run and group rooms.
@@ -137,44 +108,32 @@ class WebSocketEventHandler:
         Args:
             event: RunStateChangedEvent containing state change details
         """
-        try:
-            # Broadcast to run room
-            await self._ws_manager.broadcast(
-                f'run:{event.run_id}',
-                {
-                    'type': 'state_changed',
-                    'data': {'run_id': str(event.run_id), 'new_state': event.new_state},
-                },
-            )
+        # Broadcast to run room
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {
+                'type': 'state_changed',
+                'data': {'run_id': str(event.run_id), 'new_state': event.new_state},
+            },
+        )
 
-            # Broadcast to group room
-            await self._ws_manager.broadcast(
-                f'group:{event.group_id}',
-                {
-                    'type': 'run_state_changed',
-                    'data': {'run_id': str(event.run_id), 'new_state': event.new_state},
-                },
-            )
+        # Broadcast to group room
+        await self._ws_manager.broadcast(
+            f'group:{event.group_id}',
+            {
+                'type': 'run_state_changed',
+                'data': {'run_id': str(event.run_id), 'new_state': event.new_state},
+            },
+        )
 
-            logger.debug(
-                'Broadcast run state changed event',
-                extra={
-                    'run_id': str(event.run_id),
-                    'old_state': event.old_state,
-                    'new_state': event.new_state,
-                },
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast run state changed event',
-                extra={
-                    'run_id': str(event.run_id),
-                    'old_state': event.old_state,
-                    'new_state': event.new_state,
-                    'error': str(e),
-                },
-                exc_info=True,
-            )
+        logger.debug(
+            'Broadcast run state changed event',
+            extra={
+                'run_id': str(event.run_id),
+                'old_state': event.old_state,
+                'new_state': event.new_state,
+            },
+        )
 
     async def handle_run_created(self, event: RunCreatedEvent) -> None:
         """Broadcast run creation to group participants.
@@ -182,34 +141,23 @@ class WebSocketEventHandler:
         Args:
             event: RunCreatedEvent containing run creation details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'group:{event.group_id}',
-                {
-                    'type': 'run_created',
-                    'data': {
-                        'run_id': str(event.run_id),
-                        'store_id': str(event.store_id),
-                        'store_name': event.store_name,
-                        'state': event.state,
-                        'leader_name': event.leader_name,
-                    },
-                },
-            )
-            logger.debug(
-                'Broadcast run created event',
-                extra={'run_id': str(event.run_id), 'group_id': str(event.group_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast run created event',
-                extra={
+        await self._ws_manager.broadcast(
+            f'group:{event.group_id}',
+            {
+                'type': 'run_created',
+                'data': {
                     'run_id': str(event.run_id),
-                    'group_id': str(event.group_id),
-                    'error': str(e),
+                    'store_id': str(event.store_id),
+                    'store_name': event.store_name,
+                    'state': event.state,
+                    'leader_name': event.leader_name,
                 },
-                exc_info=True,
-            )
+            },
+        )
+        logger.debug(
+            'Broadcast run created event',
+            extra={'run_id': str(event.run_id), 'group_id': str(event.group_id)},
+        )
 
     async def handle_run_cancelled(self, event: RunCancelledEvent) -> None:
         """Broadcast run cancellation to group participants.
@@ -217,28 +165,17 @@ class WebSocketEventHandler:
         Args:
             event: RunCancelledEvent containing cancellation details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'group:{event.group_id}',
-                {
-                    'type': 'run_cancelled',
-                    'data': {'run_id': str(event.run_id), 'store_name': event.store_name},
-                },
-            )
-            logger.debug(
-                'Broadcast run cancelled event',
-                extra={'run_id': str(event.run_id), 'group_id': str(event.group_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast run cancelled event',
-                extra={
-                    'run_id': str(event.run_id),
-                    'group_id': str(event.group_id),
-                    'error': str(e),
-                },
-                exc_info=True,
-            )
+        await self._ws_manager.broadcast(
+            f'group:{event.group_id}',
+            {
+                'type': 'run_cancelled',
+                'data': {'run_id': str(event.run_id), 'store_name': event.store_name},
+            },
+        )
+        logger.debug(
+            'Broadcast run cancelled event',
+            extra={'run_id': str(event.run_id), 'group_id': str(event.group_id)},
+        )
 
     async def handle_member_joined(self, event: MemberJoinedEvent) -> None:
         """Broadcast member join to group participants.
@@ -246,28 +183,17 @@ class WebSocketEventHandler:
         Args:
             event: MemberJoinedEvent containing join details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'group:{event.group_id}',
-                {
-                    'type': 'member_joined',
-                    'data': {'user_id': str(event.user_id), 'user_name': event.user_name},
-                },
-            )
-            logger.debug(
-                'Broadcast member joined event',
-                extra={'group_id': str(event.group_id), 'user_id': str(event.user_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast member joined event',
-                extra={
-                    'group_id': str(event.group_id),
-                    'user_id': str(event.user_id),
-                    'error': str(e),
-                },
-                exc_info=True,
-            )
+        await self._ws_manager.broadcast(
+            f'group:{event.group_id}',
+            {
+                'type': 'member_joined',
+                'data': {'user_id': str(event.user_id), 'user_name': event.user_name},
+            },
+        )
+        logger.debug(
+            'Broadcast member joined event',
+            extra={'group_id': str(event.group_id), 'user_id': str(event.user_id)},
+        )
 
     async def handle_member_removed(self, event: MemberRemovedEvent) -> None:
         """Broadcast member removal to group participants.
@@ -275,25 +201,14 @@ class WebSocketEventHandler:
         Args:
             event: MemberRemovedEvent containing removal details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'group:{event.group_id}',
-                {'type': 'member_removed', 'data': {'user_id': str(event.user_id)}},
-            )
-            logger.debug(
-                'Broadcast member removed event',
-                extra={'group_id': str(event.group_id), 'user_id': str(event.user_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast member removed event',
-                extra={
-                    'group_id': str(event.group_id),
-                    'user_id': str(event.user_id),
-                    'error': str(e),
-                },
-                exc_info=True,
-            )
+        await self._ws_manager.broadcast(
+            f'group:{event.group_id}',
+            {'type': 'member_removed', 'data': {'user_id': str(event.user_id)}},
+        )
+        logger.debug(
+            'Broadcast member removed event',
+            extra={'group_id': str(event.group_id), 'user_id': str(event.user_id)},
+        )
 
     async def handle_member_left(self, event: MemberLeftEvent) -> None:
         """Broadcast member departure to group participants.
@@ -301,25 +216,14 @@ class WebSocketEventHandler:
         Args:
             event: MemberLeftEvent containing departure details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'group:{event.group_id}',
-                {'type': 'member_left', 'data': {'user_id': str(event.user_id)}},
-            )
-            logger.debug(
-                'Broadcast member left event',
-                extra={'group_id': str(event.group_id), 'user_id': str(event.user_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast member left event',
-                extra={
-                    'group_id': str(event.group_id),
-                    'user_id': str(event.user_id),
-                    'error': str(e),
-                },
-                exc_info=True,
-            )
+        await self._ws_manager.broadcast(
+            f'group:{event.group_id}',
+            {'type': 'member_left', 'data': {'user_id': str(event.user_id)}},
+        )
+        logger.debug(
+            'Broadcast member left event',
+            extra={'group_id': str(event.group_id), 'user_id': str(event.user_id)},
+        )
 
     async def handle_shopping_item_updated(self, event: ShoppingItemUpdatedEvent) -> None:
         """Broadcast shopping item update to run participants.
@@ -327,25 +231,18 @@ class WebSocketEventHandler:
         Args:
             event: ShoppingItemUpdatedEvent containing update details
         """
-        try:
-            data = {'run_id': str(event.run_id), 'action': event.action}
-            if event.item_id:
-                data['item_id'] = str(event.item_id)
+        data = {'run_id': str(event.run_id), 'action': event.action}
+        if event.item_id:
+            data['item_id'] = str(event.item_id)
 
-            await self._ws_manager.broadcast(
-                f'run:{event.run_id}',
-                {'type': 'shopping_item_updated', 'data': data},
-            )
-            logger.debug(
-                'Broadcast shopping item updated event',
-                extra={'run_id': str(event.run_id), 'action': event.action},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast shopping item updated event',
-                extra={'run_id': str(event.run_id), 'action': event.action, 'error': str(e)},
-                exc_info=True,
-            )
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {'type': 'shopping_item_updated', 'data': data},
+        )
+        logger.debug(
+            'Broadcast shopping item updated event',
+            extra={'run_id': str(event.run_id), 'action': event.action},
+        )
 
     async def handle_distribution_updated(self, event: DistributionUpdatedEvent) -> None:
         """Broadcast distribution update to run participants.
@@ -353,32 +250,21 @@ class WebSocketEventHandler:
         Args:
             event: DistributionUpdatedEvent containing update details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'run:{event.run_id}',
-                {
-                    'type': 'distribution_updated',
-                    'data': {
-                        'run_id': str(event.run_id),
-                        'bid_id': str(event.bid_id),
-                        'action': event.action,
-                    },
-                },
-            )
-            logger.debug(
-                'Broadcast distribution updated event',
-                extra={'run_id': str(event.run_id), 'bid_id': str(event.bid_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast distribution updated event',
-                extra={
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {
+                'type': 'distribution_updated',
+                'data': {
                     'run_id': str(event.run_id),
                     'bid_id': str(event.bid_id),
-                    'error': str(e),
+                    'action': event.action,
                 },
-                exc_info=True,
-            )
+            },
+        )
+        logger.debug(
+            'Broadcast distribution updated event',
+            extra={'run_id': str(event.run_id), 'bid_id': str(event.bid_id)},
+        )
 
     async def handle_helper_toggled(self, event: HelperToggledEvent) -> None:
         """Broadcast helper toggle to run participants.
@@ -386,24 +272,17 @@ class WebSocketEventHandler:
         Args:
             event: HelperToggledEvent containing toggle details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'run:{event.run_id}',
-                {
-                    'type': 'helper_toggled',
-                    'data': {'run_id': str(event.run_id), 'user_id': str(event.user_id)},
-                },
-            )
-            logger.debug(
-                'Broadcast helper toggled event',
-                extra={'run_id': str(event.run_id), 'user_id': str(event.user_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast helper toggled event',
-                extra={'run_id': str(event.run_id), 'user_id': str(event.user_id), 'error': str(e)},
-                exc_info=True,
-            )
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {
+                'type': 'helper_toggled',
+                'data': {'run_id': str(event.run_id), 'user_id': str(event.user_id)},
+            },
+        )
+        logger.debug(
+            'Broadcast helper toggled event',
+            extra={'run_id': str(event.run_id), 'user_id': str(event.user_id)},
+        )
 
     async def handle_comment_updated(self, event: CommentUpdatedEvent) -> None:
         """Broadcast comment update to run participants.
@@ -411,21 +290,14 @@ class WebSocketEventHandler:
         Args:
             event: CommentUpdatedEvent containing comment details
         """
-        try:
-            await self._ws_manager.broadcast(
-                f'run:{event.run_id}',
-                {
-                    'type': 'comment_updated',
-                    'data': {'run_id': str(event.run_id), 'comment': event.comment},
-                },
-            )
-            logger.debug(
-                'Broadcast comment updated event',
-                extra={'run_id': str(event.run_id)},
-            )
-        except Exception as e:
-            logger.error(
-                'Failed to broadcast comment updated event',
-                extra={'run_id': str(event.run_id), 'error': str(e)},
-                exc_info=True,
-            )
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {
+                'type': 'comment_updated',
+                'data': {'run_id': str(event.run_id), 'comment': event.comment},
+            },
+        )
+        logger.debug(
+            'Broadcast comment updated event',
+            extra={'run_id': str(event.run_id)},
+        )
