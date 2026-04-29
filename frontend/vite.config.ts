@@ -13,7 +13,7 @@ export default defineConfig({
     // HMR configuration for Docker + Caddy proxy
     hmr: {
       // Use the same host/port - Caddy will proxy WebSocket connections
-      clientPort: 1314  // Port exposed by Caddy to browser
+      clientPort: parseInt(process.env.CADDY_PORT || '1314')  // Port exposed by Caddy to browser
     }
   },
   build: {

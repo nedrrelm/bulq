@@ -44,6 +44,9 @@ These items must be completed before production deployment.
    - Only MemoryRepository is tested
    - File: `tests/test_repository.py:228-239` has placeholder
 
+
+10. Use fastAPI-users for authentication
+
 ---
 
 ## 🔧 Technical Debt & Code Quality
@@ -288,21 +291,10 @@ These items must be completed before production deployment.
 
 ---
 
-### Frontend Code Smells
-
-10. **ShoppingPage large component (798 lines)** — `frontend/src/components/ShoppingPage.tsx` — too many responsibilities.
-
-12. **Change*Popup duplication** — ChangeNamePopup, ChangePasswordPopup, ChangeUsernamePopup share identical structure. Could consolidate into a generic form popup.
-
-13. **Missing memoization** — e.g. `NotificationDropdown` creates new array every render with `notifications.slice(0, 3)` without useMemo.
-
----
 
 ### Infrastructure & Config
 
 15. **Source maps enabled in production** — `frontend/vite.config.ts:20` — `sourcemap: true` exposes source code in prod builds.
-
-16. **HMR port hardcoded** — `frontend/vite.config.ts:16` — `clientPort: 1314` should read from env var.
 
 17. **Missing HSTS header in prod Caddyfile** — `deployment/Caddyfile.prod` — no `Strict-Transport-Security`.
 
