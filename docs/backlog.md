@@ -295,9 +295,3 @@ These items must be completed before production deployment.
 ### Infrastructure & Config
 
 15. **Source maps enabled in production** — `frontend/vite.config.ts:20` — `sourcemap: true` exposes source code in prod builds.
-
-17. **Missing HSTS header in prod Caddyfile** — `deployment/Caddyfile.prod` — no `Strict-Transport-Security`.
-
-18. **Missing CSP header** — neither dev nor prod Caddyfile has a Content-Security-Policy header.
-
----

@@ -16,6 +16,7 @@
         X-Frame-Options "SAMEORIGIN"
         X-Content-Type-Options "nosniff"
         Referrer-Policy "strict-origin-when-cross-origin"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' wss: ws: http://localhost:*; img-src 'self' data:; font-src 'self'"
     }
 
     # Backend API - route /api/* to FastAPI
