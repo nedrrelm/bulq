@@ -107,7 +107,7 @@ async def register(
         max_age=SESSION_EXPIRY_HOURS * 3600,  # Convert hours to seconds
         httponly=True,
         secure=SECURE_COOKIES,
-        samesite='lax',
+        samesite='strict',
         path='/',
     )
 
@@ -150,7 +150,7 @@ async def login(
         max_age=SESSION_EXPIRY_HOURS * 3600,  # Convert hours to seconds
         httponly=True,
         secure=SECURE_COOKIES,
-        samesite='lax',
+        samesite='strict',
         path='/',
     )
 

@@ -13,9 +13,6 @@ Feature backlog and technical debt for Bulq development.
 
 ## 🚀 Critical: Production Readiness
 
-These items must be completed before production deployment.
-
----
 
 ### Security & Infrastructure
 **Status**: Partially Complete
@@ -29,15 +26,6 @@ These items must be completed before production deployment.
    - Bid placement: 20 requests/minute
    - General API: 100 requests/minute
 
-4. **Add CSRF protection** (1 day)
-   - No CSRF tokens in cookie-based auth
-   - Tool: `fastapi-csrf-protect` or SameSite=Strict cookies
-   - Impact: Vulnerable to CSRF attacks
-
-5. **Add database indices** (1 day)
-   - Tables: Run (group_id, state), RunParticipation (run_id, user_id), ProductBid (participation_id)
-   - Impact: Slow queries, N+1 problems
-
 
 9. **Test DatabaseRepository** (2 days) - **CRITICAL**
    - DatabaseRepository used in production but has NO tests
@@ -50,30 +38,6 @@ These items must be completed before production deployment.
 ---
 
 ## 🔧 Technical Debt & Code Quality
-
-### Infrastructure & CI/CD
-
-**Priority**: High
-**Impact**: Automated quality gates, security scanning
-
-5. **Optimize Docker builds** (1 day)
-   - Enable BuildKit cache mounts
-   - Multi-stage build for backend
-   - Backend image: 344MB → target <200MB
-   - Frontend already optimized at 61MB
-
-6. **Add resource limits** (30 minutes)
-   - No CPU/memory limits in docker-compose
-   - Risk: Service could consume all host resources
-   - File: `deployment/docker-compose.prod.yml`
-
-7. **Fix pre-commit hooks** (1 hour)
-   - Frontend hooks depend on running Docker containers
-   - Fails with unclear error if Docker not running
-   - Solution: Run locally or add fallback
-   - File: `.pre-commit-config.yaml`
-
----
 
 ### Performance Optimization
 
