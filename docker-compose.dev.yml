@@ -4,6 +4,9 @@
 
 services:
   backend:
+    build:
+      context: ./backend
+      target: dev
     volumes:
       # Mount source code for hot-reload in development
       - ./backend:/app

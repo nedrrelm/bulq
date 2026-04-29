@@ -3,8 +3,9 @@
 
 services:
   backend:
-    # No volume mount in production - use image only
-    # This disables hot-reload for stability
+    build:
+      context: ./backend
+      target: prod
     environment:
       - ENV=production
 
