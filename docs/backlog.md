@@ -118,16 +118,6 @@ Feature backlog and technical debt for Bulq development.
      - Network topology
      - Data flow diagrams
 
-4. **Update deprecated datetime usage** (1 hour) ⚡ **QUICK WIN**
-   - `datetime.utcnow()` used in `errors/models.py:33`
-   - Should use `datetime.now(UTC)`
-   - Deprecated in Python 3.12+
-
-5. **Remove database error type from client responses** (30 minutes)
-   - `app/errors/handlers.py:126-133` exposes `error_type`
-   - Could reveal database schema
-   - Remove from production responses
-
 6. **Add SBOM generation** (1 day)
    - No Software Bill of Materials for dependency tracking
    - Use `syft` or built-in tools
