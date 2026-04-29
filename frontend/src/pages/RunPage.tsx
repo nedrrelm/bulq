@@ -20,8 +20,10 @@ const ReassignLeaderPopup = lazy(() => import('../components/popups/ReassignLead
 const ManageHelpersPopup = lazy(() => import('../components/popups/ManageHelpersPopup'))
 const ForceConfirmPopup = lazy(() => import('../components/popups/ForceConfirmPopup'))
 const CommentsPopup = lazy(() => import('../components/popups/CommentsPopup'))
+const EditCommentPopup = lazy(() => import('../components/popups/EditCommentPopup'))
 import RunProductItem from '../components/RunProductItem'
-import DownloadRunStateButton from '../components/DownloadRunStateButton'
+import RunActionCards from '../components/RunActionCards'
+import RunDistributionSection from '../components/RunDistributionSection'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { getStateDisplay } from '../utils/runStates'
 import Toast from '../components/common/Toast'
@@ -37,9 +39,6 @@ import type { DistributionUser } from '../schemas/distribution'
 
 // Using RunDetail type from API layer
 type Product = RunDetail['products'][0]
-
-// ProductItem component extracted to RunProductItem.tsx
-// RunParticipants component extracted to RunParticipants.tsx
 
 export default function RunPage() {
   const { t } = useTranslation(['common', 'run'])
@@ -734,366 +733,40 @@ export default function RunPage() {
           </div>
         )}
 
-        {run.state === 'active' && (
-          <ErrorBoundary>
-            <div className="info-card">
-              <h3>{t('run:labels.participants')}</h3>
-              <div className="participants-list">
-                {run.participants.map(participant => (
-                  <div key={participant.user_id} className="participant-item">
-                    <div className="participant-info">
-                      <span className={`participant-name ${participant.is_removed ? 'removed-user' : ''}`}>
-                        {participant.user_name}
-                        {participant.is_leader && <span className="leader-badge">{t('run:labels.leader')}</span>}
-                        {participant.is_helper && <span className="helper-badge">{t('run:labels.helper')}</span>}
-                      </span>
-                    </div>
-                    <div className="participant-ready">
-                      {participant.is_ready ? (
-                        <span className="ready-indicator ready">{t('run:labels.ready')}</span>
-                      ) : (
-                        <span className="ready-indicator not-ready">{t('run:labels.notReady')}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="ready-section">
-                <label className="ready-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={run.current_user_is_ready}
-                    onChange={handleToggleReady}
-                    disabled={toggleReadyMutation.isPending}
-                  />
-                  <span>
-                    {toggleReadyMutation.isPending ? t('run:labels.updating') : t('run:labels.imReady')}
-                  </span>
-                </label>
-                <p className="ready-hint">{t('run:labels.readyHint')}</p>
-              </div>
-            </div>
-          </ErrorBoundary>
-        )}
-
-        {run.state === 'active' && run.current_user_is_leader && (() => {
-          // Calculate if all participants with bids are ready
-          const participantsWithBids = run.participants.filter(p =>
-            run.products.some(product =>
-              product.user_bids.some(bid => bid.user_id === p.user_id)
-            )
-          )
-          const allReady = participantsWithBids.length > 0 && participantsWithBids.every(p => p.is_ready)
-
-          return (
-            <div className="info-card">
-              {allReady ? (
-                <>
-                  <h3>{t('run:labels.readyToConfirm')}</h3>
-                  <p>{t('run:labels.allParticipantsReady')}</p>
-                  <div className="flex-gap-md flex-wrap">
-                    <button
-                      onClick={() => setShowForceConfirmPopup(true)}
-                      className="btn btn-primary btn-lg"
-                    >
-                      {t('run:actions.proceedToConfirmed')}
-                    </button>
-                  </div>
-                  <p className="ready-hint">
-                    {t('run:labels.confirmRunHint')}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h3>{t('run:labels.waitingForParticipants')}</h3>
-                  <p>{t('run:labels.notAllParticipantsReady')}</p>
-                  <p className="text-sm text-secondary mt-sm">
-                    {t('run:labels.canForceConfirmIfNeeded')}{' '}
-                    <button
-                      onClick={() => setShowForceConfirmPopup(true)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--color-primary)',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        padding: 0,
-                        font: 'inherit'
-                      }}
-                    >
-                      {t('run:actions.forceConfirm')}
-                    </button>
-                  </p>
-                </>
-              )}
-            </div>
-          )
-        })()}
-
-        {run.state === 'confirmed' && run.current_user_is_leader && (
-          <div className="info-card">
-            <h3>{t('run:labels.readyToShop')}</h3>
-            <p>{t('run:labels.allParticipantsReady')}</p>
-            <div className="flex-gap-md flex-wrap">
-              <button
-                onClick={handleStartShopping}
-                className="btn btn-primary btn-lg"
-                disabled={startShoppingMutation.isPending}
-              >
-                {startShoppingMutation.isPending ? t('run:labels.starting') : t('run:actions.startShopping')}
-              </button>
-              <DownloadRunStateButton
-                runId={runId}
-                storeName={run.store_name}
-                className="btn btn-secondary btn-lg"
-              />
-            </div>
-            <p className="ready-hint">
-              {t('run:labels.startShoppingHint')}
-            </p>
-          </div>
-        )}
-
-        {run.state === 'shopping' && (run.current_user_is_leader || run.current_user_is_helper) && (
-          <div className="info-card">
-            <h3>{t('run:labels.shoppingInProgress')}</h3>
-            <p>{t('run:labels.currentlyShopping')}</p>
-            <div className="flex-gap-md flex-wrap">
-              <button
-                onClick={() => navigate(`/shopping/${runId}`)}
-                className="btn btn-success btn-lg"
-              >
-                {t('run:actions.openShoppingList')}
-              </button>
-              <DownloadRunStateButton
-                runId={runId}
-                storeName={run.store_name}
-                className="btn btn-secondary btn-lg"
-              />
-            </div>
-            <p className="ready-hint">
-              {t('run:labels.trackPricesHint')}
-            </p>
-          </div>
-        )}
-
-        {run.state === 'adjusting' && run.current_user_is_leader && (
-          <div className="info-card">
-            <h3>{t('run:labels.adjustingBids')}</h3>
-            <p>{t('run:labels.adjustingBidsDescription')}</p>
-            <div className="flex-gap-md flex-wrap">
-              <button
-                onClick={handleFinishAdjusting}
-                className="btn btn-primary btn-lg"
-                disabled={finishAdjustingMutation.isPending}
-              >
-                {finishAdjustingMutation.isPending ? t('run:labels.processing') : t('run:actions.finishAdjusting')}
-              </button>
-              <button
-                onClick={handleForceFinishAdjusting}
-                className="btn btn-secondary btn-lg"
-                disabled={finishAdjustingMutation.isPending}
-              >
-                {t('run:actions.forceFinish')}
-              </button>
-              <DownloadRunStateButton
-                runId={runId}
-                storeName={run.store_name}
-                className="btn btn-secondary btn-lg"
-              />
-            </div>
-            <p className="ready-hint">
-              {t('run:labels.finishAdjustingHint')}
-            </p>
-          </div>
-        )}
+        <RunActionCards
+          run={run}
+          runId={runId}
+          onToggleReady={handleToggleReady}
+          toggleReadyPending={toggleReadyMutation.isPending}
+          onStartShopping={handleStartShopping}
+          startShoppingPending={startShoppingMutation.isPending}
+          onFinishAdjusting={handleFinishAdjusting}
+          onForceFinishAdjusting={handleForceFinishAdjusting}
+          finishAdjustingPending={finishAdjustingMutation.isPending}
+          onShowForceConfirmPopup={() => setShowForceConfirmPopup(true)}
+          onNavigateToShopping={() => navigate(`/shopping/${runId}`)}
+        />
 
       </div>
 
-      {/* User Breakdown Section - shown in all states except cancelled */}
-      {run && run.state !== 'cancelled' && (
-        <div className="distribution-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>
-              {shouldFetchDistribution
-                ? t('run:labels.distribution')
-                : t('run:labels.userBreakdown')}
-              {!shouldFetchDistribution && (
-                <span className="text-sm text-secondary ml-sm">
-                  ({t('run:labels.estimated')})
-                </span>
-              )}
-            </h3>
-            {shouldFetchDistribution && (run.current_user_is_leader || run.current_user_is_helper) && (
-              <DownloadRunStateButton
-                runId={runId}
-                storeName={run.store_name}
-                className="btn btn-secondary"
-              />
-            )}
-          </div>
-
-          {shouldFetchDistribution ? (
-            <>
-              {/* Distribution state: show actual distribution data */}
-              {distributionUsers.length === 0 ? (
-                <div className="empty-state">
-                  <p>{t('run:empty.noItemsToDistribute')}</p>
-                </div>
-              ) : (
-                <div className="distribution-list">
-                  {distributionUsers.map(user => (
-              <div key={user.user_id} className={`user-card ${user.all_picked_up ? 'completed' : ''}`}>
-                <div
-                  className="user-header"
-                  onClick={() => toggleExpand(user.user_id)}
-                >
-                  <div className="user-info">
-                    <span className="user-name">{user.user_name}</span>
-                    <span className="user-total">{user.total_cost} RSD</span>
-                  </div>
-                  <div className="user-actions">
-                    {user.all_picked_up && <span className="pickup-badge">{t('run:labels.pickedUp')}</span>}
-                    <span className="expand-icon">{expandedUserId === user.user_id ? '▼' : '▶'}</span>
-                  </div>
-                </div>
-
-                {expandedUserId === user.user_id && (
-                  <div className="user-products">
-                    <div className="user-products-header">
-                      {!user.all_picked_up && isLeaderOrHelper && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleMarkAllPickedUp(user)
-                          }}
-                          className="mark-all-button"
-                          disabled={markPickedUpMutation.isPending}
-                        >
-                          {markPickedUpMutation.isPending ? t('run:labels.updating') : t('run:actions.markAllPickedUp')}
-                        </button>
-                      )}
-                    </div>
-                    {user.products
-                      .sort((a, b) => {
-                        // Always sort alphabetically by product name
-                        return a.product_name.localeCompare(b.product_name)
-                      })
-                      .map(product => {
-                        // Check if product was purchased (only in distributing/completed where it's relevant)
-                        const productData = run.products.find(p => p.id === product.product_id)
-                        const isUnbought = (run.state === 'distributing' || run.state === 'completed') &&
-                                           productData &&
-                                           (productData.purchased_quantity === null || productData.purchased_quantity === 0)
-
-                        return (
-                      <div key={product.bid_id} className={`product-item ${product.is_picked_up ? 'picked-up' : ''} ${isUnbought ? 'unbought' : ''}`}>
-                        <div className="product-info">
-                          <div className="product-name">
-                            {product.product_name}
-                            {product.distributed_quantity < product.requested_quantity && (
-                              <span className="shortage-badge" title={t('run:labels.quantityReducedTooltip')}>⚠️</span>
-                            )}
-                          </div>
-                          <div className="product-details">
-                            <span>{t('run:labels.requested')}: {product.requested_quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
-                            <span>{t('run:labels.allocated')}: {product.distributed_quantity}{product.product_unit ? ` ${product.product_unit}` : ''} <span className="remaining-info">({product.remaining_total}/{product.distributed_total} {t('run:labels.left')})</span></span>
-                            <span>@{product.price_per_unit} RSD</span>
-                            <span className="product-subtotal">{product.subtotal} RSD</span>
-                          </div>
-                        </div>
-                        {isLeaderOrHelper && (
-                          <button
-                            onClick={() => handlePickup(product.bid_id)}
-                            disabled={product.is_picked_up || markPickedUpMutation.isPending}
-                            className={`pickup-button ${product.is_picked_up ? 'picked-up' : ''}`}
-                          >
-                            {markPickedUpMutation.isPending ? t('run:labels.updating') : product.is_picked_up ? t('run:labels.pickedUp') : t('run:actions.markPickedUp')}
-                          </button>
-                        )}
-                      </div>
-                        )
-                      })}
-                  </div>
-                )}
-              </div>
-            ))}
-                </div>
-              )}
-
-              {allPickedUp && isLeaderOrHelper && run?.state === 'distributing' && (
-                <div className="complete-section">
-                  <button
-                    onClick={handleCompleteRun}
-                    className="complete-button"
-                    disabled={completeDistributionMutation.isPending}
-                  >
-                    {completeDistributionMutation.isPending ? t('run:labels.completing') : t('run:actions.completeRun')}
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            // Pre-distribution states: show breakdown from bids
-            userBreakdownFromBids.length === 0 ? (
-              <div className="empty-state">
-                <p>{t('run:empty.noBidsYet')}</p>
-              </div>
-            ) : (
-              <div className="distribution-list">
-                {userBreakdownFromBids.map(user => (
-                  <div key={user.user_id} className="user-card">
-                    <div
-                      className="user-header"
-                      onClick={() => toggleExpand(user.user_id)}
-                    >
-                      <div className="user-info">
-                        <span className="user-name">{user.user_name}</span>
-                        <span className="user-total">{user.total_cost} RSD</span>
-                      </div>
-                      <div className="user-actions">
-                        <span className="expand-icon">{expandedUserId === user.user_id ? '▼' : '▶'}</span>
-                      </div>
-                    </div>
-
-                    {expandedUserId === user.user_id && (
-                      <div className="user-products">
-                        {user.products
-                          .sort((a, b) => a.product_name.localeCompare(b.product_name))
-                          .map(product => {
-                            // Check if product was purchased (only show as unbought in post-shopping states)
-                            const productData = run.products.find(p => p.id === product.product_id)
-                            const isUnbought = (run.state === 'adjusting' || run.state === 'distributing' || run.state === 'completed') &&
-                                               productData &&
-                                               (productData.purchased_quantity === null || productData.purchased_quantity === 0)
-
-                            return (
-                              <div key={product.product_id} className={`product-item ${isUnbought ? 'unbought' : ''}`}>
-                                <div className="product-info">
-                                  <div className="product-name">
-                                    {product.product_name}
-                                  </div>
-                              <div className="product-details">
-                                <span>{t('run:labels.quantity')}: {product.quantity}{product.product_unit ? ` ${product.product_unit}` : ''}</span>
-                                {product.price_per_unit > 0 && (
-                                  <>
-                                    <span>@{product.price_per_unit} RSD</span>
-                                    <span className="product-subtotal">{product.subtotal.toFixed(2)} RSD</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                            )
-                          })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-        </div>
+      {/* User Breakdown Section */}
+      {run.state !== 'cancelled' && (
+        <RunDistributionSection
+          run={run}
+          runId={runId}
+          shouldFetchDistribution={shouldFetchDistribution}
+          distributionUsers={distributionUsers}
+          userBreakdownFromBids={userBreakdownFromBids}
+          expandedUserId={expandedUserId}
+          onToggleExpand={toggleExpand}
+          allPickedUp={allPickedUp}
+          isLeaderOrHelper={isLeaderOrHelper || false}
+          onMarkPickedUp={handlePickup}
+          onMarkAllPickedUp={handleMarkAllPickedUp}
+          onCompleteRun={handleCompleteRun}
+          markPickedUpPending={markPickedUpMutation.isPending}
+          completeDistributionPending={completeDistributionMutation.isPending}
+        />
       )}
 
       <div className="products-section">
@@ -1166,50 +839,10 @@ export default function RunPage() {
         )}
       </div>
 
-      {run.state === 'active' && (
+      {['active', 'planning', 'confirmed', 'shopping', 'adjusting', 'completed'].includes(run.state) && (
         <div className="actions-section">
           <div className="info-banner">
-            <p>{t('run:states.activeDescription')}</p>
-          </div>
-        </div>
-      )}
-
-      {run.state === 'planning' && (
-        <div className="actions-section">
-          <div className="info-banner">
-            <p>{t('run:states.planningDescription')}</p>
-          </div>
-        </div>
-      )}
-
-      {run.state === 'confirmed' && (
-        <div className="actions-section">
-          <div className="info-banner">
-            <p>{t('run:states.confirmedDescription')}</p>
-          </div>
-        </div>
-      )}
-
-      {run.state === 'shopping' && (
-        <div className="actions-section">
-          <div className="info-banner">
-            <p>{t('run:states.shoppingDescription')}</p>
-          </div>
-        </div>
-      )}
-
-      {run.state === 'adjusting' && (
-        <div className="actions-section">
-          <div className="info-banner">
-            <p>{t('run:states.adjustingDescription')}</p>
-          </div>
-        </div>
-      )}
-
-      {run.state === 'completed' && (
-        <div className="actions-section">
-          <div className="info-banner">
-            <p>{t('run:states.completedDescription')}</p>
+            <p>{t(`run:states.${run.state}Description`)}</p>
           </div>
         </div>
       )}
@@ -1315,19 +948,19 @@ export default function RunPage() {
             }}
           />
         )}
-      </Suspense>
 
-      {showEditCommentPopup && run && (
-        <EditCommentPopup
-          runId={runId}
-          currentComment={run.comment || ''}
-          onClose={() => setShowEditCommentPopup(false)}
-          onSuccess={() => {
-            setShowEditCommentPopup(false)
-            showToast(t('run:messages.commentUpdated'), 'success')
-          }}
-        />
-      )}
+        {showEditCommentPopup && run && (
+          <EditCommentPopup
+            runId={runId}
+            currentComment={run.comment || ''}
+            onClose={() => setShowEditCommentPopup(false)}
+            onSuccess={() => {
+              setShowEditCommentPopup(false)
+              showToast(t('run:messages.commentUpdated'), 'success')
+            }}
+          />
+        )}
+      </Suspense>
 
       {toast && (
         <Toast
@@ -1345,84 +978,6 @@ export default function RunPage() {
           danger={confirmState.danger}
         />
       )}
-    </div>
-  )
-}
-
-// EditCommentPopup component
-function EditCommentPopup({
-  runId,
-  currentComment,
-  onClose,
-  onSuccess
-}: {
-  runId: string
-  currentComment: string
-  onClose: () => void
-  onSuccess: () => void
-}) {
-  const { t } = useTranslation(['common', 'run'])
-  const [comment, setComment] = useState(currentComment)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const queryClient = useQueryClient()
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    try {
-      await runsApi.updateComment(runId, { comment: comment.trim() || null })
-      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
-      onSuccess()
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to update comment'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
-        <h3>{t('run:actions.editComment')}</h3>
-        {error && <div className="alert alert-error">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="comment" className="form-label">{t('run:labels.comment')}</label>
-            <textarea
-              id="comment"
-              className="form-input"
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder={t('run:labels.commentPlaceholder')}
-              disabled={loading}
-              maxLength={500}
-              rows={3}
-              autoFocus
-            />
-            <span className="char-counter">{comment.length}/500</span>
-          </div>
-          <div className="button-group">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="btn btn-secondary"
-            >
-              {t('common:actions.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary"
-            >
-              {loading ? t('common:actions.saving') : t('common:actions.save')}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   )
 }

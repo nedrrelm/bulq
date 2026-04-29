@@ -288,27 +288,15 @@ These items must be completed before production deployment.
 
 ---
 
-### Backend Code Smells
-
-4. **WebSocket endpoint code duplication (~200 lines)** — `backend/app/api/routes/websocket.py` — three endpoints (group, run, user) share ~90% identical auth/connection/heartbeat logic. Extract a shared helper.
-
-8. **BidService.place_bid god method** — `backend/app/services/bid_service.py:59-150` — handles validation, participation management, state transitions, and event emission. Should split into focused methods.
-
----
-
 ### Frontend Code Smells
 
 9. **RunPage god component (1,428 lines)** — `frontend/src/components/RunPage.tsx` — 8 modal state variables, 3 large useMemo blocks, inline sub-component. Should extract into smaller components.
 
 10. **ShoppingPage large component (798 lines)** — `frontend/src/components/ShoppingPage.tsx` — too many responsibilities.
 
-11. **41 components in flat directory** — `frontend/src/components/` — no feature-based grouping. Reorganize into runs/, groups/, shopping/, common/, admin/.
-
 12. **Change*Popup duplication** — ChangeNamePopup, ChangePasswordPopup, ChangeUsernamePopup share identical structure. Could consolidate into a generic form popup.
 
 13. **Missing memoization** — e.g. `NotificationDropdown` creates new array every render with `notifications.slice(0, 3)` without useMemo.
-
-14. **Accessibility gaps** — only ~9 aria attributes across entire frontend. Missing aria-labels on icon buttons, incomplete focus management in modals.
 
 ---
 
@@ -321,9 +309,5 @@ These items must be completed before production deployment.
 17. **Missing HSTS header in prod Caddyfile** — `deployment/Caddyfile.prod` — no `Strict-Transport-Security`.
 
 18. **Missing CSP header** — neither dev nor prod Caddyfile has a Content-Security-Policy header.
-
-19. **No CI/CD pipeline** — no `.github/workflows/` directory. Tests only run via pre-commit hooks.
-
-20. **Pre-commit runs full test suite** — `.pre-commit-config.yaml` — backend-tests hook runs all tests on every commit, slowing commits. Should move to CI.
 
 ---
