@@ -56,11 +56,6 @@ These items must be completed before production deployment.
 **Priority**: High
 **Impact**: Automated quality gates, security scanning
 
-4. **Add healthchecks to services** (15 minutes) ⚡ **QUICK WIN**
-   - Only DB has healthcheck in `docker-compose.yml`
-   - Backend and frontend missing
-   - Impact: Better orchestration, reliability
-
 5. **Optimize Docker builds** (1 day)
    - Enable BuildKit cache mounts
    - Multi-stage build for backend
