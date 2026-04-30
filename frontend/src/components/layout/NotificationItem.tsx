@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { formatDistanceToNow } from 'date-fns'
-import type { Notification } from '../types/notification'
+import type { Notification } from '../../types/notification'
 
 interface NotificationItemProps {
   notification: Notification

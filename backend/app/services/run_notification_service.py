@@ -214,8 +214,7 @@ class RunNotificationService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        store = self.store_repo.get_store_by_id(run.store_id)
-        store_name = store.name if store else 'Unknown Store'
+        store_name = self._get_store_name(run.store_id)
 
         # Get all participants of this run
         participations = self.run_repo.get_run_participations(run.id)

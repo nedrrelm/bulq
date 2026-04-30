@@ -12,7 +12,6 @@ from app.core.error_codes import (
     CANNOT_CANCEL_COMPLETED_RUN,
     NOT_RUN_LEADER,
     NOT_RUN_PARTICIPANT,
-    PARTICIPATION_NOT_FOUND,
     RUN_ALREADY_CANCELLED,
     RUN_NOT_FOUND,
     RUN_NOT_IN_ACTIVE_STATE,
@@ -331,8 +330,7 @@ class RunStateService(BaseService):
         self._transition_run_state(run, RunState.CANCELLED)
 
         # Get store name for event
-        store = self.store_repo.get_store_by_id(run.store_id)
-        store_name = store.name if store else 'Unknown Store'
+        store_name = self._get_store_name(run.store_id)
 
         # Emit run cancelled event
         event_bus.emit(
@@ -376,8 +374,7 @@ class RunStateService(BaseService):
 
         if notify:
             # Get store name for event
-            store = self.store_repo.get_store_by_id(run.store_id)
-            store_name = store.name if store else 'Unknown Store'
+            store_name = self._get_store_name(run.store_id)
 
             # Emit domain event for state change
             event_bus.emit(
@@ -421,18 +418,6 @@ class RunStateService(BaseService):
             )
 
         return run_uuid, run
-
-    def _get_user_participation(self, user_id: UUID, run_id: UUID, run_id_str: str):
-        """Get user's participation in a run."""
-        participation = self.run_repo.get_participation(user_id, run_id)
-        if not participation:
-            raise NotFoundError(
-                code=PARTICIPATION_NOT_FOUND,
-                message='Participation not found',
-                user_id=str(user_id),
-                run_id=run_id_str,
-            )
-        return participation
 
     def _toggle_user_ready_status(self, participation) -> bool:
         """Toggle ready status and return new status."""

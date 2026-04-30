@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { storesApi, productsApi } from '../../api'
-import type { Store } from '../../api'
+import { productsApi } from '../../api'
 import { validateLength, validateAlphanumeric, validateDecimal, sanitizeString } from '../../utils/validation'
 import { useConfirm } from '../../hooks/useConfirm'
 import ConfirmDialog from '../common/ConfirmDialog'
 import { getErrorMessage } from '../../utils/errorHandling'
 import BaseModal from '../common/BaseModal'
 import { useSimilarEntities } from '../../hooks/useSimilarEntities'
+import { useStores } from '../../hooks/queries'
 
 interface NewProductPopupProps {
   onClose: () => void
@@ -26,27 +26,11 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
   const [storeId, setStoreId] = useState(initialStoreId || '')
   const [price, setPrice] = useState('')
   const [minimumQuantity, setMinimumQuantity] = useState('')
-  const [stores, setStores] = useState<Store[]>([])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [loadingStores, setLoadingStores] = useState(true)
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
-
-  useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const storesData = await storesApi.getStores()
-        setStores(Array.isArray(storesData) ? storesData : [])
-      } catch (err) {
-        setError(getErrorMessage(err, t('store:errors.loadFailed')))
-        setStores([])
-      } finally {
-        setLoadingStores(false)
-      }
-    }
-
-    fetchStores()
-  }, [t])
+  const { data: storesData, isLoading: loadingStores } = useStores()
+  const stores = Array.isArray(storesData) ? storesData : []
 
   // Check for similar products as user types (matches on name and brand)
   const { similar: similarProducts, exactMatch, hasNonExactSimilar } = useSimilarEntities({

@@ -1,6 +1,6 @@
 import { useRef, type ReactNode, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useModalFocusTrap } from '../hooks/useModalFocusTrap'
+import { useModalFocusTrap } from '../../hooks/useModalFocusTrap'
 
 export interface BaseModalAction {
   text: string

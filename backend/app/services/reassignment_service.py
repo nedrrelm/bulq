@@ -170,11 +170,6 @@ class ReassignmentService(BaseService):
         """Create reassignment request in database."""
         return self.reassignment_repo.create_reassignment_request(run_id, from_user_id, to_user_id)
 
-    def _get_store_name(self, store_id: UUID) -> str:
-        """Get store name or return default."""
-        store = self.store_repo.get_store_by_id(store_id)
-        return store.name if store else 'Unknown Store'
-
     async def _notify_reassignment_participants(
         self, run_id: UUID, from_user: User, to_user_id: UUID, request_id: UUID, store_name: str
     ) -> None:
@@ -241,7 +236,7 @@ class ReassignmentService(BaseService):
             ForbiddenError: User is not the target of the request
             ValidationError: Request is not pending
         """
-        request = self._validate_accept_request(request_id, accepting_user)
+        request = self._validate_pending_request(request_id, accepting_user, 'accept')
         run = self._get_run(request.run_id)
         store_name = self._get_store_name(run.store_id)
 
@@ -278,10 +273,24 @@ class ReassignmentService(BaseService):
             resolved_at=request.resolved_at.isoformat() if request.resolved_at else None,
         )
 
-    def _validate_accept_request(
-        self, request_id: UUID, accepting_user: User
+    def _validate_pending_request(
+        self, request_id: UUID, user: User, action: str
     ) -> LeaderReassignmentRequest:
-        """Validate accept request."""
+        """Validate a pending reassignment request for accept/decline.
+
+        Args:
+            request_id: Request to validate
+            user: User performing the action
+            action: 'accept' or 'decline' (used in error messages)
+
+        Returns:
+            The validated reassignment request
+
+        Raises:
+            NotFoundError: Request not found
+            ForbiddenError: User is not the target of the request
+            ValidationError: Request is not pending
+        """
         request = self.reassignment_repo.get_reassignment_request_by_id(request_id)
         if not request:
             raise NotFoundError(
@@ -290,17 +299,17 @@ class ReassignmentService(BaseService):
                 request_id=str(request_id),
             )
 
-        if request.to_user_id != accepting_user.id:
+        if request.to_user_id != user.id:
             raise ForbiddenError(
                 code=REASSIGNMENT_NOT_TARGET_USER,
-                message='Only the target user can accept this request',
+                message=f'Only the target user can {action} this request',
                 request_id=str(request_id),
             )
 
         if request.status != 'pending':
             raise ValidationError(
                 code=REASSIGNMENT_REQUEST_ALREADY_RESOLVED,
-                message=f'Request is {request.status}, cannot accept',
+                message=f'Request is {request.status}, cannot {action}',
                 request_id=str(request_id),
                 status=request.status,
             )
@@ -398,7 +407,7 @@ class ReassignmentService(BaseService):
             ForbiddenError: User is not the target of the request
             ValidationError: Request is not pending
         """
-        request = self._validate_decline_request(request_id, declining_user)
+        request = self._validate_pending_request(request_id, declining_user, 'decline')
         run = self._get_run(request.run_id)
         store_name = self._get_store_name(run.store_id)
 
@@ -430,35 +439,6 @@ class ReassignmentService(BaseService):
             created_at=request.created_at.isoformat(),
             resolved_at=request.resolved_at.isoformat() if request.resolved_at else None,
         )
-
-    def _validate_decline_request(
-        self, request_id: UUID, declining_user: User
-    ) -> LeaderReassignmentRequest:
-        """Validate decline request."""
-        request = self.reassignment_repo.get_reassignment_request_by_id(request_id)
-        if not request:
-            raise NotFoundError(
-                code=REASSIGNMENT_REQUEST_NOT_FOUND,
-                message='Reassignment request not found',
-                request_id=str(request_id),
-            )
-
-        if request.to_user_id != declining_user.id:
-            raise ForbiddenError(
-                code=REASSIGNMENT_NOT_TARGET_USER,
-                message='Only the target user can decline this request',
-                request_id=str(request_id),
-                user_id=str(declining_user.id),
-            )
-
-        if request.status != 'pending':
-            raise ValidationError(
-                code=REASSIGNMENT_REQUEST_ALREADY_RESOLVED,
-                message=f'Request is {request.status}, cannot decline',
-                status=request.status,
-            )
-
-        return request
 
     async def _notify_decline(
         self,
@@ -614,10 +594,7 @@ class ReassignmentService(BaseService):
         run = self.run_repo.get_run_by_id(request.run_id)
 
         # Get store name
-        store_name = 'Unknown Store'
-        if run:
-            store = self.store_repo.get_store_by_id(run.store_id)
-            store_name = store.name if store else 'Unknown Store'
+        store_name = self._get_store_name(run.store_id) if run else 'Unknown Store'
 
         return ReassignmentDetailResponse(
             id=str(request.id),

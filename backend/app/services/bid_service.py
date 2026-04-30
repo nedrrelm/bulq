@@ -16,7 +16,6 @@ from app.core.error_codes import (
     CANNOT_RETRACT_BID_IN_ADJUSTING,
     INVALID_RUN_STATE_TRANSITION,
     NOT_RUN_PARTICIPANT,
-    PARTICIPATION_NOT_FOUND,
     PRODUCT_NOT_FOUND,
     RUN_MAX_PRODUCTS_EXCEEDED,
     RUN_NOT_FOUND,
@@ -595,20 +594,6 @@ class BidService(BaseService):
                 message='Cannot retract bid when there is a surplus. Please increase your bid instead.',
                 current_quantity=current_bid.quantity,
             )
-
-    def _get_user_participation(
-        self, user_id: UUID, run_id: UUID, run_id_str: str
-    ) -> RunParticipation:
-        """Get user's participation in a run."""
-        participation = self.run_repo.get_participation(user_id, run_id)
-        if not participation:
-            raise NotFoundError(
-                code=PARTICIPATION_NOT_FOUND,
-                message='Participation not found',
-                user_id=str(user_id),
-                run_id=run_id_str,
-            )
-        return participation
 
     def _remove_bid_and_recalculate(
         self, participation: RunParticipation, product_id: UUID, product_id_str: str

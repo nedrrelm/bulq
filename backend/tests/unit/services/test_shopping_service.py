@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 
 from app.core.error_codes import (
-    INVALID_ID_FORMAT,
+    INVALID_UUID_FORMAT,
     NOT_RUN_LEADER,
     NOT_RUN_LEADER_OR_HELPER,
     RUN_NOT_FOUND,
@@ -77,7 +77,7 @@ class TestGetShoppingList:
         with pytest.raises(BadRequestError) as exc_info:
             await service.get_shopping_list('invalid-uuid', test_user)
 
-        assert exc_info.value.code == INVALID_ID_FORMAT
+        assert exc_info.value.code == INVALID_UUID_FORMAT
 
     async def test_get_shopping_list_run_not_found(self, test_user):
         """Test getting shopping list for non-existent run."""

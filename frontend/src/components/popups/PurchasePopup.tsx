@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ShoppingListItem } from '../../api'
-import { useModalFocusTrap } from '../../hooks/useModalFocusTrap'
 import { validateDecimal, parseDecimal } from '../../utils/validation'
+import BaseModal from '../common/BaseModal'
 
 interface PurchasePopupProps {
   item: ShoppingListItem
@@ -37,9 +37,6 @@ export default function PurchasePopup({
   const [quantityError, setQuantityError] = useState('')
   const [priceError, setPriceError] = useState('')
   const [totalError, setTotalError] = useState('')
-  const modalRef = useRef<HTMLDivElement>(null)
-
-  useModalFocusTrap(modalRef)
 
   const validateQuantity = (value: string): boolean => {
     setQuantityError('')
@@ -146,69 +143,66 @@ export default function PurchasePopup({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalRef} className="modal modal-sm" onClick={e => e.stopPropagation()}>
-        <h3>{isEditMode ? t('shopping:actions.editPurchase') : t('shopping:actions.markPurchased')}</h3>
-        <p><strong>{item.product_name}</strong></p>
-        <p className="requested-hint">
-          {isEditMode
-            ? `${t('shopping:labels.currentPurchase')}: ${item.purchased_quantity}${item.product_unit ? ` ${item.product_unit}` : ''}`
-            : `${t('shopping:labels.requested')}: ${item.requested_quantity}${item.product_unit ? ` ${item.product_unit}` : ''}`
-          }
-        </p>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>{t('shopping:fields.quantityPurchased')}</label>
-            <input
-              type="number"
-              step="0.01"
-              value={quantity}
-              onChange={e => handleQuantityChange(e.target.value)}
-              className={`form-input ${quantityError ? 'input-error' : ''}`}
-              autoFocus
-              required
-              min="0.01"
-            />
-            {quantityError && <span className="error-message">{quantityError}</span>}
-          </div>
-          <div className="form-group">
-            <label>{t('shopping:fields.pricePerUnit')}</label>
-            <input
-              type="number"
-              step="0.01"
-              value={pricePerUnit}
-              onChange={e => handlePricePerUnitChange(e.target.value)}
-              placeholder="12.99"
-              className={`form-input ${priceError ? 'input-error' : ''}`}
-              required
-              min="0.01"
-            />
-            {priceError && <span className="error-message">{priceError}</span>}
-          </div>
-          <div className="form-group">
-            <label>{t('shopping:fields.totalPrice')}</label>
-            <input
-              type="number"
-              step="0.01"
-              value={total}
-              onChange={e => handleTotalChange(e.target.value)}
-              placeholder="25.98"
-              className={`form-input ${totalError ? 'input-error' : ''}`}
-              required
-              min="0.01"
-            />
-            {totalError && <span className="error-message">{totalError}</span>}
-          </div>
-          <div className="button-group">
-            <button type="button" onClick={onClose} className="btn btn-secondary">
-              {t('common:actions.cancel')}
-            </button>
-            <button type="submit" className="btn btn-success">
-              {isEditMode ? t('shopping:actions.updatePurchase') : t('shopping:actions.confirmPurchase')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      size="sm"
+      submitButton={{
+        text: isEditMode ? t('shopping:actions.updatePurchase') : t('shopping:actions.confirmPurchase'),
+        onClick: handleSubmit,
+        variant: 'success',
+      }}
+    >
+      <h3>{isEditMode ? t('shopping:actions.editPurchase') : t('shopping:actions.markPurchased')}</h3>
+      <p><strong>{item.product_name}</strong></p>
+      <p className="requested-hint">
+        {isEditMode
+          ? `${t('shopping:labels.currentPurchase')}: ${item.purchased_quantity}${item.product_unit ? ` ${item.product_unit}` : ''}`
+          : `${t('shopping:labels.requested')}: ${item.requested_quantity}${item.product_unit ? ` ${item.product_unit}` : ''}`
+        }
+      </p>
+        <div className="form-group">
+          <label>{t('shopping:fields.quantityPurchased')}</label>
+          <input
+            type="number"
+            step="0.01"
+            value={quantity}
+            onChange={e => handleQuantityChange(e.target.value)}
+            className={`form-input ${quantityError ? 'input-error' : ''}`}
+            autoFocus
+            required
+            min="0.01"
+          />
+          {quantityError && <span className="error-message">{quantityError}</span>}
+        </div>
+        <div className="form-group">
+          <label>{t('shopping:fields.pricePerUnit')}</label>
+          <input
+            type="number"
+            step="0.01"
+            value={pricePerUnit}
+            onChange={e => handlePricePerUnitChange(e.target.value)}
+            placeholder="12.99"
+            className={`form-input ${priceError ? 'input-error' : ''}`}
+            required
+            min="0.01"
+          />
+          {priceError && <span className="error-message">{priceError}</span>}
+        </div>
+        <div className="form-group">
+          <label>{t('shopping:fields.totalPrice')}</label>
+          <input
+            type="number"
+            step="0.01"
+            value={total}
+            onChange={e => handleTotalChange(e.target.value)}
+            placeholder="25.98"
+            className={`form-input ${totalError ? 'input-error' : ''}`}
+            required
+            min="0.01"
+          />
+          {totalError && <span className="error-message">{totalError}</span>}
+        </div>
+    </BaseModal>
   )
 }

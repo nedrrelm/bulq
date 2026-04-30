@@ -62,10 +62,6 @@ class DistributionService(BaseService):
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
 
-    def _is_leader_or_helper(self, participation) -> bool:
-        """Check if participation is leader or helper."""
-        return participation.is_leader or participation.is_helper
-
     def get_distribution_summary(self, run_id: UUID, current_user: User) -> list[DistributionUser]:
         """Get distribution data aggregated by user.
 
@@ -378,8 +374,7 @@ class DistributionService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        store = self.store_repo.get_store_by_id(run.store_id)
-        store_name = store.name if store else 'Unknown Store'
+        store_name = self._get_store_name(run.store_id)
 
         # Get all participants of this run
         participations = self.run_repo.get_run_participations(run.id)

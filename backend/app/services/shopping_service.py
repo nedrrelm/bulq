@@ -16,7 +16,6 @@ from app.api.schemas import (
 from app.api.schemas.notification_data import RunStateChangedData
 from app.api.websocket_manager import manager
 from app.core.error_codes import (
-    INVALID_ID_FORMAT,
     INVALID_RUN_STATE_TRANSITION,
     NOT_RUN_LEADER,
     NOT_RUN_LEADER_OR_HELPER,
@@ -51,6 +50,7 @@ from app.repositories import (
     get_user_repository,
 )
 from app.utils.background_tasks import create_background_task
+from app.utils.validation import validate_uuid
 
 from .base_service import BaseService
 
@@ -70,10 +70,6 @@ class ShoppingService(BaseService):
         self.shopping_repo = get_shopping_repository(db)
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
-
-    def _is_leader_or_helper(self, participation) -> bool:
-        """Check if participation is leader or helper."""
-        return participation.is_leader or participation.is_helper
 
     async def _update_product_availability_if_needed(
         self, product_id: UUID, store_id: UUID, price: float, user_id: UUID
@@ -145,10 +141,7 @@ class ShoppingService(BaseService):
             BadRequestError: If shopping list is not available in current state
         """
         # Validate run ID
-        try:
-            run_uuid = UUID(run_id)
-        except ValueError as e:
-            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid run ID format') from e
+        run_uuid = validate_uuid(run_id, 'Run')
 
         # Get the run
         run = self.run_repo.get_run_by_id(run_uuid)
@@ -275,11 +268,8 @@ class ShoppingService(BaseService):
             ForbiddenError: If user is not leader or helper
         """
         # Validate IDs
-        try:
-            run_uuid = UUID(run_id)
-            product_uuid = UUID(product_id)
-        except ValueError as e:
-            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+        run_uuid = validate_uuid(run_id, 'Run')
+        product_uuid = validate_uuid(product_id, 'Product')
 
         # Get the run
         run = self.run_repo.get_run_by_id(run_uuid)
@@ -381,11 +371,8 @@ class ShoppingService(BaseService):
             ForbiddenError: If user is not the run leader
         """
         # Validate IDs
-        try:
-            run_uuid = UUID(run_id)
-            item_uuid = UUID(item_id)
-        except ValueError as e:
-            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+        run_uuid = validate_uuid(run_id, 'Run')
+        item_uuid = validate_uuid(item_id, 'Item')
 
         # Get the run
         run = self.run_repo.get_run_by_id(run_uuid)
@@ -463,11 +450,8 @@ class ShoppingService(BaseService):
             ForbiddenError: If user is not the run leader
         """
         # Validate IDs
-        try:
-            run_uuid = UUID(run_id)
-            item_uuid = UUID(item_id)
-        except ValueError as e:
-            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+        run_uuid = validate_uuid(run_id, 'Run')
+        item_uuid = validate_uuid(item_id, 'Item')
 
         # Get the run
         run = self.run_repo.get_run_by_id(run_uuid)
@@ -557,11 +541,8 @@ class ShoppingService(BaseService):
             ForbiddenError: If user is not the run leader or helper
         """
         # Validate IDs
-        try:
-            run_uuid = UUID(run_id)
-            item_uuid = UUID(item_id)
-        except ValueError as e:
-            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+        run_uuid = validate_uuid(run_id, 'Run')
+        item_uuid = validate_uuid(item_id, 'Item')
 
         # Get the run
         run = self.run_repo.get_run_by_id(run_uuid)
@@ -675,11 +656,8 @@ class ShoppingService(BaseService):
             ForbiddenError: If user is not the run leader or helper
         """
         # Validate IDs
-        try:
-            run_uuid = UUID(run_id)
-            item_uuid = UUID(item_id)
-        except ValueError as e:
-            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+        run_uuid = validate_uuid(run_id, 'Run')
+        item_uuid = validate_uuid(item_id, 'Item')
 
         # Get the run
         run = self.run_repo.get_run_by_id(run_uuid)
@@ -778,11 +756,8 @@ class ShoppingService(BaseService):
             ForbiddenError: If user is not the run leader or helper
         """
         # Validate IDs
-        try:
-            run_uuid = UUID(run_id)
-            item_uuid = UUID(item_id)
-        except ValueError as e:
-            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid ID format') from e
+        run_uuid = validate_uuid(run_id, 'Run')
+        item_uuid = validate_uuid(item_id, 'Item')
 
         # Get the run
         run = self.run_repo.get_run_by_id(run_uuid)
@@ -871,10 +846,7 @@ class ShoppingService(BaseService):
         )
 
         # Validate run ID
-        try:
-            run_uuid = UUID(run_id)
-        except ValueError as e:
-            raise BadRequestError(code=INVALID_ID_FORMAT, message='Invalid run ID format') from e
+        run_uuid = validate_uuid(run_id, 'Run')
 
         # Get the run
         run = self.run_repo.get_run_by_id(run_uuid)
@@ -1047,8 +1019,7 @@ class ShoppingService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        store = self.store_repo.get_store_by_id(run.store_id)
-        store_name = store.name if store else 'Unknown Store'
+        store_name = self._get_store_name(run.store_id)
 
         # Get all participants of this run
         participations = self.run_repo.get_run_participations(run.id)

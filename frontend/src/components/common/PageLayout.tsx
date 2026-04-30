@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import Toast from './Toast'
 import ConfirmDialog from './ConfirmDialog'
-import { useToast } from '../hooks/useToast'
-import { useConfirm } from '../hooks/useConfirm'
+import { useToast } from '../../hooks/useToast'
+import { useConfirm } from '../../hooks/useConfirm'
 
 interface PageLayoutProps {
   children: ReactNode

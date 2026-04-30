@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import '../../styles/components/NewRunPopup.css'
-import { storesApi, runsApi } from '../../api'
+import { runsApi } from '../../api'
 import type { Store } from '../../api'
 import NewStorePopup from './NewStorePopup'
 import { getErrorMessage } from '../../utils/errorHandling'
-import { logger } from '../../utils/logger'
 import BaseModal from '../common/BaseModal'
+import { useStores, storeKeys } from '../../hooks/queries'
 
 interface NewRunPopupProps {
   groupId: string
@@ -16,7 +17,8 @@ interface NewRunPopupProps {
 
 export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopupProps) {
   const { t } = useTranslation(['common', 'run'])
-  const [stores, setStores] = useState<Store[]>([])
+  const { data: storesData, error: storesError } = useStores()
+  const stores = useMemo(() => Array.isArray(storesData) ? storesData : [], [storesData])
   const [selectedStoreId, setSelectedStoreId] = useState('')
   const [comment, setComment] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,29 +26,20 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   const [showNewStorePopup, setShowNewStorePopup] = useState(false)
   const selectRef = useRef<HTMLSelectElement>(null)
 
+  // Auto-select first store when stores load
   useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const data = await storesApi.getStores()
-        const storesArray = Array.isArray(data) ? data : []
-        setStores(storesArray)
-
-        // Auto-select first store if available
-        if (storesArray.length > 0 && storesArray[0]) {
-          setSelectedStoreId(storesArray[0].id)
-        }
-
-        // Focus the select after stores are loaded
-        setTimeout(() => selectRef.current?.focus(), 0)
-      } catch (err) {
-        logger.error('Error fetching stores:', err)
-        setError(getErrorMessage(err, t('run:errors.loadStoresFailed')))
-        setStores([])
-      }
+    if (stores.length > 0 && !selectedStoreId && stores[0]) {
+      setSelectedStoreId(stores[0].id)
+      setTimeout(() => selectRef.current?.focus(), 0)
     }
+  }, [stores, selectedStoreId])
 
-    fetchStores()
-  }, [t])
+  // Map store loading error
+  useEffect(() => {
+    if (storesError) {
+      setError(getErrorMessage(storesError, t('run:errors.loadStoresFailed')))
+    }
+  }, [storesError, t])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,10 +66,12 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
     }
   }
 
+  const queryClient = useQueryClient()
+
   const handleNewStoreSuccess = (newStore: Store) => {
     setShowNewStorePopup(false)
-    // Add the new store to the list and select it
-    setStores([...stores, newStore])
+    // Invalidate stores query so the list refreshes, and select the new store
+    queryClient.invalidateQueries({ queryKey: storeKeys.list() })
     setSelectedStoreId(newStore.id)
   }
 

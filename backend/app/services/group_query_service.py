@@ -40,11 +40,11 @@ class GroupQueryService(BaseService):
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
 
-    def _get_store_name(self, run) -> str:
+    def _get_run_store_name(self, run) -> str:
         """Get store name from run, handling both database and memory repositories.
 
         For database repository: Uses already-joined store relationship
-        For memory repository: Fetches store by ID
+        For memory repository: Fetches store by ID via BaseService._get_store_name
 
         Args:
             run: Run object with store_id
@@ -60,8 +60,7 @@ class GroupQueryService(BaseService):
             pass
 
         # Fallback: fetch store by ID (for memory repository or unjoined data)
-        store = self.store_repo.get_store_by_id(run.store_id)
-        return store.name if store else 'Unknown Store'
+        return self._get_store_name(run.store_id)
 
     def get_user_groups(self, user: User) -> list[GroupResponse]:
         """Get all groups the user is a member of with run counts.
@@ -106,7 +105,7 @@ class GroupQueryService(BaseService):
             active_runs_summary = [
                 RunSummary(
                     id=str(run.id),
-                    store_name=self._get_store_name(run),
+                    store_name=self._get_run_store_name(run),
                     state=run.state,
                 )
                 for run in sorted_active_runs
@@ -250,7 +249,7 @@ class GroupQueryService(BaseService):
                     id=str(run.id),
                     group_id=str(run.group_id),
                     store_id=str(run.store_id),
-                    store_name=self._get_store_name(run),
+                    store_name=self._get_run_store_name(run),
                     state=run.state,
                     leader_name=leader_name,
                     leader_is_removed=leader_is_removed,
@@ -333,7 +332,7 @@ class GroupQueryService(BaseService):
                     id=str(run.id),
                     group_id=str(run.group_id),
                     store_id=str(run.store_id),
-                    store_name=self._get_store_name(run),
+                    store_name=self._get_run_store_name(run),
                     state=run.state,
                     leader_name=leader_name,
                     leader_is_removed=False,
