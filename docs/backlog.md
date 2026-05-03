@@ -33,7 +33,7 @@ Feature backlog and technical debt for Bulq development.
    - File: `tests/test_repository.py:228-239` has placeholder
 
 
-10. Use fastAPI-users for authentication
+10. **Auth library evaluation** — fastapi-users (email-only, maintenance mode), fastapi-login (JWT-only, no server-side sessions), authlib (OAuth only) all evaluated and rejected. Current custom auth (username + cookie + Redis sessions) is more capable than any available library. Consider targeted improvements instead: rate limiting on login, session invalidation on password change, session rotation.
 
 11. Convert to async
 
