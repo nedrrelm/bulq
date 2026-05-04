@@ -1,4 +1,5 @@
 import i18n from '../i18n/config'
+import { logger } from './logger'
 
 /**
  * Translation utilities for error and success codes
@@ -134,9 +135,7 @@ export function translateError(code: string | undefined, details?: Record<string
   }
 
   // Fallback: return a formatted version of the code
-  if (import.meta.env.DEV) {
-    console.warn(`Missing error translation for code: ${code} (key: errors:${key})`)
-  }
+  logger.warn(`Missing error translation for code: ${code} (key: errors:${key})`)
 
   // Return human-readable version of code as fallback
   return code.split('_').map(word =>
@@ -174,9 +173,7 @@ export function translateSuccess(code: string | undefined, details?: Record<stri
   }
 
   // Fallback: return a formatted version of the code
-  if (import.meta.env.DEV) {
-    console.warn(`Missing success translation for code: ${code} (key: success:${key})`)
-  }
+  logger.warn(`Missing success translation for code: ${code} (key: success:${key})`)
 
   // Return human-readable version of code as fallback
   return code.split('_').map(word =>

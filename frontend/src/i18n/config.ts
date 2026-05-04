@@ -1,5 +1,6 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import { logger } from '../utils/logger'
 
 // Import English translation files
 import errorsEn from './locales/en/errors.json'
@@ -120,9 +121,7 @@ i18n
     // Return key if translation is missing (useful for development)
     saveMissing: false,
     missingKeyHandler: (lng, ns, key) => {
-      if (import.meta.env.DEV) {
-        console.warn(`Missing translation: [${lng}][${ns}] ${key}`)
-      }
+      logger.warn(`Missing translation: [${lng}][${ns}] ${key}`)
     },
   })
 

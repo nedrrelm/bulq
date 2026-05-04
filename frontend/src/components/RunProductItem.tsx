@@ -71,26 +71,6 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
     (surplus > 0 || (shortage > 0 && minAllowed > 0))
   )
 
-  // Debug logging for frozen berries
-  if (product.name.includes('Berry') || product.name.includes('berry')) {
-    console.log('[RunProductItem Debug]', {
-      productName: product.name,
-      runState,
-      purchased: product.purchased_quantity,
-      total: product.total_quantity,
-      difference,
-      shortage,
-      surplus,
-      currentBidQty,
-      minAllowed,
-      adjustmentOk,
-      needsAdjustment,
-      canRetract,
-      hasBid: !!product.current_user_bid,
-      interestedOnly: product.current_user_bid?.interested_only
-    })
-  }
-
   // Count comments
   const commentCount = product.user_bids.filter(bid => bid.comment && bid.comment.trim().length > 0).length
 

@@ -74,17 +74,6 @@ Feature backlog and technical debt for Bulq development.
 
 ---
 
-### API & Documentation
-
-**Priority**: Medium
-
-
-5. **Generate frontend types from OpenAPI** (1 day)
-   - Currently manually duplicating types
-   - Risk: Type drift between backend/frontend
-   - Solution: Use OpenAPI generator or `openapi-typescript`
-
----
 
 ### Code Quality & Documentation
 
@@ -95,11 +84,6 @@ Feature backlog and technical debt for Bulq development.
    - Some route handlers have minimal docs
    - Target: All public methods
 
-2. **Standardize logging in frontend** (1 day)
-   - 9 occurrences of `console.log`/`error`/`warn`
-   - Logger utility exists but not consistently used
-   - Solution: Add ESLint rule to enforce
-   - Files: Login.tsx, i18n/config.ts, RunProductItem.tsx, etc.
 
 3. **Add architecture documentation** (2 days)
    - No ADR (Architecture Decision Records)
@@ -108,11 +92,6 @@ Feature backlog and technical debt for Bulq development.
      - Service dependency graph
      - Network topology
      - Data flow diagrams
-
-6. **Add SBOM generation** (1 day)
-   - No Software Bill of Materials for dependency tracking
-   - Use `syft` or built-in tools
-   - Important for supply chain security
 
 ---
 

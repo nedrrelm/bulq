@@ -1,4 +1,5 @@
 import { ApiError } from '../api'
+import { logger } from './logger'
 import { translateError } from './translation'
 
 /**
@@ -60,7 +61,7 @@ export function getErrorMessage(error: unknown, fallback = 'An unexpected error 
  * ```
  */
 export function logError(context: string, error: unknown): void {
-  console.error(`[${context}]`, error)
+  logger.error(`[${context}]`, error)
 }
 
 /**

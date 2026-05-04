@@ -7,6 +7,7 @@ import type { User } from '../types/user'
 import { sanitizeString } from '../utils/validation'
 import { getErrorMessage } from '../utils/errorHandling'
 import { API_BASE_URL } from '../config'
+import { logger } from '../utils/logger'
 
 interface LoginProps {
   onLogin: (user: User) => void
@@ -67,7 +68,7 @@ export default function Login({ onLogin }: LoginProps) {
           }
         } catch (err) {
           // Silently fail - user can still login
-          console.error('Failed to fetch group preview:', err)
+          logger.error('Failed to fetch group preview:', err)
         }
       }
       fetchGroupPreview()
