@@ -496,7 +496,9 @@ class RunService(BaseService):
             details={'run_id': run_id},
         )
 
-    def get_available_products(self, run_id: str, user: User) -> list[AvailableProductResponse]:
+    def get_available_products(
+        self, run_id: str, user: User, limit: int = 50, offset: int = 0
+    ) -> list[AvailableProductResponse]:
         """Get products available for bidding (all products without bids yet).
 
         Products with availability at the run's store are sorted first.
@@ -504,6 +506,8 @@ class RunService(BaseService):
         Args:
             run_id: Run ID as string
             user: Current user
+            limit: Maximum number of results to return
+            offset: Number of results to skip
 
         Returns:
             List of AvailableProductResponse, sorted with store products first
@@ -558,7 +562,7 @@ class RunService(BaseService):
         # Sort: products with store availability first, then alphabetically by name
         available_products.sort(key=lambda p: (not p.has_store_availability, p.name.lower()))
 
-        return available_products
+        return available_products[offset : offset + limit]
 
     def _validate_run_id(self, run_id: str) -> UUID:
         """Validate and convert run ID string to UUID."""

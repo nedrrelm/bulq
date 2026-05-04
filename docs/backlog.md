@@ -78,16 +78,6 @@ Feature backlog and technical debt for Bulq development.
 
 **Priority**: Medium
 
-2. **Add pagination to all list endpoints** (1 day)
-   - Some routes support limit/offset, others don't
-   - Inconsistent API design
-   - Target: All list endpoints
-
-4. **Add audit logging for admin actions** (1 day)
-   - Admin operations not specifically logged
-   - Security best practice for compliance
-   - Log: Who, what, when, IP address
-   - File: `app/api/routes/admin.py`
 
 5. **Generate frontend types from OpenAPI** (1 day)
    - Currently manually duplicating types

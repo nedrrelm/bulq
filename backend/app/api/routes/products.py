@@ -21,13 +21,15 @@ router = APIRouter(prefix='/products', tags=['products'])
 async def search_products(
     service: ProductServiceDep,
     q: str = Query(..., min_length=1, description='Search query'),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     current_user: User = Depends(require_auth),
 ):
     """Search for products by name across all stores.
 
     Returns products matching the search query.
     """
-    return service.search_products(q)
+    return service.search_products(q, limit, offset)
 
 
 @router.get('/check-similar', response_model=list[ProductSearchResult])

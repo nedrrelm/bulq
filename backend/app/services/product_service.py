@@ -43,9 +43,11 @@ class ProductService(BaseService):
         self.shopping_repo = get_shopping_repository(db)
         self.store_repo = get_store_repository(db)
 
-    def search_products(self, query: str) -> list[ProductSearchResult]:
+    def search_products(
+        self, query: str, limit: int = 50, offset: int = 0
+    ) -> list[ProductSearchResult]:
         """Search for products by name across all stores."""
-        products = self.product_repo.search_products(query)
+        products = self.product_repo.search_products(query, limit, offset)
 
         result = []
         for product in products:

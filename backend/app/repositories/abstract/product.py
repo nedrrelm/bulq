@@ -16,7 +16,7 @@ class AbstractProductRepository(ABC):
         raise NotImplementedError('Subclass must implement get_products_by_store')
 
     @abstractmethod
-    def search_products(self, query: str) -> list[Product]:
+    def search_products(self, query: str, limit: int = 50, offset: int = 0) -> list[Product]:
         """Search for products by name."""
         raise NotImplementedError('Subclass must implement search_products')
 

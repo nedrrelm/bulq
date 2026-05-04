@@ -24,13 +24,14 @@ class MemoryProductRepository(AbstractProductRepository):
         }
         return [product for product in self.storage.products.values() if product.id in product_ids]
 
-    def search_products(self, query: str) -> list[Product]:
+    def search_products(self, query: str, limit: int = 50, offset: int = 0) -> list[Product]:
         query_lower = query.lower()
-        return [
+        results = [
             product
             for product in self.storage.products.values()
             if query_lower in product.name.lower()
         ]
+        return results[offset : offset + limit]
 
     def get_product_by_id(self, product_id: UUID) -> Product | None:
         return self.storage.products.get(product_id)

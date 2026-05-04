@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import RunServiceDep
 from app.api.routes.auth import require_auth
@@ -162,10 +162,14 @@ async def toggle_helper(
 
 @router.get('/{run_id}/available-products', response_model=list[AvailableProductResponse])
 async def get_available_products(
-    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
+    run_id: str,
+    service: RunServiceDep,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(require_auth),
 ):
     """Get products available for bidding (products from the store that don't have bids yet)."""
-    return service.get_available_products(run_id, current_user)
+    return service.get_available_products(run_id, current_user, limit, offset)
 
 
 @router.post('/{run_id}/transition-shopping', response_model=StateChangeResponse)

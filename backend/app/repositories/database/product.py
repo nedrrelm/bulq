@@ -27,9 +27,16 @@ class DatabaseProductRepository(AbstractProductRepository):
         product_ids = [pid[0] for pid in product_ids]
         return self.db.query(Product).filter(Product.id.in_(product_ids)).all()
 
-    def search_products(self, query: str) -> list[Product]:
+    def search_products(self, query: str, limit: int = 50, offset: int = 0) -> list[Product]:
         """Search for products by name."""
-        return self.db.query(Product).filter(Product.name.ilike(f'%{query}%')).all()
+        return (
+            self.db.query(Product)
+            .filter(Product.name.ilike(f'%{query}%'))
+            .order_by(Product.name)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
     def get_product_by_id(self, product_id: UUID) -> Product | None:
         """Get product by ID."""
