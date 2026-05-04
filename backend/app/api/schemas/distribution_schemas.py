@@ -24,4 +24,5 @@ class DistributionUser(BaseModel):
     user_name: str
     products: list[DistributionProduct]
     total_cost: str = '0.00'
+    fee_share: str = '0.00'
     all_picked_up: bool = False

@@ -3,11 +3,13 @@
     "title": "New Run",
     "description": "Choose a store to start a new group purchase",
     "noStoresAvailable": "No stores available",
-    "commentPlaceholder": "Optional: Add a comment about this run..."
+    "commentPlaceholder": "Optional: Add a comment about this run...",
+    "leaderFeePlaceholder": "Optional: Set a fee for your service"
   },
   "fields": {
     "store": "Store",
     "comment": "Comment",
+    "leaderFee": "Leader Fee",
     "quantity": "Quantity",
     "newLeader": "New Leader"
   },
@@ -53,6 +55,9 @@
     "helper": "Helper",
     "comment": "Comment",
     "commentPlaceholder": "Add a comment about this run...",
+    "leaderFee": "Leader Fee",
+    "leaderFeeShare": "Leader fee share",
+    "noFee": "No fee",
     "status": "Status",
     "participants": "Participants",
     "ready": "Ready",
@@ -118,6 +123,7 @@
     "reassignmentRequestSent": "Reassignment request sent successfully",
     "runForceConfirmed": "Run force confirmed successfully",
     "commentUpdated": "Comment updated successfully",
+    "leaderFeeUpdated": "Leader fee updated successfully",
     "movedToDistribution": "Moved to distribution phase",
     "runCompletedSuccessfully": "Run completed successfully!",
     "runCancelledSuccessfully": "Run cancelled successfully"

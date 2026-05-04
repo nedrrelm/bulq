@@ -24,6 +24,7 @@ from app.core.error_codes import (
     GROUP_NOT_FOUND,
     HELPER_NOT_GROUP_MEMBER,
     INVALID_ID_FORMAT,
+    INVALID_RUN_STATE_TRANSITION,
     NOT_GROUP_MEMBER,
     NOT_RUN_LEADER,
     NOT_RUN_LEADER_OR_HELPER,
@@ -37,7 +38,12 @@ from app.core.error_codes import (
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import Product, ProductBid, Run, User
 from app.core.run_state import RunState, state_machine
-from app.core.success_codes import HELPER_ADDED, HELPER_REMOVED, RUN_COMMENT_UPDATED
+from app.core.success_codes import (
+    HELPER_ADDED,
+    HELPER_REMOVED,
+    RUN_COMMENT_UPDATED,
+    RUN_LEADER_FEE_UPDATED,
+)
 from app.events.domain_events import CommentUpdatedEvent, HelperToggledEvent, RunCreatedEvent
 from app.events.event_bus import event_bus
 from app.infrastructure.config import MAX_ACTIVE_RUNS_PER_GROUP
@@ -98,7 +104,12 @@ class RunService(BaseService):
         self.state_service = state_service or RunStateService(db, self.notification_service)
 
     def create_run(
-        self, group_id: str, store_id: str, user: User, comment: str | None = None
+        self,
+        group_id: str,
+        store_id: str,
+        user: User,
+        comment: str | None = None,
+        leader_fee: float | None = None,
     ) -> CreateRunResponse:
         """Create a new run for a group.
 
@@ -107,6 +118,7 @@ class RunService(BaseService):
             store_id: Store ID as string
             user: Current user creating the run
             comment: Optional comment/description for the run
+            leader_fee: Optional fee for the leader's service
 
         Returns:
             CreateRunResponse with run data
@@ -164,7 +176,7 @@ class RunService(BaseService):
             )
 
         # Create the run with current user as leader
-        run = self.run_repo.create_run(group_uuid, store_uuid, user.id, comment)
+        run = self.run_repo.create_run(group_uuid, store_uuid, user.id, comment, leader_fee)
 
         logger.info(
             'Run created successfully',
@@ -244,6 +256,7 @@ class RunService(BaseService):
             store_name=store.name,
             state=run.state,
             comment=run.comment,
+            leader_fee=f'{float(run.leader_fee):.2f}' if run.leader_fee is not None else None,
             products=products,
             participants=participants,
             current_user_is_ready=current_user_is_ready,
@@ -425,6 +438,61 @@ class RunService(BaseService):
 
         return SuccessResponse(
             code=RUN_COMMENT_UPDATED,
+            details={'run_id': run_id},
+        )
+
+    def update_leader_fee(
+        self, run_id: str, leader_fee: float | None, user: User
+    ) -> SuccessResponse:
+        """Update the leader fee for a run.
+
+        Only the run leader can update the fee, and only during planning state.
+
+        Args:
+            run_id: Run ID as string
+            leader_fee: New fee amount (or None to clear)
+            user: Current user (must be leader)
+
+        Returns:
+            SuccessResponse on success
+
+        Raises:
+            BadRequestError: If run ID format is invalid or run is not in planning state
+            NotFoundError: If run not found
+            ForbiddenError: If user is not the run leader
+        """
+        run_uuid = self._validate_run_id(run_id)
+        run = self._get_run_with_auth_check(run_uuid, user)
+
+        # Only allow fee updates during planning state
+        if run.state != RunState.PLANNING:
+            raise BadRequestError(
+                code=INVALID_RUN_STATE_TRANSITION,
+                message='Leader fee can only be set during planning state',
+                run_id=run_id,
+                current_state=run.state,
+            )
+
+        # Check if user is the leader
+        participation = self.run_repo.get_participation(user.id, run_uuid)
+        if not participation or not participation.is_leader:
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message='Only the run leader can update the fee',
+                run_id=run_id,
+            )
+
+        updated_run = self.run_repo.update_leader_fee(run_uuid, leader_fee)
+        if not updated_run:
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
+
+        logger.info(
+            'Leader fee updated',
+            extra={'run_id': run_id, 'user_id': str(user.id), 'leader_fee': str(leader_fee)},
+        )
+
+        return SuccessResponse(
+            code=RUN_LEADER_FEE_UPDATED,
             details={'run_id': run_id},
         )
 

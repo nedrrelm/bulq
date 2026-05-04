@@ -12,6 +12,7 @@ class CreateRunRequest(BaseModel):
     group_id: str
     store_id: str
     comment: str | None = Field(default=None, max_length=500)
+    leader_fee: Decimal | None = Field(default=None, ge=0, le=99999.99, decimal_places=2)
 
 
 class CreateRunResponse(BaseModel):
@@ -88,6 +89,7 @@ class RunDetailResponse(BaseModel):
     store_name: str
     state: str
     comment: str | None = None
+    leader_fee: str | None = None
     products: list[ProductResponse]
     participants: list[ParticipantResponse]
     current_user_is_ready: bool = False
@@ -187,3 +189,9 @@ class UpdateRunCommentRequest(BaseModel):
     """Request model for updating run comment."""
 
     comment: str | None = Field(default=None, max_length=500)
+
+
+class UpdateLeaderFeeRequest(BaseModel):
+    """Request model for updating leader fee."""
+
+    leader_fee: Decimal | None = Field(default=None, ge=0, le=99999.99, decimal_places=2)

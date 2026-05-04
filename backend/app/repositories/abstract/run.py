@@ -23,7 +23,12 @@ class AbstractRunRepository(ABC):
 
     @abstractmethod
     def create_run(
-        self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None
+        self,
+        group_id: UUID,
+        store_id: UUID,
+        leader_id: UUID,
+        comment: str | None = None,
+        leader_fee: float | None = None,
     ) -> Run:
         """Create a new run with the leader as first participant."""
         raise NotImplementedError('Subclass must implement create_run')
@@ -32,6 +37,11 @@ class AbstractRunRepository(ABC):
     def update_run_comment(self, run_id: UUID, comment: str | None) -> Run | None:
         """Update the comment for a run."""
         raise NotImplementedError('Subclass must implement update_run_comment')
+
+    @abstractmethod
+    def update_leader_fee(self, run_id: UUID, leader_fee: float | None) -> Run | None:
+        """Update the leader fee for a run."""
+        raise NotImplementedError('Subclass must implement update_leader_fee')
 
     @abstractmethod
     def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:

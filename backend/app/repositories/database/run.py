@@ -53,10 +53,21 @@ class DatabaseRunRepository(AbstractRunRepository):
         return self.db.query(Run).filter(Run.id == run_id).first()
 
     def create_run(
-        self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None
+        self,
+        group_id: UUID,
+        store_id: UUID,
+        leader_id: UUID,
+        comment: str | None = None,
+        leader_fee: float | None = None,
     ) -> Run:
         """Create a new run with the leader as first participant."""
-        run = Run(group_id=group_id, store_id=store_id, state=RunState.PLANNING, comment=comment)
+        run = Run(
+            group_id=group_id,
+            store_id=store_id,
+            state=RunState.PLANNING,
+            comment=comment,
+            leader_fee=leader_fee,
+        )
         self.db.add(run)
         self.db.flush()  # Get the run ID without committing
 
@@ -74,6 +85,16 @@ class DatabaseRunRepository(AbstractRunRepository):
         run = self.db.query(Run).filter(Run.id == run_id).first()
         if run:
             run.comment = comment
+            self.db.commit()
+            self.db.refresh(run)
+            return run
+        return None
+
+    def update_leader_fee(self, run_id: UUID, leader_fee: float | None) -> Run | None:
+        """Update the leader fee for a run."""
+        run = self.db.query(Run).filter(Run.id == run_id).first()
+        if run:
+            run.leader_fee = leader_fee
             self.db.commit()
             self.db.refresh(run)
             return run

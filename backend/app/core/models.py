@@ -117,6 +117,7 @@ class Run(Base):
     store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
     state = Column(String, nullable=False, default=RunState.PLANNING, index=True)
     comment = Column(Text, nullable=True)  # Leader's comment/description for the run
+    leader_fee = Column(DECIMAL(10, 2), nullable=True)  # Optional fee for the leader's service
     planned_on = Column(
         DateTime(timezone=True), nullable=True
     )  # Day the leader wants to go shopping

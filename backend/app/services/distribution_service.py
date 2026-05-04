@@ -114,6 +114,9 @@ class DistributionService(BaseService):
                     exc_info=True,
                 )
 
+        # Apply leader fee split
+        self._apply_leader_fee(run_id, distributions)
+
         logger.debug(f'Returning {len(distributions)} distributions', extra={'run_id': str(run_id)})
         sorted_distributions = self._sort_distributions(distributions)
 
@@ -211,6 +214,36 @@ class DistributionService(BaseService):
             total_cost=f'{user_data["total_cost"]:.2f}',
             all_picked_up=all_picked_up,
         )
+
+    def _apply_leader_fee(self, run_id: UUID, distributions: list[DistributionUser]) -> None:
+        """Apply leader fee split to distributions in-place.
+
+        Fee is split evenly among participants who are not the leader or a helper.
+        """
+        run = self.run_repo.get_run_by_id(run_id)
+        if not run or not run.leader_fee or float(run.leader_fee) <= 0:
+            return
+
+        fee = float(run.leader_fee)
+
+        # Determine which users pay the fee (not leader, not helper)
+        participations = self.run_repo.get_run_participations(run_id)
+        exempt_user_ids = set()
+        for p in participations:
+            if p.is_leader or p.is_helper:
+                exempt_user_ids.add(str(p.user_id))
+
+        fee_paying_users = [d for d in distributions if d.user_id not in exempt_user_ids]
+        if not fee_paying_users:
+            return
+
+        fee_share = round(fee / len(fee_paying_users), 2)
+
+        for dist in distributions:
+            if dist.user_id not in exempt_user_ids:
+                dist.fee_share = f'{fee_share:.2f}'
+                current_total = float(dist.total_cost)
+                dist.total_cost = f'{current_total + fee_share:.2f}'
 
     def _sort_distributions(self, distributions: list[DistributionUser]) -> list[DistributionUser]:
         """Sort distributions by pickup status and name."""

@@ -14,6 +14,7 @@ from app.api.schemas import (
     RunDetailResponse,
     StateChangeResponse,
     SuccessResponse,
+    UpdateLeaderFeeRequest,
     UpdateRunCommentRequest,
 )
 from app.api.websocket_manager import manager
@@ -31,7 +32,13 @@ async def create_run(
     current_user: User = Depends(require_auth),
 ):
     """Create a new run for a group."""
-    return service.create_run(request.group_id, request.store_id, current_user, request.comment)
+    return service.create_run(
+        request.group_id,
+        request.store_id,
+        current_user,
+        request.comment,
+        float(request.leader_fee) if request.leader_fee is not None else None,
+    )
 
 
 @router.get('/{run_id}', response_model=RunDetailResponse)
@@ -204,6 +211,21 @@ async def update_run_comment(
     """Update the comment/description for a run (leader only)."""
     result = service.update_run_comment(run_id, request.comment, current_user)
     return result
+
+
+@router.patch('/{run_id}/fee', response_model=SuccessResponse)
+async def update_leader_fee(
+    run_id: str,
+    request: UpdateLeaderFeeRequest,
+    service: RunServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Update the leader fee for a run (leader only, planning state only)."""
+    return service.update_leader_fee(
+        run_id,
+        float(request.leader_fee) if request.leader_fee is not None else None,
+        current_user,
+    )
 
 
 @router.get('/{run_id}/export')

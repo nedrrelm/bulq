@@ -37,6 +37,7 @@ export interface BidBreakdownUser {
     subtotal: number
   }[]
   total_cost: string
+  fee_share: string
 }
 
 interface RunDistributionSectionProps {
@@ -174,6 +175,16 @@ export default function RunDistributionSection({
                             </div>
                           )
                         })}
+                      {user.fee_share && parseFloat(user.fee_share) > 0 && (
+                        <div className="product-item" style={{ borderTop: '1px dashed var(--color-border, #e5e7eb)', paddingTop: '0.5rem' }}>
+                          <div className="product-info">
+                            <div className="product-name" style={{ fontStyle: 'italic' }}>{t('run:labels.leaderFeeShare')}</div>
+                            <div className="product-details">
+                              <span className="product-subtotal">{user.fee_share} RSD</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -244,6 +255,16 @@ export default function RunDistributionSection({
                           </div>
                         )
                       })}
+                      {user.fee_share && parseFloat(user.fee_share) > 0 && (
+                        <div className="product-item" style={{ borderTop: '1px dashed var(--color-border, #e5e7eb)', paddingTop: '0.5rem' }}>
+                          <div className="product-info">
+                            <div className="product-name" style={{ fontStyle: 'italic' }}>{t('run:labels.leaderFeeShare')}</div>
+                            <div className="product-details">
+                              <span className="product-subtotal">{user.fee_share} RSD</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>

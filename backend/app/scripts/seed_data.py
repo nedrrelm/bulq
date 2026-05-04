@@ -192,7 +192,7 @@ def create_seed_data(db_session=None):
     run_planning.state = RunState.PLANNING
     run_planning.planning_at = datetime.now(UTC) - timedelta(days=7)
 
-    run_active = run_repo.create_run(friends_group.id, sams.id, test_user.id)
+    run_active = run_repo.create_run(friends_group.id, sams.id, test_user.id, leader_fee=200.00)
     run_active.state = RunState.ACTIVE
     run_active.planning_at = datetime.now(UTC) - timedelta(days=5)
     run_active.active_at = datetime.now(UTC) - timedelta(days=5)

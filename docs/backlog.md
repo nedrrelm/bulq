@@ -6,7 +6,6 @@
 
 ### Features
 1. distribution groups for each run (split total into multiple pickup points)
-2. Allow leaders to set a fee for the run
 3. Create buyers clubs and sellers clubs
 
 Feature backlog and technical debt for Bulq development.

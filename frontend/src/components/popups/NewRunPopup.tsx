@@ -21,6 +21,7 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
   const stores = useMemo(() => Array.isArray(storesData) ? storesData : [], [storesData])
   const [selectedStoreId, setSelectedStoreId] = useState('')
   const [comment, setComment] = useState('')
+  const [leaderFee, setLeaderFee] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showNewStorePopup, setShowNewStorePopup] = useState(false)
@@ -56,7 +57,8 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
       await runsApi.createRun({
         group_id: groupId,
         store_id: selectedStoreId,
-        comment: comment.trim() || undefined
+        comment: comment.trim() || undefined,
+        leader_fee: leaderFee ? parseFloat(leaderFee) : null
       })
       onSuccess()
     } catch (err) {
@@ -137,6 +139,21 @@ export default function NewRunPopup({ groupId, onClose, onSuccess }: NewRunPopup
             rows={2}
           />
           <span className="char-counter">{comment.length}/500</span>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="leader-fee" className="form-label">{t('run:fields.leaderFee')}</label>
+          <input
+            id="leader-fee"
+            type="number"
+            step="0.01"
+            min="0"
+            className="form-input"
+            value={leaderFee}
+            onChange={(e) => setLeaderFee(e.target.value)}
+            placeholder={t('run:create.leaderFeePlaceholder')}
+            disabled={loading}
+          />
         </div>
 
         {stores.length > 0 && (

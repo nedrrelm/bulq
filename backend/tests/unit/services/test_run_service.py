@@ -47,6 +47,7 @@ class TestCreateRun:
         mock_run.store_id = store_id
         mock_run.state = RunState.PLANNING.value
         mock_run.comment = None
+        mock_run.leader_fee = None
 
         # Create service instance
         service = RunService(mock_db)
@@ -78,7 +79,7 @@ class TestCreateRun:
             service.group_repo.get_group_by_id.assert_called_once_with(group_id)
             service.store_repo.get_store_by_id.assert_called_once_with(store_id)
             service.run_repo.create_run.assert_called_once_with(
-                group_id, store_id, test_user.id, None
+                group_id, store_id, test_user.id, None, None
             )
 
             # Verify event was emitted
@@ -114,6 +115,7 @@ class TestCreateRun:
         mock_run.store_id = store_id
         mock_run.state = RunState.PLANNING.value
         mock_run.comment = comment
+        mock_run.leader_fee = None
 
         service = RunService(mock_db)
         service.group_repo.get_group_by_id = Mock(return_value=mock_group)
@@ -130,7 +132,7 @@ class TestCreateRun:
 
             # Assert
             service.run_repo.create_run.assert_called_once_with(
-                group_id, store_id, test_user.id, comment
+                group_id, store_id, test_user.id, comment, None
             )
 
     def test_create_run_invalid_group_id_format(self, test_user):
@@ -328,6 +330,7 @@ class TestGetRunDetails:
         mock_run.store_id = store_id
         mock_run.state = RunState.PLANNING.value
         mock_run.comment = 'Test comment'
+        mock_run.leader_fee = None
 
         mock_participation = Mock(spec=RunParticipation)
         mock_participation.user_id = test_user.id
@@ -431,6 +434,7 @@ class TestGetRunDetails:
         mock_run.store_id = store_id
         mock_run.state = RunState.ACTIVE.value
         mock_run.comment = None
+        mock_run.leader_fee = None
 
         # Create participations for leader and member
         leader_participation = Mock(spec=RunParticipation)

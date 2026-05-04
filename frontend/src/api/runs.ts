@@ -9,6 +9,7 @@ export interface CreateRunRequest {
   group_id: string
   store_id: string
   comment?: string
+  leader_fee?: number | null
 }
 
 export interface PlaceBidRequest {
@@ -58,6 +59,9 @@ export const runsApi = {
 
   updateComment: (runId: string, data: UpdateRunCommentRequest) =>
     api.patch(`/runs/${runId}/comment`, data),
+
+  updateLeaderFee: (runId: string, data: { leader_fee: number | null }) =>
+    api.patch(`/runs/${runId}/fee`, data),
 
   exportRunState: (runId: string) =>
     api.get(`/runs/${runId}/export`)

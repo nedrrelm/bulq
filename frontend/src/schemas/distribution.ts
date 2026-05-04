@@ -22,6 +22,7 @@ export const distributionUserSchema = z.object({
   user_name: z.string(),
   products: z.array(distributionProductSchema),
   total_cost: z.string(), // Decimal as string from backend
+  fee_share: z.string().optional().default('0.00'),
   all_picked_up: z.boolean()
 })
 

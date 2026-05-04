@@ -75,6 +75,7 @@ from .run_schemas import (
     RetractBidResponse,
     RunDetailResponse,
     StateChangeResponse,
+    UpdateLeaderFeeRequest,
     UpdateRunCommentRequest,
     UserBidResponse,
 )
@@ -157,6 +158,7 @@ __all__ = [
     'ReadyToggleResponse',
     'CancelRunResponse',
     'AvailableProductResponse',
+    'UpdateLeaderFeeRequest',
     'UpdateRunCommentRequest',
     # Group schemas
     'CreateGroupRequest',

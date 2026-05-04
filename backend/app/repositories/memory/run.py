@@ -45,7 +45,12 @@ class MemoryRunRepository(AbstractRunRepository):
         return self.storage.runs.get(run_id)
 
     def create_run(
-        self, group_id: UUID, store_id: UUID, leader_id: UUID, comment: str | None = None
+        self,
+        group_id: UUID,
+        store_id: UUID,
+        leader_id: UUID,
+        comment: str | None = None,
+        leader_fee: float | None = None,
     ) -> Run:
         run = Run(
             id=uuid4(),
@@ -53,6 +58,7 @@ class MemoryRunRepository(AbstractRunRepository):
             store_id=store_id,
             state=RunState.PLANNING,
             comment=comment,
+            leader_fee=leader_fee,
         )
         run.planning_at = datetime.now(UTC)
         self.storage.runs[run.id] = run
@@ -65,6 +71,14 @@ class MemoryRunRepository(AbstractRunRepository):
         run = self.storage.runs.get(run_id)
         if run:
             run.comment = comment
+            return run
+        return None
+
+    def update_leader_fee(self, run_id: UUID, leader_fee: float | None) -> Run | None:
+        """Update the leader fee for a run."""
+        run = self.storage.runs.get(run_id)
+        if run:
+            run.leader_fee = leader_fee
             return run
         return None
 

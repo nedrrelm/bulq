@@ -405,6 +405,15 @@ export default function RunPage() {
   const userBreakdownFromBids = useMemo(() => {
     if (!run || shouldFetchDistribution) return []
 
+    const leaderFee = run.leader_fee ? parseFloat(run.leader_fee) : 0
+
+    // Determine fee-exempt participants (leader + helpers)
+    const exemptUserIds = new Set(
+      run.participants
+        .filter(p => p.is_leader || p.is_helper)
+        .map(p => p.user_id)
+    )
+
     const breakdown = run.participants
       .map(participant => {
         const userProducts = run.products
@@ -438,11 +447,26 @@ export default function RunPage() {
         return {
           user_id: participant.user_id,
           user_name: participant.user_name,
+          is_leader: participant.is_leader,
+          is_helper: participant.is_helper,
           products: userProducts,
-          total_cost: totalCost.toFixed(2)
+          total_cost: totalCost.toFixed(2),
+          fee_share: '0.00'
         }
       })
       .filter(user => user.products.length > 0)
+
+    // Calculate fee share for non-exempt participants
+    if (leaderFee > 0) {
+      const feePayingUsers = breakdown.filter(u => !exemptUserIds.has(u.user_id))
+      if (feePayingUsers.length > 0) {
+        const feeShare = leaderFee / feePayingUsers.length
+        for (const user of feePayingUsers) {
+          user.fee_share = feeShare.toFixed(2)
+          user.total_cost = (parseFloat(user.total_cost) + feeShare).toFixed(2)
+        }
+      }
+    }
 
     return breakdown
   }, [run, shouldFetchDistribution])
@@ -451,14 +475,17 @@ export default function RunPage() {
   const runPriceSummary = useMemo(() => {
     if (!run) return null
 
+    const leaderFee = run.leader_fee ? parseFloat(run.leader_fee) : 0
+
     if (shouldFetchDistribution && distributionUsers.length > 0) {
-      // Distributing/Completed: Use actual distribution data
+      // Distributing/Completed: Use actual distribution data (fee already included in total_cost)
       const finalTotal = distributionUsers.reduce((sum, user) => {
         return sum + parseFloat(user.total_cost)
       }, 0)
       return {
         type: 'final' as const,
-        total: finalTotal
+        total: finalTotal,
+        leaderFee
       }
     }
 
@@ -471,17 +498,16 @@ export default function RunPage() {
         const price = product.current_price ? parseFloat(product.current_price) : 0
 
         if (product.purchased_quantity !== null && product.purchased_quantity !== undefined && product.purchased_quantity > 0) {
-          // Product has been purchased
           purchasedTotal += price * product.purchased_quantity
         }
-        // Note: Products not purchased (null or 0 quantity) are excluded from totals
       })
 
       return {
         type: 'split' as const,
         purchased: purchasedTotal,
         remaining: remainingEstimate,
-        total: purchasedTotal + remainingEstimate
+        total: purchasedTotal + remainingEstimate + leaderFee,
+        leaderFee
       }
     }
 
@@ -497,7 +523,8 @@ export default function RunPage() {
 
     return {
       type: 'estimated' as const,
-      total: estimatedTotal
+      total: estimatedTotal + leaderFee,
+      leaderFee
     }
   }, [run, shouldFetchDistribution, distributionUsers])
 
@@ -692,6 +719,36 @@ export default function RunPage() {
                 </button>
               </div>
             )}
+            <div className="info-item">
+              <label>{t('run:labels.leaderFee')}:</label>
+              <div className="flex-center-gap-sm">
+                <span style={{ fontWeight: run.leader_fee ? 'bold' : 'normal', color: run.leader_fee ? 'var(--color-primary)' : undefined }}>
+                  {run.leader_fee ? `${run.leader_fee} RSD` : t('run:labels.noFee')}
+                </span>
+                {run.current_user_is_leader && run.state === 'planning' && (
+                  <button
+                    onClick={() => {
+                      const newFee = prompt(t('run:fields.leaderFee'), run.leader_fee || '0')
+                      if (newFee !== null) {
+                        const feeNum = parseFloat(newFee)
+                        if (!isNaN(feeNum) && feeNum >= 0) {
+                          runsApi.updateLeaderFee(runId, { leader_fee: feeNum || null }).then(() => {
+                            showToast(t('run:messages.leaderFeeUpdated'), 'success')
+                            queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+                          }).catch((err: unknown) => {
+                            showToast(formatErrorForDisplay(err, 'update leader fee'), 'error')
+                          })
+                        }
+                      }
+                    }}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                  >
+                    {t('run:actions.edit')}
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="info-item">
               <label>{t('run:labels.status')}:</label>
               <span>{stateDisplay.description}</span>
