@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.dependencies import RunServiceDep
 from app.api.routes.auth import require_auth
@@ -19,6 +19,7 @@ from app.api.schemas import (
 )
 from app.api.websocket_manager import manager
 from app.core.models import User
+from app.infrastructure.rate_limiter import limiter
 from app.infrastructure.request_context import get_logger
 
 router = APIRouter(prefix='/runs', tags=['runs'])
@@ -50,7 +51,9 @@ async def get_run_details(
 
 
 @router.post('/{run_id}/bids', response_model=PlaceBidResponse)
+@limiter.limit('30/minute')
 async def place_bid(
+    request: Request,
     run_id: str,
     bid_request: PlaceBidRequest,
     service: RunServiceDep,

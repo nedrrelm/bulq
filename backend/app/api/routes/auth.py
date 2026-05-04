@@ -26,6 +26,7 @@ from app.core.success_codes import PASSWORD_CHANGED, USER_LOGGED_OUT
 from app.infrastructure.auth import create_session, delete_session, get_session, hash_password
 from app.infrastructure.config import SECURE_COOKIES, SESSION_EXPIRY_HOURS
 from app.infrastructure.database import get_db
+from app.infrastructure.rate_limiter import limiter
 from app.infrastructure.request_context import get_logger
 from app.repositories import get_user_repository
 
@@ -64,8 +65,9 @@ def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
 
 
 @router.post('/register', response_model=UserResponse)
+@limiter.limit('5/minute')
 async def register(
-    user_data: UserRegister, response: Response, db: Session = Depends(get_db)
+    request: Request, user_data: UserRegister, response: Response, db: Session = Depends(get_db)
 ) -> UserResponse:
     """Register a new user."""
     from app.infrastructure.runtime_settings import is_registration_allowed
@@ -127,8 +129,9 @@ async def register(
 
 
 @router.post('/login', response_model=UserResponse)
+@limiter.limit('10/minute')
 async def login(
-    user_data: UserLogin, response: Response, db: Session = Depends(get_db)
+    request: Request, user_data: UserLogin, response: Response, db: Session = Depends(get_db)
 ) -> UserResponse:
     """Login user."""
     logger.info('Login attempt', extra={'username': user_data.username})

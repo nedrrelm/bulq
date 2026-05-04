@@ -5,6 +5,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 
 from .api.middleware import RequestLoggingMiddleware
@@ -30,6 +33,7 @@ from .errors.handlers import (
 from .infrastructure.config import ALLOWED_ORIGINS
 from .infrastructure.database import create_tables
 from .infrastructure.logging_config import setup_logging
+from .infrastructure.rate_limiter import limiter
 from .utils.background_tasks import create_background_task
 
 # Setup logging
@@ -177,10 +181,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title='Bulq API', version='0.1.0', lifespan=lifespan)
 
+# Rate limiting
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+
 # Add middleware
 app.add_middleware(RequestLoggingMiddleware)
 
 # Register exception handlers
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_exception_handler(AppException, app_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
