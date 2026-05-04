@@ -163,6 +163,12 @@ async def lifespan(app: FastAPI):
     init_session_store()
     logger.info('📦 Session store initialized')
 
+    # Initialize cache
+    from .infrastructure.cache import init_cache
+
+    init_cache()
+    logger.info('📦 Cache initialized')
+
     # Yield control to the application
     yield
 

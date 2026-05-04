@@ -44,6 +44,7 @@ from app.core.success_codes import (
     USER_VERIFIED,
     USERS_MERGED,
 )
+from app.infrastructure.cache import invalidate_store_cache
 from app.infrastructure.transaction import transactional
 from app.repositories import (
     get_group_repository,
@@ -371,6 +372,7 @@ class AdminService(BaseService):
             store.verified_by = None
             store.verified_at = None
 
+        invalidate_store_cache()
         return VerificationToggleResponse(
             code=STORE_VERIFIED if store.verified else STORE_UNVERIFIED,
             id=str(store.id),
@@ -430,6 +432,7 @@ class AdminService(BaseService):
                 code=STORE_NOT_FOUND, message='Store not found', store_id=str(store_id)
             )
 
+        invalidate_store_cache()
         return AdminStoreResponse(
             id=str(store.id),
             name=store.name,
@@ -595,6 +598,7 @@ class AdminService(BaseService):
         self.store_repo.delete_store(source_id)
 
         total_affected = runs_count + avails_count
+        invalidate_store_cache()
 
         from app.api.schemas import MergeResponse
 
@@ -798,6 +802,7 @@ class AdminService(BaseService):
 
         # Delete the store
         self.store_repo.delete_store(store_id)
+        invalidate_store_cache()
 
         from app.api.schemas import DeleteResponse
 

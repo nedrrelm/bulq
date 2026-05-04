@@ -8,6 +8,7 @@ from app.api.schemas import (
     StoreResponse,
 )
 from app.core.models import User
+from app.infrastructure.cache import get_cache
 from app.utils.validation import validate_uuid
 
 router = APIRouter(prefix='/stores', tags=['stores'])
@@ -20,10 +21,17 @@ async def get_stores(
     offset: int = Query(0, ge=0),
     current_user: User = Depends(require_auth),
 ):
-    """Get all available stores (paginated, max 100 per page)."""
-    stores = service.get_all_stores(limit, offset)
+    """Get all available stores (paginated, max 100 per page, cached)."""
+    cache = get_cache()
+    cache_key = f'stores:list:{limit}:{offset}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
 
-    return [StoreResponse(id=str(store.id), name=store.name) for store in stores]
+    stores = service.get_all_stores(limit, offset)
+    result = [StoreResponse(id=str(store.id), name=store.name) for store in stores]
+    cache.set(cache_key, [r.model_dump() for r in result], ttl_seconds=300)
+    return result
 
 
 @router.get('/check-similar', response_model=list[StoreResponse])

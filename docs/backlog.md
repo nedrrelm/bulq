@@ -72,28 +72,6 @@ Feature backlog and technical debt for Bulq development.
    - Lazy load routes
    - Analyze with `vite-bundle-visualizer`
 
----
-
-
-### Code Quality & Documentation
-
-**Priority**: Low to Medium
-
-1. **Improve docstring coverage** (1-2 days)
-   - Repository methods often lack docstrings
-   - Some route handlers have minimal docs
-   - Target: All public methods
-
-
-3. **Add architecture documentation** (2 days)
-   - No ADR (Architecture Decision Records)
-   - No system diagrams
-   - Create `docs/architecture.md` with:
-     - Service dependency graph
-     - Network topology
-     - Data flow diagrams
-
----
 
 ## 🔧 Future Enhancements
 

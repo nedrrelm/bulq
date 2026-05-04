@@ -8,6 +8,7 @@ from app.api.schemas import StorePageResponse, StoreProductResponse, StoreRespon
 from app.core.error_codes import STORE_NAME_EMPTY, STORE_NOT_FOUND
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.models import Store
+from app.infrastructure.cache import invalidate_store_cache
 from app.repositories import (
     get_group_repository,
     get_product_repository,
@@ -52,7 +53,9 @@ class StoreService(BaseService):
         """Create a new store."""
         if not name or not name.strip():
             raise ValidationError(code=STORE_NAME_EMPTY, message='Store name cannot be empty')
-        return self.store_repo.create_store(name.strip())
+        store = self.store_repo.create_store(name.strip())
+        invalidate_store_cache()
+        return store
 
     def get_store_by_id(self, store_id: UUID) -> Store:
         """Get store by ID."""
