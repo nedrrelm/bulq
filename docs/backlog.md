@@ -7,23 +7,14 @@
 ### Features
 1. distribution groups for each run (split total into multiple pickup points)
 3. Create buyers clubs and sellers clubs
-
-Feature backlog and technical debt for Bulq development.
-
-## 🚀 Critical: Production Readiness
+9. **Leader Can Modify User Bids**
+   - Leader has ability to edit other users' bids (not just force equal distribution)
+   - Makes price division and quantity adjustments easier
+   - Useful during adjusting stage for fine-tuning allocations
+   - Note: This needs more design work to determine exact workflow and permissions
 
 
 ### Security & Infrastructure
-**Status**: Partially Complete
-**Affected files**: `app/main.py`, `app/routes/auth.py`, `Caddyfile`, `docker-compose.yml`
-
-**Still TODO:**
-
-1. **Rate Limiting** - Use `slowapi` middleware:
-
-   - Login/registration: 5 requests/minute
-   - Bid placement: 20 requests/minute
-   - General API: 100 requests/minute
 
 
 9. **Test DatabaseRepository** (2 days) - **CRITICAL**
@@ -41,14 +32,6 @@ Feature backlog and technical debt for Bulq development.
 ## 🔧 Technical Debt & Code Quality
 
 ### Performance Optimization
-
-**Priority**: Medium
-**Impact**: 40-60% reduced DB load, faster response times
-
-1. **Implement caching layer with Redis** (2-3 days)
-   - Already in backlog above, but worth repeating
-   - Cache: store list, product details, user groups
-   - Impact: Reduce DB load by 40-60%
 
 2. **Add monitoring and metrics** (2 days)
    - No Prometheus metrics
@@ -75,24 +58,6 @@ Feature backlog and technical debt for Bulq development.
 
 ## 🔧 Future Enhancements
 
----
-
-### UI/UX Improvements
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Frontend components, run pages
-
-**Features:**
-
-9. **Leader Can Modify User Bids**
-   - Leader has ability to edit other users' bids (not just force equal distribution)
-   - Makes price division and quantity adjustments easier
-   - Useful during adjusting stage for fine-tuning allocations
-   - Note: This needs more design work to determine exact workflow and permissions
-
-10. Let leader change back from confirmed to active
-
----
 
 ### Product Management Enhancements
 **Status**: Future
@@ -112,19 +77,6 @@ Feature backlog and technical debt for Bulq development.
    - Support for en, ru, sr languages
    - Prepare infrastructure for future i18n
 
----
-
-### Caching & Performance
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Backend services, infrastructure
-
-**Backend:**
-- Cache store lists (rarely change)
-- Cache product lists per store
-- Use Redis with TTL and invalidation on updates
-
----
 
 ### Savings Tracking & Price Comparison
 **Status**: Future

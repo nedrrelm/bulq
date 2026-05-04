@@ -22,6 +22,7 @@
     "updateBid": "Update Bid",
     "retractBid": "Retract Bid",
     "startShopping": "Start Shopping",
+    "backToActive": "Back to Active",
     "openShoppingList": "Open Shopping List",
     "finishAdjusting": "Finish Adjusting",
     "forceFinish": "Force Finish",
@@ -73,6 +74,7 @@
     "readyToShop": "Ready to Shop",
     "allParticipantsReady": "All participants are ready!",
     "starting": "Starting...",
+    "reverting": "Reverting...",
     "startShoppingHint": "Once shopping starts, you can track what's been purchased",
     "shoppingInProgress": "Shopping in Progress",
     "currentlyShopping": "The leader is currently shopping",
@@ -122,6 +124,7 @@
     "leadershipTransferRequest": "{{userName}} wants to transfer leadership to you",
     "reassignmentRequestSent": "Reassignment request sent successfully",
     "runForceConfirmed": "Run force confirmed successfully",
+    "revertedToActive": "Run reverted to active — participants can now modify bids",
     "commentUpdated": "Comment updated successfully",
     "leaderFeeUpdated": "Leader fee updated successfully",
     "movedToDistribution": "Moved to distribution phase",
@@ -130,7 +133,8 @@
   },
   "prompts": {
     "forceFinishAdjusting": "Are you sure you want to force finish adjusting? This will move to distribution even if some participants haven't adjusted their bids.",
-    "cancelRun": "Are you sure you want to cancel this run? This cannot be undone."
+    "cancelRun": "Are you sure you want to cancel this run? This cannot be undone.",
+    "revertToActive": "Are you sure you want to go back to active? All participants will need to mark themselves as ready again."
   },
   "bid": {
     "title": "Place Your Bid",

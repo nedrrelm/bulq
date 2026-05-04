@@ -108,6 +108,22 @@ async def force_confirm(
     return result
 
 
+@router.post('/{run_id}/revert-to-active', response_model=StateChangeResponse)
+async def revert_to_active(
+    run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
+):
+    """Revert run from confirmed back to active state (leader only)."""
+    service.notification_service.set_websocket_manager(manager)
+
+    result = service.revert_to_active(run_id, current_user)
+
+    await service.notification_service.broadcast_state_change(
+        result.run_id, result.group_id, result.state
+    )
+
+    return result
+
+
 @router.post('/{run_id}/start-shopping', response_model=StateChangeResponse)
 async def start_shopping(
     run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)

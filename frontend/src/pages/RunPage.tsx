@@ -31,7 +31,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useConfirm } from '../hooks/useConfirm'
 import { useNotifications } from '../hooks/useNotifications'
-import { useRun, runKeys, useToggleReady, useStartShopping, useFinishAdjusting } from '../hooks/queries'
+import { useRun, runKeys, useToggleReady, useRevertToActive, useStartShopping, useFinishAdjusting } from '../hooks/queries'
 import { useAuth } from '../hooks/useAuth'
 import { handleError, formatErrorForDisplay } from '../utils/errorHandling'
 import { useDistribution, useMarkPickedUp, useCompleteDistribution, distributionKeys } from '../hooks/queries/useDistribution'
@@ -50,6 +50,7 @@ export default function RunPage() {
   const { data: run, isLoading: loading, error: queryError } = useRun(runId || '')
   const queryClient = useQueryClient()
   const toggleReadyMutation = useToggleReady(runId || '')
+  const revertToActiveMutation = useRevertToActive(runId || '')
   const startShoppingMutation = useStartShopping(runId || '')
   const finishAdjustingMutation = useFinishAdjusting(runId || '')
 
@@ -287,6 +288,20 @@ export default function RunPage() {
     } catch (err) {
       showToast(formatErrorForDisplay(err, 'update ready status'), 'error')
     }
+  }
+
+  const handleRevertToActive = () => {
+    showConfirm(
+      t('run:prompts.revertToActive'),
+      async () => {
+        try {
+          await revertToActiveMutation.mutateAsync()
+          showToast(t('run:messages.revertedToActive'), 'success')
+        } catch (err) {
+          showToast(formatErrorForDisplay(err, 'revert to active'), 'error')
+        }
+      }
+    )
   }
 
   const handleStartShopping = async () => {
@@ -796,6 +811,8 @@ export default function RunPage() {
           runId={runId}
           onToggleReady={handleToggleReady}
           toggleReadyPending={toggleReadyMutation.isPending}
+          onRevertToActive={handleRevertToActive}
+          revertToActivePending={revertToActiveMutation.isPending}
           onStartShopping={handleStartShopping}
           startShoppingPending={startShoppingMutation.isPending}
           onFinishAdjusting={handleFinishAdjusting}

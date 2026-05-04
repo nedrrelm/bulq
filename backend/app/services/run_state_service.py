@@ -26,6 +26,7 @@ from app.core.success_codes import (
     READY_TOGGLED,
     RUN_CANCELLED,
     RUN_FORCE_CONFIRMED,
+    RUN_REVERTED_TO_ACTIVE,
     SHOPPING_STARTED,
 )
 from app.events.domain_events import ReadyToggledEvent, RunCancelledEvent, RunStateChangedEvent
@@ -175,6 +176,67 @@ class RunStateService(BaseService):
         return StateChangeResponse(
             code=RUN_FORCE_CONFIRMED,
             state=RunState.CONFIRMED,
+            run_id=str(run_uuid),
+            group_id=str(run.group_id),
+        )
+
+    def revert_to_active(self, run_id: str, user: User) -> StateChangeResponse:
+        """Revert run from confirmed back to active state (leader only).
+
+        Resets all participants' ready status so they can modify bids.
+
+        Args:
+            run_id: Run ID as string
+            user: Current user (must be leader)
+
+        Returns:
+            StateChangeResponse with success message and new state
+
+        Raises:
+            BadRequestError: If run ID invalid or state doesn't allow reverting
+            NotFoundError: If run not found
+            ForbiddenError: If user is not the leader
+        """
+        run_uuid = validate_uuid(run_id, 'Run')
+
+        run = self.run_repo.get_run_by_id(run_uuid)
+        if not run:
+            raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
+
+        self._verify_run_access(
+            user, run, NOT_RUN_PARTICIPANT, 'Not authorized to modify this run', run_id=run_id
+        )
+
+        # Only allow reverting from confirmed state
+        if run.state != RunState.CONFIRMED:
+            raise BadRequestError(
+                code=RUN_NOT_IN_CONFIRMED_STATE,
+                message='Can only revert to active from confirmed state',
+                run_id=run_id,
+                current_state=run.state,
+                required_state=RunState.CONFIRMED.value,
+            )
+
+        # Check if user is the run leader
+        participation = self.run_repo.get_participation(user.id, run_uuid)
+        if not participation or not participation.is_leader:
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message='Only the run leader can revert to active',
+                run_id=run_id,
+            )
+
+        # Reset all participants' ready status
+        participations = self.run_repo.get_run_participations(run_uuid)
+        for p in participations:
+            p.is_ready = False
+
+        # Transition to active state
+        self._transition_run_state(run, RunState.ACTIVE)
+
+        return StateChangeResponse(
+            code=RUN_REVERTED_TO_ACTIVE,
+            state=RunState.ACTIVE,
             run_id=str(run_uuid),
             group_id=str(run.group_id),
         )

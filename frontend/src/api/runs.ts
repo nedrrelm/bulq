@@ -42,6 +42,9 @@ export const runsApi = {
   forceConfirm: (runId: string) =>
     api.post(`/runs/${runId}/force-confirm`),
 
+  revertToActive: (runId: string) =>
+    api.post(`/runs/${runId}/revert-to-active`),
+
   startShopping: (runId: string) =>
     api.post(`/runs/${runId}/start-shopping`),
 

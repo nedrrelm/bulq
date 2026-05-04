@@ -8,6 +8,8 @@ interface RunActionCardsProps {
   runId: string
   onToggleReady: () => void
   toggleReadyPending: boolean
+  onRevertToActive: () => void
+  revertToActivePending: boolean
   onStartShopping: () => void
   startShoppingPending: boolean
   onFinishAdjusting: () => void
@@ -22,6 +24,8 @@ export default function RunActionCards({
   runId,
   onToggleReady,
   toggleReadyPending,
+  onRevertToActive,
+  revertToActivePending,
   onStartShopping,
   startShoppingPending,
   onFinishAdjusting,
@@ -140,6 +144,13 @@ export default function RunActionCards({
               disabled={startShoppingPending}
             >
               {startShoppingPending ? t('run:labels.starting') : t('run:actions.startShopping')}
+            </button>
+            <button
+              onClick={onRevertToActive}
+              className="btn btn-secondary btn-lg"
+              disabled={revertToActivePending}
+            >
+              {revertToActivePending ? t('run:labels.reverting') : t('run:actions.backToActive')}
             </button>
             <DownloadRunStateButton
               runId={runId}

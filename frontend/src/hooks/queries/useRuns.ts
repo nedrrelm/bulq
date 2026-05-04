@@ -218,6 +218,17 @@ export function useConfirmRun(runId: string, groupId?: string) {
 /**
  * Start shopping (move to shopping state)
  */
+export function useRevertToActive(runId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => runsApi.revertToActive(runId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) })
+    },
+  })
+}
+
 export function useStartShopping(runId: string) {
   const queryClient = useQueryClient()
 
