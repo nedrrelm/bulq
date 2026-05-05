@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 from datetime import UTC, datetime
 
@@ -10,20 +11,24 @@ from app.infrastructure.session_store import get_store
 logger = get_logger(__name__)
 
 
-def hash_password(password: str) -> str:
+async def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return await asyncio.to_thread(
+        lambda: bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    )
 
 
-def verify_password(password: str, hashed: str) -> bool:
+async def verify_password(password: str, hashed: str) -> bool:
     """Verify a password against its bcrypt hash."""
     try:
-        return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+        return await asyncio.to_thread(
+            lambda: bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+        )
     except ValueError, TypeError:
         return False
 
 
-def create_session(user_id: str) -> str:
+async def create_session(user_id: str) -> str:
     """Create a new session and return session token."""
     session_token = secrets.token_urlsafe(32)
     session_data = {
@@ -32,21 +37,20 @@ def create_session(user_id: str) -> str:
         'created_at': datetime.now(UTC),
     }
 
-    # Store with TTL in seconds
     ttl_seconds = SESSION_EXPIRY_HOURS * 3600
     store = get_store()
-    store.set(session_token, session_data, ttl_seconds)
+    await store.set(session_token, session_data, ttl_seconds)
 
     return session_token
 
 
-def get_session(session_token: str) -> dict | None:
+async def get_session(session_token: str) -> dict | None:
     """Get session data if valid, None if expired or invalid."""
     store = get_store()
-    return store.get(session_token)
+    return await store.get(session_token)
 
 
-def delete_session(session_token: str) -> bool:
+async def delete_session(session_token: str) -> bool:
     """Delete a session (logout)."""
     store = get_store()
-    return store.delete(session_token)
+    return await store.delete(session_token)

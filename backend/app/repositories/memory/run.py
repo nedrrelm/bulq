@@ -18,10 +18,10 @@ class MemoryRunRepository(AbstractRunRepository):
     def __init__(self, storage: MemoryStorage):
         self.storage = storage
 
-    def get_runs_by_group(self, group_id: UUID) -> list[Run]:
+    async def get_runs_by_group(self, group_id: UUID) -> list[Run]:
         return [run for run in self.storage.runs.values() if run.group_id == group_id]
 
-    def get_completed_cancelled_runs_by_group(
+    async def get_completed_cancelled_runs_by_group(
         self, group_id: UUID, limit: int = 10, offset: int = 0
     ) -> list[Run]:
         """Get completed and cancelled runs for a group (paginated)."""
@@ -41,10 +41,10 @@ class MemoryRunRepository(AbstractRunRepository):
         runs.sort(key=get_timestamp, reverse=True)
         return runs[offset : offset + limit]
 
-    def get_run_by_id(self, run_id: UUID) -> Run | None:
+    async def get_run_by_id(self, run_id: UUID) -> Run | None:
         return self.storage.runs.get(run_id)
 
-    def create_run(
+    async def create_run(
         self,
         group_id: UUID,
         store_id: UUID,
@@ -63,10 +63,10 @@ class MemoryRunRepository(AbstractRunRepository):
         run.planning_at = datetime.now(UTC)
         self.storage.runs[run.id] = run
         # Create participation for the leader
-        self._create_participation_helper(leader_id, run.id, is_leader=True)
+        await self._create_participation_helper(leader_id, run.id, is_leader=True)
         return run
 
-    def update_run_comment(self, run_id: UUID, comment: str | None) -> Run | None:
+    async def update_run_comment(self, run_id: UUID, comment: str | None) -> Run | None:
         """Update the comment for a run."""
         run = self.storage.runs.get(run_id)
         if run:
@@ -74,7 +74,7 @@ class MemoryRunRepository(AbstractRunRepository):
             return run
         return None
 
-    def update_leader_fee(self, run_id: UUID, leader_fee: float | None) -> Run | None:
+    async def update_leader_fee(self, run_id: UUID, leader_fee: float | None) -> Run | None:
         """Update the leader fee for a run."""
         run = self.storage.runs.get(run_id)
         if run:
@@ -82,7 +82,7 @@ class MemoryRunRepository(AbstractRunRepository):
             return run
         return None
 
-    def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:
+    async def get_participation(self, user_id: UUID, run_id: UUID) -> RunParticipation | None:
         for participation in self.storage.participations.values():
             if participation.user_id == user_id and participation.run_id == run_id:
                 participation.user = self.storage.users.get(user_id)
@@ -90,7 +90,7 @@ class MemoryRunRepository(AbstractRunRepository):
                 return participation
         return None
 
-    def get_run_participations(self, run_id: UUID) -> list[RunParticipation]:
+    async def get_run_participations(self, run_id: UUID) -> list[RunParticipation]:
         participations = []
         for participation in self.storage.participations.values():
             if participation.run_id == run_id:
@@ -99,7 +99,7 @@ class MemoryRunRepository(AbstractRunRepository):
                 participations.append(participation)
         return participations
 
-    def get_run_participations_with_users(self, run_id: UUID) -> list[RunParticipation]:
+    async def get_run_participations_with_users(self, run_id: UUID) -> list[RunParticipation]:
         """Get participations with user data eagerly loaded to avoid N+1 queries."""
         participations = []
         for participation in self.storage.participations.values():
@@ -109,7 +109,7 @@ class MemoryRunRepository(AbstractRunRepository):
                 participations.append(participation)
         return participations
 
-    def create_participation(
+    async def create_participation(
         self, user_id: UUID, run_id: UUID, is_leader: bool = False, is_helper: bool = False
     ) -> RunParticipation:
         participation = RunParticipation(
@@ -126,7 +126,7 @@ class MemoryRunRepository(AbstractRunRepository):
         self.storage.participations[participation.id] = participation
         return participation
 
-    def update_participation_ready(
+    async def update_participation_ready(
         self, participation_id: UUID, is_ready: bool
     ) -> RunParticipation | None:
         participation = self.storage.participations.get(participation_id)
@@ -135,7 +135,7 @@ class MemoryRunRepository(AbstractRunRepository):
             return participation
         return None
 
-    def update_participation_helper(
+    async def update_participation_helper(
         self, user_id: UUID, run_id: UUID, is_helper: bool
     ) -> RunParticipation | None:
         """Update the helper status of a participation."""
@@ -145,7 +145,7 @@ class MemoryRunRepository(AbstractRunRepository):
                 return participation
         return None
 
-    def update_run_state(self, run_id: UUID, new_state: str) -> Run | None:
+    async def update_run_state(self, run_id: UUID, new_state: str) -> Run | None:
         run = self.storage.runs.get(run_id)
         if run:
             current_state = RunState(run.state)
@@ -170,7 +170,7 @@ class MemoryRunRepository(AbstractRunRepository):
             return run
         return None
 
-    def _create_participation_helper(
+    async def _create_participation_helper(
         self, user_id: UUID, run_id: UUID, is_leader: bool = False, is_ready: bool = False
     ) -> RunParticipation:
         """Helper for creating participation."""

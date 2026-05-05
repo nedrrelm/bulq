@@ -33,7 +33,7 @@ async def create_run(
     current_user: User = Depends(require_auth),
 ):
     """Create a new run for a group."""
-    return service.create_run(
+    return await service.create_run(
         request.group_id,
         request.store_id,
         current_user,
@@ -47,7 +47,7 @@ async def get_run_details(
     run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get detailed information about a specific run."""
-    return service.get_run_details(run_id, current_user)
+    return await service.get_run_details(run_id, current_user)
 
 
 @router.post('/{run_id}/bids', response_model=PlaceBidResponse)
@@ -60,7 +60,7 @@ async def place_bid(
     current_user: User = Depends(require_auth),
 ):
     """Place or update a bid on a product in a run."""
-    result = service.place_bid(
+    result = await service.place_bid(
         run_id,
         bid_request.product_id,
         bid_request.quantity,
@@ -79,7 +79,7 @@ async def retract_bid(
     current_user: User = Depends(require_auth),
 ):
     """Retract a bid on a product in a run."""
-    return service.retract_bid(run_id, product_id, current_user)
+    return await service.retract_bid(run_id, product_id, current_user)
 
 
 @router.post('/{run_id}/ready', response_model=ReadyToggleResponse)
@@ -87,7 +87,7 @@ async def toggle_ready(
     run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Toggle the current user's ready status for a run."""
-    return service.toggle_ready(run_id, current_user)
+    return await service.toggle_ready(run_id, current_user)
 
 
 @router.post('/{run_id}/force-confirm', response_model=StateChangeResponse)
@@ -95,12 +95,10 @@ async def force_confirm(
     run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Force confirm run - transition from active to confirmed state without waiting for all users (leader only)."""
-    # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
-    result = service.force_confirm_run(run_id, current_user)
+    result = await service.force_confirm_run(run_id, current_user)
 
-    # Broadcast state change using notification service
     await service.notification_service.broadcast_state_change(
         result.run_id, result.group_id, result.state
     )
@@ -115,7 +113,7 @@ async def revert_to_active(
     """Revert run from confirmed back to active state (leader only)."""
     service.notification_service.set_websocket_manager(manager)
 
-    result = service.revert_to_active(run_id, current_user)
+    result = await service.revert_to_active(run_id, current_user)
 
     await service.notification_service.broadcast_state_change(
         result.run_id, result.group_id, result.state
@@ -129,12 +127,10 @@ async def start_shopping(
     run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Start shopping - transition from confirmed to shopping state (leader only)."""
-    # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
-    result = service.start_run(run_id, current_user)
+    result = await service.start_run(run_id, current_user)
 
-    # Broadcast state change using notification service
     await service.notification_service.broadcast_state_change(
         result.run_id, result.group_id, result.state
     )
@@ -154,12 +150,10 @@ async def finish_adjusting(
     Query params:
         force: If true, skip quantity verification and proceed anyway
     """
-    # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
-    result = service.finish_adjusting(run_id, current_user, force)
+    result = await service.finish_adjusting(run_id, current_user, force)
 
-    # Broadcast state change using notification service
     await service.notification_service.broadcast_state_change(
         result.run_id, result.group_id, result.state
     )
@@ -175,7 +169,7 @@ async def toggle_helper(
     current_user: User = Depends(require_auth),
 ):
     """Toggle helper status for a run participant (leader only)."""
-    result = service.toggle_helper(run_id, user_id, current_user)
+    result = await service.toggle_helper(run_id, user_id, current_user)
     return result
 
 
@@ -188,7 +182,7 @@ async def get_available_products(
     current_user: User = Depends(require_auth),
 ):
     """Get products available for bidding (products from the store that don't have bids yet)."""
-    return service.get_available_products(run_id, current_user, limit, offset)
+    return await service.get_available_products(run_id, current_user, limit, offset)
 
 
 @router.post('/{run_id}/transition-shopping', response_model=StateChangeResponse)
@@ -196,12 +190,10 @@ async def transition_to_shopping(
     run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Transition to shopping state (alias for start-shopping)."""
-    # Set WebSocket manager for broadcasting
     service.notification_service.set_websocket_manager(manager)
 
-    result = service.transition_to_shopping(run_id, current_user)
+    result = await service.transition_to_shopping(run_id, current_user)
 
-    # Broadcast state change using notification service
     await service.notification_service.broadcast_state_change(
         result.run_id, result.group_id, result.state
     )
@@ -214,12 +206,9 @@ async def cancel_run(
     run_id: str, service: RunServiceDep, current_user: User = Depends(require_auth)
 ):
     """Cancel a run. Leader only. Can be done from any state except completed/cancelled."""
-    # Set WebSocket manager for broadcasting (state service handles state change notifications)
     service.notification_service.set_websocket_manager(manager)
 
-    result = service.cancel_run(run_id, current_user)
-
-    # No additional broadcast needed - state service handles notifications
+    result = await service.cancel_run(run_id, current_user)
 
     return result
 
@@ -232,7 +221,7 @@ async def update_run_comment(
     current_user: User = Depends(require_auth),
 ):
     """Update the comment/description for a run (leader only)."""
-    result = service.update_run_comment(run_id, request.comment, current_user)
+    result = await service.update_run_comment(run_id, request.comment, current_user)
     return result
 
 
@@ -244,7 +233,7 @@ async def update_leader_fee(
     current_user: User = Depends(require_auth),
 ):
     """Update the leader fee for a run (leader only, planning state only)."""
-    return service.update_leader_fee(
+    return await service.update_leader_fee(
         run_id,
         float(request.leader_fee) if request.leader_fee is not None else None,
         current_user,
@@ -260,4 +249,4 @@ async def export_run_state(
     Available for runs in confirmed, shopping, adjusting, or distributing states.
     Returns structured JSON with per-product and per-user breakdowns.
     """
-    return service.export_run_state(run_id, current_user)
+    return await service.export_run_state(run_id, current_user)

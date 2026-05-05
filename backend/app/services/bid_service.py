@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import PlaceBidResponse, RetractBidResponse
 from app.core.error_codes import (
@@ -46,7 +46,7 @@ logger = get_logger(__name__)
 class BidService(BaseService):
     """Service for managing bid operations."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.bid_repo = get_bid_repository(db)
@@ -55,7 +55,7 @@ class BidService(BaseService):
         self.shopping_repo = get_shopping_repository(db)
         self.user_repo = get_user_repository(db)
 
-    def place_bid(
+    async def place_bid(
         self,
         run_id: str,
         product_id: str,
@@ -99,19 +99,23 @@ class BidService(BaseService):
         )
 
         # Validate and get entities
-        run_uuid, product_uuid, run, product = self._validate_bid_request(run_id, product_id, user)
+        run_uuid, product_uuid, run, product = await self._validate_bid_request(
+            run_id, product_id, user
+        )
 
         # Get or create user participation
-        participation, is_new_participant = self._ensure_user_participation(run_uuid, run, user)
+        participation, is_new_participant = await self._ensure_user_participation(
+            run_uuid, run, user
+        )
 
         # Validate the bid based on current state
-        self._validate_bid_for_state(run, product_uuid, quantity, participation)
+        await self._validate_bid_for_state(run, product_uuid, quantity, participation)
 
         # Handle quantity=0 as bid removal (in adjusting state, this is allowed when minAllowed=0)
         if quantity == 0 and not interested_only:
-            existing_bid = self.bid_repo.get_bid(participation.id, product_uuid)
+            existing_bid = await self.bid_repo.get_bid(participation.id, product_uuid)
             if existing_bid:
-                self.bid_repo.delete_bid(participation.id, product_uuid)
+                await self.bid_repo.delete_bid(participation.id, product_uuid)
                 logger.info(
                     'Bid removed via quantity=0',
                     extra={
@@ -122,17 +126,17 @@ class BidService(BaseService):
                 )
         else:
             # Create or update the bid
-            self.bid_repo.create_or_update_bid(
+            await self.bid_repo.create_or_update_bid(
                 participation.id, product_uuid, quantity, interested_only, comment
             )
 
         # Handle automatic state transition (planning → active)
-        state_changed = self._check_planning_to_active_transition(
+        state_changed = await self._check_planning_to_active_transition(
             run, is_new_participant, participation
         )
 
         # Calculate new totals for response
-        new_total = self.calculate_product_total(run_uuid, product_uuid)
+        new_total = await self.calculate_product_total(run_uuid, product_uuid)
 
         # Emit domain event for bid placement
         event_bus.emit(
@@ -163,7 +167,7 @@ class BidService(BaseService):
         )
 
     @transactional('retract bid')
-    def retract_bid(self, run_id: str, product_id: str, user: User) -> RetractBidResponse:
+    async def retract_bid(self, run_id: str, product_id: str, user: User) -> RetractBidResponse:
         """Retract a user's bid on a product in a run.
 
         This operation is atomic - validation, bid deletion, and total recalculation succeed together or all roll back.
@@ -186,11 +190,11 @@ class BidService(BaseService):
             extra={'user_id': str(user.id), 'run_id': run_id, 'product_id': product_id},
         )
 
-        run_uuid, product_uuid, run = self._validate_retract_request(run_id, product_id, user)
-        self._check_adjusting_constraints_for_retraction(run, run_uuid, product_uuid, user.id)
-        participation = self._get_user_participation(user.id, run_uuid, run_id)
-        self._remove_bid_and_recalculate(participation, product_uuid, product_id)
-        new_total = self.calculate_product_total(run_uuid, product_uuid)
+        run_uuid, product_uuid, run = await self._validate_retract_request(run_id, product_id, user)
+        await self._check_adjusting_constraints_for_retraction(run, run_uuid, product_uuid, user.id)
+        participation = await self._get_user_participation(user.id, run_uuid, run_id)
+        await self._remove_bid_and_recalculate(participation, product_uuid, product_id)
+        new_total = await self.calculate_product_total(run_uuid, product_uuid)
 
         logger.info(
             'Bid retracted successfully',
@@ -221,7 +225,7 @@ class BidService(BaseService):
             new_total=new_total,
         )
 
-    def calculate_product_total(self, run_id: UUID, product_id: UUID) -> float:
+    async def calculate_product_total(self, run_id: UUID, product_id: UUID) -> float:
         """Calculate total quantity for a product (excluding interested-only bids).
 
         Args:
@@ -231,11 +235,11 @@ class BidService(BaseService):
         Returns:
             Total quantity across all bids for the product
         """
-        all_bids = self.bid_repo.get_bids_by_run(run_id)
+        all_bids = await self.bid_repo.get_bids_by_run(run_id)
         product_bids = [bid for bid in all_bids if bid.product_id == product_id]
         return sum(bid.quantity for bid in product_bids if not bid.interested_only)
 
-    def _validate_bid_request(
+    async def _validate_bid_request(
         self, run_id: str, product_id: str, user: User
     ) -> tuple[UUID, UUID, Run, Product]:
         """Validate bid request and return validated entities."""
@@ -244,7 +248,7 @@ class BidService(BaseService):
         product_uuid = validate_uuid(product_id, 'Product')
 
         # Verify run exists and user has access
-        run = self._get_run_with_auth_check(run_uuid, user)
+        run = await self._get_run_with_auth_check(run_uuid, user)
 
         # Check if run allows bidding using state machine
         run_state = RunState(run.state)
@@ -257,7 +261,7 @@ class BidService(BaseService):
             )
 
         # Verify product exists (products don't need store availability to be bid on)
-        product = self.product_repo.get_product_by_id(product_uuid)
+        product = await self.product_repo.get_product_by_id(product_uuid)
         if not product:
             raise NotFoundError(
                 code=PRODUCT_NOT_FOUND, message='Product not found', product_id=product_id
@@ -265,24 +269,24 @@ class BidService(BaseService):
 
         return run_uuid, product_uuid, run, product
 
-    def _get_run_with_auth_check(self, run_uuid: UUID, user: User) -> Run:
+    async def _get_run_with_auth_check(self, run_uuid: UUID, user: User) -> Run:
         """Get run and verify user has access to it."""
-        run = self.run_repo.get_run_by_id(run_uuid)
+        run = await self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=str(run_uuid))
 
         # Verify user has access to this run (member of the group)
-        self._verify_run_access(
+        await self._verify_run_access(
             user, run, NOT_RUN_PARTICIPANT, 'Not authorized to view this run', run_id=str(run_uuid)
         )
 
         return run
 
-    def _ensure_user_participation(
+    async def _ensure_user_participation(
         self, run_uuid: UUID, run: Run, user: User
     ) -> tuple[RunParticipation, bool]:
         """Get or create user participation in run."""
-        participation = self.run_repo.get_participation(user.id, run_uuid)
+        participation = await self.run_repo.get_participation(user.id, run_uuid)
         is_new_participant = False
 
         if not participation:
@@ -296,12 +300,14 @@ class BidService(BaseService):
                     current_state=run.state,
                 )
             # Create participation (not as leader)
-            participation = self.run_repo.create_participation(user.id, run_uuid, is_leader=False)
+            participation = await self.run_repo.create_participation(
+                user.id, run_uuid, is_leader=False
+            )
             is_new_participant = True
 
         return participation, is_new_participant
 
-    def _validate_bid_for_state(
+    async def _validate_bid_for_state(
         self, run: Run, product_uuid: UUID, quantity: float, participation: RunParticipation
     ) -> ProductBid | None:
         """Validate bid based on run state and return existing bid if any."""
@@ -312,25 +318,25 @@ class BidService(BaseService):
             )
 
         # Check for existing bid
-        existing_bid = self.bid_repo.get_bid(participation.id, product_uuid)
+        existing_bid = await self.bid_repo.get_bid(participation.id, product_uuid)
 
         # Check product limit for new products
         if not existing_bid:
-            self._check_product_limit(run.id)
+            await self._check_product_limit(run.id)
 
         # State-specific validation
         if run.state == RunState.ADJUSTING:
             if not existing_bid:
                 # Check if product has surplus - new bids only allowed on surplus products
-                self._validate_new_bid_on_surplus(run.id, product_uuid, quantity)
+                await self._validate_new_bid_on_surplus(run.id, product_uuid, quantity)
             else:
-                self._validate_adjusting_bid(run.id, product_uuid, quantity, existing_bid)
+                await self._validate_adjusting_bid(run.id, product_uuid, quantity, existing_bid)
 
         return existing_bid
 
-    def _check_product_limit(self, run_id: UUID) -> None:
+    async def _check_product_limit(self, run_id: UUID) -> None:
         """Check if run has reached maximum product limit."""
-        all_bids = self.bid_repo.get_bids_by_run(run_id)
+        all_bids = await self.bid_repo.get_bids_by_run(run_id)
         unique_products = {bid.product_id for bid in all_bids}
         if len(unique_products) >= MAX_PRODUCTS_PER_RUN:
             logger.warning(
@@ -345,7 +351,7 @@ class BidService(BaseService):
                 current_products=len(unique_products),
             )
 
-    def _validate_new_bid_on_surplus(
+    async def _validate_new_bid_on_surplus(
         self, run_id: UUID, product_uuid: UUID, quantity: float
     ) -> None:
         """Validate new bids during adjusting state - only allowed on surplus products.
@@ -359,7 +365,7 @@ class BidService(BaseService):
             BadRequestError: If product doesn't have surplus or quantity exceeds surplus
         """
         # Get shopping list to check if product has surplus
-        shopping_items = self.shopping_repo.get_shopping_list_items(run_id)
+        shopping_items = await self.shopping_repo.get_shopping_list_items(run_id)
         shopping_item = next(
             (item for item in shopping_items if item.product_id == product_uuid), None
         )
@@ -411,7 +417,7 @@ class BidService(BaseService):
             },
         )
 
-    def _validate_adjusting_bid(
+    async def _validate_adjusting_bid(
         self, run_id: UUID, product_uuid: UUID, quantity: float, existing_bid: ProductBid
     ) -> None:
         """Validate bid adjustments during adjusting state.
@@ -421,7 +427,7 @@ class BidService(BaseService):
         - Upward adjustments when purchased > requested (surplus)
         """
         # Get shopping list to check purchased quantity
-        shopping_items = self.shopping_repo.get_shopping_list_items(run_id)
+        shopping_items = await self.shopping_repo.get_shopping_list_items(run_id)
         shopping_item = next(
             (item for item in shopping_items if item.product_id == product_uuid), None
         )
@@ -496,7 +502,7 @@ class BidService(BaseService):
                 )
         # If difference == 0, quantities already match, no adjustment needed (shouldn't reach here)
 
-    def _check_planning_to_active_transition(
+    async def _check_planning_to_active_transition(
         self, run: Run, is_new_participant: bool, participation: RunParticipation
     ) -> bool:
         """Check if run should transition from planning to active.
@@ -507,22 +513,22 @@ class BidService(BaseService):
         # Automatic state transition: planning → active
         # When a non-leader places their first bid, transition from planning to active
         if is_new_participant and not participation.is_leader and run.state == RunState.PLANNING:
-            self.run_repo.update_run_state(run.id, RunState.ACTIVE)
+            await self.run_repo.update_run_state(run.id, RunState.ACTIVE)
             return True
         return False
 
-    def _validate_retract_request(
+    async def _validate_retract_request(
         self, run_id: str, product_id: str, user: User
     ) -> tuple[UUID, UUID, Run]:
         """Validate retract request and return UUIDs and run object."""
         run_uuid = validate_uuid(run_id, 'Run')
         product_uuid = validate_uuid(product_id, 'Product')
 
-        run = self.run_repo.get_run_by_id(run_uuid)
+        run = await self.run_repo.get_run_by_id(run_uuid)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        self._verify_run_access(
+        await self._verify_run_access(
             user,
             run,
             NOT_RUN_PARTICIPANT,
@@ -542,7 +548,7 @@ class BidService(BaseService):
 
         return run_uuid, product_uuid, run
 
-    def _check_adjusting_constraints_for_retraction(
+    async def _check_adjusting_constraints_for_retraction(
         self, run: Run, run_id: UUID, product_id: UUID, user_id: UUID
     ) -> None:
         """Check if retraction is allowed in adjusting state.
@@ -553,7 +559,7 @@ class BidService(BaseService):
         if run.state != RunState.ADJUSTING:
             return
 
-        shopping_items = self.shopping_repo.get_shopping_list_items(run_id)
+        shopping_items = await self.shopping_repo.get_shopping_list_items(run_id)
         shopping_item = next(
             (item for item in shopping_items if item.product_id == product_id), None
         )
@@ -565,11 +571,11 @@ class BidService(BaseService):
         requested_qty = shopping_item.requested_quantity
         difference = purchased_qty - requested_qty  # positive = surplus, negative = shortage
 
-        participation = self.run_repo.get_participation(user_id, run_id)
+        participation = await self.run_repo.get_participation(user_id, run_id)
         if not participation:
             return
 
-        current_bid = self.bid_repo.get_bid(participation.id, product_id)
+        current_bid = await self.bid_repo.get_bid(participation.id, product_id)
         if not current_bid:
             return
 
@@ -595,14 +601,14 @@ class BidService(BaseService):
                 current_quantity=current_bid.quantity,
             )
 
-    def _remove_bid_and_recalculate(
+    async def _remove_bid_and_recalculate(
         self, participation: RunParticipation, product_id: UUID, product_id_str: str
     ) -> None:
         """Remove bid from database."""
-        bid = self.bid_repo.get_bid(participation.id, product_id)
+        bid = await self.bid_repo.get_bid(participation.id, product_id)
         if not bid:
             raise NotFoundError(
                 code=BID_NOT_FOUND, message='Bid not found', product_id=product_id_str
             )
 
-        self.bid_repo.delete_bid(participation.id, product_id)
+        await self.bid_repo.delete_bid(participation.id, product_id)

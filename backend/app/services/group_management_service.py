@@ -1,6 +1,6 @@
 """Service for group lifecycle management operations."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import CreateGroupResponse
 from app.core.models import User
@@ -23,13 +23,13 @@ class GroupManagementService(BaseService):
     Separate from queries and membership to maintain single responsibility.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.group_repo = get_group_repository(db)
 
     @transactional('create group')
-    def create_group(self, name: str, user: User) -> CreateGroupResponse:
+    async def create_group(self, name: str, user: User) -> CreateGroupResponse:
         """Create a new group and add the creator as an admin member.
 
         This operation is atomic - group creation and member addition succeed together or all roll back.
@@ -44,10 +44,10 @@ class GroupManagementService(BaseService):
         logger.info(f'Creating group: {name}', extra={'user_id': str(user.id), 'group_name': name})
 
         # Create the group
-        group = self.group_repo.create_group(name, user.id)
+        group = await self.group_repo.create_group(name, user.id)
 
         # Add the creator as an admin member
-        self.group_repo.add_group_member(group.id, user, is_group_admin=True)
+        await self.group_repo.add_group_member(group.id, user, is_group_admin=True)
 
         logger.info(
             'Group created successfully', extra={'user_id': str(user.id), 'group_id': str(group.id)}

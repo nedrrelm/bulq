@@ -38,7 +38,7 @@ class NotificationEventHandler:
         """
         try:
             # Get all participants of this run
-            participations = self._notification_repo.get_run_participations(event.run_id)
+            participations = await self._notification_repo.get_run_participations(event.run_id)
 
             notification_data = {
                 'run_id': str(event.run_id),
@@ -50,7 +50,7 @@ class NotificationEventHandler:
 
             # Create notification for each participant
             for participation in participations:
-                self._notification_repo.create_notification(
+                await self._notification_repo.create_notification(
                     user_id=participation.user_id, type='run_state_changed', data=notification_data
                 )
 

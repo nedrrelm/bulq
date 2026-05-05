@@ -1,9 +1,8 @@
 import os
-from collections.abc import Generator
+from collections.abc import AsyncGenerator
 
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import QueuePool
+from sqlalchemy import event
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.models import Base
 from app.infrastructure.request_context import get_logger
@@ -16,30 +15,33 @@ if not DATABASE_URL:
         'DATABASE_URL environment variable must be set! See .env.example for configuration.'
     )
 
+if DATABASE_URL.startswith('postgresql://'):
+    DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
+
 # Connection pool configuration
 POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '20'))
 MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '10'))
 POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
 POOL_RECYCLE = int(os.getenv('DB_POOL_RECYCLE', '3600'))
 
-engine = create_engine(
+async_engine = create_async_engine(
     DATABASE_URL,
-    poolclass=QueuePool,
-    pool_size=POOL_SIZE,  # Number of connections to maintain
-    max_overflow=MAX_OVERFLOW,  # Extra connections if pool exhausted
-    pool_timeout=POOL_TIMEOUT,  # Seconds to wait for connection
-    pool_recycle=POOL_RECYCLE,  # Recycle connections after 1 hour
-    pool_pre_ping=True,  # Verify connections before use
+    pool_size=POOL_SIZE,
+    max_overflow=MAX_OVERFLOW,
+    pool_timeout=POOL_TIMEOUT,
+    pool_recycle=POOL_RECYCLE,
+    pool_pre_ping=True,
 )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(
+    autocommit=False, autoflush=False, bind=async_engine, expire_on_commit=False
+)
 
 
-# Connection pool event listeners for monitoring
-@event.listens_for(engine, 'connect')
+@event.listens_for(async_engine.sync_engine, 'connect')
 def receive_connect(dbapi_conn, connection_record):
     """Log when a new connection is created."""
-    pool = engine.pool
+    pool = async_engine.pool
     logger.debug(
         'New database connection created',
         extra={
@@ -51,15 +53,14 @@ def receive_connect(dbapi_conn, connection_record):
     )
 
 
-@event.listens_for(engine, 'checkout')
+@event.listens_for(async_engine.sync_engine, 'checkout')
 def receive_checkout(dbapi_conn, connection_record, connection_proxy):
     """Log when a connection is checked out from the pool."""
-    pool = engine.pool
+    pool = async_engine.pool
     checked_out = pool.checkedout()
     overflow = pool.overflow()
     total_connections = pool.size() + overflow
 
-    # Log statistics
     logger.debug(
         'Connection checked out from pool',
         extra={
@@ -71,8 +72,7 @@ def receive_checkout(dbapi_conn, connection_record, connection_proxy):
         },
     )
 
-    # Warn if pool is running low
-    if checked_out >= pool.size() * 0.8:  # 80% utilization
+    if checked_out >= pool.size() * 0.8:
         logger.warning(
             'Database connection pool is running low',
             extra={
@@ -83,7 +83,6 @@ def receive_checkout(dbapi_conn, connection_record, connection_proxy):
             },
         )
 
-    # Alert if pool is exhausted
     if overflow >= MAX_OVERFLOW:
         logger.error(
             'Database connection pool exhausted - using maximum overflow',
@@ -96,10 +95,10 @@ def receive_checkout(dbapi_conn, connection_record, connection_proxy):
         )
 
 
-@event.listens_for(engine, 'checkin')
+@event.listens_for(async_engine.sync_engine, 'checkin')
 def receive_checkin(dbapi_conn, connection_record):
     """Log when a connection is returned to the pool."""
-    pool = engine.pool
+    pool = async_engine.pool
     logger.debug(
         'Connection returned to pool',
         extra={
@@ -116,7 +115,7 @@ def get_pool_status() -> dict:
     Returns:
         Dict containing pool size, checked out connections, overflow, etc.
     """
-    pool = engine.pool
+    pool = async_engine.pool
     pool_size = pool.size()
     checked_out = pool.checkedout()
     checked_in = pool.checkedin()
@@ -141,15 +140,13 @@ def log_pool_status() -> None:
     logger.info('Database connection pool status', extra=status)
 
 
-def create_tables() -> None:
+async def create_tables() -> None:
     """Create all tables in the database."""
-    Base.metadata.create_all(bind=engine)
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
-def get_db() -> Generator[Session]:
+async def get_db() -> AsyncGenerator[AsyncSession]:
     """Dependency to get database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    async with AsyncSessionLocal() as session:
+        yield session

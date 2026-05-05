@@ -15,7 +15,7 @@ Usage in routes:
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database import get_db
 from app.services import (
@@ -41,7 +41,7 @@ from app.services import (
 # =============================================================================
 
 
-def get_admin_service(db: Session = Depends(get_db)) -> AdminService:
+async def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminService:
     """Provide AdminService instance with injected database session.
 
     Args:
@@ -53,7 +53,7 @@ def get_admin_service(db: Session = Depends(get_db)) -> AdminService:
     return AdminService(db)
 
 
-def get_bid_service(db: Session = Depends(get_db)) -> BidService:
+async def get_bid_service(db: AsyncSession = Depends(get_db)) -> BidService:
     """Provide BidService instance with injected database session.
 
     Args:
@@ -65,7 +65,9 @@ def get_bid_service(db: Session = Depends(get_db)) -> BidService:
     return BidService(db)
 
 
-def get_run_notification_service(db: Session = Depends(get_db)) -> RunNotificationService:
+async def get_run_notification_service(
+    db: AsyncSession = Depends(get_db),
+) -> RunNotificationService:
     """Provide RunNotificationService instance with injected database session.
 
     Args:
@@ -77,8 +79,8 @@ def get_run_notification_service(db: Session = Depends(get_db)) -> RunNotificati
     return RunNotificationService(db)
 
 
-def get_run_state_service(
-    db: Session = Depends(get_db),
+async def get_run_state_service(
+    db: AsyncSession = Depends(get_db),
     notification_service: RunNotificationService = Depends(get_run_notification_service),
 ) -> RunStateService:
     """Provide RunStateService instance with injected database session and notification service.
@@ -93,8 +95,8 @@ def get_run_state_service(
     return RunStateService(db, notification_service)
 
 
-def get_run_service(
-    db: Session = Depends(get_db),
+async def get_run_service(
+    db: AsyncSession = Depends(get_db),
     bid_service: BidService = Depends(get_bid_service),
     notification_service: RunNotificationService = Depends(get_run_notification_service),
     state_service: RunStateService = Depends(get_run_state_service),
@@ -113,7 +115,7 @@ def get_run_service(
     return RunService(db, bid_service, notification_service, state_service)
 
 
-def get_group_query_service(db: Session = Depends(get_db)) -> GroupQueryService:
+async def get_group_query_service(db: AsyncSession = Depends(get_db)) -> GroupQueryService:
     """Provide GroupQueryService instance with injected database session.
 
     Args:
@@ -125,7 +127,9 @@ def get_group_query_service(db: Session = Depends(get_db)) -> GroupQueryService:
     return GroupQueryService(db)
 
 
-def get_group_management_service(db: Session = Depends(get_db)) -> GroupManagementService:
+async def get_group_management_service(
+    db: AsyncSession = Depends(get_db),
+) -> GroupManagementService:
     """Provide GroupManagementService instance with injected database session.
 
     Args:
@@ -137,7 +141,7 @@ def get_group_management_service(db: Session = Depends(get_db)) -> GroupManageme
     return GroupManagementService(db)
 
 
-def get_group_invite_service(db: Session = Depends(get_db)) -> GroupInviteService:
+async def get_group_invite_service(db: AsyncSession = Depends(get_db)) -> GroupInviteService:
     """Provide GroupInviteService instance with injected database session.
 
     Args:
@@ -149,7 +153,9 @@ def get_group_invite_service(db: Session = Depends(get_db)) -> GroupInviteServic
     return GroupInviteService(db)
 
 
-def get_group_membership_service(db: Session = Depends(get_db)) -> GroupMembershipService:
+async def get_group_membership_service(
+    db: AsyncSession = Depends(get_db),
+) -> GroupMembershipService:
     """Provide GroupMembershipService instance with injected database session.
 
     Args:
@@ -161,7 +167,7 @@ def get_group_membership_service(db: Session = Depends(get_db)) -> GroupMembersh
     return GroupMembershipService(db)
 
 
-def get_shopping_service(db: Session = Depends(get_db)) -> ShoppingService:
+async def get_shopping_service(db: AsyncSession = Depends(get_db)) -> ShoppingService:
     """Provide ShoppingService instance with injected database session.
 
     Args:
@@ -173,7 +179,7 @@ def get_shopping_service(db: Session = Depends(get_db)) -> ShoppingService:
     return ShoppingService(db)
 
 
-def get_reassignment_service(db: Session = Depends(get_db)) -> ReassignmentService:
+async def get_reassignment_service(db: AsyncSession = Depends(get_db)) -> ReassignmentService:
     """Provide ReassignmentService instance with injected database session.
 
     Args:
@@ -185,7 +191,7 @@ def get_reassignment_service(db: Session = Depends(get_db)) -> ReassignmentServi
     return ReassignmentService(db)
 
 
-def get_notification_service(db: Session = Depends(get_db)) -> NotificationService:
+async def get_notification_service(db: AsyncSession = Depends(get_db)) -> NotificationService:
     """Provide NotificationService instance with injected database session.
 
     Args:
@@ -197,7 +203,7 @@ def get_notification_service(db: Session = Depends(get_db)) -> NotificationServi
     return NotificationService(db)
 
 
-def get_product_service(db: Session = Depends(get_db)) -> ProductService:
+async def get_product_service(db: AsyncSession = Depends(get_db)) -> ProductService:
     """Provide ProductService instance with injected database session.
 
     Args:
@@ -209,7 +215,7 @@ def get_product_service(db: Session = Depends(get_db)) -> ProductService:
     return ProductService(db)
 
 
-def get_store_service(db: Session = Depends(get_db)) -> StoreService:
+async def get_store_service(db: AsyncSession = Depends(get_db)) -> StoreService:
     """Provide StoreService instance with injected database session.
 
     Args:
@@ -221,7 +227,7 @@ def get_store_service(db: Session = Depends(get_db)) -> StoreService:
     return StoreService(db)
 
 
-def get_distribution_service(db: Session = Depends(get_db)) -> DistributionService:
+async def get_distribution_service(db: AsyncSession = Depends(get_db)) -> DistributionService:
     """Provide DistributionService instance with injected database session.
 
     Args:

@@ -28,7 +28,7 @@ async def get_stores(
     if cached is not None:
         return cached
 
-    stores = service.get_all_stores(limit, offset)
+    stores = await service.get_all_stores(limit, offset)
     result = [StoreResponse(id=str(store.id), name=store.name) for store in stores]
     cache.set(cache_key, [r.model_dump() for r in result], ttl_seconds=300)
     return result
@@ -44,7 +44,7 @@ async def check_similar_stores(
 
     Returns stores that are similar to the provided name, useful for preventing duplicates.
     """
-    similar_stores = service.get_similar_stores(name)
+    similar_stores = await service.get_similar_stores(name)
 
     return [StoreResponse(id=str(store.id), name=store.name) for store in similar_stores]
 
@@ -55,7 +55,7 @@ async def get_store_page(
 ):
     """Get store page data including store info, products, and active runs."""
     store_uuid = validate_uuid(store_id, 'Store')
-    return service.get_store_page_data(store_uuid, current_user.id)
+    return await service.get_store_page_data(store_uuid, current_user.id)
 
 
 @router.post('/create', response_model=StoreResponse)
@@ -65,6 +65,6 @@ async def create_store(
     current_user: User = Depends(require_auth),
 ):
     """Create a new store."""
-    store = service.create_store(request.name)
+    store = await service.create_store(request.name)
 
     return StoreResponse(id=str(store.id), name=store.name)

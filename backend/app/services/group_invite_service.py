@@ -1,6 +1,6 @@
 """Service for group invite and joining operations."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import (
     JoinGroupResponse,
@@ -47,13 +47,13 @@ class GroupInviteService(BaseService):
     Separate from queries and membership to maintain single responsibility.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.group_repo = get_group_repository(db)
         self.user_repo = get_user_repository(db)
 
-    def regenerate_invite_token(self, group_id: str, user: User) -> RegenerateTokenResponse:
+    async def regenerate_invite_token(self, group_id: str, user: User) -> RegenerateTokenResponse:
         """Regenerate the invite token for a group (only creator can do this).
 
         Args:
@@ -72,7 +72,7 @@ class GroupInviteService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
@@ -95,7 +95,7 @@ class GroupInviteService(BaseService):
             'Regenerating invite token for group',
             extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
         )
-        new_token = self.group_repo.regenerate_group_invite_token(group_uuid)
+        new_token = await self.group_repo.regenerate_group_invite_token(group_uuid)
         if not new_token:
             raise BadRequestError(
                 code=GROUP_INVITE_TOKEN_REGENERATION_FAILED,
@@ -105,7 +105,7 @@ class GroupInviteService(BaseService):
 
         return RegenerateTokenResponse(invite_token=new_token)
 
-    def preview_group(self, invite_token: str) -> PreviewGroupResponse:
+    async def preview_group(self, invite_token: str) -> PreviewGroupResponse:
         """Preview group information by invite token without joining.
 
         Args:
@@ -120,7 +120,7 @@ class GroupInviteService(BaseService):
         logger.debug('Previewing group with invite token', extra={'invite_token': invite_token})
 
         # Find the group by invite token
-        group = self.group_repo.get_group_by_invite_token(invite_token)
+        group = await self.group_repo.get_group_by_invite_token(invite_token)
         if not group:
             logger.warning(
                 'Invalid invite token used for preview', extra={'invite_token': invite_token}
@@ -137,7 +137,7 @@ class GroupInviteService(BaseService):
         )
 
     @transactional('join group')
-    def join_group(self, invite_token: str, user: User) -> JoinGroupResponse:
+    async def join_group(self, invite_token: str, user: User) -> JoinGroupResponse:
         """Join a group using an invite token.
 
         This operation is atomic - validation, member addition, and event broadcast succeed together or all roll back.
@@ -158,9 +158,9 @@ class GroupInviteService(BaseService):
             extra={'user_id': str(user.id), 'invite_token': invite_token},
         )
 
-        group = self._validate_group_invite(invite_token, user)
-        self._check_membership_constraints(user, group)
-        self._add_member_to_group_db(user, group)
+        group = await self._validate_group_invite(invite_token, user)
+        await self._check_membership_constraints(user, group)
+        await self._add_member_to_group_db(user, group)
         self._broadcast_member_joined(user, group)
 
         logger.info(
@@ -170,7 +170,7 @@ class GroupInviteService(BaseService):
 
         return JoinGroupResponse(code=GROUP_JOINED, group_id=str(group.id), group_name=group.name)
 
-    def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
+    async def toggle_joining_allowed(self, group_id: str, user: User) -> ToggleJoiningResponse:
         """Toggle whether a group allows joining via invite link (admin only).
 
         Args:
@@ -189,14 +189,14 @@ class GroupInviteService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a group admin
-        if not self.group_repo.is_user_group_admin(group_uuid, user.id):
+        if not await self.group_repo.is_user_group_admin(group_uuid, user.id):
             logger.warning(
                 'Non-admin user attempted to toggle joining allowed',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
@@ -209,7 +209,7 @@ class GroupInviteService(BaseService):
 
         # Toggle the setting
         new_value = not group.is_joining_allowed
-        updated_group = self.group_repo.update_group_joining_allowed(group_uuid, new_value)
+        updated_group = await self.group_repo.update_group_joining_allowed(group_uuid, new_value)
         if not updated_group:
             raise BadRequestError(
                 code=GROUP_JOINING_SETTING_UPDATE_FAILED,
@@ -228,7 +228,7 @@ class GroupInviteService(BaseService):
 
         return ToggleJoiningResponse(is_joining_allowed=new_value)
 
-    def _validate_group_invite(self, invite_token: str, user: User) -> Group:
+    async def _validate_group_invite(self, invite_token: str, user: User) -> Group:
         """Validate invite token and check if joining is allowed.
 
         Args:
@@ -242,7 +242,7 @@ class GroupInviteService(BaseService):
             NotFoundError: If group not found
             ForbiddenError: If joining is disabled
         """
-        group = self.group_repo.get_group_by_invite_token(invite_token)
+        group = await self.group_repo.get_group_by_invite_token(invite_token)
         if not group:
             logger.warning(
                 'Invalid invite token used for join',
@@ -265,7 +265,7 @@ class GroupInviteService(BaseService):
 
         return group
 
-    def _check_membership_constraints(self, user: User, group: Group) -> None:
+    async def _check_membership_constraints(self, user: User, group: Group) -> None:
         """Check user/group limits and ensure user is not already a member.
 
         Args:
@@ -275,7 +275,7 @@ class GroupInviteService(BaseService):
         Raises:
             BadRequestError: If constraints violated
         """
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
 
         if any(g.id == group.id for g in user_groups):
             logger.info(
@@ -312,7 +312,7 @@ class GroupInviteService(BaseService):
                 current_members=len(group.members),
             )
 
-    def _add_member_to_group_db(self, user: User, group: Group) -> None:
+    async def _add_member_to_group_db(self, user: User, group: Group) -> None:
         """Add user to the group in the database.
 
         Args:
@@ -322,7 +322,7 @@ class GroupInviteService(BaseService):
         Raises:
             BadRequestError: If database operation fails
         """
-        success = self.group_repo.add_group_member(group.id, user)
+        success = await self.group_repo.add_group_member(group.id, user)
         if not success:
             logger.error(
                 'Failed to add user to group',

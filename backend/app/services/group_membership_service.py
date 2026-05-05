@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import SuccessResponse
 from app.api.websocket_manager import manager
@@ -47,10 +47,10 @@ class GroupMembershipService(BaseService):
     - Promoting members to admin
     - Broadcasting membership changes
 
-    Separate from queries and invites to maintain single responsibility.
+    Separate from queries and membership to maintain single responsibility.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.bid_repo = get_bid_repository(db)
@@ -58,7 +58,7 @@ class GroupMembershipService(BaseService):
         self.run_repo = get_run_repository(db)
         self.user_repo = get_user_repository(db)
 
-    def remove_member(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
+    async def remove_member(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
         """Remove a member from a group (admin only).
 
         This operation is wrapped in a transaction to ensure atomicity:
@@ -81,16 +81,18 @@ class GroupMembershipService(BaseService):
             ForbiddenError: If user is not a group admin or trying to remove admin
         """
         # Validate outside transaction to fail fast on bad input
-        group_uuid, member_uuid = self._validate_member_removal_request(group_id, member_id, user)
+        group_uuid, member_uuid = await self._validate_member_removal_request(
+            group_id, member_id, user
+        )
 
         # Wrap all database modifications in a transaction
-        with transaction(self.db, 'remove group member and cancel runs'):
-            affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(
+        async with transaction(self.db, 'remove group member and cancel runs'):
+            affected_runs, cancelled_runs = await self._find_and_cancel_affected_runs(
                 group_uuid, member_uuid
             )
 
         # Broadcast notifications after successful transaction
-        self._broadcast_removal_notifications(
+        await self._broadcast_removal_notifications(
             group_uuid, member_uuid, affected_runs, cancelled_runs, is_self_removal=False
         )
 
@@ -112,7 +114,7 @@ class GroupMembershipService(BaseService):
             },
         )
 
-    def leave_group(self, group_id: str, user: User) -> SuccessResponse:
+    async def leave_group(self, group_id: str, user: User) -> SuccessResponse:
         """Leave a group.
 
         This operation is similar to remove_member but initiated by the user themselves:
@@ -134,14 +136,14 @@ class GroupMembershipService(BaseService):
         """
         group_uuid = validate_uuid(group_id, 'Group')
 
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
         if not any(m['id'] == str(user.id) for m in members):
             raise BadRequestError(
                 code=NOT_A_GROUP_MEMBER,
@@ -153,7 +155,7 @@ class GroupMembershipService(BaseService):
         admin_count = sum(1 for m in members if m['is_group_admin'])
 
         # Prevent the last admin from leaving
-        if self.group_repo.is_user_group_admin(group_uuid, user.id) and admin_count <= 1:
+        if await self.group_repo.is_user_group_admin(group_uuid, user.id) and admin_count <= 1:
             raise ForbiddenError(
                 code=LAST_ADMIN_CANNOT_LEAVE,
                 message='You are the only admin. Please promote another member to admin before leaving.',
@@ -161,11 +163,13 @@ class GroupMembershipService(BaseService):
             )
 
         # Wrap all database modifications in a transaction
-        with transaction(self.db, 'leave group and cancel runs'):
-            affected_runs, cancelled_runs = self._find_and_cancel_affected_runs(group_uuid, user.id)
+        async with transaction(self.db, 'leave group and cancel runs'):
+            affected_runs, cancelled_runs = await self._find_and_cancel_affected_runs(
+                group_uuid, user.id
+            )
 
         # Broadcast notifications after successful transaction
-        self._broadcast_removal_notifications(
+        await self._broadcast_removal_notifications(
             group_uuid, user.id, affected_runs, cancelled_runs, is_self_removal=True
         )
 
@@ -183,7 +187,9 @@ class GroupMembershipService(BaseService):
             details={'group_id': group_id},
         )
 
-    def promote_member_to_admin(self, group_id: str, member_id: str, user: User) -> SuccessResponse:
+    async def promote_member_to_admin(
+        self, group_id: str, member_id: str, user: User
+    ) -> SuccessResponse:
         """Promote a member to group admin (admin only).
 
         Args:
@@ -202,14 +208,14 @@ class GroupMembershipService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
         member_uuid = validate_uuid(member_id, 'Member')
 
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if requester is admin
-        if not self.group_repo.is_user_group_admin(group_uuid, user.id):
+        if not await self.group_repo.is_user_group_admin(group_uuid, user.id):
             logger.warning(
                 'Non-admin user attempted to promote member',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
@@ -221,7 +227,7 @@ class GroupMembershipService(BaseService):
             )
 
         # Check if member exists in group
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
         member_exists = any(m['id'] == str(member_uuid) for m in members)
 
         if not member_exists:
@@ -233,7 +239,7 @@ class GroupMembershipService(BaseService):
             )
 
         # Check if member is already an admin
-        if self.group_repo.is_user_group_admin(group_uuid, member_uuid):
+        if await self.group_repo.is_user_group_admin(group_uuid, member_uuid):
             raise BadRequestError(
                 code=USER_ALREADY_GROUP_ADMIN,
                 message='User is already a group admin',
@@ -242,7 +248,7 @@ class GroupMembershipService(BaseService):
             )
 
         # Promote the member
-        success = self.group_repo.set_group_member_admin(group_uuid, member_uuid, True)
+        success = await self.group_repo.set_group_member_admin(group_uuid, member_uuid, True)
 
         if not success:
             raise BadRequestError(
@@ -290,7 +296,7 @@ class GroupMembershipService(BaseService):
             },
         )
 
-    def _validate_member_removal_request(
+    async def _validate_member_removal_request(
         self, group_id: str, member_id: str, user: User
     ) -> tuple[UUID, UUID]:
         """Validate member removal request and return UUIDs.
@@ -314,13 +320,13 @@ class GroupMembershipService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
         member_uuid = validate_uuid(member_id, 'Member')
 
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
-        if not self.group_repo.is_user_group_admin(group_uuid, user.id):
+        if not await self.group_repo.is_user_group_admin(group_uuid, user.id):
             logger.warning(
                 'Non-admin user attempted to remove member',
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
@@ -331,7 +337,7 @@ class GroupMembershipService(BaseService):
                 group_id=str(group_uuid),
             )
 
-        if self.group_repo.is_user_group_admin(group_uuid, member_uuid):
+        if await self.group_repo.is_user_group_admin(group_uuid, member_uuid):
             raise ForbiddenError(
                 code=CANNOT_REMOVE_GROUP_ADMIN,
                 message='Cannot remove group admins',
@@ -340,7 +346,7 @@ class GroupMembershipService(BaseService):
             )
 
         # Verify member exists in group
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
         if not any(m['id'] == str(member_uuid) for m in members):
             raise BadRequestError(
                 code=NOT_A_GROUP_MEMBER,
@@ -351,7 +357,7 @@ class GroupMembershipService(BaseService):
 
         return group_uuid, member_uuid
 
-    def _find_and_cancel_affected_runs(
+    async def _find_and_cancel_affected_runs(
         self, group_id: UUID, member_id: UUID
     ) -> tuple[list[str], list[str]]:
         """Remove member from group and find/cancel affected runs.
@@ -370,7 +376,7 @@ class GroupMembershipService(BaseService):
             BadRequestError: If removal fails
         """
         # First, remove the member from the group
-        success = self.group_repo.remove_group_member(group_id, member_id)
+        success = await self.group_repo.remove_group_member(group_id, member_id)
         if not success:
             raise BadRequestError(
                 code=GROUP_MEMBER_REMOVAL_FAILED,
@@ -380,12 +386,12 @@ class GroupMembershipService(BaseService):
             )
 
         # Now handle run participations and cancellations
-        runs = self.run_repo.get_runs_by_group(group_id)
+        runs = await self.run_repo.get_runs_by_group(group_id)
         cancelled_runs = []
         affected_runs = []
 
         for run in runs:
-            participations = self.run_repo.get_run_participations(run.id)
+            participations = await self.run_repo.get_run_participations(run.id)
 
             # Mark removed user's participation as removed and delete their bids from active runs
             user_participated = False
@@ -404,9 +410,9 @@ class GroupMembershipService(BaseService):
                     run.state not in [RunState.COMPLETED, RunState.CANCELLED]
                     and user_participation_id
                 ):
-                    bids = self.bid_repo.get_bids_by_participation(user_participation_id)
+                    bids = await self.bid_repo.get_bids_by_participation(user_participation_id)
                     for bid in bids:
-                        self.bid_repo.delete_bid(user_participation_id, bid.product_id)
+                        await self.bid_repo.delete_bid(user_participation_id, bid.product_id)
 
                     logger.info(
                         f'Deleted {len(bids)} bids from active run',
@@ -425,7 +431,7 @@ class GroupMembershipService(BaseService):
 
         return affected_runs, cancelled_runs
 
-    def _broadcast_removal_notifications(
+    async def _broadcast_removal_notifications(
         self,
         group_id: UUID,
         member_id: UUID,
@@ -443,7 +449,7 @@ class GroupMembershipService(BaseService):
             is_self_removal: Whether this is a self-removal (leave) vs admin removal
         """
         # Get member info for the notification
-        member = self.user_repo.get_user_by_id(member_id)
+        member = await self.user_repo.get_user_by_id(member_id)
         member_name = member.name if member else 'Unknown'
 
         # Emit domain event

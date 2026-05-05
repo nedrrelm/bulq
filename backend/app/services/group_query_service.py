@@ -1,6 +1,6 @@
 """Service for group read-only query operations."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import GroupDetailResponse, GroupResponse, RunResponse, RunSummary
 from app.core.error_codes import GROUP_NOT_FOUND, NOT_GROUP_MEMBER
@@ -32,7 +32,7 @@ class GroupQueryService(BaseService):
     All methods are read-only and do not modify state.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.group_repo = get_group_repository(db)
@@ -40,7 +40,7 @@ class GroupQueryService(BaseService):
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
 
-    def _get_run_store_name(self, run) -> str:
+    async def _get_run_store_name(self, run) -> str:
         """Get store name from run, handling both database and memory repositories.
 
         For database repository: Uses already-joined store relationship
@@ -60,9 +60,9 @@ class GroupQueryService(BaseService):
             pass
 
         # Fallback: fetch store by ID (for memory repository or unjoined data)
-        return self._get_store_name(run.store_id)
+        return await self._get_store_name(run.store_id)
 
-    def get_user_groups(self, user: User) -> list[GroupResponse]:
+    async def get_user_groups(self, user: User) -> list[GroupResponse]:
         """Get all groups the user is a member of with run counts.
 
         Args:
@@ -74,7 +74,7 @@ class GroupQueryService(BaseService):
         logger.debug('Fetching groups for user', extra={'user_id': str(user.id)})
 
         # Get groups where the user is a member
-        groups = self.user_repo.get_user_groups(user)
+        groups = await self.user_repo.get_user_groups(user)
 
         # State ordering for sorting (reverse order: distributing > adjusting > shopping > confirmed > active > planning)
         state_order = {
@@ -90,7 +90,7 @@ class GroupQueryService(BaseService):
         group_responses = []
         for group in groups:
             # Get runs for this group
-            runs = self.run_repo.get_runs_by_group(group.id)
+            runs = await self.run_repo.get_runs_by_group(group.id)
             active_runs = [
                 run for run in runs if run.state not in (RunState.COMPLETED, RunState.CANCELLED)
             ]
@@ -105,7 +105,7 @@ class GroupQueryService(BaseService):
             active_runs_summary = [
                 RunSummary(
                     id=str(run.id),
-                    store_name=self._get_run_store_name(run),
+                    store_name=await self._get_run_store_name(run),
                     state=run.state,
                 )
                 for run in sorted_active_runs
@@ -128,7 +128,7 @@ class GroupQueryService(BaseService):
 
         return group_responses
 
-    def get_group_details(self, group_id: str, user: User) -> GroupDetailResponse:
+    async def get_group_details(self, group_id: str, user: User) -> GroupDetailResponse:
         """Get details of a specific group with authorization check.
 
         Args:
@@ -147,14 +147,14 @@ class GroupQueryService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member of the group
-        if not self._is_group_member(user, group_uuid):
+        if not await self._is_group_member(user, group_uuid):
             logger.warning(
                 "User attempted to access group they're not a member of",
                 extra={'user_id': str(user.id), 'group_id': str(group_uuid)},
@@ -166,8 +166,8 @@ class GroupQueryService(BaseService):
             )
 
         # Get members and admin status
-        members = self.group_repo.get_group_members_with_admin_status(group_uuid)
-        is_current_user_admin = self.group_repo.is_user_group_admin(group_uuid, user.id)
+        members = await self.group_repo.get_group_members_with_admin_status(group_uuid)
+        is_current_user_admin = await self.group_repo.is_user_group_admin(group_uuid, user.id)
 
         return GroupDetailResponse(
             id=str(group.id),
@@ -178,7 +178,7 @@ class GroupQueryService(BaseService):
             is_current_user_admin=is_current_user_admin,
         )
 
-    def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
+    async def get_group_members(self, group_id: str, user: User) -> GroupDetailResponse:
         """Get members of a specific group (alias for get_group_details).
 
         Args:
@@ -193,9 +193,9 @@ class GroupQueryService(BaseService):
             NotFoundError: If group doesn't exist
             ForbiddenError: If user is not a member of the group
         """
-        return self.get_group_details(group_id, user)
+        return await self.get_group_details(group_id, user)
 
-    def get_group_runs(self, group_id: str, user: User) -> list[RunResponse]:
+    async def get_group_runs(self, group_id: str, user: User) -> list[RunResponse]:
         """Get all runs for a specific group with authorization check.
 
         Args:
@@ -214,14 +214,14 @@ class GroupQueryService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member of the group
-        self._verify_group_membership(
+        await self._verify_group_membership(
             user,
             group_uuid,
             NOT_GROUP_MEMBER,
@@ -233,13 +233,13 @@ class GroupQueryService(BaseService):
         logger.debug(
             'Fetching runs for group', extra={'user_id': str(user.id), 'group_id': str(group_uuid)}
         )
-        runs = self.run_repo.get_runs_by_group(group_uuid)
+        runs = await self.run_repo.get_runs_by_group(group_uuid)
 
         # Convert to response format with store names
         run_responses = []
         for run in runs:
             # Get leader from participations
-            participations = self.run_repo.get_run_participations(run.id)
+            participations = await self.run_repo.get_run_participations(run.id)
             leader = next((p for p in participations if p.is_leader), None)
             leader_name = leader.user.name if leader and leader.user else 'Unknown'
             leader_is_removed = leader.is_removed if leader else False
@@ -249,7 +249,7 @@ class GroupQueryService(BaseService):
                     id=str(run.id),
                     group_id=str(run.group_id),
                     store_id=str(run.store_id),
-                    store_name=self._get_run_store_name(run),
+                    store_name=await self._get_run_store_name(run),
                     state=run.state,
                     leader_name=leader_name,
                     leader_is_removed=leader_is_removed,
@@ -269,7 +269,7 @@ class GroupQueryService(BaseService):
 
         return run_responses
 
-    def get_group_completed_cancelled_runs(
+    async def get_group_completed_cancelled_runs(
         self, group_id: str, user: User, limit: int = 10, offset: int = 0
     ) -> list[RunResponse]:
         """Get completed and cancelled runs for a group (paginated).
@@ -292,14 +292,14 @@ class GroupQueryService(BaseService):
         group_uuid = validate_uuid(group_id, 'Group')
 
         # Get the group
-        group = self.group_repo.get_group_by_id(group_uuid)
+        group = await self.group_repo.get_group_by_id(group_uuid)
         if not group:
             raise NotFoundError(
                 code=GROUP_NOT_FOUND, message='Group not found', group_id=str(group_uuid)
             )
 
         # Check if user is a member of the group
-        self._verify_group_membership(
+        await self._verify_group_membership(
             user,
             group_uuid,
             NOT_GROUP_MEMBER,
@@ -317,13 +317,13 @@ class GroupQueryService(BaseService):
                 'offset': offset,
             },
         )
-        runs = self.run_repo.get_completed_cancelled_runs_by_group(group_uuid, limit, offset)
+        runs = await self.run_repo.get_completed_cancelled_runs_by_group(group_uuid, limit, offset)
 
         # Convert to response format with store names
         run_responses = []
         for run in runs:
             # Get leader from participations
-            participations = self.run_repo.get_run_participations(run.id)
+            participations = await self.run_repo.get_run_participations(run.id)
             leader = next((p for p in participations if p.is_leader), None)
             leader_name = leader.user.name if leader and leader.user else 'Unknown'
 
@@ -332,7 +332,7 @@ class GroupQueryService(BaseService):
                     id=str(run.id),
                     group_id=str(run.group_id),
                     store_id=str(run.store_id),
-                    store_name=self._get_run_store_name(run),
+                    store_name=await self._get_run_store_name(run),
                     state=run.state,
                     leader_name=leader_name,
                     leader_is_removed=False,

@@ -14,48 +14,6 @@
    - Note: This needs more design work to determine exact workflow and permissions
 
 
-### Security & Infrastructure
-
-
-9. **Test DatabaseRepository** (2 days) - **CRITICAL**
-   - DatabaseRepository used in production but has NO tests
-   - Only MemoryRepository is tested
-   - File: `tests/test_repository.py:228-239` has placeholder
-
-
-10. **Auth library evaluation** — fastapi-users (email-only, maintenance mode), fastapi-login (JWT-only, no server-side sessions), authlib (OAuth only) all evaluated and rejected. Current custom auth (username + cookie + Redis sessions) is more capable than any available library. Consider targeted improvements instead: rate limiting on login, session invalidation on password change, session rotation.
-
-11. Convert to async
-
----
-
-## 🔧 Technical Debt & Code Quality
-
-### Performance Optimization
-
-2. **Add monitoring and metrics** (2 days)
-   - No Prometheus metrics
-   - No application performance monitoring
-   - Solution: Add `prometheus-fastapi-instrumentator`
-   - Endpoints: `/metrics` for Prometheus scraping
-
-3. **Database connection pool monitoring** (2 hours)
-   - Logs every checkout/checkin at DEBUG level
-   - Could impact performance under load
-   - Solution: Add sampling or periodic stats
-   - File: `app/infrastructure/database.py:38-97`
-
-4. **Parallelize WebSocket broadcasting** (1 day)
-   - Broadcasts to room connections sequentially
-   - Could be parallelized for large rooms
-   - File: `app/api/websocket_manager.py:30-49`
-
-5. **Optimize frontend bundle size** (1 day)
-   - Review and implement code splitting
-   - Lazy load routes
-   - Analyze with `vite-bundle-visualizer`
-
-
 ## 🔧 Future Enhancements
 
 

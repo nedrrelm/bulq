@@ -19,7 +19,7 @@ async def get_distribution_data(
 ):
     """Get distribution data aggregated by user."""
     run_uuid = validate_uuid(run_id, 'Run')
-    return service.get_distribution_summary(run_uuid, current_user)
+    return await service.get_distribution_summary(run_uuid, current_user)
 
 
 @router.post('/{run_id}/pickup/{bid_id}', response_model=SuccessResponse)
@@ -33,7 +33,7 @@ async def mark_picked_up(
     run_uuid = validate_uuid(run_id, 'Run')
     bid_uuid = validate_uuid(bid_id, 'Bid')
 
-    result = service.mark_picked_up(run_uuid, bid_uuid, current_user)
+    result = await service.mark_picked_up(run_uuid, bid_uuid, current_user)
     return result
 
 
@@ -43,5 +43,4 @@ async def complete_distribution(
 ):
     """Complete distribution - transition from distributing to completed state (leader only)."""
     run_uuid = validate_uuid(run_id, 'Run')
-    # Complete distribution via service (events are emitted by service)
-    return service.complete_distribution(run_uuid, current_user)
+    return await service.complete_distribution(run_uuid, current_user)

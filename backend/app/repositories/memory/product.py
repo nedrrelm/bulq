@@ -15,7 +15,7 @@ class MemoryProductRepository(AbstractProductRepository):
     def __init__(self, storage: MemoryStorage):
         self.storage = storage
 
-    def get_products_by_store(self, store_id: UUID) -> list[Product]:
+    async def get_products_by_store(self, store_id: UUID) -> list[Product]:
         """Get all products for a store (via product availabilities)."""
         product_ids = {
             avail.product_id
@@ -24,7 +24,7 @@ class MemoryProductRepository(AbstractProductRepository):
         }
         return [product for product in self.storage.products.values() if product.id in product_ids]
 
-    def search_products(self, query: str, limit: int = 50, offset: int = 0) -> list[Product]:
+    async def search_products(self, query: str, limit: int = 50, offset: int = 0) -> list[Product]:
         query_lower = query.lower()
         results = [
             product
@@ -33,10 +33,10 @@ class MemoryProductRepository(AbstractProductRepository):
         ]
         return results[offset : offset + limit]
 
-    def get_product_by_id(self, product_id: UUID) -> Product | None:
+    async def get_product_by_id(self, product_id: UUID) -> Product | None:
         return self.storage.products.get(product_id)
 
-    def create_product(
+    async def create_product(
         self, name: str, brand: str | None = None, unit: str | None = None
     ) -> Product:
         """Create a new product (store-agnostic)."""
@@ -52,10 +52,10 @@ class MemoryProductRepository(AbstractProductRepository):
         self.storage.products[product.id] = product
         return product
 
-    def get_all_products(self) -> list[Product]:
+    async def get_all_products(self) -> list[Product]:
         return list(self.storage.products.values())
 
-    def update_product(self, product_id: UUID, **fields) -> Product | None:
+    async def update_product(self, product_id: UUID, **fields) -> Product | None:
         """Update product fields. Returns updated product or None if not found."""
         product = self.storage.products.get(product_id)
         if not product:
@@ -67,7 +67,7 @@ class MemoryProductRepository(AbstractProductRepository):
 
         return product
 
-    def delete_product(self, product_id: UUID) -> bool:
+    async def delete_product(self, product_id: UUID) -> bool:
         """Delete a product. Returns True if deleted, False if not found."""
         if product_id not in self.storage.products:
             return False
@@ -75,7 +75,7 @@ class MemoryProductRepository(AbstractProductRepository):
         del self.storage.products[product_id]
         return True
 
-    def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
+    async def get_product_availabilities(self, product_id: UUID, store_id: UUID = None) -> list:
         """Get product availabilities, optionally filtered by store."""
         results = []
         for avail in self.storage.product_availabilities.values():
@@ -83,7 +83,7 @@ class MemoryProductRepository(AbstractProductRepository):
                 results.append(avail)
         return results
 
-    def get_availability_by_product_and_store(
+    async def get_availability_by_product_and_store(
         self, product_id: UUID, store_id: UUID
     ) -> ProductAvailability | None:
         """Get the most recent product availability by product and store."""
@@ -97,7 +97,7 @@ class MemoryProductRepository(AbstractProductRepository):
 
         return sorted(matches, key=lambda x: x.created_at if x.created_at else '', reverse=True)[0]
 
-    def create_product_availability(
+    async def create_product_availability(
         self,
         product_id: UUID,
         store_id: UUID,
@@ -121,7 +121,7 @@ class MemoryProductRepository(AbstractProductRepository):
         self.storage.product_availabilities[availability.id] = availability
         return availability
 
-    def update_product_availability_price(
+    async def update_product_availability_price(
         self, availability_id: UUID, price: float, notes: str = ''
     ) -> ProductAvailability:
         """Update the price for an existing product availability."""
@@ -134,7 +134,7 @@ class MemoryProductRepository(AbstractProductRepository):
 
         return availability
 
-    def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_product_bids(self, old_product_id: UUID, new_product_id: UUID) -> int:
         """Update all product bids from old product to new product. Returns count of updated records."""
         count = 0
         for bid in self.storage.bids.values():
@@ -143,7 +143,9 @@ class MemoryProductRepository(AbstractProductRepository):
                 count += 1
         return count
 
-    def bulk_update_product_availabilities(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_product_availabilities(
+        self, old_product_id: UUID, new_product_id: UUID
+    ) -> int:
         """Update all product availabilities from old product to new product. Returns count of updated records."""
         count = 0
         for avail in self.storage.product_availabilities.values():
@@ -152,7 +154,9 @@ class MemoryProductRepository(AbstractProductRepository):
                 count += 1
         return count
 
-    def bulk_update_shopping_list_items(self, old_product_id: UUID, new_product_id: UUID) -> int:
+    async def bulk_update_shopping_list_items(
+        self, old_product_id: UUID, new_product_id: UUID
+    ) -> int:
         """Update all shopping list items from old product to new product. Returns count of updated records."""
         count = 0
         for item in self.storage.shopping_list_items.values():
@@ -161,6 +165,6 @@ class MemoryProductRepository(AbstractProductRepository):
                 count += 1
         return count
 
-    def count_product_bids(self, product_id: UUID) -> int:
+    async def count_product_bids(self, product_id: UUID) -> int:
         """Count how many bids reference this product."""
         return sum(1 for bid in self.storage.bids.values() if bid.product_id == product_id)

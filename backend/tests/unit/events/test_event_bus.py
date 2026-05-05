@@ -124,7 +124,6 @@ class TestEmission:
         """Create fresh EventBus instance for each test."""
         return EventBus()
 
-    @pytest.mark.asyncio
     async def test_emit_calls_subscribed_handlers(self, bus):
         """Test that emit() calls subscribed handlers."""
         handler_called = asyncio.Event()
@@ -139,7 +138,6 @@ class TestEmission:
             # Verify create_background_task was called
             assert mock_create_task.call_count == 1
 
-    @pytest.mark.asyncio
     async def test_handlers_receive_correct_event_data(self, bus):
         """Test that handlers receive correct event data."""
         received_events = []
@@ -164,7 +162,6 @@ class TestEmission:
         assert received_events[0].test_id == 'test-123'
         assert received_events[0].test_value == 99
 
-    @pytest.mark.asyncio
     async def test_multiple_handlers_all_called_for_same_event(self, bus):
         """Test that all handlers are called when event is emitted."""
         call_counts = {'h1': 0, 'h2': 0, 'h3': 0}
@@ -228,7 +225,6 @@ class TestEmission:
             # No handlers, so create_background_task shouldn't be called
             assert mock_create_task.call_count == 0
 
-    @pytest.mark.asyncio
     async def test_async_handlers_are_executed(self, bus):
         """Test that async handlers are properly executed."""
         execution_flag = {'executed': False}
@@ -292,7 +288,6 @@ class TestHandlerExecution:
             assert 'task_name' in call_args.kwargs
             assert call_args.kwargs['task_name'] == 'test_handler_CustomTestEvent'
 
-    @pytest.mark.asyncio
     async def test_handler_exceptions_dont_crash_emitter(self, bus):
         """Test that handler exceptions are caught and logged."""
 
@@ -316,7 +311,6 @@ class TestHandlerExecution:
 
             # Test passes if no exception is raised
 
-    @pytest.mark.asyncio
     async def test_multiple_events_emitted_in_sequence(self, bus):
         """Test that multiple events can be emitted in sequence."""
         received_events = []
@@ -347,7 +341,6 @@ class TestHandlerExecution:
         assert received_events[1].test_id == '2'
         assert received_events[2].test_id == '3'
 
-    @pytest.mark.asyncio
     async def test_handler_receives_full_event_object_with_all_fields(self, bus):
         """Test that handler receives complete event object."""
         received_event = None
@@ -511,7 +504,6 @@ class TestEdgeCases:
             # If it requires __name__, that's acceptable behavior
             pass
 
-    @pytest.mark.asyncio
     async def test_event_with_complex_data_types(self, bus):
         """Test events with complex nested data."""
         from uuid import uuid4

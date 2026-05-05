@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.error_codes import NOT_GROUP_MEMBER, NOT_RUN_PARTICIPANT, PARTICIPATION_NOT_FOUND
 from app.core.exceptions import ForbiddenError, NotFoundError
@@ -16,7 +16,7 @@ class BaseService:
     using the repository factory functions from app.repositories.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with database session.
 
         Args:
@@ -24,7 +24,7 @@ class BaseService:
         """
         self.db = db
 
-    def _is_group_member(self, user: User, target_group_id: UUID) -> bool:
+    async def _is_group_member(self, user: User, target_group_id: UUID) -> bool:
         """Check if user is a member of a group.
 
         Args:
@@ -40,10 +40,10 @@ class BaseService:
         if not hasattr(self, 'user_repo'):
             raise AttributeError('Service must have user_repo to check group membership')
 
-        user_groups = self.user_repo.get_user_groups(user)
+        user_groups = await self.user_repo.get_user_groups(user)
         return any(g.id == target_group_id for g in user_groups)
 
-    def _verify_group_membership(
+    async def _verify_group_membership(
         self,
         user: User,
         target_group_id: UUID,
@@ -63,10 +63,10 @@ class BaseService:
         Raises:
             ForbiddenError: If user is not a member of the group
         """
-        if not self._is_group_member(user, target_group_id):
+        if not await self._is_group_member(user, target_group_id):
             raise ForbiddenError(code=error_code, message=error_message, **error_context)
 
-    def _verify_run_access(
+    async def _verify_run_access(
         self,
         user: User,
         run: Run,
@@ -86,11 +86,11 @@ class BaseService:
         Raises:
             ForbiddenError: If user doesn't have access to the run
         """
-        self._verify_group_membership(
+        await self._verify_group_membership(
             user, run.group_id, error_code, error_message, **error_context
         )
 
-    def _get_store_name(self, store_id: UUID) -> str:
+    async def _get_store_name(self, store_id: UUID) -> str:
         """Get store name by ID, returning 'Unknown Store' if not found.
 
         Args:
@@ -105,7 +105,7 @@ class BaseService:
         if not hasattr(self, 'store_repo'):
             raise AttributeError('Service must have store_repo to get store name')
 
-        store = self.store_repo.get_store_by_id(store_id)
+        store = await self.store_repo.get_store_by_id(store_id)
         return store.name if store else 'Unknown Store'
 
     def _is_leader_or_helper(self, participation) -> bool:
@@ -119,7 +119,7 @@ class BaseService:
         """
         return participation.is_leader or participation.is_helper
 
-    def _get_user_participation(self, user_id: UUID, run_id: UUID, run_id_str: str = ''):
+    async def _get_user_participation(self, user_id: UUID, run_id: UUID, run_id_str: str = ''):
         """Get user's participation in a run.
 
         Args:
@@ -137,7 +137,7 @@ class BaseService:
         if not hasattr(self, 'run_repo'):
             raise AttributeError('Service must have run_repo to get participation')
 
-        participation = self.run_repo.get_participation(user_id, run_id)
+        participation = await self.run_repo.get_participation(user_id, run_id)
         if not participation:
             raise NotFoundError(
                 code=PARTICIPATION_NOT_FOUND,

@@ -1,11 +1,11 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.websocket_manager import manager
 from app.infrastructure.auth import get_session
-from app.infrastructure.database import get_db
+from app.infrastructure.database import AsyncSessionLocal, get_db
 from app.infrastructure.request_context import get_logger
 from app.repositories import get_group_repository, get_run_repository, get_user_repository
 
@@ -14,18 +14,19 @@ logger = get_logger(__name__)
 
 
 async def get_current_user_ws(
-    session_token: str | None = Cookie(None, alias='session_token'), db: Session = Depends(get_db)
+    session_token: str | None = Cookie(None, alias='session_token'),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get current user from WebSocket connection (via cookie)."""
     if not session_token:
         raise HTTPException(status_code=401, detail='Not authenticated')
 
-    session_data = get_session(session_token)
+    session_data = await get_session(session_token)
     if not session_data:
         raise HTTPException(status_code=401, detail='Invalid or expired session')
 
     user_repo = get_user_repository(db)
-    user = user_repo.get_user_by_id(session_data['user_id'])
+    user = await user_repo.get_user_by_id(session_data['user_id'])
     if not user:
         raise HTTPException(status_code=401, detail='User not found')
 
@@ -50,7 +51,7 @@ def _extract_session_token(websocket: WebSocket) -> str | None:
 
 
 async def _authenticate_ws_user(
-    websocket: WebSocket, db: Session, log_extra: dict
+    websocket: WebSocket, db: AsyncSession, log_extra: dict
 ) -> object | None:
     """Authenticate a WebSocket connection and return the user, or close and return None."""
     session_token = _extract_session_token(websocket)
@@ -60,7 +61,7 @@ async def _authenticate_ws_user(
         await websocket.close(code=1008, reason='Not authenticated - no session token')
         return None
 
-    session_data = get_session(session_token)
+    session_data = await get_session(session_token)
     if not session_data:
         logger.warning('WebSocket auth failed: Invalid session', extra=log_extra)
         await websocket.close(code=1008, reason='Invalid or expired session')
@@ -71,7 +72,7 @@ async def _authenticate_ws_user(
     if isinstance(user_id, str):
         user_id = UUID(user_id)
 
-    user = user_repo.get_user_by_id(user_id)
+    user = await user_repo.get_user_by_id(user_id)
     if not user:
         logger.warning(
             'WebSocket auth failed: User not found',
@@ -106,10 +107,7 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
     """WebSocket endpoint for group-level updates (new runs, run state changes)."""
     await websocket.accept()
 
-    from app.infrastructure.database import SessionLocal
-
-    db = SessionLocal()
-    try:
+    async with AsyncSessionLocal() as db:
         log_extra = {'endpoint': 'group', 'group_id': group_id}
         logger.debug('WebSocket connection attempt', extra=log_extra)
 
@@ -119,13 +117,13 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
 
         group_id_uuid = UUID(group_id)
         group_repo = get_group_repository(db)
-        group = group_repo.get_group_by_id(group_id_uuid)
+        group = await group_repo.get_group_by_id(group_id_uuid)
         if not group:
             logger.warning('WebSocket auth failed: Group not found', extra=log_extra)
             await websocket.close(code=1008, reason='Group not found')
             return
 
-        user_groups = get_user_repository(db).get_user_groups(user)
+        user_groups = await get_user_repository(db).get_user_groups(user)
         if not any(g.id == group_id_uuid for g in user_groups):
             logger.warning('WebSocket auth failed: Not a member', extra=log_extra)
             await websocket.close(code=1008, reason='Not a member of this group')
@@ -133,8 +131,6 @@ async def websocket_group_endpoint(websocket: WebSocket, group_id: str) -> None:
 
         logger.info('WebSocket connected', extra={**log_extra, 'user_id': str(user.id)})
         await _ws_heartbeat_loop(websocket, f'group:{group_id}', log_extra)
-    finally:
-        db.close()
 
 
 @router.websocket('/ws/runs/{run_id}')
@@ -142,10 +138,7 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
     """WebSocket endpoint for run-level updates (bids, ready status, state changes)."""
     await websocket.accept()
 
-    from app.infrastructure.database import SessionLocal
-
-    db = SessionLocal()
-    try:
+    async with AsyncSessionLocal() as db:
         log_extra = {'endpoint': 'run', 'run_id': run_id}
 
         user = await _authenticate_ws_user(websocket, db, log_extra)
@@ -154,13 +147,13 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
         run_id_uuid = UUID(run_id)
         run_repo = get_run_repository(db)
-        run = run_repo.get_run_by_id(run_id_uuid)
+        run = await run_repo.get_run_by_id(run_id_uuid)
         if not run:
             logger.warning('WebSocket auth failed: Run not found', extra=log_extra)
             await websocket.close(code=1008, reason='Run not found')
             return
 
-        user_groups = get_user_repository(db).get_user_groups(user)
+        user_groups = await get_user_repository(db).get_user_groups(user)
         if not any(g.id == run.group_id for g in user_groups):
             logger.warning('WebSocket auth failed: Not authorized', extra=log_extra)
             await websocket.close(code=1008, reason='Not authorized for this run')
@@ -168,8 +161,6 @@ async def websocket_run_endpoint(websocket: WebSocket, run_id: str) -> None:
 
         logger.info('WebSocket connected', extra={**log_extra, 'user_id': str(user.id)})
         await _ws_heartbeat_loop(websocket, f'run:{run_id}', log_extra)
-    finally:
-        db.close()
 
 
 @router.websocket('/ws/user')
@@ -177,10 +168,7 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for user-level updates (notifications)."""
     await websocket.accept()
 
-    from app.infrastructure.database import SessionLocal
-
-    db = SessionLocal()
-    try:
+    async with AsyncSessionLocal() as db:
         log_extra = {'endpoint': 'user'}
 
         user = await _authenticate_ws_user(websocket, db, log_extra)
@@ -189,5 +177,3 @@ async def websocket_user_endpoint(websocket: WebSocket) -> None:
 
         logger.info('WebSocket connected', extra={**log_extra, 'user_id': str(user.id)})
         await _ws_heartbeat_loop(websocket, f'user:{user.id}', log_extra)
-    finally:
-        db.close()

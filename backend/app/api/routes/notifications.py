@@ -23,7 +23,7 @@ async def get_notifications(
     current_user: User = Depends(require_auth),
 ):
     """Get notifications for current user (paginated, max 100 per page)."""
-    return service.get_user_notifications(current_user, limit, offset)
+    return await service.get_user_notifications(current_user, limit, offset)
 
 
 @router.get('/unread', response_model=list[NotificationResponse])
@@ -31,7 +31,7 @@ async def get_unread_notifications(
     service: NotificationServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get all unread notifications for current user."""
-    return service.get_unread_notifications(current_user)
+    return await service.get_unread_notifications(current_user)
 
 
 @router.get('/count', response_model=UnreadCountResponse)
@@ -39,7 +39,7 @@ async def get_unread_count(
     service: NotificationServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get count of unread notifications for current user."""
-    count = service.get_unread_count(current_user)
+    count = await service.get_unread_count(current_user)
     return UnreadCountResponse(count=count)
 
 
@@ -50,7 +50,7 @@ async def mark_notification_read(
     current_user: User = Depends(require_auth),
 ):
     """Mark a notification as read."""
-    return service.mark_as_read(notification_id, current_user)
+    return await service.mark_as_read(notification_id, current_user)
 
 
 @router.post('/mark-all-read', response_model=MarkAllReadResponse)
@@ -58,4 +58,4 @@ async def mark_all_notifications_read(
     service: NotificationServiceDep, current_user: User = Depends(require_auth)
 ):
     """Mark all notifications as read for current user."""
-    return service.mark_all_as_read(current_user)
+    return await service.mark_all_as_read(current_user)

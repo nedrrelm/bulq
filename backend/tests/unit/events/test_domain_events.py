@@ -762,7 +762,6 @@ class TestIntegrationWithEventBus:
 
             assert mock_create_task.call_count == 1
 
-    @pytest.mark.asyncio
     async def test_event_data_integrity_through_subscription_emission_cycle(self, bus):
         """Test event data integrity through subscription/emission cycle."""
         import asyncio

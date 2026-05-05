@@ -50,7 +50,7 @@ async def cancel_reassignment(
     request_id: str, service: ReassignmentServiceDep, current_user: User = Depends(require_auth)
 ):
     """Cancel a pending reassignment request."""
-    return service.cancel_reassignment(validate_uuid(request_id, 'Request'), current_user)
+    return await service.cancel_reassignment(validate_uuid(request_id, 'Request'), current_user)
 
 
 @router.get('/my-requests', response_model=MyRequestsResponse)
@@ -58,7 +58,7 @@ async def get_my_requests(
     service: ReassignmentServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get all pending reassignment requests for the current user."""
-    return service.get_pending_requests_for_user(current_user.id)
+    return await service.get_pending_requests_for_user(current_user.id)
 
 
 @router.get('/run/{run_id}', response_model=RunRequestResponse)
@@ -66,5 +66,5 @@ async def get_run_request(
     run_id: str, service: ReassignmentServiceDep, current_user: User = Depends(require_auth)
 ):
     """Get pending reassignment request for a specific run."""
-    request = service.get_pending_request_for_run(validate_uuid(run_id, 'Run'))
+    request = await service.get_pending_request_for_run(validate_uuid(run_id, 'Run'))
     return RunRequestResponse(request=request)

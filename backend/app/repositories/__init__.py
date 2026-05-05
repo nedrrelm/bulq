@@ -1,6 +1,6 @@
 """Repository implementations and factory functions."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import error_codes
 from app.core.exceptions import ConfigurationError
@@ -77,7 +77,7 @@ def _get_memory_storage() -> MemoryStorage:
     return _memory_storage
 
 
-def _validate_database_session(db: Session | None):
+def _validate_database_session(db: AsyncSession | None):
     """Validate that database session is provided when in database mode."""
     if REPO_MODE == 'database' and db is None:
         raise ConfigurationError(
@@ -87,7 +87,7 @@ def _validate_database_session(db: Session | None):
         )
 
 
-def get_user_repository(db: Session = None):
+def get_user_repository(db: AsyncSession = None):
     """Get user repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryUserRepository(_get_memory_storage())
@@ -96,7 +96,7 @@ def get_user_repository(db: Session = None):
         return DatabaseUserRepository(db)
 
 
-def get_group_repository(db: Session = None):
+def get_group_repository(db: AsyncSession = None):
     """Get group repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryGroupRepository(_get_memory_storage())
@@ -105,7 +105,7 @@ def get_group_repository(db: Session = None):
         return DatabaseGroupRepository(db)
 
 
-def get_store_repository(db: Session = None):
+def get_store_repository(db: AsyncSession = None):
     """Get store repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryStoreRepository(_get_memory_storage())
@@ -114,7 +114,7 @@ def get_store_repository(db: Session = None):
         return DatabaseStoreRepository(db)
 
 
-def get_product_repository(db: Session = None):
+def get_product_repository(db: AsyncSession = None):
     """Get product repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryProductRepository(_get_memory_storage())
@@ -123,7 +123,7 @@ def get_product_repository(db: Session = None):
         return DatabaseProductRepository(db)
 
 
-def get_run_repository(db: Session = None):
+def get_run_repository(db: AsyncSession = None):
     """Get run repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryRunRepository(_get_memory_storage())
@@ -132,7 +132,7 @@ def get_run_repository(db: Session = None):
         return DatabaseRunRepository(db)
 
 
-def get_bid_repository(db: Session = None):
+def get_bid_repository(db: AsyncSession = None):
     """Get bid repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryBidRepository(_get_memory_storage())
@@ -141,7 +141,7 @@ def get_bid_repository(db: Session = None):
         return DatabaseBidRepository(db)
 
 
-def get_shopping_repository(db: Session = None):
+def get_shopping_repository(db: AsyncSession = None):
     """Get shopping repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryShoppingRepository(_get_memory_storage())
@@ -150,7 +150,7 @@ def get_shopping_repository(db: Session = None):
         return DatabaseShoppingRepository(db)
 
 
-def get_notification_repository(db: Session = None):
+def get_notification_repository(db: AsyncSession = None):
     """Get notification repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryNotificationRepository(_get_memory_storage())
@@ -159,7 +159,7 @@ def get_notification_repository(db: Session = None):
         return DatabaseNotificationRepository(db)
 
 
-def get_reassignment_repository(db: Session = None):
+def get_reassignment_repository(db: AsyncSession = None):
     """Get reassignment repository based on configuration mode."""
     if REPO_MODE == 'memory':
         return MemoryReassignmentRepository(_get_memory_storage())

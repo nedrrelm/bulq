@@ -1,6 +1,6 @@
 """Unit tests for BidService."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
 
 import pytest
@@ -29,10 +29,10 @@ from app.services.bid_service import BidService
 class TestPlaceBid:
     """Test cases for BidService.place_bid()."""
 
-    def test_place_new_bid_with_quantity(self, test_user):
+    async def test_place_new_bid_with_quantity(self, test_user):
         """Test placing a new bid with quantity."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -59,17 +59,17 @@ class TestPlaceBid:
         mock_group.id = group_id
 
         # Setup mocks
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus') as mock_event_bus:
             # Act
-            result = service.place_bid(
+            result = await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=quantity,
@@ -101,10 +101,10 @@ class TestPlaceBid:
             assert event.quantity == quantity
             assert event.interested_only is False
 
-    def test_place_bid_with_interested_only(self, test_user):
+    async def test_place_bid_with_interested_only(self, test_user):
         """Test placing a bid with interested_only flag."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -128,17 +128,17 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            result = service.place_bid(
+            result = await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=0,
@@ -154,10 +154,10 @@ class TestPlaceBid:
                 participation_id, product_id, 0, True, None
             )
 
-    def test_place_bid_updates_existing_bid(self, test_user):
+    async def test_place_bid_updates_existing_bid(self, test_user):
         """Test updating an existing bid quantity."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -184,17 +184,17 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=mock_existing_bid)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[mock_existing_bid])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=mock_existing_bid)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[mock_existing_bid])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            result = service.place_bid(
+            result = await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=7.0,
@@ -206,10 +206,10 @@ class TestPlaceBid:
             assert result.quantity == 7.0
             service.bid_repo.create_or_update_bid.assert_called_once()
 
-    def test_place_bid_creates_participation_if_needed(self, test_user):
+    async def test_place_bid_creates_participation_if_needed(self, test_user):
         """Test auto-creates participation if user is not yet a participant."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -233,18 +233,18 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=None)
-        service.run_repo.create_participation = Mock(return_value=mock_new_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=None)
+        service.run_repo.create_participation = AsyncMock(return_value=mock_new_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -257,10 +257,10 @@ class TestPlaceBid:
                 test_user.id, run_id, is_leader=False
             )
 
-    def test_place_bid_with_existing_participation(self, test_user):
+    async def test_place_bid_with_existing_participation(self, test_user):
         """Test with existing participation - does not create new one."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -283,18 +283,18 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
-        service.run_repo.create_participation = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
+        service.run_repo.create_participation = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -305,10 +305,10 @@ class TestPlaceBid:
             # Assert
             service.run_repo.create_participation.assert_not_called()
 
-    def test_place_bid_emits_bid_placed_event(self, test_user):
+    async def test_place_bid_emits_bid_placed_event(self, test_user):
         """Test BidPlacedEvent is emitted with correct data."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -332,17 +332,17 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus') as mock_event_bus:
             # Act
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=quantity,
@@ -363,10 +363,10 @@ class TestPlaceBid:
             assert event.new_total == 0.0
             assert event.group_id == group_id
 
-    def test_place_bid_not_group_member(self, test_user):
+    async def test_place_bid_not_group_member(self, test_user):
         """Test authorization - user must be group member."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -378,12 +378,12 @@ class TestPlaceBid:
         mock_run.state = RunState.ACTIVE.value
         mock_run.group_id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[])  # Not a member
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[])  # Not a member
 
         # Act & Assert
         with pytest.raises(ForbiddenError) as exc_info:
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -393,20 +393,20 @@ class TestPlaceBid:
 
         assert exc_info.value.code == NOT_RUN_PARTICIPANT
 
-    def test_place_bid_run_not_found(self, test_user):
+    async def test_place_bid_run_not_found(self, test_user):
         """Test placing bid on non-existent run raises NotFoundError."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
         product_id = uuid4()
 
-        service.run_repo.get_run_by_id = Mock(return_value=None)
+        service.run_repo.get_run_by_id = AsyncMock(return_value=None)
 
         # Act & Assert
         with pytest.raises(NotFoundError) as exc_info:
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -416,10 +416,10 @@ class TestPlaceBid:
 
         assert exc_info.value.code == RUN_NOT_FOUND
 
-    def test_place_bid_product_not_found(self, test_user):
+    async def test_place_bid_product_not_found(self, test_user):
         """Test placing bid on non-existent product raises NotFoundError."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -434,13 +434,13 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.product_repo.get_product_by_id = Mock(return_value=None)
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.product_repo.get_product_by_id = AsyncMock(return_value=None)
 
         # Act & Assert
         with pytest.raises(NotFoundError) as exc_info:
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -450,10 +450,10 @@ class TestPlaceBid:
 
         assert exc_info.value.code == PRODUCT_NOT_FOUND
 
-    def test_place_bid_negative_quantity(self, test_user):
+    async def test_place_bid_negative_quantity(self, test_user):
         """Test placing bid with negative quantity raises ValidationError."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -475,14 +475,14 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=-5.0,
@@ -492,10 +492,10 @@ class TestPlaceBid:
 
         assert exc_info.value.code == BID_QUANTITY_NEGATIVE
 
-    def test_place_bid_zero_quantity_removes_bid(self, test_user):
+    async def test_place_bid_zero_quantity_removes_bid(self, test_user):
         """Test placing bid with quantity=0 removes existing bid."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -521,17 +521,17 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=mock_existing_bid)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.delete_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=mock_existing_bid)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.delete_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=0,
@@ -542,10 +542,10 @@ class TestPlaceBid:
             # Assert
             service.bid_repo.delete_bid.assert_called_once_with(participation_id, product_id)
 
-    def test_place_bid_transitions_planning_to_active(self, test_user):
+    async def test_place_bid_transitions_planning_to_active(self, test_user):
         """Test automatic state transition from planning to active when non-leader joins."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -569,19 +569,19 @@ class TestPlaceBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=None)
-        service.run_repo.create_participation = Mock(return_value=mock_new_participation)
-        service.run_repo.update_run_state = Mock()
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=None)
+        service.run_repo.create_participation = AsyncMock(return_value=mock_new_participation)
+        service.run_repo.update_run_state = AsyncMock()
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            result = service.place_bid(
+            result = await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -594,10 +594,10 @@ class TestPlaceBid:
             assert result.new_state == RunState.ACTIVE.value
             service.run_repo.update_run_state.assert_called_once_with(run_id, RunState.ACTIVE)
 
-    def test_place_bid_max_products_exceeded(self, test_user):
+    async def test_place_bid_max_products_exceeded(self, test_user):
         """Test cannot add bid for new product when max products reached."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -626,16 +626,16 @@ class TestPlaceBid:
             mock_bid.product_id = uuid4()
             existing_bids.append(mock_bid)
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)  # New bid
-        service.bid_repo.get_bids_by_run = Mock(return_value=existing_bids)
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)  # New bid
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=existing_bids)
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -649,10 +649,10 @@ class TestPlaceBid:
 class TestRetractBid:
     """Test cases for BidService.retract_bid()."""
 
-    def test_retract_existing_bid(self, test_user):
+    async def test_retract_existing_bid(self, test_user):
         """Test retracting an existing bid."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -676,17 +676,17 @@ class TestRetractBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=mock_bid)
-        service.bid_repo.delete_bid = Mock()
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.shopping_repo.get_shopping_list_items = Mock(return_value=[])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=mock_bid)
+        service.bid_repo.delete_bid = AsyncMock()
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.shopping_repo.get_shopping_list_items = AsyncMock(return_value=[])
 
         with patch('app.services.bid_service.event_bus') as mock_event_bus:
             # Act
-            result = service.retract_bid(
+            result = await service.retract_bid(
                 run_id=str(run_id), product_id=str(product_id), user=test_user
             )
 
@@ -705,10 +705,10 @@ class TestRetractBid:
             event = mock_event_bus.emit.call_args[0][0]
             assert isinstance(event, BidRetractedEvent)
 
-    def test_retract_bid_emits_bid_retracted_event(self, test_user):
+    async def test_retract_bid_emits_bid_retracted_event(self, test_user):
         """Test BidRetractedEvent is emitted with correct data."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -731,17 +731,19 @@ class TestRetractBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=mock_bid)
-        service.bid_repo.delete_bid = Mock()
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.shopping_repo.get_shopping_list_items = Mock(return_value=[])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=mock_bid)
+        service.bid_repo.delete_bid = AsyncMock()
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.shopping_repo.get_shopping_list_items = AsyncMock(return_value=[])
 
         with patch('app.services.bid_service.event_bus') as mock_event_bus:
             # Act
-            service.retract_bid(run_id=str(run_id), product_id=str(product_id), user=test_user)
+            await service.retract_bid(
+                run_id=str(run_id), product_id=str(product_id), user=test_user
+            )
 
             # Assert
             mock_event_bus.emit.assert_called_once()
@@ -753,10 +755,10 @@ class TestRetractBid:
             assert event.new_total == 0.0
             assert event.group_id == group_id
 
-    def test_retract_bid_not_found(self, test_user):
+    async def test_retract_bid_not_found(self, test_user):
         """Test retracting non-existent bid raises NotFoundError."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -775,22 +777,24 @@ class TestRetractBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.shopping_repo.get_shopping_list_items = Mock(return_value=[])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.shopping_repo.get_shopping_list_items = AsyncMock(return_value=[])
 
         # Act & Assert
         with pytest.raises(NotFoundError) as exc_info:
-            service.retract_bid(run_id=str(run_id), product_id=str(product_id), user=test_user)
+            await service.retract_bid(
+                run_id=str(run_id), product_id=str(product_id), user=test_user
+            )
 
         assert exc_info.value.code == BID_NOT_FOUND
 
-    def test_retract_bid_not_group_member(self, test_user):
+    async def test_retract_bid_not_group_member(self, test_user):
         """Test only group members can retract bids."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -802,36 +806,40 @@ class TestRetractBid:
         mock_run.state = RunState.ACTIVE.value
         mock_run.group_id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[])  # Not a member
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[])  # Not a member
 
         # Act & Assert
         with pytest.raises(ForbiddenError) as exc_info:
-            service.retract_bid(run_id=str(run_id), product_id=str(product_id), user=test_user)
+            await service.retract_bid(
+                run_id=str(run_id), product_id=str(product_id), user=test_user
+            )
 
         assert exc_info.value.code == NOT_RUN_PARTICIPANT
 
-    def test_retract_bid_run_not_found(self, test_user):
+    async def test_retract_bid_run_not_found(self, test_user):
         """Test retracting bid on non-existent run."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
         product_id = uuid4()
 
-        service.run_repo.get_run_by_id = Mock(return_value=None)
+        service.run_repo.get_run_by_id = AsyncMock(return_value=None)
 
         # Act & Assert
         with pytest.raises(NotFoundError) as exc_info:
-            service.retract_bid(run_id=str(run_id), product_id=str(product_id), user=test_user)
+            await service.retract_bid(
+                run_id=str(run_id), product_id=str(product_id), user=test_user
+            )
 
         assert exc_info.value.code == RUN_NOT_FOUND
 
-    def test_retract_bid_participation_not_found(self, test_user):
+    async def test_retract_bid_participation_not_found(self, test_user):
         """Test retracting bid when user has no participation."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -846,21 +854,23 @@ class TestRetractBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=None)
-        service.shopping_repo.get_shopping_list_items = Mock(return_value=[])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=None)
+        service.shopping_repo.get_shopping_list_items = AsyncMock(return_value=[])
 
         # Act & Assert
         with pytest.raises(NotFoundError) as exc_info:
-            service.retract_bid(run_id=str(run_id), product_id=str(product_id), user=test_user)
+            await service.retract_bid(
+                run_id=str(run_id), product_id=str(product_id), user=test_user
+            )
 
         assert exc_info.value.code == PARTICIPATION_NOT_FOUND
 
-    def test_retract_bid_recalculates_totals(self, test_user):
+    async def test_retract_bid_recalculates_totals(self, test_user):
         """Test bid retraction recalculates product totals."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -889,27 +899,27 @@ class TestRetractBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=mock_bid)
-        service.bid_repo.delete_bid = Mock()
-        service.bid_repo.get_bids_by_run = Mock(return_value=[mock_other_bid])
-        service.shopping_repo.get_shopping_list_items = Mock(return_value=[])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=mock_bid)
+        service.bid_repo.delete_bid = AsyncMock()
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[mock_other_bid])
+        service.shopping_repo.get_shopping_list_items = AsyncMock(return_value=[])
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            result = service.retract_bid(
+            result = await service.retract_bid(
                 run_id=str(run_id), product_id=str(product_id), user=test_user
             )
 
             # Assert - should reflect remaining bid
             assert result.new_total == 3.0
 
-    def test_retract_bid_invalid_state(self, test_user):
+    async def test_retract_bid_invalid_state(self, test_user):
         """Test cannot retract bid in invalid states."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -924,12 +934,14 @@ class TestRetractBid:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            service.retract_bid(run_id=str(run_id), product_id=str(product_id), user=test_user)
+            await service.retract_bid(
+                run_id=str(run_id), product_id=str(product_id), user=test_user
+            )
 
         assert exc_info.value.code == CANNOT_RETRACT_BID_IN_ADJUSTING
 
@@ -937,10 +949,10 @@ class TestRetractBid:
 class TestStateValidation:
     """Test cases for state-based bid validation."""
 
-    def test_can_bid_in_planning(self, test_user):
+    async def test_can_bid_in_planning(self, test_user):
         """Test can place bid in PLANNING state."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -962,17 +974,17 @@ class TestStateValidation:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act - should not raise
-            result = service.place_bid(
+            result = await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -983,10 +995,10 @@ class TestStateValidation:
             # Assert
             assert result is not None
 
-    def test_can_bid_in_active(self, test_user):
+    async def test_can_bid_in_active(self, test_user):
         """Test can place bid in ACTIVE state."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1008,17 +1020,17 @@ class TestStateValidation:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act - should not raise
-            result = service.place_bid(
+            result = await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -1029,10 +1041,10 @@ class TestStateValidation:
             # Assert
             assert result is not None
 
-    def test_can_bid_in_adjusting_with_existing_bid(self, test_user):
+    async def test_can_bid_in_adjusting_with_existing_bid(self, test_user):
         """Test can adjust existing bid in ADJUSTING state."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1064,18 +1076,18 @@ class TestStateValidation:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=mock_existing_bid)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[mock_existing_bid])
-        service.shopping_repo.get_shopping_list_items = Mock(return_value=[mock_shopping_item])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=mock_existing_bid)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[mock_existing_bid])
+        service.shopping_repo.get_shopping_list_items = AsyncMock(return_value=[mock_shopping_item])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act - increase bid (allowed with surplus)
-            result = service.place_bid(
+            result = await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=12.0,
@@ -1096,10 +1108,10 @@ class TestStateValidation:
             RunState.CANCELLED.value,
         ],
     )
-    def test_cannot_bid_in_invalid_states(self, test_user, state):
+    async def test_cannot_bid_in_invalid_states(self, test_user, state):
         """Test cannot place bid in invalid states."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1114,12 +1126,12 @@ class TestStateValidation:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -1129,10 +1141,10 @@ class TestStateValidation:
 
         assert exc_info.value.code == INVALID_RUN_STATE_TRANSITION
 
-    def test_cannot_join_run_in_adjusting(self, test_user):
+    async def test_cannot_join_run_in_adjusting(self, test_user):
         """Test cannot create new participation in ADJUSTING state."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1150,14 +1162,14 @@ class TestStateValidation:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=None)  # No participation
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=None)  # No participation
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -1167,10 +1179,10 @@ class TestStateValidation:
 
         assert exc_info.value.code == CANNOT_JOIN_RUN_IN_ADJUSTING_STATE
 
-    def test_cannot_bid_new_product_in_adjusting_without_surplus(self, test_user):
+    async def test_cannot_bid_new_product_in_adjusting_without_surplus(self, test_user):
         """Test cannot place bid on new product in ADJUSTING without surplus."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1198,17 +1210,17 @@ class TestStateValidation:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)  # No existing bid
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.shopping_repo.get_shopping_list_items = Mock(return_value=[mock_shopping_item])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)  # No existing bid
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.shopping_repo.get_shopping_list_items = AsyncMock(return_value=[mock_shopping_item])
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -1222,10 +1234,10 @@ class TestStateValidation:
 class TestCalculateProductTotal:
     """Test cases for BidService.calculate_product_total()."""
 
-    def test_calculate_total_with_multiple_bids(self):
+    async def test_calculate_total_with_multiple_bids(self):
         """Test calculating total quantity for a product."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1246,18 +1258,18 @@ class TestCalculateProductTotal:
         mock_bid3.quantity = 7.0
         mock_bid3.interested_only = False
 
-        service.bid_repo.get_bids_by_run = Mock(return_value=[mock_bid1, mock_bid2, mock_bid3])
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[mock_bid1, mock_bid2, mock_bid3])
 
         # Act
-        total = service.calculate_product_total(run_id, product_id)
+        total = await service.calculate_product_total(run_id, product_id)
 
         # Assert
         assert total == 8.0  # 5.0 + 3.0
 
-    def test_calculate_total_excludes_interested_only(self):
+    async def test_calculate_total_excludes_interested_only(self):
         """Test excludes interested_only from totals."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1273,18 +1285,18 @@ class TestCalculateProductTotal:
         mock_bid2.quantity = 0.0
         mock_bid2.interested_only = True  # Should be excluded
 
-        service.bid_repo.get_bids_by_run = Mock(return_value=[mock_bid1, mock_bid2])
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[mock_bid1, mock_bid2])
 
         # Act
-        total = service.calculate_product_total(run_id, product_id)
+        total = await service.calculate_product_total(run_id, product_id)
 
         # Assert
         assert total == 5.0  # Only the first bid
 
-    def test_calculate_total_includes_all_quantity_bids(self):
+    async def test_calculate_total_includes_all_quantity_bids(self):
         """Test includes all quantity bids."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1298,35 +1310,35 @@ class TestCalculateProductTotal:
             mock_bid.interested_only = False
             mock_bids.append(mock_bid)
 
-        service.bid_repo.get_bids_by_run = Mock(return_value=mock_bids)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=mock_bids)
 
         # Act
-        total = service.calculate_product_total(run_id, product_id)
+        total = await service.calculate_product_total(run_id, product_id)
 
         # Assert
         assert total == 15.0  # 1+2+3+4+5
 
-    def test_calculate_total_zero_when_no_bids(self):
+    async def test_calculate_total_zero_when_no_bids(self):
         """Test zero when no bids exist."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
         product_id = uuid4()
 
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
 
         # Act
-        total = service.calculate_product_total(run_id, product_id)
+        total = await service.calculate_product_total(run_id, product_id)
 
         # Assert
         assert total == 0.0
 
-    def test_calculate_total_after_bid_retraction(self):
+    async def test_calculate_total_after_bid_retraction(self):
         """Test total recalculates correctly after bid retraction."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1338,10 +1350,10 @@ class TestCalculateProductTotal:
         mock_bid.quantity = 3.0
         mock_bid.interested_only = False
 
-        service.bid_repo.get_bids_by_run = Mock(return_value=[mock_bid])
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[mock_bid])
 
         # Act
-        total = service.calculate_product_total(run_id, product_id)
+        total = await service.calculate_product_total(run_id, product_id)
 
         # Assert
         assert total == 3.0
@@ -1350,10 +1362,10 @@ class TestCalculateProductTotal:
 class TestParticipationManagement:
     """Test cases for participation management."""
 
-    def test_auto_creates_participation_on_first_bid(self, test_user):
+    async def test_auto_creates_participation_on_first_bid(self, test_user):
         """Test auto-creates participation on first bid."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1377,18 +1389,18 @@ class TestParticipationManagement:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=None)
-        service.run_repo.create_participation = Mock(return_value=mock_new_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=None)
+        service.run_repo.create_participation = AsyncMock(return_value=mock_new_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -1401,10 +1413,10 @@ class TestParticipationManagement:
                 test_user.id, run_id, is_leader=False
             )
 
-    def test_reuses_existing_participation(self, test_user):
+    async def test_reuses_existing_participation(self, test_user):
         """Test reuses existing participation."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1427,18 +1439,18 @@ class TestParticipationManagement:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.run_repo.create_participation = Mock()
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.run_repo.create_participation = AsyncMock()
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -1449,10 +1461,10 @@ class TestParticipationManagement:
             # Assert
             service.run_repo.create_participation.assert_not_called()
 
-    def test_participation_created_as_non_leader(self, test_user):
+    async def test_participation_created_as_non_leader(self, test_user):
         """Test participation created with is_leader=False."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1476,18 +1488,18 @@ class TestParticipationManagement:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=None)
-        service.run_repo.create_participation = Mock(return_value=mock_new_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=None)
+        service.run_repo.create_participation = AsyncMock(return_value=mock_new_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,
@@ -1503,15 +1515,15 @@ class TestParticipationManagement:
 class TestEdgeCases:
     """Test cases for edge cases."""
 
-    def test_with_invalid_uuid_format_run(self, test_user):
+    async def test_with_invalid_uuid_format_run(self, test_user):
         """Test with invalid UUID format for run."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         # Act & Assert
         with pytest.raises(BadRequestError):
-            service.place_bid(
+            await service.place_bid(
                 run_id='invalid-uuid',
                 product_id=str(uuid4()),
                 quantity=2.0,
@@ -1519,15 +1531,15 @@ class TestEdgeCases:
                 user=test_user,
             )
 
-    def test_with_invalid_uuid_format_product(self, test_user):
+    async def test_with_invalid_uuid_format_product(self, test_user):
         """Test with invalid UUID format for product."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         # Act & Assert
         with pytest.raises(BadRequestError):
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(uuid4()),
                 product_id='not-a-uuid',
                 quantity=2.0,
@@ -1535,10 +1547,10 @@ class TestEdgeCases:
                 user=test_user,
             )
 
-    def test_with_zero_quantity_no_existing_bid(self, test_user):
+    async def test_with_zero_quantity_no_existing_bid(self, test_user):
         """Test with zero quantity when no existing bid."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1561,17 +1573,17 @@ class TestEdgeCases:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.delete_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.delete_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act - should not try to delete non-existent bid
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=0,
@@ -1582,10 +1594,10 @@ class TestEdgeCases:
             # Assert
             service.bid_repo.delete_bid.assert_not_called()
 
-    def test_with_very_large_quantity(self, test_user):
+    async def test_with_very_large_quantity(self, test_user):
         """Test with very large quantity."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1608,17 +1620,17 @@ class TestEdgeCases:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act - should handle large numbers
-            result = service.place_bid(
+            result = await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=999999.99,
@@ -1629,10 +1641,10 @@ class TestEdgeCases:
             # Assert
             assert result.quantity == 999999.99
 
-    def test_with_comment(self, test_user):
+    async def test_with_comment(self, test_user):
         """Test placing bid with comment."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = BidService(mock_db)
 
         run_id = uuid4()
@@ -1656,17 +1668,17 @@ class TestEdgeCases:
         mock_group = Mock()
         mock_group.id = group_id
 
-        service.run_repo.get_run_by_id = Mock(return_value=mock_run)
-        service.product_repo.get_product_by_id = Mock(return_value=mock_product)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_participation = Mock(return_value=mock_participation)
-        service.bid_repo.get_bid = Mock(return_value=None)
-        service.bid_repo.get_bids_by_run = Mock(return_value=[])
-        service.bid_repo.create_or_update_bid = Mock()
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_participation = AsyncMock(return_value=mock_participation)
+        service.bid_repo.get_bid = AsyncMock(return_value=None)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
 
         with patch('app.services.bid_service.event_bus'):
             # Act
-            service.place_bid(
+            await service.place_bid(
                 run_id=str(run_id),
                 product_id=str(product_id),
                 quantity=2.0,

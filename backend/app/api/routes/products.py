@@ -29,7 +29,7 @@ async def search_products(
 
     Returns products matching the search query.
     """
-    return service.search_products(q, limit, offset)
+    return await service.search_products(q, limit, offset)
 
 
 @router.get('/check-similar', response_model=list[ProductSearchResult])
@@ -42,7 +42,7 @@ async def check_similar_products(
 
     Returns products that are similar to the provided name, useful for preventing duplicates.
     """
-    return service.get_similar_products(name)
+    return await service.get_similar_products(name)
 
 
 @router.post('/create', response_model=CreateProductResponse)
@@ -54,7 +54,7 @@ async def create_product(
     """Create a new product and optionally link to a store with price."""
     store_uuid = validate_uuid(request.store_id, 'Store') if request.store_id else None
 
-    product, availability = service.create_product(
+    product, availability = await service.create_product(
         name=request.name,
         brand=request.brand,
         unit=request.unit,
@@ -89,7 +89,7 @@ async def get_product_details(
 
     Shows the product across different stores and historical prices recorded during shopping.
     """
-    result = service.get_product_details(validate_uuid(product_id, 'Product'))
+    result = await service.get_product_details(validate_uuid(product_id, 'Product'))
     if not result:
         raise NotFoundError(
             code=PRODUCT_NOT_FOUND, message='Product not found', product_id=product_id

@@ -108,50 +108,50 @@ def sample_product_data():
 class TestCreateProduct:
     """Test create_product() method."""
 
-    def test_create_product_with_required_fields(self, repo, sample_product_data):
+    async def test_create_product_with_required_fields(self, repo, sample_product_data):
         """Test creating product with all required fields."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
         assert product is not None
         assert product.name == sample_product_data['name']
         assert product.brand == sample_product_data['brand']
         assert product.unit == sample_product_data['unit']
 
-    def test_create_product_with_name_only(self, repo):
+    async def test_create_product_with_name_only(self, repo):
         """Test creating product with name only."""
-        product = repo.create_product(name='Simple Product')
+        product = await repo.create_product(name='Simple Product')
 
         assert product is not None
         assert product.name == 'Simple Product'
         assert product.brand is None
         assert product.unit is None
 
-    def test_created_product_has_uuid(self, repo, sample_product_data):
+    async def test_created_product_has_uuid(self, repo, sample_product_data):
         """Test created product has correct ID (UUID)."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
         assert product.id is not None
         assert isinstance(product.id, UUID)
 
-    def test_created_product_is_stored_and_retrievable(self, repo, sample_product_data):
+    async def test_created_product_is_stored_and_retrievable(self, repo, sample_product_data):
         """Test created product is stored and retrievable."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved is not None
         assert retrieved.id == product.id
         assert retrieved.name == product.name
 
-    def test_created_product_has_default_values(self, repo, sample_product_data):
+    async def test_created_product_has_default_values(self, repo, sample_product_data):
         """Test created product has default values (verified=False)."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
         assert product.verified is False
 
-    def test_created_product_has_timestamps(self, repo, sample_product_data):
+    async def test_created_product_has_timestamps(self, repo, sample_product_data):
         """Test created product has created_at and updated_at timestamps."""
         before = datetime.now(UTC)
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
         after = datetime.now(UTC)
 
         assert product.created_at is not None
@@ -159,17 +159,17 @@ class TestCreateProduct:
         assert before <= product.created_at <= after
         assert before <= product.updated_at <= after
 
-    def test_creating_multiple_products_different_ids(self, repo):
+    async def test_creating_multiple_products_different_ids(self, repo):
         """Test creating multiple products generates different IDs."""
-        product1 = repo.create_product('Product One', 'Brand A', 'kg')
-        product2 = repo.create_product('Product Two', 'Brand B', 'L')
+        product1 = await repo.create_product('Product One', 'Brand A', 'kg')
+        product2 = await repo.create_product('Product Two', 'Brand B', 'L')
 
         assert product1.id != product2.id
         assert product1.name != product2.name
 
-    def test_create_product_without_brand(self, repo):
+    async def test_create_product_without_brand(self, repo):
         """Test creating product without brand."""
-        product = repo.create_product(name='Generic Product', unit='kg')
+        product = await repo.create_product(name='Generic Product', unit='kg')
 
         assert product.name == 'Generic Product'
         assert product.brand is None
@@ -179,77 +179,77 @@ class TestCreateProduct:
 class TestGetProductById:
     """Test get_product_by_id() method."""
 
-    def test_get_existing_product_by_id(self, repo, sample_product_data):
+    async def test_get_existing_product_by_id(self, repo, sample_product_data):
         """Test getting existing product by ID."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved is not None
         assert retrieved.id == product.id
         assert retrieved.name == product.name
         assert retrieved.brand == product.brand
 
-    def test_get_nonexistent_product_returns_none(self, repo):
+    async def test_get_nonexistent_product_returns_none(self, repo):
         """Test getting non-existent product returns None."""
         fake_id = uuid4()
 
-        result = repo.get_product_by_id(fake_id)
+        result = await repo.get_product_by_id(fake_id)
         assert result is None
 
-    def test_get_product_by_id_after_creation(self, repo, sample_product_data):
+    async def test_get_product_by_id_after_creation(self, repo, sample_product_data):
         """Test getting product immediately after creation."""
-        product = repo.create_product(**sample_product_data)
-        retrieved = repo.get_product_by_id(product.id)
+        product = await repo.create_product(**sample_product_data)
+        retrieved = await repo.get_product_by_id(product.id)
 
         assert retrieved is not None
         assert retrieved.id == product.id
 
-    def test_get_product_by_id_after_update(self, repo, sample_product_data):
+    async def test_get_product_by_id_after_update(self, repo, sample_product_data):
         """Test getting product after update returns updated data."""
-        product = repo.create_product(**sample_product_data)
-        repo.update_product(product.id, name='Updated Name')
+        product = await repo.create_product(**sample_product_data)
+        await repo.update_product(product.id, name='Updated Name')
 
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved.name == 'Updated Name'
 
 
 class TestUpdateProduct:
     """Test update_product() method."""
 
-    def test_update_product_name(self, repo, sample_product_data):
+    async def test_update_product_name(self, repo, sample_product_data):
         """Test updating product name."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
         new_name = 'Red Apples'
 
-        updated = repo.update_product(product.id, name=new_name)
+        updated = await repo.update_product(product.id, name=new_name)
 
         assert updated is not None
         assert updated.name == new_name
         assert updated.id == product.id
 
-    def test_update_product_brand(self, repo, sample_product_data):
+    async def test_update_product_brand(self, repo, sample_product_data):
         """Test updating product brand."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
         new_brand = 'SuperFresh'
 
-        updated = repo.update_product(product.id, brand=new_brand)
+        updated = await repo.update_product(product.id, brand=new_brand)
 
         assert updated.brand == new_brand
 
-    def test_update_product_unit(self, repo, sample_product_data):
+    async def test_update_product_unit(self, repo, sample_product_data):
         """Test updating product unit."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
         new_unit = 'lb'
 
-        updated = repo.update_product(product.id, unit=new_unit)
+        updated = await repo.update_product(product.id, unit=new_unit)
 
         assert updated.unit == new_unit
 
-    def test_update_product_verified(self, repo, sample_product_data, admin_user):
+    async def test_update_product_verified(self, repo, sample_product_data, admin_user):
         """Test updating product verified flag."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        updated = repo.update_product(
+        updated = await repo.update_product(
             product.id,
             verified=True,
             verified_by=admin_user.id,
@@ -260,40 +260,42 @@ class TestUpdateProduct:
         assert updated.verified_by == admin_user.id
         assert updated.verified_at is not None
 
-    def test_update_nonexistent_product_returns_none(self, repo):
+    async def test_update_nonexistent_product_returns_none(self, repo):
         """Test updating non-existent product returns None."""
         fake_id = uuid4()
 
-        result = repo.update_product(fake_id, name='New Name')
+        result = await repo.update_product(fake_id, name='New Name')
         assert result is None
 
-    def test_update_partial_fields(self, repo, sample_product_data):
+    async def test_update_partial_fields(self, repo, sample_product_data):
         """Test partial updates (only some fields)."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
         original_brand = product.brand
 
-        updated = repo.update_product(product.id, name='New Name')
+        updated = await repo.update_product(product.id, name='New Name')
 
         assert updated.name == 'New Name'
         assert updated.brand == original_brand  # Unchanged
 
-    def test_update_multiple_fields(self, repo, sample_product_data):
+    async def test_update_multiple_fields(self, repo, sample_product_data):
         """Test updating multiple fields at once."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        updated = repo.update_product(product.id, name='New Name', brand='New Brand', unit='L')
+        updated = await repo.update_product(
+            product.id, name='New Name', brand='New Brand', unit='L'
+        )
 
         assert updated.name == 'New Name'
         assert updated.brand == 'New Brand'
         assert updated.unit == 'L'
 
-    def test_updated_fields_are_persisted(self, repo, sample_product_data):
+    async def test_updated_fields_are_persisted(self, repo, sample_product_data):
         """Test updated fields are persisted."""
-        product = repo.create_product(**sample_product_data)
-        repo.update_product(product.id, name='Updated Name', verified=True)
+        product = await repo.create_product(**sample_product_data)
+        await repo.update_product(product.id, name='Updated Name', verified=True)
 
         # Retrieve again to verify persistence
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved.name == 'Updated Name'
         assert retrieved.verified is True
 
@@ -301,35 +303,35 @@ class TestUpdateProduct:
 class TestDeleteProduct:
     """Test delete_product() method."""
 
-    def test_delete_existing_product(self, repo, sample_product_data):
+    async def test_delete_existing_product(self, repo, sample_product_data):
         """Test deleting existing product."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        result = repo.delete_product(product.id)
+        result = await repo.delete_product(product.id)
 
         assert result is True
 
-    def test_product_not_retrievable_after_deletion(self, repo, sample_product_data):
+    async def test_product_not_retrievable_after_deletion(self, repo, sample_product_data):
         """Test product not retrievable after deletion."""
-        product = repo.create_product(**sample_product_data)
-        repo.delete_product(product.id)
+        product = await repo.create_product(**sample_product_data)
+        await repo.delete_product(product.id)
 
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved is None
 
-    def test_delete_nonexistent_product_returns_false(self, repo):
+    async def test_delete_nonexistent_product_returns_false(self, repo):
         """Test deleting non-existent product returns False."""
         fake_id = uuid4()
 
-        result = repo.delete_product(fake_id)
+        result = await repo.delete_product(fake_id)
         assert result is False
 
-    def test_deleting_twice_returns_false_second_time(self, repo, sample_product_data):
+    async def test_deleting_twice_returns_false_second_time(self, repo, sample_product_data):
         """Test deleting twice returns False second time."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        first_delete = repo.delete_product(product.id)
-        second_delete = repo.delete_product(product.id)
+        first_delete = await repo.delete_product(product.id)
+        second_delete = await repo.delete_product(product.id)
 
         assert first_delete is True
         assert second_delete is False
@@ -338,20 +340,20 @@ class TestDeleteProduct:
 class TestGetAllProducts:
     """Test get_all_products() method."""
 
-    def test_list_all_with_empty_repository(self, repo):
+    async def test_list_all_with_empty_repository(self, repo):
         """Test list_all with empty repository."""
-        products = repo.get_all_products()
+        products = await repo.get_all_products()
 
         assert products == []
         assert len(products) == 0
 
-    def test_list_all_after_creating_multiple_products(self, repo):
+    async def test_list_all_after_creating_multiple_products(self, repo):
         """Test list_all after creating multiple products."""
-        product1 = repo.create_product('Product 1', 'Brand A', 'kg')
-        product2 = repo.create_product('Product 2', 'Brand B', 'L')
-        product3 = repo.create_product('Product 3', 'Brand C', 'each')
+        product1 = await repo.create_product('Product 1', 'Brand A', 'kg')
+        product2 = await repo.create_product('Product 2', 'Brand B', 'L')
+        product3 = await repo.create_product('Product 3', 'Brand C', 'each')
 
-        products = repo.get_all_products()
+        products = await repo.get_all_products()
 
         assert len(products) == 3
         product_ids = {p.id for p in products}
@@ -359,24 +361,24 @@ class TestGetAllProducts:
         assert product2.id in product_ids
         assert product3.id in product_ids
 
-    def test_list_all_returns_all_products(self, repo):
+    async def test_list_all_returns_all_products(self, repo):
         """Test list_all returns all products."""
         created_products = []
         for i in range(5):
-            product = repo.create_product(f'Product {i}', f'Brand {i}', 'kg')
+            product = await repo.create_product(f'Product {i}', f'Brand {i}', 'kg')
             created_products.append(product)
 
-        products = repo.get_all_products()
+        products = await repo.get_all_products()
 
         assert len(products) == 5
         for created in created_products:
             assert any(p.id == created.id for p in products)
 
-    def test_list_all_includes_all_product_fields(self, repo, sample_product_data):
+    async def test_list_all_includes_all_product_fields(self, repo, sample_product_data):
         """Test list_all includes all product fields."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        products = repo.get_all_products()
+        products = await repo.get_all_products()
 
         assert len(products) == 1
         retrieved = products[0]
@@ -386,27 +388,27 @@ class TestGetAllProducts:
         assert retrieved.unit == product.unit
         assert retrieved.verified == product.verified
 
-    def test_list_all_count_matches_created(self, repo):
+    async def test_list_all_count_matches_created(self, repo):
         """Test list_all count matches number created."""
         count = 10
         for i in range(count):
-            repo.create_product(f'Product {i}', f'Brand {i}', 'kg')
+            await repo.create_product(f'Product {i}', f'Brand {i}', 'kg')
 
-        products = repo.get_all_products()
+        products = await repo.get_all_products()
 
         assert len(products) == count
 
-    def test_list_all_after_deletion(self, repo):
+    async def test_list_all_after_deletion(self, repo):
         """Test list_all after deletion (count decreases)."""
-        product1 = repo.create_product('Product 1', 'Brand A', 'kg')
-        product2 = repo.create_product('Product 2', 'Brand B', 'L')
-        product3 = repo.create_product('Product 3', 'Brand C', 'each')
+        product1 = await repo.create_product('Product 1', 'Brand A', 'kg')
+        product2 = await repo.create_product('Product 2', 'Brand B', 'L')
+        product3 = await repo.create_product('Product 3', 'Brand C', 'each')
 
-        assert len(repo.get_all_products()) == 3
+        assert len(await repo.get_all_products()) == 3
 
-        repo.delete_product(product2.id)
+        await repo.delete_product(product2.id)
 
-        products = repo.get_all_products()
+        products = await repo.get_all_products()
         assert len(products) == 2
         product_ids = {p.id for p in products}
         assert product1.id in product_ids
@@ -417,75 +419,75 @@ class TestGetAllProducts:
 class TestSearchProducts:
     """Test search_products() method."""
 
-    def test_search_by_name_exact_match(self, repo):
+    async def test_search_by_name_exact_match(self, repo):
         """Test search by exact name match."""
-        product = repo.create_product('Organic Apples', 'FreshFarms', 'kg')
-        repo.create_product('Bananas', 'FreshFarms', 'kg')
+        product = await repo.create_product('Organic Apples', 'FreshFarms', 'kg')
+        await repo.create_product('Bananas', 'FreshFarms', 'kg')
 
-        results = repo.search_products('Organic Apples')
+        results = await repo.search_products('Organic Apples')
 
         assert len(results) == 1
         assert results[0].id == product.id
 
-    def test_search_by_name_partial_match(self, repo):
+    async def test_search_by_name_partial_match(self, repo):
         """Test search by partial name match."""
-        product1 = repo.create_product('Organic Apples', 'FreshFarms', 'kg')
-        product2 = repo.create_product('Red Apple Juice', 'FreshFarms', 'L')
-        repo.create_product('Bananas', 'FreshFarms', 'kg')
+        product1 = await repo.create_product('Organic Apples', 'FreshFarms', 'kg')
+        product2 = await repo.create_product('Red Apple Juice', 'FreshFarms', 'L')
+        await repo.create_product('Bananas', 'FreshFarms', 'kg')
 
-        results = repo.search_products('Apple')
+        results = await repo.search_products('Apple')
 
         assert len(results) == 2
         result_ids = {p.id for p in results}
         assert product1.id in result_ids
         assert product2.id in result_ids
 
-    def test_search_case_insensitive(self, repo):
+    async def test_search_case_insensitive(self, repo):
         """Test search is case-insensitive."""
-        product = repo.create_product('Organic Apples', 'FreshFarms', 'kg')
+        product = await repo.create_product('Organic Apples', 'FreshFarms', 'kg')
 
-        results = repo.search_products('organic apples')
+        results = await repo.search_products('organic apples')
 
         assert len(results) == 1
         assert results[0].id == product.id
 
-    def test_search_with_no_matches(self, repo):
+    async def test_search_with_no_matches(self, repo):
         """Test search with no matches."""
-        repo.create_product('Organic Apples', 'FreshFarms', 'kg')
+        await repo.create_product('Organic Apples', 'FreshFarms', 'kg')
 
-        results = repo.search_products('Oranges')
+        results = await repo.search_products('Oranges')
 
         assert results == []
 
-    def test_search_empty_query(self, repo):
+    async def test_search_empty_query(self, repo):
         """Test search with empty query returns all products."""
-        repo.create_product('Product 1', 'Brand A', 'kg')
-        repo.create_product('Product 2', 'Brand B', 'L')
+        await repo.create_product('Product 1', 'Brand A', 'kg')
+        await repo.create_product('Product 2', 'Brand B', 'L')
 
-        results = repo.search_products('')
+        results = await repo.search_products('')
 
         assert len(results) == 2
 
-    def test_search_in_empty_repository(self, repo):
+    async def test_search_in_empty_repository(self, repo):
         """Test search in empty repository."""
-        results = repo.search_products('anything')
+        results = await repo.search_products('anything')
 
         assert results == []
 
-    def test_search_by_lowercase(self, repo):
+    async def test_search_by_lowercase(self, repo):
         """Test search with lowercase query matches uppercase product."""
-        product = repo.create_product('UPPERCASE PRODUCT', 'Brand', 'kg')
+        product = await repo.create_product('UPPERCASE PRODUCT', 'Brand', 'kg')
 
-        results = repo.search_products('uppercase')
+        results = await repo.search_products('uppercase')
 
         assert len(results) == 1
         assert results[0].id == product.id
 
-    def test_search_by_uppercase(self, repo):
+    async def test_search_by_uppercase(self, repo):
         """Test search with uppercase query matches lowercase product."""
-        product = repo.create_product('lowercase product', 'Brand', 'kg')
+        product = await repo.create_product('lowercase product', 'Brand', 'kg')
 
-        results = repo.search_products('LOWERCASE')
+        results = await repo.search_products('LOWERCASE')
 
         assert len(results) == 1
         assert results[0].id == product.id
@@ -494,13 +496,13 @@ class TestSearchProducts:
 class TestProductAvailabilities:
     """Test product availability methods."""
 
-    def test_create_product_availability(
+    async def test_create_product_availability(
         self, repo, sample_product_data, sample_store, sample_user
     ):
         """Test creating product availability."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        availability = repo.create_product_availability(
+        availability = await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=5.99,
@@ -517,13 +519,13 @@ class TestProductAvailabilities:
         assert availability.minimum_quantity == 2
         assert availability.created_by == sample_user.id
 
-    def test_create_product_availability_without_price(
+    async def test_create_product_availability_without_price(
         self, repo, sample_product_data, sample_store
     ):
         """Test creating availability without price."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        availability = repo.create_product_availability(
+        availability = await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
         )
@@ -532,27 +534,29 @@ class TestProductAvailabilities:
         assert availability.price is None
         assert availability.notes == ''
 
-    def test_get_product_availabilities(self, repo, sample_product_data, sample_store, sample_user):
+    async def test_get_product_availabilities(
+        self, repo, sample_product_data, sample_store, sample_user
+    ):
         """Test getting product availabilities."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        avail1 = repo.create_product_availability(
+        avail1 = await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=5.99,
             user_id=sample_user.id,
         )
 
-        availabilities = repo.get_product_availabilities(product.id)
+        availabilities = await repo.get_product_availabilities(product.id)
 
         assert len(availabilities) == 1
         assert availabilities[0].id == avail1.id
 
-    def test_get_product_availabilities_by_store(
+    async def test_get_product_availabilities_by_store(
         self, repo, sample_product_data, sample_store, storage, sample_user
     ):
         """Test filtering availabilities by store."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
         # Create another store
         store2 = Store(
@@ -563,13 +567,13 @@ class TestProductAvailabilities:
         )
         storage.stores[store2.id] = store2
 
-        avail1 = repo.create_product_availability(
+        avail1 = await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=5.99,
             user_id=sample_user.id,
         )
-        repo.create_product_availability(
+        await repo.create_product_availability(
             product_id=product.id,
             store_id=store2.id,
             price=6.99,
@@ -577,66 +581,66 @@ class TestProductAvailabilities:
         )
 
         # Get availabilities for store1
-        availabilities = repo.get_product_availabilities(product.id, sample_store.id)
+        availabilities = await repo.get_product_availabilities(product.id, sample_store.id)
 
         assert len(availabilities) == 1
         assert availabilities[0].id == avail1.id
 
-    def test_get_availability_by_product_and_store(
+    async def test_get_availability_by_product_and_store(
         self, repo, sample_product_data, sample_store, sample_user
     ):
         """Test getting most recent availability by product and store."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        repo.create_product_availability(
+        await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=5.99,
             user_id=sample_user.id,
         )
 
-        availability = repo.get_availability_by_product_and_store(product.id, sample_store.id)
+        availability = await repo.get_availability_by_product_and_store(product.id, sample_store.id)
 
         assert availability is not None
 
-    def test_get_availability_by_product_and_store_returns_most_recent(
+    async def test_get_availability_by_product_and_store_returns_most_recent(
         self, repo, sample_product_data, sample_store, sample_user
     ):
         """Test getting most recent when multiple availabilities exist."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        repo.create_product_availability(
+        await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=5.99,
             user_id=sample_user.id,
         )
-        avail2 = repo.create_product_availability(
+        avail2 = await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=6.99,
             user_id=sample_user.id,
         )
 
-        availability = repo.get_availability_by_product_and_store(product.id, sample_store.id)
+        availability = await repo.get_availability_by_product_and_store(product.id, sample_store.id)
 
         # Should return most recent (avail2)
         assert availability.id == avail2.id
 
-    def test_update_product_availability_price(
+    async def test_update_product_availability_price(
         self, repo, sample_product_data, sample_store, sample_user
     ):
         """Test updating product availability price."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        availability = repo.create_product_availability(
+        availability = await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=5.99,
             user_id=sample_user.id,
         )
 
-        updated = repo.update_product_availability_price(
+        updated = await repo.update_product_availability_price(
             availability.id, price=7.99, notes='Price increased'
         )
 
@@ -644,13 +648,13 @@ class TestProductAvailabilities:
         assert updated.price == Decimal('7.99')
         assert updated.notes == 'Price increased'
 
-    def test_update_product_availability_price_without_notes(
+    async def test_update_product_availability_price_without_notes(
         self, repo, sample_product_data, sample_store, sample_user
     ):
         """Test updating price without changing notes."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        availability = repo.create_product_availability(
+        availability = await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=5.99,
@@ -658,32 +662,34 @@ class TestProductAvailabilities:
             user_id=sample_user.id,
         )
 
-        updated = repo.update_product_availability_price(availability.id, price=7.99)
+        updated = await repo.update_product_availability_price(availability.id, price=7.99)
 
         assert updated.price == Decimal('7.99')
         assert updated.notes == 'Original notes'  # Unchanged
 
-    def test_get_products_by_store(self, repo, sample_product_data, sample_store, sample_user):
+    async def test_get_products_by_store(
+        self, repo, sample_product_data, sample_store, sample_user
+    ):
         """Test getting products available at a store."""
-        product1 = repo.create_product('Product 1', 'Brand A', 'kg')
-        product2 = repo.create_product('Product 2', 'Brand B', 'L')
-        product3 = repo.create_product('Product 3', 'Brand C', 'each')
+        product1 = await repo.create_product('Product 1', 'Brand A', 'kg')
+        product2 = await repo.create_product('Product 2', 'Brand B', 'L')
+        product3 = await repo.create_product('Product 3', 'Brand C', 'each')
 
         # Add availability for products 1 and 2 at the store
-        repo.create_product_availability(
+        await repo.create_product_availability(
             product_id=product1.id,
             store_id=sample_store.id,
             price=5.99,
             user_id=sample_user.id,
         )
-        repo.create_product_availability(
+        await repo.create_product_availability(
             product_id=product2.id,
             store_id=sample_store.id,
             price=3.99,
             user_id=sample_user.id,
         )
 
-        products = repo.get_products_by_store(sample_store.id)
+        products = await repo.get_products_by_store(sample_store.id)
 
         assert len(products) == 2
         product_ids = {p.id for p in products}
@@ -691,9 +697,9 @@ class TestProductAvailabilities:
         assert product2.id in product_ids
         assert product3.id not in product_ids
 
-    def test_get_products_by_store_empty(self, repo, sample_store):
+    async def test_get_products_by_store_empty(self, repo, sample_store):
         """Test getting products for store with no availabilities."""
-        products = repo.get_products_by_store(sample_store.id)
+        products = await repo.get_products_by_store(sample_store.id)
 
         assert products == []
 
@@ -701,12 +707,12 @@ class TestProductAvailabilities:
 class TestBulkUpdateOperations:
     """Test bulk update operations."""
 
-    def test_bulk_update_product_bids(self, repo, storage):
+    async def test_bulk_update_product_bids(self, repo, storage):
         """Test bulk updating product bids."""
         from app.core.models import ProductBid
 
-        old_product = repo.create_product('Old Product', 'Brand', 'kg')
-        new_product = repo.create_product('New Product', 'Brand', 'kg')
+        old_product = await repo.create_product('Old Product', 'Brand', 'kg')
+        new_product = await repo.create_product('New Product', 'Brand', 'kg')
 
         # Create product bids for old product
         participation_id = uuid4()
@@ -726,47 +732,47 @@ class TestBulkUpdateOperations:
         storage.bids[bid1.id] = bid1
         storage.bids[bid2.id] = bid2
 
-        count = repo.bulk_update_product_bids(old_product.id, new_product.id)
+        count = await repo.bulk_update_product_bids(old_product.id, new_product.id)
 
         assert count == 2
         assert storage.bids[bid1.id].product_id == new_product.id
         assert storage.bids[bid2.id].product_id == new_product.id
 
-    def test_bulk_update_product_bids_no_matches(self, repo):
+    async def test_bulk_update_product_bids_no_matches(self, repo):
         """Test bulk update with no matching bids."""
-        product1 = repo.create_product('Product 1', 'Brand', 'kg')
-        product2 = repo.create_product('Product 2', 'Brand', 'kg')
+        product1 = await repo.create_product('Product 1', 'Brand', 'kg')
+        product2 = await repo.create_product('Product 2', 'Brand', 'kg')
 
-        count = repo.bulk_update_product_bids(product1.id, product2.id)
+        count = await repo.bulk_update_product_bids(product1.id, product2.id)
 
         assert count == 0
 
-    def test_bulk_update_product_availabilities(self, repo, sample_store, sample_user):
+    async def test_bulk_update_product_availabilities(self, repo, sample_store, sample_user):
         """Test bulk updating product availabilities."""
-        old_product = repo.create_product('Old Product', 'Brand', 'kg')
-        new_product = repo.create_product('New Product', 'Brand', 'kg')
+        old_product = await repo.create_product('Old Product', 'Brand', 'kg')
+        new_product = await repo.create_product('New Product', 'Brand', 'kg')
 
         # Create availabilities for old product
-        avail1 = repo.create_product_availability(
+        avail1 = await repo.create_product_availability(
             product_id=old_product.id,
             store_id=sample_store.id,
             price=5.99,
             user_id=sample_user.id,
         )
 
-        count = repo.bulk_update_product_availabilities(old_product.id, new_product.id)
+        count = await repo.bulk_update_product_availabilities(old_product.id, new_product.id)
 
         assert count == 1
-        updated_avail = repo.get_product_availabilities(new_product.id)
+        updated_avail = await repo.get_product_availabilities(new_product.id)
         assert len(updated_avail) == 1
         assert updated_avail[0].id == avail1.id
 
-    def test_bulk_update_shopping_list_items(self, repo, storage):
+    async def test_bulk_update_shopping_list_items(self, repo, storage):
         """Test bulk updating shopping list items."""
         from app.core.models import ShoppingListItem
 
-        old_product = repo.create_product('Old Product', 'Brand', 'kg')
-        new_product = repo.create_product('New Product', 'Brand', 'kg')
+        old_product = await repo.create_product('Old Product', 'Brand', 'kg')
+        new_product = await repo.create_product('New Product', 'Brand', 'kg')
 
         # Create shopping list items for old product
         run_id = uuid4()
@@ -786,17 +792,17 @@ class TestBulkUpdateOperations:
         storage.shopping_list_items[item1.id] = item1
         storage.shopping_list_items[item2.id] = item2
 
-        count = repo.bulk_update_shopping_list_items(old_product.id, new_product.id)
+        count = await repo.bulk_update_shopping_list_items(old_product.id, new_product.id)
 
         assert count == 2
         assert storage.shopping_list_items[item1.id].product_id == new_product.id
         assert storage.shopping_list_items[item2.id].product_id == new_product.id
 
-    def test_count_product_bids(self, repo, storage):
+    async def test_count_product_bids(self, repo, storage):
         """Test counting product bids."""
         from app.core.models import ProductBid
 
-        product = repo.create_product('Product', 'Brand', 'kg')
+        product = await repo.create_product('Product', 'Brand', 'kg')
 
         # Create bids for product
         participation_id = uuid4()
@@ -816,7 +822,7 @@ class TestBulkUpdateOperations:
         storage.bids[bid1.id] = bid1
         storage.bids[bid2.id] = bid2
 
-        count = repo.count_product_bids(product.id)
+        count = await repo.count_product_bids(product.id)
 
         assert count == 2
 
@@ -824,72 +830,72 @@ class TestBulkUpdateOperations:
 class TestEdgeCases:
     """Test edge cases and special scenarios."""
 
-    def test_very_long_product_name(self, repo):
+    async def test_very_long_product_name(self, repo):
         """Test with very long product name."""
         long_name = 'a' * 1000
-        product = repo.create_product(long_name, 'Brand', 'kg')
+        product = await repo.create_product(long_name, 'Brand', 'kg')
 
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved is not None
         assert retrieved.name == long_name
 
-    def test_special_characters_in_name(self, repo):
+    async def test_special_characters_in_name(self, repo):
         """Test with special characters in product name."""
         special_name = "Farmer's Choice (Organic) - Grade A+"
-        product = repo.create_product(special_name, 'Brand', 'kg')
+        product = await repo.create_product(special_name, 'Brand', 'kg')
 
         assert product.name == special_name
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved.name == special_name
 
-    def test_unicode_characters(self, repo):
+    async def test_unicode_characters(self, repo):
         """Test with unicode characters."""
         unicode_name = '有机苹果'
         unicode_brand = '新鲜农场'
-        product = repo.create_product(unicode_name, unicode_brand, 'kg')
+        product = await repo.create_product(unicode_name, unicode_brand, 'kg')
 
         assert product.name == unicode_name
         assert product.brand == unicode_brand
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved is not None
 
-    def test_concurrent_operations(self, repo):
+    async def test_concurrent_operations(self, repo):
         """Test creating multiple products (simulating concurrent operations)."""
         products = []
         for i in range(100):
-            product = repo.create_product(f'Product {i}', f'Brand {i}', 'kg')
+            product = await repo.create_product(f'Product {i}', f'Brand {i}', 'kg')
             products.append(product)
 
         # Verify all products exist
-        all_products = repo.get_all_products()
+        all_products = await repo.get_all_products()
         assert len(all_products) == 100
 
         # Verify all IDs are unique
         ids = [p.id for p in all_products]
         assert len(ids) == len(set(ids))
 
-    def test_repository_isolation(self, storage):
+    async def test_repository_isolation(self, storage):
         """Test fresh repository instance per test (via fixture)."""
         # This test verifies the fixture works correctly
         assert len(storage.products) == 0
         assert len(storage.product_availabilities) == 0
 
-    def test_search_with_special_characters(self, repo):
+    async def test_search_with_special_characters(self, repo):
         """Test search with special characters."""
-        product = repo.create_product("O'Brien's Apples (Organic)", 'Brand', 'kg')
+        product = await repo.create_product("O'Brien's Apples (Organic)", 'Brand', 'kg')
 
-        results = repo.search_products("O'Brien")
+        results = await repo.search_products("O'Brien")
 
         assert len(results) == 1
         assert results[0].id == product.id
 
-    def test_product_availability_with_zero_price(
+    async def test_product_availability_with_zero_price(
         self, repo, sample_product_data, sample_store, sample_user
     ):
         """Test creating availability with zero price."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
-        availability = repo.create_product_availability(
+        availability = await repo.create_product_availability(
             product_id=product.id,
             store_id=sample_store.id,
             price=0.0,
@@ -902,9 +908,9 @@ class TestEdgeCases:
 class TestDataIntegrity:
     """Test data integrity and isolation."""
 
-    def test_product_object_has_expected_fields(self, repo, sample_product_data):
+    async def test_product_object_has_expected_fields(self, repo, sample_product_data):
         """Test product object has all expected fields."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
         assert hasattr(product, 'id')
         assert hasattr(product, 'name')
@@ -914,21 +920,21 @@ class TestDataIntegrity:
         assert hasattr(product, 'created_at')
         assert hasattr(product, 'updated_at')
 
-    def test_product_object_is_not_none(self, repo, sample_product_data):
+    async def test_product_object_is_not_none(self, repo, sample_product_data):
         """Test product object is not None."""
-        product = repo.create_product(**sample_product_data)
+        product = await repo.create_product(**sample_product_data)
 
         assert product is not None
-        retrieved = repo.get_product_by_id(product.id)
+        retrieved = await repo.get_product_by_id(product.id)
         assert retrieved is not None
 
-    def test_multiple_repositories_share_storage(self, storage):
+    async def test_multiple_repositories_share_storage(self, storage):
         """Test multiple repository instances share the same storage."""
         repo1 = MemoryProductRepository(storage)
         repo2 = MemoryProductRepository(storage)
 
-        product = repo1.create_product('Product', 'Brand', 'kg')
+        product = await repo1.create_product('Product', 'Brand', 'kg')
 
         # Both repositories should see the same product
-        assert repo2.get_product_by_id(product.id) is not None
-        assert len(repo2.get_all_products()) == 1
+        assert await repo2.get_product_by_id(product.id) is not None
+        assert len(await repo2.get_all_products()) == 1

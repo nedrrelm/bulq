@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import (
     DistributionProduct,
@@ -52,7 +52,7 @@ logger = get_logger(__name__)
 class DistributionService(BaseService):
     """Service for distribution operations."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.bid_repo = get_bid_repository(db)
@@ -62,7 +62,9 @@ class DistributionService(BaseService):
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
 
-    def get_distribution_summary(self, run_id: UUID, current_user: User) -> list[DistributionUser]:
+    async def get_distribution_summary(
+        self, run_id: UUID, current_user: User
+    ) -> list[DistributionUser]:
         """Get distribution data aggregated by user.
 
         Args:
@@ -77,8 +79,8 @@ class DistributionService(BaseService):
             ForbiddenError: If user doesn't have access to the run
             BadRequestError: If distribution not available in current state
         """
-        self._validate_distribution_access(run_id, current_user)
-        all_bids = self.bid_repo.get_bids_by_run_with_participations(run_id)
+        await self._validate_distribution_access(run_id, current_user)
+        all_bids = await self.bid_repo.get_bids_by_run_with_participations(run_id)
 
         logger.debug(f'Found {len(all_bids)} bids for distribution', extra={'run_id': str(run_id)})
         for bid in all_bids:
@@ -88,7 +90,7 @@ class DistributionService(BaseService):
                 extra={'run_id': str(run_id), 'bid_id': str(bid.id)},
             )
 
-        users_data = self._aggregate_bids_by_user(all_bids)
+        users_data = await self._aggregate_bids_by_user(all_bids)
         logger.debug(f'Aggregated into {len(users_data)} users', extra={'run_id': str(run_id)})
 
         distributions = []
@@ -115,7 +117,7 @@ class DistributionService(BaseService):
                 )
 
         # Apply leader fee split
-        self._apply_leader_fee(run_id, distributions)
+        await self._apply_leader_fee(run_id, distributions)
 
         logger.debug(f'Returning {len(distributions)} distributions', extra={'run_id': str(run_id)})
         sorted_distributions = self._sort_distributions(distributions)
@@ -129,13 +131,13 @@ class DistributionService(BaseService):
 
         return sorted_distributions
 
-    def _validate_distribution_access(self, run_id: UUID, current_user: User) -> None:
+    async def _validate_distribution_access(self, run_id: UUID, current_user: User) -> None:
         """Validate user has access to view distribution."""
-        run = self.run_repo.get_run_by_id(run_id)
+        run = await self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        self._verify_run_access(
+        await self._verify_run_access(
             current_user, run, NOT_RUN_PARTICIPANT, 'Not authorized to view this run', run_id=run_id
         )
 
@@ -149,7 +151,9 @@ class DistributionService(BaseService):
                 allowed_states='distributing, completed',
             )
 
-    def _aggregate_bids_by_user(self, all_bids: list[ProductBid]) -> dict[str, dict[str, Any]]:
+    async def _aggregate_bids_by_user(
+        self, all_bids: list[ProductBid]
+    ) -> dict[str, dict[str, Any]]:
         """Group bids by user and aggregate totals."""
         users_data = {}
 
@@ -173,7 +177,7 @@ class DistributionService(BaseService):
                     'total_cost': 0.0,
                 }
 
-            product = self._get_product(bid.product_id)
+            product = await self._get_product(bid.product_id)
             if not product:
                 continue
 
@@ -215,19 +219,19 @@ class DistributionService(BaseService):
             all_picked_up=all_picked_up,
         )
 
-    def _apply_leader_fee(self, run_id: UUID, distributions: list[DistributionUser]) -> None:
+    async def _apply_leader_fee(self, run_id: UUID, distributions: list[DistributionUser]) -> None:
         """Apply leader fee split to distributions in-place.
 
         Fee is split evenly among participants who are not the leader or a helper.
         """
-        run = self.run_repo.get_run_by_id(run_id)
+        run = await self.run_repo.get_run_by_id(run_id)
         if not run or not run.leader_fee or float(run.leader_fee) <= 0:
             return
 
         fee = float(run.leader_fee)
 
         # Determine which users pay the fee (not leader, not helper)
-        participations = self.run_repo.get_run_participations(run_id)
+        participations = await self.run_repo.get_run_participations(run_id)
         exempt_user_ids = set()
         for p in participations:
             if p.is_leader or p.is_helper:
@@ -250,7 +254,9 @@ class DistributionService(BaseService):
         distributions.sort(key=lambda x: (x.all_picked_up, x.user_name))
         return distributions
 
-    def mark_picked_up(self, run_id: UUID, bid_id: UUID, current_user: User) -> SuccessResponse:
+    async def mark_picked_up(
+        self, run_id: UUID, bid_id: UUID, current_user: User
+    ) -> SuccessResponse:
         """Mark a product as picked up by a user.
 
         Args:
@@ -266,12 +272,12 @@ class DistributionService(BaseService):
             ForbiddenError: If user is not the run leader
         """
         # Get the run
-        run = self.run_repo.get_run_by_id(run_id)
+        run = await self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader or helper
-        participation = self.run_repo.get_participation(current_user.id, run_id)
+        participation = await self.run_repo.get_participation(current_user.id, run_id)
         if not participation or not self._is_leader_or_helper(participation):
             raise ForbiddenError(
                 code=NOT_RUN_LEADER_OR_HELPER,
@@ -280,14 +286,14 @@ class DistributionService(BaseService):
             )
 
         # Mark as picked up
-        bid = self._get_bid(bid_id)
+        bid = await self._get_bid(bid_id)
         if not bid:
             raise NotFoundError(
                 code=BID_NOT_FOUND, message='Bid not found', bid_id=bid_id, run_id=run_id
             )
 
         bid.is_picked_up = True
-        self._commit_changes()
+        await self._commit_changes()
 
         logger.info(
             'Bid marked as picked up',
@@ -312,7 +318,7 @@ class DistributionService(BaseService):
             },
         )
 
-    def complete_distribution(self, run_id: UUID, current_user: User) -> StateChangeResponse:
+    async def complete_distribution(self, run_id: UUID, current_user: User) -> StateChangeResponse:
         """Complete distribution - transition from distributing to completed state.
 
         Args:
@@ -328,12 +334,12 @@ class DistributionService(BaseService):
             BadRequestError: If not in distributing state or items not picked up
         """
         # Get the run
-        run = self.run_repo.get_run_by_id(run_id)
+        run = await self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
         # Verify user is the run leader
-        participation = self.run_repo.get_participation(current_user.id, run_id)
+        participation = await self.run_repo.get_participation(current_user.id, run_id)
         if not participation or not participation.is_leader:
             raise ForbiddenError(
                 code=NOT_RUN_LEADER,
@@ -353,7 +359,7 @@ class DistributionService(BaseService):
             )
 
         # Verify all items are picked up
-        all_bids = self.bid_repo.get_bids_by_run(run_id)
+        all_bids = await self.bid_repo.get_bids_by_run(run_id)
         unpicked_bids = [
             bid
             for bid in all_bids
@@ -368,13 +374,13 @@ class DistributionService(BaseService):
             )
 
         # Wrap state change and notifications in transaction
-        with transaction(self.db, 'complete distribution and transition to completed state'):
+        async with transaction(self.db, 'complete distribution and transition to completed state'):
             # Transition to completed state
             old_state = run.state
-            self.run_repo.update_run_state(run_id, RunState.COMPLETED)
+            await self.run_repo.update_run_state(run_id, RunState.COMPLETED)
 
             # Create notifications for all participants
-            self._notify_run_state_change(run, old_state, RunState.COMPLETED)
+            await self._notify_run_state_change(run, old_state, RunState.COMPLETED)
 
         logger.info(
             'Distribution completed', extra={'run_id': str(run_id), 'user_id': str(current_user.id)}
@@ -386,19 +392,19 @@ class DistributionService(BaseService):
             group_id=str(run.group_id),
         )
 
-    def _get_product(self, product_id: UUID) -> Product:
+    async def _get_product(self, product_id: UUID) -> Product:
         """Get product from repository."""
-        return self.product_repo.get_product_by_id(product_id)
+        return await self.product_repo.get_product_by_id(product_id)
 
-    def _get_bid(self, bid_id: UUID) -> ProductBid:
+    async def _get_bid(self, bid_id: UUID) -> ProductBid:
         """Get bid from repository."""
-        return self.bid_repo.get_bid_by_id(bid_id)
+        return await self.bid_repo.get_bid_by_id(bid_id)
 
-    def _commit_changes(self) -> None:
+    async def _commit_changes(self) -> None:
         """Commit changes."""
-        self.bid_repo.commit_changes()
+        await self.bid_repo.commit_changes()
 
-    def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
+    async def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
         """Create notifications for all participants when run state changes.
 
         Args:
@@ -407,10 +413,10 @@ class DistributionService(BaseService):
             new_state: New state
         """
         # Get store name for notification
-        store_name = self._get_store_name(run.store_id)
+        store_name = await self._get_store_name(run.store_id)
 
         # Get all participants of this run
-        participations = self.run_repo.get_run_participations(run.id)
+        participations = await self.run_repo.get_run_participations(run.id)
 
         # Create notification data using Pydantic model for type safety
         notification_data = RunStateChangedData(
@@ -426,7 +432,7 @@ class DistributionService(BaseService):
         from app.api.websocket_manager import manager
 
         for participation in participations:
-            notification = self.notification_repo.create_notification(
+            notification = await self.notification_repo.create_notification(
                 user_id=participation.user_id,
                 type='run_state_changed',
                 data=notification_data.model_dump(mode='json'),

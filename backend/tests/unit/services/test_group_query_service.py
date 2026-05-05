@@ -1,6 +1,6 @@
 """Unit tests for GroupQueryService."""
 
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
 import pytest
@@ -15,10 +15,10 @@ from app.services.group_query_service import GroupQueryService
 class TestGetUserGroups:
     """Test cases for GroupQueryService.get_user_groups()."""
 
-    def test_get_user_groups_success(self, test_user):
+    async def test_get_user_groups_success(self, test_user):
         """Test successfully getting user's groups."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
 
         mock_creator = Mock()
@@ -32,11 +32,11 @@ class TestGetUserGroups:
         mock_group.created_at = None
 
         service = GroupQueryService(mock_db)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_runs_by_group = Mock(return_value=[])
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_runs_by_group = AsyncMock(return_value=[])
 
         # Act
-        result = service.get_user_groups(test_user)
+        result = await service.get_user_groups(test_user)
 
         # Assert
         assert len(result) == 1
@@ -46,10 +46,10 @@ class TestGetUserGroups:
         assert result[0].active_runs_count == 0
         assert result[0].completed_runs_count == 0
 
-    def test_get_user_groups_with_runs(self, test_user):
+    async def test_get_user_groups_with_runs(self, test_user):
         """Test getting groups with active and completed runs."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
         store_id = uuid4()
 
@@ -77,11 +77,11 @@ class TestGetUserGroups:
         completed_run.store = mock_store
 
         service = GroupQueryService(mock_db)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_runs_by_group = Mock(return_value=[active_run, completed_run])
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_runs_by_group = AsyncMock(return_value=[active_run, completed_run])
 
         # Act
-        result = service.get_user_groups(test_user)
+        result = await service.get_user_groups(test_user)
 
         # Assert
         assert len(result) == 1
@@ -90,23 +90,23 @@ class TestGetUserGroups:
         assert len(result[0].active_runs) == 1
         assert result[0].active_runs[0].store_name == 'Test Store'
 
-    def test_get_user_groups_empty(self, test_user):
+    async def test_get_user_groups_empty(self, test_user):
         """Test getting groups when user has none."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = GroupQueryService(mock_db)
-        service.user_repo.get_user_groups = Mock(return_value=[])
+        service.user_repo.get_user_groups = AsyncMock(return_value=[])
 
         # Act
-        result = service.get_user_groups(test_user)
+        result = await service.get_user_groups(test_user)
 
         # Assert
         assert result == []
 
-    def test_get_user_groups_sorts_by_state(self, test_user):
+    async def test_get_user_groups_sorts_by_state(self, test_user):
         """Test that runs are sorted by state priority."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
         store_id = uuid4()
 
@@ -140,13 +140,13 @@ class TestGetUserGroups:
         shopping_run.store = mock_store
 
         service = GroupQueryService(mock_db)
-        service.user_repo.get_user_groups = Mock(return_value=[mock_group])
-        service.run_repo.get_runs_by_group = Mock(
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_runs_by_group = AsyncMock(
             return_value=[planning_run, distributing_run, shopping_run]
         )
 
         # Act
-        result = service.get_user_groups(test_user)
+        result = await service.get_user_groups(test_user)
 
         # Assert - should be sorted: distributing > shopping > planning
         active_runs = result[0].active_runs
@@ -159,10 +159,10 @@ class TestGetUserGroups:
 class TestGetGroupDetails:
     """Test cases for GroupQueryService.get_group_details()."""
 
-    def test_get_group_details_success(self, test_user):
+    async def test_get_group_details_success(self, test_user):
         """Test successfully getting group details."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
 
         mock_group = Mock(spec=Group)
@@ -176,13 +176,15 @@ class TestGetGroupDetails:
         ]
 
         service = GroupQueryService(mock_db)
-        service.group_repo.get_group_by_id = Mock(return_value=mock_group)
-        service._is_group_member = Mock(return_value=True)
-        service.group_repo.get_group_members_with_admin_status = Mock(return_value=mock_members)
-        service.group_repo.is_user_group_admin = Mock(return_value=True)
+        service.group_repo.get_group_by_id = AsyncMock(return_value=mock_group)
+        service._is_group_member = AsyncMock(return_value=True)
+        service.group_repo.get_group_members_with_admin_status = AsyncMock(
+            return_value=mock_members
+        )
+        service.group_repo.is_user_group_admin = AsyncMock(return_value=True)
 
         # Act
-        result = service.get_group_details(str(group_id), test_user)
+        result = await service.get_group_details(str(group_id), test_user)
 
         # Assert
         assert result.id == str(group_id)
@@ -192,49 +194,49 @@ class TestGetGroupDetails:
         assert result.is_current_user_admin is True
         assert len(result.members) == 1
 
-    def test_get_group_details_invalid_uuid(self, test_user):
+    async def test_get_group_details_invalid_uuid(self, test_user):
         """Test getting details with invalid UUID."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = GroupQueryService(mock_db)
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            service.get_group_details('invalid-uuid', test_user)
+            await service.get_group_details('invalid-uuid', test_user)
 
         assert exc_info.value.code == INVALID_UUID_FORMAT
 
-    def test_get_group_details_group_not_found(self, test_user):
+    async def test_get_group_details_group_not_found(self, test_user):
         """Test getting details for non-existent group."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
 
         service = GroupQueryService(mock_db)
-        service.group_repo.get_group_by_id = Mock(return_value=None)
+        service.group_repo.get_group_by_id = AsyncMock(return_value=None)
 
         # Act & Assert
         with pytest.raises(NotFoundError) as exc_info:
-            service.get_group_details(str(group_id), test_user)
+            await service.get_group_details(str(group_id), test_user)
 
         assert exc_info.value.code == GROUP_NOT_FOUND
 
-    def test_get_group_details_not_member(self, test_user):
+    async def test_get_group_details_not_member(self, test_user):
         """Test getting details when user is not a member."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
 
         mock_group = Mock(spec=Group)
         mock_group.id = group_id
 
         service = GroupQueryService(mock_db)
-        service.group_repo.get_group_by_id = Mock(return_value=mock_group)
-        service._is_group_member = Mock(return_value=False)
+        service.group_repo.get_group_by_id = AsyncMock(return_value=mock_group)
+        service._is_group_member = AsyncMock(return_value=False)
 
         # Act & Assert
         with pytest.raises(ForbiddenError) as exc_info:
-            service.get_group_details(str(group_id), test_user)
+            await service.get_group_details(str(group_id), test_user)
 
         assert exc_info.value.code == NOT_GROUP_MEMBER
 
@@ -242,10 +244,10 @@ class TestGetGroupDetails:
 class TestGetGroupRuns:
     """Test cases for GroupQueryService.get_group_runs()."""
 
-    def test_get_group_runs_success(self, test_user):
+    async def test_get_group_runs_success(self, test_user):
         """Test successfully getting group runs."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
         run_id = uuid4()
         store_id = uuid4()
@@ -280,13 +282,13 @@ class TestGetGroupRuns:
         mock_participation.user = mock_user
 
         service = GroupQueryService(mock_db)
-        service.group_repo.get_group_by_id = Mock(return_value=mock_group)
-        service._verify_group_membership = Mock()
-        service.run_repo.get_runs_by_group = Mock(return_value=[mock_run])
-        service.run_repo.get_run_participations = Mock(return_value=[mock_participation])
+        service.group_repo.get_group_by_id = AsyncMock(return_value=mock_group)
+        service._verify_group_membership = AsyncMock()
+        service.run_repo.get_runs_by_group = AsyncMock(return_value=[mock_run])
+        service.run_repo.get_run_participations = AsyncMock(return_value=[mock_participation])
 
         # Act
-        result = service.get_group_runs(str(group_id), test_user)
+        result = await service.get_group_runs(str(group_id), test_user)
 
         # Assert
         assert len(result) == 1
@@ -295,49 +297,49 @@ class TestGetGroupRuns:
         assert result[0].leader_name == 'Leader'
         assert result[0].state == RunState.ACTIVE
 
-    def test_get_group_runs_invalid_uuid(self, test_user):
+    async def test_get_group_runs_invalid_uuid(self, test_user):
         """Test getting runs with invalid UUID."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         service = GroupQueryService(mock_db)
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            service.get_group_runs('invalid-uuid', test_user)
+            await service.get_group_runs('invalid-uuid', test_user)
 
         assert exc_info.value.code == INVALID_UUID_FORMAT
 
-    def test_get_group_runs_group_not_found(self, test_user):
+    async def test_get_group_runs_group_not_found(self, test_user):
         """Test getting runs for non-existent group."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
 
         service = GroupQueryService(mock_db)
-        service.group_repo.get_group_by_id = Mock(return_value=None)
+        service.group_repo.get_group_by_id = AsyncMock(return_value=None)
 
         # Act & Assert
         with pytest.raises(NotFoundError) as exc_info:
-            service.get_group_runs(str(group_id), test_user)
+            await service.get_group_runs(str(group_id), test_user)
 
         assert exc_info.value.code == GROUP_NOT_FOUND
 
-    def test_get_group_runs_empty(self, test_user):
+    async def test_get_group_runs_empty(self, test_user):
         """Test getting runs when group has none."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
 
         mock_group = Mock(spec=Group)
         mock_group.id = group_id
 
         service = GroupQueryService(mock_db)
-        service.group_repo.get_group_by_id = Mock(return_value=mock_group)
-        service._verify_group_membership = Mock()
-        service.run_repo.get_runs_by_group = Mock(return_value=[])
+        service.group_repo.get_group_by_id = AsyncMock(return_value=mock_group)
+        service._verify_group_membership = AsyncMock()
+        service.run_repo.get_runs_by_group = AsyncMock(return_value=[])
 
         # Act
-        result = service.get_group_runs(str(group_id), test_user)
+        result = await service.get_group_runs(str(group_id), test_user)
 
         # Assert
         assert result == []
@@ -346,10 +348,10 @@ class TestGetGroupRuns:
 class TestGetGroupCompletedCancelledRuns:
     """Test cases for GroupQueryService.get_group_completed_cancelled_runs()."""
 
-    def test_get_completed_cancelled_runs_success(self, test_user):
+    async def test_get_completed_cancelled_runs_success(self, test_user):
         """Test successfully getting completed/cancelled runs with pagination."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
         run_id = uuid4()
 
@@ -382,13 +384,13 @@ class TestGetGroupCompletedCancelledRuns:
         mock_participation.user = mock_user
 
         service = GroupQueryService(mock_db)
-        service.group_repo.get_group_by_id = Mock(return_value=mock_group)
-        service._verify_group_membership = Mock()
-        service.run_repo.get_completed_cancelled_runs_by_group = Mock(return_value=[mock_run])
-        service.run_repo.get_run_participations = Mock(return_value=[mock_participation])
+        service.group_repo.get_group_by_id = AsyncMock(return_value=mock_group)
+        service._verify_group_membership = AsyncMock()
+        service.run_repo.get_completed_cancelled_runs_by_group = AsyncMock(return_value=[mock_run])
+        service.run_repo.get_run_participations = AsyncMock(return_value=[mock_participation])
 
         # Act
-        result = service.get_group_completed_cancelled_runs(
+        result = await service.get_group_completed_cancelled_runs(
             str(group_id), test_user, limit=10, offset=0
         )
 
@@ -401,22 +403,24 @@ class TestGetGroupCompletedCancelledRuns:
             group_id, 10, 0
         )
 
-    def test_get_completed_cancelled_runs_with_pagination(self, test_user):
+    async def test_get_completed_cancelled_runs_with_pagination(self, test_user):
         """Test pagination parameters are passed correctly."""
         # Arrange
-        mock_db = Mock()
+        mock_db = AsyncMock()
         group_id = uuid4()
 
         mock_group = Mock(spec=Group)
         mock_group.id = group_id
 
         service = GroupQueryService(mock_db)
-        service.group_repo.get_group_by_id = Mock(return_value=mock_group)
-        service._verify_group_membership = Mock()
-        service.run_repo.get_completed_cancelled_runs_by_group = Mock(return_value=[])
+        service.group_repo.get_group_by_id = AsyncMock(return_value=mock_group)
+        service._verify_group_membership = AsyncMock()
+        service.run_repo.get_completed_cancelled_runs_by_group = AsyncMock(return_value=[])
 
         # Act
-        service.get_group_completed_cancelled_runs(str(group_id), test_user, limit=5, offset=10)
+        await service.get_group_completed_cancelled_runs(
+            str(group_id), test_user, limit=5, offset=10
+        )
 
         # Assert
         service.run_repo.get_completed_cancelled_runs_by_group.assert_called_once_with(

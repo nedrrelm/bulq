@@ -31,7 +31,7 @@ from .errors.handlers import (
     validation_exception_handler,
 )
 from .infrastructure.config import ALLOWED_ORIGINS
-from .infrastructure.database import create_tables
+from .infrastructure.database import AsyncSessionLocal, async_engine, create_tables
 from .infrastructure.logging_config import setup_logging
 from .infrastructure.rate_limiter import limiter
 from .utils.background_tasks import create_background_task
@@ -45,7 +45,7 @@ setup_logging(level=log_level)
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup logic
-    create_tables()
+    await create_tables()
 
     # Register event handlers for domain events
     from .api.websocket_manager import manager
@@ -92,16 +92,11 @@ async def lifespan(app: FastAPI):
     # For now, we subscribe a lambda that creates handler on-demand
     async def handle_run_state_changed_notification(event: RunStateChangedEvent):
         """Handle run state changed event for notifications."""
-        from .infrastructure.database import SessionLocal
-
-        db = SessionLocal()
-        try:
+        async with AsyncSessionLocal() as db:
             notification_repo = get_notification_repository(db)
             notification_handler = NotificationEventHandler(notification_repo)
             await notification_handler.handle_run_state_changed(event)
-            db.commit()
-        finally:
-            db.close()
+            await db.commit()
 
     event_bus.subscribe(RunStateChangedEvent, handle_run_state_changed_notification)
 
@@ -111,13 +106,11 @@ async def lifespan(app: FastAPI):
     logger.info('✅ Event handlers registered successfully')
 
     # Initialize default settings
-    from .infrastructure.database import SessionLocal
     from .infrastructure.runtime_settings import initialize_default_settings
 
     try:
-        db = SessionLocal()
-        initialize_default_settings(db)
-        db.close()
+        async with AsyncSessionLocal() as db:
+            await initialize_default_settings(db)
         logger.info('⚙️  Default settings initialized')
     except Exception as e:
         logger.error(f'Failed to initialize default settings: {e}', exc_info=True)
@@ -130,19 +123,14 @@ async def lifespan(app: FastAPI):
 
             if REPO_MODE == 'memory':
                 # Memory mode: pass None as db_session
-                create_seed_data(None)
+                await create_seed_data(None)
                 logger.info('🌱 Seed data created (memory mode)')
             else:
                 # Database mode: pass db session
-                from .infrastructure.database import SessionLocal
-
-                db = SessionLocal()
-                try:
-                    create_seed_data(db)
-                    db.commit()
+                async with AsyncSessionLocal() as db:
+                    await create_seed_data(db)
+                    await db.commit()
                     logger.info('🌱 Seed data created (database mode)')
-                finally:
-                    db.close()
         except ImportError as e:
             logger.warning(f'Could not import seed data: {e}. Skipping seed data creation.')
             raise
@@ -164,13 +152,13 @@ async def lifespan(app: FastAPI):
     # Initialize session store
     from .infrastructure.session_store import init_session_store
 
-    init_session_store()
+    await init_session_store()
     logger.info('📦 Session store initialized')
 
     # Initialize cache
     from .infrastructure.cache import init_cache
 
-    init_cache()
+    await init_cache()
     logger.info('📦 Cache initialized')
 
     # Yield control to the application
@@ -237,10 +225,10 @@ async def db_health_check():
     try:
         from sqlalchemy import text
 
-        from .infrastructure.database import engine, get_pool_status
+        from .infrastructure.database import get_pool_status
 
-        with engine.connect() as conn:
-            conn.execute(text('SELECT 1'))
+        async with async_engine.connect() as conn:
+            await conn.execute(text('SELECT 1'))
 
         pool_status = get_pool_status()
         return {
