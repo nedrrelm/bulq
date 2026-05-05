@@ -61,6 +61,9 @@ ignore = [
     "D415", # first line should end with a period, question mark, or exclamation point
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D101", "B017"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 
