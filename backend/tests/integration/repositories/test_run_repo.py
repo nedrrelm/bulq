@@ -4,6 +4,7 @@ import uuid
 
 import pytest
 
+from app.core.exceptions import BadRequestError
 from app.core.run_state import RunState
 from app.repositories.database.run import DatabaseRunRepository
 
@@ -180,7 +181,7 @@ class TestUpdateRunState:
         store = create_store(name='Inv Store', creator=leader)
         run = repo.create_run(group_id=group.id, store_id=store.id, leader_id=leader.id)
 
-        with pytest.raises(Exception):
+        with pytest.raises(BadRequestError):
             # Cannot go from PLANNING directly to COMPLETED
             repo.update_run_state(run.id, RunState.COMPLETED)
 

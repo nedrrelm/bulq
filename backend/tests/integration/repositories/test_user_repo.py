@@ -4,6 +4,7 @@ import uuid
 
 import bcrypt
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from app.core.models import group_membership
 from app.repositories.database.user import DatabaseUserRepository
@@ -40,7 +41,7 @@ class TestCreateUser:
     def test_create_user_duplicate_username_raises(self, repo):
         """Test that creating a user with duplicate username raises."""
         repo.create_user(name='First', username='dupe', password_hash='hash1')
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             repo.create_user(name='Second', username='dupe', password_hash='hash2')
 
 
