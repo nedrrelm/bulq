@@ -216,6 +216,14 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
                     )}
                   </div>
                 </div>
+              ) : needsAdjustmentSurplus && !product.current_user_bid ? (
+                <button
+                  onClick={() => onPlaceBid(product)}
+                  className="place-bid-button"
+                  title={t('run:product.placeBid')}
+                >
+                  +
+                </button>
               ) : product.current_user_bid && (adjustmentOk || notPurchasedAdjusting) ? (
                 <div className="user-bid-status">
                   <span className="current-bid">

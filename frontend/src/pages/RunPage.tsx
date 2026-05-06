@@ -936,21 +936,26 @@ export default function RunPage() {
           let minAllowed: number | undefined = undefined
           let maxAllowed: number | undefined = undefined
 
-          if (isAdjustingMode && currentBid && hasPurchasedQuantity) {
-            if (difference < 0) {
-              // Shortage: can only decrease, but not below (currentBid - shortage)
-              const shortage = Math.abs(difference)
-              minAllowed = Math.round(Math.max(0, currentBid.quantity - shortage) * 100) / 100
-              maxAllowed = Math.round(currentBid.quantity * 100) / 100
+          if (isAdjustingMode && hasPurchasedQuantity) {
+            if (currentBid) {
+              if (difference < 0) {
+                // Shortage: can only decrease, but not below (currentBid - shortage)
+                const shortage = Math.abs(difference)
+                minAllowed = Math.round(Math.max(0, currentBid.quantity - shortage) * 100) / 100
+                maxAllowed = Math.round(currentBid.quantity * 100) / 100
+              } else if (difference > 0) {
+                // Surplus: can only increase, but not above (currentBid + surplus)
+                const surplus = difference
+                minAllowed = Math.round(currentBid.quantity * 100) / 100
+                maxAllowed = Math.round((currentBid.quantity + surplus) * 100) / 100
+              } else {
+                // No difference, quantities match (shouldn't happen in adjusting mode)
+                minAllowed = Math.round(currentBid.quantity * 100) / 100
+                maxAllowed = Math.round(currentBid.quantity * 100) / 100
+              }
             } else if (difference > 0) {
-              // Surplus: can only increase, but not above (currentBid + surplus)
-              const surplus = difference
-              minAllowed = Math.round(currentBid.quantity * 100) / 100
-              maxAllowed = Math.round((currentBid.quantity + surplus) * 100) / 100
-            } else {
-              // No difference, quantities match (shouldn't happen in adjusting mode)
-              minAllowed = Math.round(currentBid.quantity * 100) / 100
-              maxAllowed = Math.round(currentBid.quantity * 100) / 100
+              // New bid on surplus product: can bid up to the surplus amount
+              maxAllowed = Math.round(difference * 100) / 100
             }
           }
 
