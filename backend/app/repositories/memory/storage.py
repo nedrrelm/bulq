@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from app.core.models import (
+    DistributionGroup,
     Group,
     LeaderReassignmentRequest,
     Notification,
@@ -46,6 +47,7 @@ class MemoryStorage:
         self._product_availabilities: dict[UUID, ProductAvailability] = {}
         self._notifications: dict[UUID, Notification] = {}
         self._reassignment_requests: dict[UUID, LeaderReassignmentRequest] = {}
+        self._distribution_groups: dict[UUID, DistributionGroup] = {}
 
         MemoryStorage._initialized = True
 
@@ -104,3 +106,7 @@ class MemoryStorage:
     @property
     def reassignment_requests(self) -> dict[UUID, LeaderReassignmentRequest]:
         return self._reassignment_requests
+
+    @property
+    def distribution_groups(self) -> dict[UUID, DistributionGroup]:
+        return self._distribution_groups

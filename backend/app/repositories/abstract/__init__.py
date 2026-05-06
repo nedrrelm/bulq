@@ -1,6 +1,7 @@
 """Abstract repository interfaces."""
 
 from app.repositories.abstract.bid import AbstractBidRepository
+from app.repositories.abstract.distribution_group import AbstractDistributionGroupRepository
 from app.repositories.abstract.group import AbstractGroupRepository
 from app.repositories.abstract.notification import AbstractNotificationRepository
 from app.repositories.abstract.product import AbstractProductRepository
@@ -12,6 +13,7 @@ from app.repositories.abstract.user import AbstractUserRepository
 
 __all__ = [
     'AbstractBidRepository',
+    'AbstractDistributionGroupRepository',
     'AbstractGroupRepository',
     'AbstractNotificationRepository',
     'AbstractProductRepository',

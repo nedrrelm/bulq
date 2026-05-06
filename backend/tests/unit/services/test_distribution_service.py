@@ -14,9 +14,21 @@ from app.core.error_codes import (
     RUN_NOT_IN_DISTRIBUTING_STATE,
 )
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
-from app.core.models import Product, ProductBid, Run, RunParticipation, User
+from app.core.models import DistributionGroup, Product, ProductBid, Run, RunParticipation, User
 from app.core.run_state import RunState
 from app.services.distribution_service import DistributionService
+
+
+def _mock_distribution_group(run_id, group_id=None, is_default=True):
+    """Create a mock distribution group."""
+    mock_group = Mock(spec=DistributionGroup)
+    mock_group.id = group_id or uuid4()
+    mock_group.run_id = run_id
+    mock_group.name = '1'
+    mock_group.is_default = is_default
+    mock_group.is_done = False
+    mock_group.sort_order = 0
+    return mock_group
 
 
 class TestGetDistributionSummary:
@@ -30,10 +42,7 @@ class TestGetDistributionSummary:
         bid_id = uuid4()
         product_id = uuid4()
         user_id = uuid4()
-
-        mock_run = Mock(spec=Run)
-        mock_run.id = run_id
-        mock_run.state = RunState.DISTRIBUTING
+        group_id = uuid4()
 
         mock_user = Mock(spec=User)
         mock_user.id = user_id
@@ -42,6 +51,7 @@ class TestGetDistributionSummary:
         mock_participation = Mock(spec=RunParticipation)
         mock_participation.user_id = user_id
         mock_participation.user = mock_user
+        mock_participation.distribution_group_id = group_id
 
         mock_product = Mock(spec=Product)
         mock_product.id = product_id
@@ -58,39 +68,54 @@ class TestGetDistributionSummary:
         mock_bid.is_picked_up = False
         mock_bid.participation = mock_participation
 
+        mock_group = _mock_distribution_group(run_id, group_id)
+
         service = DistributionService(mock_db)
         service._validate_distribution_access = AsyncMock()
+        service._ensure_groups_exist = AsyncMock()
         service.bid_repo.get_bids_by_run_with_participations = AsyncMock(return_value=[mock_bid])
         service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.dist_group_repo.get_groups_by_run = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_run_participations = AsyncMock(return_value=[mock_participation])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=Mock(leader_fee=None))
 
         # Act
         result = await service.get_distribution_summary(run_id, test_user)
 
         # Assert
-        assert len(result) == 1
-        assert result[0].user_name == 'Test User'
-        assert len(result[0].products) == 1
-        assert result[0].products[0].product_name == 'Apple'
-        assert result[0].all_picked_up is False
+        assert len(result.groups) == 1
+        assert len(result.groups[0].users) == 1
+        assert result.groups[0].users[0].user_name == 'Test User'
+        assert len(result.groups[0].users[0].products) == 1
+        assert result.groups[0].users[0].products[0].product_name == 'Apple'
+        assert result.groups[0].users[0].all_picked_up is False
 
     async def test_get_distribution_summary_skips_interested_only(self, test_user):
         """Test that interested-only bids are skipped."""
         # Arrange
         mock_db = AsyncMock()
         run_id = uuid4()
+        group_id = uuid4()
 
         mock_bid = Mock(spec=ProductBid)
         mock_bid.interested_only = True
 
+        mock_group = _mock_distribution_group(run_id, group_id)
+
         service = DistributionService(mock_db)
         service._validate_distribution_access = AsyncMock()
+        service._ensure_groups_exist = AsyncMock()
         service.bid_repo.get_bids_by_run_with_participations = AsyncMock(return_value=[mock_bid])
+        service.dist_group_repo.get_groups_by_run = AsyncMock(return_value=[mock_group])
+        service.run_repo.get_run_participations = AsyncMock(return_value=[])
+        service.run_repo.get_run_by_id = AsyncMock(return_value=Mock(leader_fee=None))
 
         # Act
         result = await service.get_distribution_summary(run_id, test_user)
 
         # Assert
-        assert result == []
+        assert len(result.groups) == 1
+        assert len(result.groups[0].users) == 0
 
     async def test_get_distribution_summary_run_not_found(self, test_user):
         """Test getting distribution for non-existent run."""

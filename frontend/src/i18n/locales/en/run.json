@@ -207,7 +207,8 @@
   "empty": {
     "noProducts": "No products added yet. Click 'Add Product' to start!",
     "noItemsToDistribute": "No items to distribute",
-    "noBidsYet": "No bids placed yet"
+    "noBidsYet": "No bids placed yet",
+    "noUsersInGroup": "No users in this group"
   },
   "states": {
     "planning": "Planning",
@@ -233,5 +234,15 @@
     "planned": "Planned",
     "completed": "Completed",
     "cancelled": "Cancelled"
+  },
+  "distributionGroups": {
+    "addGroup": "Add Group",
+    "deleteGroup": "Delete Group",
+    "markGroupDone": "Mark Done",
+    "groupDone": "Done",
+    "moveTo": "Move to group",
+    "groupLabel": "Group {{name}}",
+    "groupTotal": "Group Total",
+    "productTotals": "Products"
   }
 }

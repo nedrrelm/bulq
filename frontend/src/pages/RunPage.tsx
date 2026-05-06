@@ -34,7 +34,7 @@ import { useNotifications } from '../hooks/useNotifications'
 import { useRun, runKeys, useToggleReady, useRevertToActive, useStartShopping, useFinishAdjusting } from '../hooks/queries'
 import { useAuth } from '../hooks/useAuth'
 import { handleError, formatErrorForDisplay } from '../utils/errorHandling'
-import { useDistribution, useMarkPickedUp, useCompleteDistribution, distributionKeys } from '../hooks/queries/useDistribution'
+import { useDistribution, useMarkPickedUp, useCompleteDistribution, useCreateGroup, useDeleteGroup, useAssignUserToGroup, useMarkGroupDone, distributionKeys } from '../hooks/queries/useDistribution'
 import type { DistributionUser } from '../schemas/distribution'
 
 // Using RunDetail type from API layer
@@ -56,9 +56,13 @@ export default function RunPage() {
 
   // Distribution data (only fetched when in distributing or completed state)
   const shouldFetchDistribution = run?.state === 'distributing' || run?.state === 'completed'
-  const { data: allUsers = [] } = useDistribution(runId || '', { enabled: shouldFetchDistribution })
+  const { data: distributionData } = useDistribution(runId || '', { enabled: shouldFetchDistribution })
   const markPickedUpMutation = useMarkPickedUp(runId || '')
   const completeDistributionMutation = useCompleteDistribution(runId || '')
+  const createGroupMutation = useCreateGroup(runId || '')
+  const deleteGroupMutation = useDeleteGroup(runId || '')
+  const assignUserToGroupMutation = useAssignUserToGroup(runId || '')
+  const markGroupDoneMutation = useMarkGroupDone(runId || '')
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
 
   const error = getErrorMessage(queryError, '')
@@ -417,52 +421,88 @@ export default function RunPage() {
     }
   }
 
+  const handleCreateGroup = async () => {
+    try {
+      await createGroupMutation.mutateAsync()
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'create group'), 'error')
+    }
+  }
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      await deleteGroupMutation.mutateAsync(groupId)
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'delete group'), 'error')
+    }
+  }
+
+  const handleAssignUserToGroup = async (groupId: string, userId: string) => {
+    try {
+      await assignUserToGroupMutation.mutateAsync({ groupId, userId })
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'assign user to group'), 'error')
+    }
+  }
+
+  const handleMarkGroupDone = async (groupId: string) => {
+    try {
+      await markGroupDoneMutation.mutateAsync(groupId)
+    } catch (err) {
+      showToast(formatErrorForDisplay(err, 'mark group as done'), 'error')
+    }
+  }
+
   const toggleExpand = (userId: string) => {
     setExpandedUserId(expandedUserId === userId ? null : userId)
   }
 
-  // Filter out users who have no purchased products
-  const distributionUsers = useMemo(() => {
-    // First, calculate total distributed quantities for each product across all users
-    const productTotals = new Map<string, { total: number, remaining: number }>()
+  // Enrich distribution groups with per-group product totals
+  const distributionGroups = useMemo(() => {
+    if (!distributionData) return []
 
-    allUsers.forEach(user => {
-      user.products.forEach(product => {
-        if (product.distributed_quantity && product.distributed_quantity > 0) {
-          const existing = productTotals.get(product.product_id) || { total: 0, remaining: 0 }
-          existing.total += product.distributed_quantity
-          if (!product.is_picked_up) {
-            existing.remaining += product.distributed_quantity
+    return distributionData.groups.map(group => {
+      // Calculate product totals within this group only
+      const groupProductTotals = new Map<string, { total: number, remaining: number }>()
+
+      group.users.forEach(user => {
+        user.products.forEach(product => {
+          if (product.distributed_quantity && product.distributed_quantity > 0) {
+            const existing = groupProductTotals.get(product.product_id) || { total: 0, remaining: 0 }
+            existing.total += product.distributed_quantity
+            if (!product.is_picked_up) {
+              existing.remaining += product.distributed_quantity
+            }
+            groupProductTotals.set(product.product_id, existing)
           }
-          productTotals.set(product.product_id, existing)
-        }
+        })
       })
+
+      const enrichedUsers = group.users
+        .map(user => {
+          const filteredProducts = user.products.filter(p =>
+            p.distributed_quantity && p.distributed_quantity > 0
+          )
+          const enrichedProducts = filteredProducts.map(p => {
+            const totals = groupProductTotals.get(p.product_id)
+            return {
+              ...p,
+              remaining_total: totals?.remaining || 0,
+              distributed_total: totals?.total || 0
+            }
+          })
+          return { ...user, products: enrichedProducts }
+        })
+        .filter(user => user.products.length > 0)
+
+      return { ...group, users: enrichedUsers }
     })
+  }, [distributionData])
 
-    const result = allUsers
-      .map((user) => {
-        const filteredProducts = user.products.filter(p => {
-          return p.distributed_quantity && p.distributed_quantity > 0
-        })
-
-        // Add remaining/total info to each product
-        const enrichedProducts = filteredProducts.map(p => {
-          const totals = productTotals.get(p.product_id)
-          return {
-            ...p,
-            remaining_total: totals?.remaining || 0,
-            distributed_total: totals?.total || 0
-          }
-        })
-
-        return {
-          ...user,
-          products: enrichedProducts
-        }
-      })
-      .filter((user) => user.products.length > 0)
-    return result
-  }, [allUsers])
+  // Flatten all users across groups for backward-compatible checks
+  const distributionUsers = useMemo(() => {
+    return distributionGroups.flatMap(g => g.users)
+  }, [distributionGroups])
 
   const allPickedUp = distributionUsers.length > 0 && distributionUsers.every(user => user.all_picked_up)
   const isLeaderOrHelper = run?.current_user_is_leader || run?.current_user_is_helper
@@ -881,6 +921,7 @@ export default function RunPage() {
           run={run}
           runId={runId}
           shouldFetchDistribution={shouldFetchDistribution}
+          distributionGroups={distributionGroups}
           distributionUsers={distributionUsers}
           userBreakdownFromBids={userBreakdownFromBids}
           expandedUserId={expandedUserId}
@@ -890,6 +931,10 @@ export default function RunPage() {
           onMarkPickedUp={handlePickup}
           onMarkAllPickedUp={handleMarkAllPickedUp}
           onCompleteRun={handleCompleteRun}
+          onCreateGroup={handleCreateGroup}
+          onDeleteGroup={handleDeleteGroup}
+          onAssignUserToGroup={handleAssignUserToGroup}
+          onMarkGroupDone={handleMarkGroupDone}
           markPickedUpPending={markPickedUpMutation.isPending}
           completeDistributionPending={completeDistributionMutation.isPending}
         />

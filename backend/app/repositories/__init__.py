@@ -9,6 +9,7 @@ from app.infrastructure.config import REPO_MODE
 # Import all domain repositories
 from app.repositories.database import (
     DatabaseBidRepository,
+    DatabaseDistributionGroupRepository,
     DatabaseGroupRepository,
     DatabaseNotificationRepository,
     DatabaseProductRepository,
@@ -20,6 +21,7 @@ from app.repositories.database import (
 )
 from app.repositories.memory import (
     MemoryBidRepository,
+    MemoryDistributionGroupRepository,
     MemoryGroupRepository,
     MemoryNotificationRepository,
     MemoryProductRepository,
@@ -34,6 +36,7 @@ from app.repositories.memory import (
 __all__ = [
     # Database repositories
     'DatabaseBidRepository',
+    'DatabaseDistributionGroupRepository',
     'DatabaseGroupRepository',
     'DatabaseNotificationRepository',
     'DatabaseProductRepository',
@@ -44,6 +47,7 @@ __all__ = [
     'DatabaseUserRepository',
     # Memory repositories
     'MemoryBidRepository',
+    'MemoryDistributionGroupRepository',
     'MemoryGroupRepository',
     'MemoryNotificationRepository',
     'MemoryProductRepository',
@@ -63,6 +67,7 @@ __all__ = [
     'get_shopping_repository',
     'get_notification_repository',
     'get_reassignment_repository',
+    'get_distribution_group_repository',
 ]
 
 # Singleton storage for memory mode
@@ -166,3 +171,12 @@ def get_reassignment_repository(db: AsyncSession = None):
     else:
         _validate_database_session(db)
         return DatabaseReassignmentRepository(db)
+
+
+def get_distribution_group_repository(db: AsyncSession = None):
+    """Get distribution group repository based on configuration mode."""
+    if REPO_MODE == 'memory':
+        return MemoryDistributionGroupRepository(_get_memory_storage())
+    else:
+        _validate_database_session(db)
+        return DatabaseDistributionGroupRepository(db)

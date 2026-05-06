@@ -197,7 +197,8 @@
   "empty": {
     "noProducts": "Товары ещё не добавлены. Нажмите 'Добавить товар' для начала!",
     "noItemsToDistribute": "Нет товаров для раздачи",
-    "noBidsYet": "Заявки ещё не сделаны"
+    "noBidsYet": "Заявки ещё не сделаны",
+    "noUsersInGroup": "В этой группе нет пользователей"
   },
   "states": {
     "planning": "Планирование",
@@ -223,5 +224,15 @@
     "planned": "Запланировано",
     "completed": "Завершено",
     "cancelled": "Отменено"
+  },
+  "distributionGroups": {
+    "addGroup": "Добавить группу",
+    "deleteGroup": "Удалить группу",
+    "markGroupDone": "Отметить готово",
+    "groupDone": "Готово",
+    "moveTo": "Переместить в группу",
+    "groupLabel": "Группа {{name}}",
+    "groupTotal": "Итого по группе",
+    "productTotals": "Товары"
   }
 }

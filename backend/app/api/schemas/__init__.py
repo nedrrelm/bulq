@@ -24,7 +24,10 @@ from .auth_schemas import (
 )
 from .common import SuccessResponse
 from .distribution_schemas import (
+    AssignUserToGroupRequest,
+    DistributionGroupResponse,
     DistributionProduct,
+    DistributionSummary,
     DistributionUser,
 )
 from .group_schemas import (
@@ -192,6 +195,9 @@ __all__ = [
     'PricePoint',
     'StoreDetail',
     # Distribution schemas
+    'AssignUserToGroupRequest',
+    'DistributionGroupResponse',
     'DistributionProduct',
+    'DistributionSummary',
     'DistributionUser',
 ]

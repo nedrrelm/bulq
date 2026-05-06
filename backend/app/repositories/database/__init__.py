@@ -1,6 +1,7 @@
 """Database repository implementations."""
 
 from app.repositories.database.bid import DatabaseBidRepository
+from app.repositories.database.distribution_group import DatabaseDistributionGroupRepository
 from app.repositories.database.group import DatabaseGroupRepository
 from app.repositories.database.notification import DatabaseNotificationRepository
 from app.repositories.database.product import DatabaseProductRepository
@@ -12,6 +13,7 @@ from app.repositories.database.user import DatabaseUserRepository
 
 __all__ = [
     'DatabaseBidRepository',
+    'DatabaseDistributionGroupRepository',
     'DatabaseGroupRepository',
     'DatabaseNotificationRepository',
     'DatabaseProductRepository',

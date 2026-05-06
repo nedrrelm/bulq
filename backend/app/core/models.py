@@ -135,11 +135,31 @@ class Run(Base):
     group = relationship('Group', back_populates='runs')
     store = relationship('Store', back_populates='runs')
     participations = relationship('RunParticipation', back_populates='run')
+    distribution_groups = relationship(
+        'DistributionGroup', back_populates='run', order_by='DistributionGroup.sort_order'
+    )
 
     __table_args__ = (
         # Composite index for filtering runs by group and state
         Index('ix_runs_group_state', 'group_id', 'state'),
     )
+
+
+class DistributionGroup(Base):
+    """DistributionGroup model representing pickup points for a run."""
+
+    __tablename__ = 'distribution_groups'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    is_default = Column(Boolean, nullable=False, default=False)
+    is_done = Column(Boolean, nullable=False, default=False)
+    sort_order = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    run = relationship('Run', back_populates='distribution_groups')
+    participations = relationship('RunParticipation', back_populates='distribution_group')
 
 
 class Product(Base):
@@ -178,11 +198,15 @@ class RunParticipation(Base):
     is_removed = Column(
         Boolean, nullable=False, default=False
     )  # True if user was removed from group
+    distribution_group_id = Column(
+        UUID(as_uuid=True), ForeignKey('distribution_groups.id'), nullable=True
+    )
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship('User', back_populates='run_participations')
     run = relationship('Run', back_populates='participations')
     product_bids = relationship('ProductBid', back_populates='participation')
+    distribution_group = relationship('DistributionGroup', back_populates='participations')
 
     __table_args__ = (
         # Composite index for finding user's participation in a run (common query)

@@ -1,6 +1,7 @@
 """Memory repository implementations."""
 
 from app.repositories.memory.bid import MemoryBidRepository
+from app.repositories.memory.distribution_group import MemoryDistributionGroupRepository
 from app.repositories.memory.group import MemoryGroupRepository
 from app.repositories.memory.notification import MemoryNotificationRepository
 from app.repositories.memory.product import MemoryProductRepository
@@ -13,6 +14,7 @@ from app.repositories.memory.user import MemoryUserRepository
 
 __all__ = [
     'MemoryBidRepository',
+    'MemoryDistributionGroupRepository',
     'MemoryGroupRepository',
     'MemoryNotificationRepository',
     'MemoryProductRepository',

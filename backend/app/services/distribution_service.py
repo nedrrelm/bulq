@@ -6,7 +6,9 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import (
+    DistributionGroupResponse,
     DistributionProduct,
+    DistributionSummary,
     DistributionUser,
     StateChangeResponse,
     SuccessResponse,
@@ -36,6 +38,7 @@ from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transaction
 from app.repositories import (
     get_bid_repository,
+    get_distribution_group_repository,
     get_notification_repository,
     get_product_repository,
     get_run_repository,
@@ -56,6 +59,7 @@ class DistributionService(BaseService):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.bid_repo = get_bid_repository(db)
+        self.dist_group_repo = get_distribution_group_repository(db)
         self.notification_repo = get_notification_repository(db)
         self.product_repo = get_product_repository(db)
         self.run_repo = get_run_repository(db)
@@ -64,51 +68,32 @@ class DistributionService(BaseService):
 
     async def get_distribution_summary(
         self, run_id: UUID, current_user: User
-    ) -> list[DistributionUser]:
-        """Get distribution data aggregated by user.
+    ) -> DistributionSummary:
+        """Get distribution data organized by groups, then by user within each group.
 
         Args:
             run_id: The run ID to get distribution for
             current_user: The authenticated user making the request
 
         Returns:
-            List of DistributionUser with products and totals
-
-        Raises:
-            NotFoundError: If run is not found
-            ForbiddenError: If user doesn't have access to the run
-            BadRequestError: If distribution not available in current state
+            DistributionSummary with groups containing users and products
         """
         await self._validate_distribution_access(run_id, current_user)
+
+        # Ensure default group exists for legacy runs
+        await self._ensure_groups_exist(run_id)
+
         all_bids = await self.bid_repo.get_bids_by_run_with_participations(run_id)
-
-        logger.debug(f'Found {len(all_bids)} bids for distribution', extra={'run_id': str(run_id)})
-        for bid in all_bids:
-            logger.debug(
-                f'Bid: product={bid.product_id}, interested_only={bid.interested_only}, '
-                f'distributed_qty={bid.distributed_quantity}, type={type(bid.distributed_quantity).__name__}',
-                extra={'run_id': str(run_id), 'bid_id': str(bid.id)},
-            )
-
         users_data = await self._aggregate_bids_by_user(all_bids)
-        logger.debug(f'Aggregated into {len(users_data)} users', extra={'run_id': str(run_id)})
 
-        distributions = []
+        # Build per-user distributions
+        all_distributions: dict[str, DistributionUser] = {}
         for user_data in users_data.values():
-            # Skip users with no products (all bids were unpurchased)
             if not user_data['products']:
-                logger.debug(
-                    f'Skipping user {user_data["user_name"]}: no purchased products',
-                    extra={'run_id': str(run_id)},
-                )
                 continue
             try:
                 dist = self._build_user_distribution(user_data)
-                logger.debug(
-                    f'Built distribution for user {user_data["user_name"]}: {len(user_data["products"])} products',
-                    extra={'run_id': str(run_id)},
-                )
-                distributions.append(dist)
+                all_distributions[dist.user_id] = dist
             except Exception as e:
                 logger.error(
                     f'Error building distribution for user {user_data.get("user_name", "unknown")}: {e}',
@@ -116,20 +101,58 @@ class DistributionService(BaseService):
                     exc_info=True,
                 )
 
-        # Apply leader fee split
-        await self._apply_leader_fee(run_id, distributions)
+        # Apply leader fee split across all users
+        await self._apply_leader_fee(run_id, list(all_distributions.values()))
 
-        logger.debug(f'Returning {len(distributions)} distributions', extra={'run_id': str(run_id)})
-        sorted_distributions = self._sort_distributions(distributions)
+        # Group users by distribution group
+        groups = await self.dist_group_repo.get_groups_by_run(run_id)
+        participations = await self.run_repo.get_run_participations(run_id)
 
-        # Log the actual data being returned
-        for dist in sorted_distributions:
-            logger.debug(
-                f'Distribution data: user={dist.user_name}, products={len(dist.products)}, total={dist.total_cost}',
-                extra={'run_id': str(run_id)},
+        # Build mapping: group_id -> list of user_ids
+        group_user_map: dict[UUID, list[str]] = {g.id: [] for g in groups}
+        for p in participations:
+            if p.distribution_group_id and p.distribution_group_id in group_user_map:
+                group_user_map[p.distribution_group_id].append(str(p.user_id))
+
+        group_responses = []
+        for group in groups:
+            group_user_ids = group_user_map.get(group.id, [])
+            group_users = []
+            for uid in group_user_ids:
+                if uid in all_distributions:
+                    group_users.append(all_distributions[uid])
+
+            # Sort: unpicked first, then by name
+            group_users.sort(key=lambda x: (x.all_picked_up, x.user_name))
+
+            group_total = sum(float(u.total_cost) for u in group_users)
+
+            group_responses.append(
+                DistributionGroupResponse(
+                    id=str(group.id),
+                    name=group.name,
+                    is_default=group.is_default,
+                    is_done=group.is_done,
+                    sort_order=group.sort_order,
+                    users=group_users,
+                    total_cost=f'{group_total:.2f}',
+                )
             )
 
-        return sorted_distributions
+        return DistributionSummary(groups=group_responses)
+
+    async def _ensure_groups_exist(self, run_id: UUID) -> None:
+        """Ensure distribution groups exist for a run (handles legacy runs)."""
+        groups = await self.dist_group_repo.get_groups_by_run(run_id)
+        if not groups:
+            # Create default group for legacy run
+            default_group = await self.dist_group_repo.create_group(
+                run_id=run_id, name='1', is_default=True, sort_order=0
+            )
+            # Assign all participations to default group
+            participations = await self.run_repo.get_run_participations(run_id)
+            for p in participations:
+                await self.dist_group_repo.assign_participation_to_group(p.id, default_group.id)
 
     async def _validate_distribution_access(self, run_id: UUID, current_user: User) -> None:
         """Validate user has access to view distribution."""
@@ -220,17 +243,13 @@ class DistributionService(BaseService):
         )
 
     async def _apply_leader_fee(self, run_id: UUID, distributions: list[DistributionUser]) -> None:
-        """Apply leader fee split to distributions in-place.
-
-        Fee is split evenly among participants who are not the leader or a helper.
-        """
+        """Apply leader fee split to distributions in-place."""
         run = await self.run_repo.get_run_by_id(run_id)
         if not run or not run.leader_fee or float(run.leader_fee) <= 0:
             return
 
         fee = float(run.leader_fee)
 
-        # Determine which users pay the fee (not leader, not helper)
         participations = await self.run_repo.get_run_participations(run_id)
         exempt_user_ids = set()
         for p in participations:
@@ -249,34 +268,14 @@ class DistributionService(BaseService):
                 current_total = float(dist.total_cost)
                 dist.total_cost = f'{current_total + fee_share:.2f}'
 
-    def _sort_distributions(self, distributions: list[DistributionUser]) -> list[DistributionUser]:
-        """Sort distributions by pickup status and name."""
-        distributions.sort(key=lambda x: (x.all_picked_up, x.user_name))
-        return distributions
-
     async def mark_picked_up(
         self, run_id: UUID, bid_id: UUID, current_user: User
     ) -> SuccessResponse:
-        """Mark a product as picked up by a user.
-
-        Args:
-            run_id: The run ID
-            bid_id: The bid ID to mark as picked up
-            current_user: The authenticated user making the request
-
-        Returns:
-            MessageResponse with success message
-
-        Raises:
-            NotFoundError: If run or bid is not found
-            ForbiddenError: If user is not the run leader
-        """
-        # Get the run
+        """Mark a product as picked up by a user."""
         run = await self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        # Verify user is the run leader or helper
         participation = await self.run_repo.get_participation(current_user.id, run_id)
         if not participation or not self._is_leader_or_helper(participation):
             raise ForbiddenError(
@@ -285,7 +284,6 @@ class DistributionService(BaseService):
                 run_id=run_id,
             )
 
-        # Mark as picked up
         bid = await self._get_bid(bid_id)
         if not bid:
             raise NotFoundError(
@@ -304,7 +302,6 @@ class DistributionService(BaseService):
             },
         )
 
-        # Emit event for WebSocket broadcast
         event_bus.emit(
             DistributionUpdatedEvent(run_id=run_id, bid_id=bid_id, action='marked_picked_up')
         )
@@ -319,26 +316,11 @@ class DistributionService(BaseService):
         )
 
     async def complete_distribution(self, run_id: UUID, current_user: User) -> StateChangeResponse:
-        """Complete distribution - transition from distributing to completed state.
-
-        Args:
-            run_id: The run ID to complete
-            current_user: The authenticated user making the request
-
-        Returns:
-            StateChangeResponse with success message and new state
-
-        Raises:
-            NotFoundError: If run is not found
-            ForbiddenError: If user is not the run leader
-            BadRequestError: If not in distributing state or items not picked up
-        """
-        # Get the run
+        """Complete distribution - transition from distributing to completed state."""
         run = await self.run_repo.get_run_by_id(run_id)
         if not run:
             raise NotFoundError(code=RUN_NOT_FOUND, message='Run not found', run_id=run_id)
 
-        # Verify user is the run leader
         participation = await self.run_repo.get_participation(current_user.id, run_id)
         if not participation or not participation.is_leader:
             raise ForbiddenError(
@@ -347,7 +329,6 @@ class DistributionService(BaseService):
                 run_id=run_id,
             )
 
-        # Only allow completing from distributing state - use state machine
         run_state = RunState(run.state)
         if not state_machine.can_complete_distribution(run_state):
             raise BadRequestError(
@@ -358,7 +339,6 @@ class DistributionService(BaseService):
                 required_state=RunState.DISTRIBUTING.value,
             )
 
-        # Verify all items are picked up
         all_bids = await self.bid_repo.get_bids_by_run(run_id)
         unpicked_bids = [
             bid
@@ -373,13 +353,9 @@ class DistributionService(BaseService):
                 run_id=run_id,
             )
 
-        # Wrap state change and notifications in transaction
         async with transaction(self.db, 'complete distribution and transition to completed state'):
-            # Transition to completed state
             old_state = run.state
             await self.run_repo.update_run_state(run_id, RunState.COMPLETED)
-
-            # Create notifications for all participants
             await self._notify_run_state_change(run, old_state, RunState.COMPLETED)
 
         logger.info(
@@ -405,20 +381,10 @@ class DistributionService(BaseService):
         await self.bid_repo.commit_changes()
 
     async def _notify_run_state_change(self, run, old_state: str, new_state: str) -> None:
-        """Create notifications for all participants when run state changes.
-
-        Args:
-            run: The run that changed state
-            old_state: Previous state
-            new_state: New state
-        """
-        # Get store name for notification
+        """Create notifications for all participants when run state changes."""
         store_name = await self._get_store_name(run.store_id)
-
-        # Get all participants of this run
         participations = await self.run_repo.get_run_participations(run.id)
 
-        # Create notification data using Pydantic model for type safety
         notification_data = RunStateChangedData(
             run_id=str(run.id),
             store_name=store_name,
@@ -426,8 +392,6 @@ class DistributionService(BaseService):
             new_state=new_state,
             group_id=str(run.group_id),
         )
-
-        # Create notification for each participant and broadcast via WebSocket
 
         from app.api.websocket_manager import manager
 
@@ -438,7 +402,6 @@ class DistributionService(BaseService):
                 data=notification_data.model_dump(mode='json'),
             )
 
-            # Broadcast to user's WebSocket connection
             create_background_task(
                 manager.broadcast(
                     f'user:{participation.user_id}',
@@ -457,13 +420,3 @@ class DistributionService(BaseService):
                 ),
                 task_name=f'broadcast_distribution_notification_{participation.user_id}',
             )
-
-        logger.debug(
-            'Created notifications for run state change',
-            extra={
-                'run_id': str(run.id),
-                'old_state': old_state,
-                'new_state': new_state,
-                'participant_count': len(participations),
-            },
-        )

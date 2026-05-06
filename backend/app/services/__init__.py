@@ -1,5 +1,6 @@
 from .admin_service import AdminService
 from .bid_service import BidService
+from .distribution_group_service import DistributionGroupService
 from .distribution_service import DistributionService
 from .group_invite_service import GroupInviteService
 from .group_management_service import GroupManagementService
@@ -17,6 +18,7 @@ from .store_service import StoreService
 __all__ = [
     'AdminService',
     'BidService',
+    'DistributionGroupService',
     'DistributionService',
     'GroupInviteService',
     'GroupManagementService',

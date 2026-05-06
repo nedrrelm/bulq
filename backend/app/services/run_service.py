@@ -50,6 +50,7 @@ from app.infrastructure.config import MAX_ACTIVE_RUNS_PER_GROUP
 from app.infrastructure.request_context import get_logger
 from app.repositories import (
     get_bid_repository,
+    get_distribution_group_repository,
     get_group_repository,
     get_product_repository,
     get_run_repository,
@@ -97,6 +98,7 @@ class RunService(BaseService):
         self.shopping_repo = get_shopping_repository(db)
         self.store_repo = get_store_repository(db)
         self.user_repo = get_user_repository(db)
+        self.dist_group_repo = get_distribution_group_repository(db)
 
         # Use injected services or create new instances (for backward compatibility)
         self.bid_service = bid_service or BidService(db)
@@ -177,6 +179,16 @@ class RunService(BaseService):
 
         # Create the run with current user as leader
         run = await self.run_repo.create_run(group_uuid, store_uuid, user.id, comment, leader_fee)
+
+        # Create default distribution group and assign leader to it
+        default_dist_group = await self.dist_group_repo.create_group(
+            run_id=run.id, name='1', is_default=True, sort_order=0
+        )
+        leader_participation = await self.run_repo.get_participation(user.id, run.id)
+        if leader_participation:
+            await self.dist_group_repo.assign_participation_to_group(
+                leader_participation.id, default_dist_group.id
+            )
 
         logger.info(
             'Run created successfully',
@@ -853,6 +865,12 @@ class RunService(BaseService):
             target_participation = await self.run_repo.create_participation(
                 user_id=target_user_uuid, run_id=run_uuid, is_leader=False, is_helper=True
             )
+            # Assign to default distribution group
+            default_group = await self.dist_group_repo.get_default_group(run_uuid)
+            if default_group:
+                await self.dist_group_repo.assign_participation_to_group(
+                    target_participation.id, default_group.id
+                )
             new_helper_status = True
         else:
             # Toggle helper status

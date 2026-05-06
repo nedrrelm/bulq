@@ -26,5 +26,21 @@ export const distributionUserSchema = z.object({
   all_picked_up: z.boolean()
 })
 
+export const distributionGroupSchema = z.object({
+  id: uuidSchema,
+  name: z.string(),
+  is_default: z.boolean(),
+  is_done: z.boolean(),
+  sort_order: z.number(),
+  users: z.array(distributionUserSchema),
+  total_cost: z.string()
+})
+
+export const distributionSummarySchema = z.object({
+  groups: z.array(distributionGroupSchema)
+})
+
 export type DistributionProduct = z.infer<typeof distributionProductSchema>
 export type DistributionUser = z.infer<typeof distributionUserSchema>
+export type DistributionGroup = z.infer<typeof distributionGroupSchema>
+export type DistributionSummary = z.infer<typeof distributionSummarySchema>

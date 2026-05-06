@@ -33,6 +33,7 @@ from app.infrastructure.request_context import get_logger
 from app.infrastructure.transaction import transactional
 from app.repositories import (
     get_bid_repository,
+    get_distribution_group_repository,
     get_product_repository,
     get_run_repository,
     get_shopping_repository,
@@ -52,6 +53,7 @@ class BidService(BaseService):
         """Initialize service with necessary repositories."""
         super().__init__(db)
         self.bid_repo = get_bid_repository(db)
+        self.dist_group_repo = get_distribution_group_repository(db)
         self.product_repo = get_product_repository(db)
         self.run_repo = get_run_repository(db)
         self.shopping_repo = get_shopping_repository(db)
@@ -430,6 +432,12 @@ class BidService(BaseService):
             participation = await self.run_repo.create_participation(
                 user.id, run_uuid, is_leader=False
             )
+            # Assign to default distribution group
+            default_group = await self.dist_group_repo.get_default_group(run_uuid)
+            if default_group:
+                await self.dist_group_repo.assign_participation_to_group(
+                    participation.id, default_group.id
+                )
             is_new_participant = True
 
         return participation, is_new_participant

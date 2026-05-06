@@ -197,7 +197,8 @@
   "empty": {
     "noProducts": "Још нема додатих производа. Кликните 'Додај производ' да започнете!",
     "noItemsToDistribute": "Нема ставки за дистрибуцију",
-    "noBidsYet": "Још нема понуда"
+    "noBidsYet": "Још нема понуда",
+    "noUsersInGroup": "Нема корисника у овој групи"
   },
   "states": {
     "planning": "Планирање",
@@ -223,5 +224,15 @@
     "planned": "Планирано",
     "completed": "Завршено",
     "cancelled": "Отказано"
+  },
+  "distributionGroups": {
+    "addGroup": "Додај групу",
+    "deleteGroup": "Обриши групу",
+    "markGroupDone": "Означи готово",
+    "groupDone": "Готово",
+    "moveTo": "Премести у групу",
+    "groupLabel": "Група {{name}}",
+    "groupTotal": "Укупно група",
+    "productTotals": "Производи"
   }
 }

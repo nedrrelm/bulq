@@ -21,6 +21,7 @@ from app.infrastructure.database import get_db
 from app.services import (
     AdminService,
     BidService,
+    DistributionGroupService,
     DistributionService,
     GroupInviteService,
     GroupManagementService,
@@ -239,6 +240,20 @@ async def get_distribution_service(db: AsyncSession = Depends(get_db)) -> Distri
     return DistributionService(db)
 
 
+async def get_distribution_group_service(
+    db: AsyncSession = Depends(get_db),
+) -> DistributionGroupService:
+    """Provide DistributionGroupService instance with injected database session.
+
+    Args:
+        db: Database session injected by FastAPI
+
+    Returns:
+        DistributionGroupService instance
+    """
+    return DistributionGroupService(db)
+
+
 # =============================================================================
 # Type Aliases for Cleaner Route Signatures
 # =============================================================================
@@ -249,6 +264,9 @@ async def get_distribution_service(db: AsyncSession = Depends(get_db)) -> Distri
 
 AdminServiceDep = Annotated[AdminService, Depends(get_admin_service)]
 BidServiceDep = Annotated[BidService, Depends(get_bid_service)]
+DistributionGroupServiceDep = Annotated[
+    DistributionGroupService, Depends(get_distribution_group_service)
+]
 DistributionServiceDep = Annotated[DistributionService, Depends(get_distribution_service)]
 GroupQueryServiceDep = Annotated[GroupQueryService, Depends(get_group_query_service)]
 GroupManagementServiceDep = Annotated[GroupManagementService, Depends(get_group_management_service)]

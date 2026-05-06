@@ -1,8 +1,7 @@
 import { api } from './client'
-import { distributionUserSchema, type DistributionUser, type DistributionProduct } from '../schemas/distribution'
-import { z } from 'zod'
+import { distributionSummarySchema, type DistributionUser, type DistributionProduct, type DistributionSummary, type DistributionGroup } from '../schemas/distribution'
 
-export type { DistributionUser, DistributionProduct }
+export type { DistributionUser, DistributionProduct, DistributionSummary, DistributionGroup }
 
 // For backwards compatibility with old code that may reference these names
 export type DistributionItem = DistributionProduct
@@ -12,10 +11,10 @@ export interface TogglePickupRequest {
 
 export const distributionApi = {
   /**
-   * Get distribution data for a run (user-centric view)
+   * Get distribution data for a run (grouped by distribution groups)
    */
   getDistribution: (runId: string) =>
-    api.get<DistributionUser[]>(`/distribution/${runId}`, z.array(distributionUserSchema)),
+    api.get<DistributionSummary>(`/distribution/${runId}`, distributionSummarySchema),
 
   /**
    * Mark a specific bid as picked up
@@ -27,5 +26,29 @@ export const distributionApi = {
    * Complete distribution and transition run to completed state
    */
   completeDistribution: (runId: string) =>
-    api.post(`/distribution/${runId}/complete`, {})
+    api.post(`/distribution/${runId}/complete`, {}),
+
+  /**
+   * Create a new distribution group (auto-numbered)
+   */
+  createGroup: (runId: string) =>
+    api.post(`/distribution/${runId}/groups`, {}),
+
+  /**
+   * Delete a distribution group (users moved to default group)
+   */
+  deleteGroup: (runId: string, groupId: string) =>
+    api.delete(`/distribution/${runId}/groups/${groupId}`),
+
+  /**
+   * Assign a user to a distribution group
+   */
+  assignUserToGroup: (runId: string, groupId: string, userId: string) =>
+    api.post(`/distribution/${runId}/groups/${groupId}/assign`, { user_id: userId }),
+
+  /**
+   * Mark all items in a distribution group as picked up
+   */
+  markGroupDone: (runId: string, groupId: string) =>
+    api.post(`/distribution/${runId}/groups/${groupId}/done`, {})
 }

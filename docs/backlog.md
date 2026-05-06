@@ -1,9 +1,5 @@
 # Backlog
 
-### Features
-1. distribution groups for each run (split total into multiple pickup points)
-3. Create buyers clubs and sellers clubs
-
 ### Seller Group Type
 **Status**: Future
 **Priority**: Low

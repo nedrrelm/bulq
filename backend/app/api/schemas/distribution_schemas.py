@@ -26,3 +26,27 @@ class DistributionUser(BaseModel):
     total_cost: str = '0.00'
     fee_share: str = '0.00'
     all_picked_up: bool = False
+
+
+class DistributionGroupResponse(BaseModel):
+    """Distribution group with its users."""
+
+    id: str
+    name: str
+    is_default: bool
+    is_done: bool
+    sort_order: int
+    users: list[DistributionUser]
+    total_cost: str = '0.00'
+
+
+class DistributionSummary(BaseModel):
+    """Distribution summary organized by groups."""
+
+    groups: list[DistributionGroupResponse]
+
+
+class AssignUserToGroupRequest(BaseModel):
+    """Request to assign a user to a distribution group."""
+
+    user_id: str
