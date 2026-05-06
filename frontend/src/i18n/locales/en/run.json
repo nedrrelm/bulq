@@ -47,7 +47,8 @@
     "markAllPickedUp": "Mark All Picked Up",
     "downloadState": "Download State",
     "downloading": "Downloading...",
-    "downloadStateTooltip": "Download run data as JSON"
+    "downloadStateTooltip": "Download run data as JSON",
+    "editMemberBids": "Edit member bids"
   },
   "labels": {
     "runInformation": "Run Information",
@@ -146,7 +147,8 @@
     "decimalHint": "Decimals allowed (e.g., 1.5)",
     "interestedOnly": "Interested only (no specific quantity)",
     "commentPlaceholder": "Optional: Add a note about your bid...",
-    "commentCounter": "{{count}}/500"
+    "commentCounter": "{{count}}/500",
+    "editingUserBid": "Editing {{name}}'s bid"
   },
   "reassign": {
     "title": "Reassign Leadership",

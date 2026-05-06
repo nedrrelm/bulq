@@ -7,6 +7,7 @@ from app.api.schemas import (
     CancelRunResponse,
     CreateRunRequest,
     CreateRunResponse,
+    LeaderEditBidRequest,
     PlaceBidRequest,
     PlaceBidResponse,
     ReadyToggleResponse,
@@ -80,6 +81,28 @@ async def retract_bid(
 ):
     """Retract a bid on a product in a run."""
     return await service.retract_bid(run_id, product_id, current_user)
+
+
+@router.post('/{run_id}/leader-edit-bid', response_model=PlaceBidResponse)
+@limiter.limit('30/minute')
+async def leader_edit_bid(
+    request: Request,
+    run_id: str,
+    bid_request: LeaderEditBidRequest,
+    service: RunServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Leader edits another user's bid."""
+    result = await service.leader_edit_bid(
+        run_id,
+        bid_request.product_id,
+        bid_request.user_id,
+        bid_request.quantity,
+        bid_request.interested_only,
+        current_user,
+        bid_request.comment,
+    )
+    return result
 
 
 @router.post('/{run_id}/ready', response_model=ReadyToggleResponse)

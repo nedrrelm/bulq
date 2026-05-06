@@ -19,6 +19,14 @@ export interface PlaceBidRequest {
   comment?: string | null
 }
 
+export interface LeaderEditBidRequest {
+  product_id: string
+  user_id: string
+  quantity: number
+  interested_only: boolean
+  comment?: string | null
+}
+
 export interface UpdateRunCommentRequest {
   comment: string | null
 }
@@ -67,5 +75,8 @@ export const runsApi = {
     api.patch(`/runs/${runId}/fee`, data),
 
   exportRunState: (runId: string) =>
-    api.get(`/runs/${runId}/export`)
+    api.get(`/runs/${runId}/export`),
+
+  leaderEditBid: (runId: string, data: LeaderEditBidRequest) =>
+    api.post(`/runs/${runId}/leader-edit-bid`, data),
 }

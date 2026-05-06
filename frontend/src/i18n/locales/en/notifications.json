@@ -12,6 +12,7 @@
   "leadershipRequest": "{{from_user_name}} wants to transfer leadership of {{store_name}} to you",
   "leadershipAccepted": "{{new_leader_name}} accepted leadership of {{store_name}}",
   "leadershipDeclined": "{{declined_by_name}} declined leadership of {{store_name}}",
+  "bidModifiedByLeader": "{{leader_name}} changed your bid on {{product_name}} from {{old_quantity}} to {{new_quantity}}",
   "states": {
     "planning": "is in planning",
     "active": "is active",

@@ -15,16 +15,18 @@ from app.core.error_codes import (
     CANNOT_JOIN_RUN_IN_ADJUSTING_STATE,
     CANNOT_RETRACT_BID_IN_ADJUSTING,
     INVALID_RUN_STATE_TRANSITION,
+    NOT_RUN_LEADER,
     NOT_RUN_PARTICIPANT,
+    PARTICIPATION_NOT_FOUND,
     PRODUCT_NOT_FOUND,
     RUN_MAX_PRODUCTS_EXCEEDED,
     RUN_NOT_FOUND,
 )
-from app.core.exceptions import BadRequestError, NotFoundError
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import Product, ProductBid, Run, RunParticipation, User
 from app.core.run_state import RunState, state_machine
-from app.core.success_codes import BID_PLACED, BID_RETRACTED
-from app.events.domain_events import BidPlacedEvent, BidRetractedEvent
+from app.core.success_codes import BID_MODIFIED_BY_LEADER, BID_PLACED, BID_RETRACTED
+from app.events.domain_events import BidModifiedByLeaderEvent, BidPlacedEvent, BidRetractedEvent
 from app.events.event_bus import event_bus
 from app.infrastructure.config import MAX_PRODUCTS_PER_RUN
 from app.infrastructure.request_context import get_logger
@@ -162,6 +164,131 @@ class BidService(BaseService):
             new_total=new_total,
             state_changed=state_changed,
             new_state=RunState.ACTIVE if state_changed else run.state,
+            run_id=str(run_uuid),
+            group_id=str(run.group_id),
+        )
+
+    async def leader_edit_bid(
+        self,
+        run_id: str,
+        product_id: str,
+        target_user_id: str,
+        quantity: float,
+        interested_only: bool,
+        leader: User,
+        comment: str | None = None,
+    ) -> PlaceBidResponse:
+        """Leader edits another user's bid."""
+        logger.info(
+            'Leader editing bid',
+            extra={
+                'leader_id': str(leader.id),
+                'target_user_id': target_user_id,
+                'run_id': run_id,
+                'product_id': product_id,
+                'quantity': quantity,
+            },
+        )
+
+        # Validate IDs
+        run_uuid = validate_uuid(run_id, 'Run')
+        product_uuid = validate_uuid(product_id, 'Product')
+        target_user_uuid = validate_uuid(target_user_id, 'User')
+
+        # Verify run exists and leader has access
+        run = await self._get_run_with_auth_check(run_uuid, leader)
+
+        # Check if run allows bidding
+        run_state = RunState(run.state)
+        if not state_machine.can_place_bid(run_state):
+            raise BadRequestError(
+                code=INVALID_RUN_STATE_TRANSITION,
+                current_state=run.state,
+                action='leader_edit_bid',
+                allowed_states='planning, active, adjusting',
+            )
+
+        # Verify current user is the leader of this run
+        leader_participation = await self.run_repo.get_participation(leader.id, run_uuid)
+        if not leader_participation or not leader_participation.is_leader:
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message="Only the run leader can edit other users' bids",
+                run_id=run_id,
+            )
+
+        # Get target user's participation (they must already be a participant)
+        target_participation = await self.run_repo.get_participation(target_user_uuid, run_uuid)
+        if not target_participation:
+            raise NotFoundError(
+                code=PARTICIPATION_NOT_FOUND,
+                message='Target user is not a participant in this run',
+                user_id=target_user_id,
+                run_id=run_id,
+            )
+
+        # Get existing bid to capture old_quantity
+        existing_bid = await self.bid_repo.get_bid(target_participation.id, product_uuid)
+        old_quantity = existing_bid.quantity if existing_bid else 0.0
+
+        # Validate the bid for state
+        await self._validate_bid_for_state(run, product_uuid, quantity, target_participation)
+
+        # Handle quantity=0 as bid removal
+        if quantity == 0 and not interested_only:
+            if existing_bid:
+                await self.bid_repo.delete_bid(target_participation.id, product_uuid)
+                logger.info(
+                    'Bid removed by leader via quantity=0',
+                    extra={
+                        'leader_id': str(leader.id),
+                        'target_user_id': target_user_id,
+                        'run_id': str(run_uuid),
+                        'product_id': str(product_uuid),
+                    },
+                )
+        else:
+            await self.bid_repo.create_or_update_bid(
+                target_participation.id, product_uuid, quantity, interested_only, comment
+            )
+
+        # Calculate new total
+        new_total = await self.calculate_product_total(run_uuid, product_uuid)
+
+        # Get product name and target user name for the event
+        product = await self.product_repo.get_product_by_id(product_uuid)
+        product_name = product.name if product else 'Unknown'
+        target_user = await self.user_repo.get_user_by_id(target_user_uuid)
+        target_user_name = target_user.name if target_user else 'Unknown'
+
+        # Emit domain event
+        event_bus.emit(
+            BidModifiedByLeaderEvent(
+                run_id=run_uuid,
+                product_id=product_uuid,
+                target_user_id=target_user_uuid,
+                target_user_name=target_user_name,
+                leader_user_id=leader.id,
+                leader_user_name=leader.name,
+                old_quantity=old_quantity,
+                new_quantity=quantity,
+                interested_only=interested_only,
+                new_total=new_total,
+                group_id=run.group_id,
+                product_name=product_name,
+            )
+        )
+
+        return PlaceBidResponse(
+            code=BID_MODIFIED_BY_LEADER,
+            product_id=str(product_uuid),
+            user_id=target_user_id,
+            user_name=target_user_name,
+            quantity=quantity,
+            interested_only=interested_only,
+            new_total=new_total,
+            state_changed=False,
+            new_state=run.state,
             run_id=str(run_uuid),
             group_id=str(run.group_id),
         )

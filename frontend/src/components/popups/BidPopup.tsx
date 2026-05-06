@@ -14,9 +14,10 @@ interface BidPopupProps {
   adjustingMode?: boolean
   minAllowed?: number
   maxAllowed?: number
+  targetUserName?: string
 }
 
-export default function BidPopup({ productName, currentQuantity, currentComment, onSubmit, onCancel, adjustingMode, minAllowed, maxAllowed }: BidPopupProps) {
+export default function BidPopup({ productName, currentQuantity, currentComment, onSubmit, onCancel, adjustingMode, minAllowed, maxAllowed, targetUserName }: BidPopupProps) {
   const { t } = useTranslation(['common', 'run'])
   const [quantity, setQuantity] = useState(currentQuantity?.toString() || '1')
   const [interestedOnly, setInterestedOnly] = useState(false)
@@ -89,7 +90,7 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
         onClick: handleSubmit
       }}
     >
-      <h3>{adjustingMode ? t('run:bid.adjustTitle') : t('run:bid.title')}</h3>
+      <h3>{targetUserName ? t('run:bid.editingUserBid', { name: targetUserName }) : adjustingMode ? t('run:bid.adjustTitle') : t('run:bid.title')}</h3>
       <p className="product-name">{productName}</p>
 
         {adjustingMode && (
@@ -129,16 +130,18 @@ export default function BidPopup({ productName, currentQuantity, currentComment,
             <small className="input-hint">{t('run:bid.decimalHint')}</small>
           </div>
 
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={interestedOnly}
-                onChange={(e) => setInterestedOnly(e.target.checked)}
-              />
-              {t('run:bid.interestedOnly')}
-            </label>
-          </div>
+          {!adjustingMode && (
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={interestedOnly}
+                  onChange={(e) => setInterestedOnly(e.target.checked)}
+                />
+                {t('run:bid.interestedOnly')}
+              </label>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="comment">{t('run:fields.comment')}:</label>

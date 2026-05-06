@@ -12,6 +12,7 @@
   "leadershipRequest": "{{from_user_name}} жели да пренесе лидерство {{store_name}} на вас",
   "leadershipAccepted": "{{new_leader_name}} је прихватио лидерство {{store_name}}",
   "leadershipDeclined": "{{declined_by_name}} је одбио лидерство {{store_name}}",
+  "bidModifiedByLeader": "{{leader_name}} je promenio vašu ponudu za {{product_name}} sa {{old_quantity}} na {{new_quantity}}",
   "states": {
     "planning": "је у планирању",
     "active": "је активна",

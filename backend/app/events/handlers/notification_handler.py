@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from app.infrastructure.request_context import get_logger
 
-from ..domain_events import RunStateChangedEvent
+from ..domain_events import BidModifiedByLeaderEvent, RunStateChangedEvent
 
 if TYPE_CHECKING:
     from app.repositories.database.notification import DatabaseNotificationRepository
@@ -70,6 +70,40 @@ class NotificationEventHandler:
                     'run_id': str(event.run_id),
                     'old_state': event.old_state,
                     'new_state': event.new_state,
+                    'error': str(e),
+                },
+                exc_info=True,
+            )
+
+    async def handle_bid_modified_by_leader(self, event: BidModifiedByLeaderEvent) -> None:
+        """Create notification for user whose bid was modified by leader."""
+        try:
+            notification_data = {
+                'run_id': str(event.run_id),
+                'product_name': event.product_name,
+                'old_quantity': event.old_quantity,
+                'new_quantity': event.new_quantity,
+                'leader_name': event.leader_user_name,
+            }
+            await self._notification_repo.create_notification(
+                user_id=event.target_user_id,
+                type='bid_modified_by_leader',
+                data=notification_data,
+            )
+            logger.debug(
+                'Created notification for leader bid modification',
+                extra={
+                    'run_id': str(event.run_id),
+                    'target_user_id': str(event.target_user_id),
+                    'leader_user_id': str(event.leader_user_id),
+                },
+            )
+        except Exception as e:
+            logger.error(
+                'Failed to create notification for leader bid modification',
+                extra={
+                    'run_id': str(event.run_id),
+                    'target_user_id': str(event.target_user_id),
                     'error': str(e),
                 },
                 exc_info=True,

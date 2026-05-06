@@ -44,7 +44,8 @@
     "markAllPickedUp": "Отметить всё полученным",
     "downloadState": "Скачать данные",
     "downloading": "Скачивание...",
-    "downloadStateTooltip": "Скачать данные о закупке в формате JSON"
+    "downloadStateTooltip": "Скачать данные о закупке в формате JSON",
+    "editMemberBids": "Редактировать ставки участников"
   },
   "labels": {
     "runInformation": "Информация о закупке",
@@ -136,7 +137,8 @@
     "decimalHint": "Разрешены десятичные дроби (например, 1.5)",
     "interestedOnly": "Только интерес (без конкретного количества)",
     "commentPlaceholder": "Необязательно: Добавьте заметку о вашей заявке...",
-    "commentCounter": "{{count}}/500"
+    "commentCounter": "{{count}}/500",
+    "editingUserBid": "Редактирование ставки {{name}}"
   },
   "reassign": {
     "title": "Передать лидерство",

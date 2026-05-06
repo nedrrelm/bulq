@@ -71,6 +71,9 @@ export default function RunPage() {
   const [showForceConfirmPopup, setShowForceConfirmPopup] = useState(false)
   const [showEditCommentPopup, setShowEditCommentPopup] = useState(false)
   const [showCommentsPopup, setShowCommentsPopup] = useState(false)
+  const [leaderEditMode, setLeaderEditMode] = useState(false)
+  const [leaderEditTimer, setLeaderEditTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [selectedTargetUser, setSelectedTargetUser] = useState<{ userId: string, userName: string } | null>(null)
   const [reassignmentRequest, setReassignmentRequest] = useState<LeaderReassignmentRequest | null>(null)
   const { toast, showToast, hideToast } = useToast()
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
@@ -162,6 +165,35 @@ export default function RunPage() {
 
   const canBid = run?.state === 'planning' || run?.state === 'active' || run?.state === 'adjusting'
 
+  useEffect(() => {
+    return () => {
+      if (leaderEditTimer) clearTimeout(leaderEditTimer)
+    }
+  }, [leaderEditTimer])
+
+  const handleToggleLeaderEditMode = () => {
+    if (leaderEditMode) {
+      setLeaderEditMode(false)
+      if (leaderEditTimer) {
+        clearTimeout(leaderEditTimer)
+        setLeaderEditTimer(null)
+      }
+    } else {
+      setLeaderEditMode(true)
+      const timer = setTimeout(() => {
+        setLeaderEditMode(false)
+        setLeaderEditTimer(null)
+      }, 5 * 60 * 1000)
+      setLeaderEditTimer(timer)
+    }
+  }
+
+  const handleEditUserBid = (product: Product, userId: string, userName: string) => {
+    setSelectedProduct(product)
+    setSelectedTargetUser({ userId, userName })
+    setShowBidPopup(true)
+  }
+
   const handlePlaceBid = (product: Product) => {
     setSelectedProduct(product)
     setShowBidPopup(true)
@@ -178,6 +210,24 @@ export default function RunPage() {
 
   const handleSubmitBid = async (quantity: number, interestedOnly: boolean, comment: string | null) => {
     if (!selectedProduct) return
+
+    if (selectedTargetUser) {
+      try {
+        await runsApi.leaderEditBid(runId, {
+          product_id: selectedProduct.id,
+          user_id: selectedTargetUser.userId,
+          quantity,
+          interested_only: interestedOnly,
+          comment
+        })
+        setShowBidPopup(false)
+        setSelectedProduct(null)
+        setSelectedTargetUser(null)
+      } catch (err) {
+        showToast(formatErrorForDisplay(err, 'edit user bid'), 'error')
+      }
+      return
+    }
 
     try {
       // If in shopping state, add to shopping list; otherwise place a regular bid
@@ -207,6 +257,7 @@ export default function RunPage() {
   const handleCancelBid = () => {
     setShowBidPopup(false)
     setSelectedProduct(null)
+    setSelectedTargetUser(null)
   }
 
   const handleViewComments = (product: Product) => {
@@ -847,6 +898,16 @@ export default function RunPage() {
       <div className="products-section">
         <div className="products-header">
           <h3>{t('run:labels.products', { count: run.products.length })}</h3>
+          {run.current_user_is_leader && canBid && (
+            <label className="leader-edit-toggle">
+              <input
+                type="checkbox"
+                checked={leaderEditMode}
+                onChange={handleToggleLeaderEditMode}
+              />
+              <span>{t('run:actions.editMemberBids')}</span>
+            </label>
+          )}
           {(canBid || (run.state === 'shopping' && (run.current_user_is_leader || run.helpers.includes(user?.id || '')))) && (
             <button onClick={handleAddProduct} className="add-product-button">
               {t('run:actions.addProduct')}
@@ -907,6 +968,8 @@ export default function RunPage() {
                     onRetractBid={handleRetractBid}
                     onViewComments={handleViewComments}
                     getUserInitials={getUserInitials}
+                    leaderEditMode={leaderEditMode}
+                    onEditUserBid={handleEditUserBid}
                   />
                 </ErrorBoundary>
               ))}
@@ -926,6 +989,10 @@ export default function RunPage() {
         {showBidPopup && selectedProduct && (() => {
           const isAdjustingMode = run?.state === 'adjusting'
           const currentBid = selectedProduct.current_user_bid
+          const targetBid = selectedTargetUser
+            ? selectedProduct.user_bids.find(b => b.user_id === selectedTargetUser.userId)
+            : null
+          const effectiveBid = targetBid || currentBid
           const hasPurchasedQuantity = selectedProduct.purchased_quantity !== null
 
           // Calculate difference: positive = surplus, negative = shortage
@@ -937,21 +1004,21 @@ export default function RunPage() {
           let maxAllowed: number | undefined = undefined
 
           if (isAdjustingMode && hasPurchasedQuantity) {
-            if (currentBid) {
+            if (effectiveBid) {
               if (difference < 0) {
-                // Shortage: can only decrease, but not below (currentBid - shortage)
+                // Shortage: can only decrease, but not below (effectiveBid - shortage)
                 const shortage = Math.abs(difference)
-                minAllowed = Math.round(Math.max(0, currentBid.quantity - shortage) * 100) / 100
-                maxAllowed = Math.round(currentBid.quantity * 100) / 100
+                minAllowed = Math.round(Math.max(0, effectiveBid.quantity - shortage) * 100) / 100
+                maxAllowed = Math.round(effectiveBid.quantity * 100) / 100
               } else if (difference > 0) {
-                // Surplus: can only increase, but not above (currentBid + surplus)
+                // Surplus: can only increase, but not above (effectiveBid + surplus)
                 const surplus = difference
-                minAllowed = Math.round(currentBid.quantity * 100) / 100
-                maxAllowed = Math.round((currentBid.quantity + surplus) * 100) / 100
+                minAllowed = Math.round(effectiveBid.quantity * 100) / 100
+                maxAllowed = Math.round((effectiveBid.quantity + surplus) * 100) / 100
               } else {
                 // No difference, quantities match (shouldn't happen in adjusting mode)
-                minAllowed = Math.round(currentBid.quantity * 100) / 100
-                maxAllowed = Math.round(currentBid.quantity * 100) / 100
+                minAllowed = Math.round(effectiveBid.quantity * 100) / 100
+                maxAllowed = Math.round(effectiveBid.quantity * 100) / 100
               }
             } else if (difference > 0) {
               // New bid on surplus product: can bid up to the surplus amount
@@ -962,13 +1029,14 @@ export default function RunPage() {
           return (
             <BidPopup
               productName={selectedProduct.name}
-              currentQuantity={currentBid?.quantity}
-              currentComment={currentBid?.comment}
+              currentQuantity={selectedTargetUser ? selectedProduct.user_bids.find(b => b.user_id === selectedTargetUser.userId)?.quantity : currentBid?.quantity}
+              currentComment={selectedTargetUser ? selectedProduct.user_bids.find(b => b.user_id === selectedTargetUser.userId)?.comment ?? null : currentBid?.comment}
               onSubmit={handleSubmitBid}
               onCancel={handleCancelBid}
               adjustingMode={isAdjustingMode}
               minAllowed={minAllowed}
               maxAllowed={maxAllowed}
+              targetUserName={selectedTargetUser?.userName}
             />
           )
         })()}

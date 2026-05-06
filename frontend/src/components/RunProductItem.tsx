@@ -13,6 +13,8 @@ interface RunProductItemProps {
   onRetractBid: (product: Product) => void
   onViewComments: (product: Product) => void
   getUserInitials: (name: string, allNames?: string[]) => string
+  leaderEditMode?: boolean
+  onEditUserBid?: (product: Product, userId: string, userName: string) => void
 }
 
 /**
@@ -23,7 +25,7 @@ interface RunProductItemProps {
  * - Adjusting: Show purchase quantities and adjustment status
  * - Distributing/Completed: Show final purchase information
  */
-const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid, onViewComments, getUserInitials }: RunProductItemProps) => {
+const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractBid, onViewComments, getUserInitials, leaderEditMode = false, onEditUserBid }: RunProductItemProps) => {
   const { t } = useTranslation(['run'])
 
   const needsAdjustment = runState === 'adjusting' &&
@@ -176,7 +178,13 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
           {product.user_bids.map((bid, index) => {
             const allBidderNames = product.user_bids.map(b => b.user_name)
             return (
-            <div key={`${bid.user_id}-${index}`} className="user-avatar" title={`${bid.user_name}: ${bid.interested_only ? t('run:product.interested') : `${formatQuantity(bid.quantity)}${product.unit ? ` ${product.unit}` : ''}`}`}>
+            <div
+              key={`${bid.user_id}-${index}`}
+              className={`user-avatar ${leaderEditMode && (runState !== 'adjusting' || needsAdjustment) ? 'leader-editable' : ''}`}
+              title={`${bid.user_name}: ${bid.interested_only ? t('run:product.interested') : `${formatQuantity(bid.quantity)}${product.unit ? ` ${product.unit}` : ''}`}`}
+              onClick={leaderEditMode && onEditUserBid && !bid.interested_only && (runState !== 'adjusting' || needsAdjustment) ? () => onEditUserBid(product, bid.user_id, bid.user_name) : undefined}
+              style={leaderEditMode && (runState !== 'adjusting' || needsAdjustment) ? { cursor: 'pointer' } : undefined}
+            >
               <span className="avatar-initials">{getUserInitials(bid.user_name, allBidderNames)}</span>
               <span className="bid-quantity">
                 {bid.interested_only ? '?' : formatQuantity(bid.quantity)}
@@ -283,7 +291,8 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
     prevProps.product.current_user_bid?.interested_only === nextProps.product.current_user_bid?.interested_only &&
     prevProps.product.purchased_quantity === nextProps.product.purchased_quantity &&
     prevProps.runState === nextProps.runState &&
-    prevProps.canBid === nextProps.canBid
+    prevProps.canBid === nextProps.canBid &&
+    prevProps.leaderEditMode === nextProps.leaderEditMode
   )
 })
 

@@ -54,6 +54,11 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
       return t('notifications:leadershipDeclined', { declined_by_name, store_name })
     }
 
+    if (notification.type === 'bid_modified_by_leader') {
+      const { leader_name, product_name, old_quantity, new_quantity } = notification.data
+      return t('notifications:bidModifiedByLeader', { leader_name, product_name, old_quantity, new_quantity })
+    }
+
     return t('notifications:newNotification')
   }
 
@@ -66,7 +71,8 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
     if (notification.type === 'run_state_changed' ||
         notification.type === 'leader_reassignment_request' ||
         notification.type === 'leader_reassignment_accepted' ||
-        notification.type === 'leader_reassignment_declined') {
+        notification.type === 'leader_reassignment_declined' ||
+        notification.type === 'bid_modified_by_leader') {
       const { run_id } = notification.data
       if (run_id) {
         navigate(`/runs/${run_id}`)

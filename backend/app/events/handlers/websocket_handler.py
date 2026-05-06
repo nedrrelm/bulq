@@ -4,6 +4,7 @@ from app.api.websocket_manager import ConnectionManager
 from app.infrastructure.request_context import get_logger
 
 from ..domain_events import (
+    BidModifiedByLeaderEvent,
     BidPlacedEvent,
     BidRetractedEvent,
     CommentUpdatedEvent,
@@ -282,6 +283,23 @@ class WebSocketEventHandler:
         logger.debug(
             'Broadcast helper toggled event',
             extra={'run_id': str(event.run_id), 'user_id': str(event.user_id)},
+        )
+
+    async def handle_bid_modified_by_leader(self, event: BidModifiedByLeaderEvent) -> None:
+        """Broadcast leader bid modification to run participants."""
+        await self._ws_manager.broadcast(
+            f'run:{event.run_id}',
+            {
+                'type': 'bid_updated',
+                'data': {
+                    'product_id': str(event.product_id),
+                    'user_id': str(event.target_user_id),
+                    'user_name': event.target_user_name,
+                    'quantity': float(event.new_quantity),
+                    'interested_only': event.interested_only,
+                    'new_total': float(event.new_total),
+                },
+            },
         )
 
     async def handle_comment_updated(self, event: CommentUpdatedEvent) -> None:

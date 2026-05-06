@@ -21,8 +21,8 @@ from app.core.error_codes import (
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import Product, ProductBid, Run, RunParticipation
 from app.core.run_state import RunState
-from app.core.success_codes import BID_PLACED, BID_RETRACTED
-from app.events.domain_events import BidPlacedEvent, BidRetractedEvent
+from app.core.success_codes import BID_MODIFIED_BY_LEADER, BID_PLACED, BID_RETRACTED
+from app.events.domain_events import BidModifiedByLeaderEvent, BidPlacedEvent, BidRetractedEvent
 from app.services.bid_service import BidService
 
 
@@ -1691,3 +1691,227 @@ class TestEdgeCases:
             service.bid_repo.create_or_update_bid.assert_called_once_with(
                 participation_id, product_id, 2.0, False, comment
             )
+
+
+class TestLeaderEditBid:
+    """Test cases for BidService.leader_edit_bid()."""
+
+    def _setup_leader_edit_mocks(self, service, test_user, run_state=RunState.ACTIVE):
+        """Helper to set up common mocks for leader edit bid tests."""
+        run_id = uuid4()
+        product_id = uuid4()
+        group_id = uuid4()
+        target_user_id = uuid4()
+        leader_participation_id = uuid4()
+        target_participation_id = uuid4()
+
+        mock_run = Mock(spec=Run)
+        mock_run.id = run_id
+        mock_run.state = run_state.value
+        mock_run.group_id = group_id
+
+        mock_product = Mock(spec=Product)
+        mock_product.id = product_id
+        mock_product.name = 'Test Product'
+
+        mock_leader_participation = Mock(spec=RunParticipation)
+        mock_leader_participation.id = leader_participation_id
+        mock_leader_participation.user_id = test_user.id
+        mock_leader_participation.is_leader = True
+
+        mock_target_participation = Mock(spec=RunParticipation)
+        mock_target_participation.id = target_participation_id
+        mock_target_participation.user_id = target_user_id
+        mock_target_participation.is_leader = False
+
+        mock_target_user = Mock()
+        mock_target_user.id = target_user_id
+        mock_target_user.name = 'Target User'
+
+        mock_group = Mock()
+        mock_group.id = group_id
+
+        mock_existing_bid = Mock(spec=ProductBid)
+        mock_existing_bid.quantity = 3.0
+        mock_existing_bid.interested_only = False
+
+        service.run_repo.get_run_by_id = AsyncMock(return_value=mock_run)
+        service.product_repo.get_product_by_id = AsyncMock(return_value=mock_product)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
+        service.user_repo.get_user_by_id = AsyncMock(return_value=mock_target_user)
+        service.run_repo.get_participation = AsyncMock(
+            side_effect=lambda uid, rid: (
+                mock_leader_participation if uid == test_user.id else mock_target_participation
+            )
+        )
+        service.bid_repo.get_bid = AsyncMock(return_value=mock_existing_bid)
+        service.bid_repo.get_bids_by_run = AsyncMock(return_value=[])
+        service.bid_repo.create_or_update_bid = AsyncMock()
+        service.bid_repo.delete_bid = AsyncMock()
+
+        return {
+            'run_id': run_id,
+            'product_id': product_id,
+            'group_id': group_id,
+            'target_user_id': target_user_id,
+            'target_participation_id': target_participation_id,
+            'mock_run': mock_run,
+            'mock_existing_bid': mock_existing_bid,
+            'mock_target_user': mock_target_user,
+        }
+
+    async def test_leader_edit_bid_success(self, test_user):
+        """Test leader can edit another user's bid."""
+        mock_db = AsyncMock()
+        service = BidService(mock_db)
+        ctx = self._setup_leader_edit_mocks(service, test_user)
+
+        with patch('app.services.bid_service.event_bus'):
+            result = await service.leader_edit_bid(
+                run_id=str(ctx['run_id']),
+                product_id=str(ctx['product_id']),
+                target_user_id=str(ctx['target_user_id']),
+                quantity=2.0,
+                interested_only=False,
+                leader=test_user,
+            )
+
+        assert result.code == BID_MODIFIED_BY_LEADER
+        assert result.quantity == 2.0
+        assert result.user_id == str(ctx['target_user_id'])
+        service.bid_repo.create_or_update_bid.assert_called_once_with(
+            ctx['target_participation_id'], ctx['product_id'], 2.0, False, None
+        )
+
+    async def test_leader_edit_bid_non_leader_forbidden(self, test_user):
+        """Test non-leader gets ForbiddenError."""
+        mock_db = AsyncMock()
+        service = BidService(mock_db)
+        ctx = self._setup_leader_edit_mocks(service, test_user)
+
+        # Override: make the current user NOT a leader
+        non_leader_participation = Mock(spec=RunParticipation)
+        non_leader_participation.id = uuid4()
+        non_leader_participation.user_id = test_user.id
+        non_leader_participation.is_leader = False
+
+        service.run_repo.get_participation = AsyncMock(
+            side_effect=lambda uid, rid: non_leader_participation
+        )
+
+        with pytest.raises(ForbiddenError):
+            await service.leader_edit_bid(
+                run_id=str(ctx['run_id']),
+                product_id=str(ctx['product_id']),
+                target_user_id=str(ctx['target_user_id']),
+                quantity=2.0,
+                interested_only=False,
+                leader=test_user,
+            )
+
+    async def test_leader_edit_bid_target_user_not_participant(self, test_user):
+        """Test target user not in run raises NotFoundError."""
+        mock_db = AsyncMock()
+        service = BidService(mock_db)
+        ctx = self._setup_leader_edit_mocks(service, test_user)
+
+        # Override: target user has no participation
+        leader_participation = Mock(spec=RunParticipation)
+        leader_participation.id = uuid4()
+        leader_participation.user_id = test_user.id
+        leader_participation.is_leader = True
+
+        service.run_repo.get_participation = AsyncMock(
+            side_effect=lambda uid, rid: leader_participation if uid == test_user.id else None
+        )
+
+        with pytest.raises(NotFoundError):
+            await service.leader_edit_bid(
+                run_id=str(ctx['run_id']),
+                product_id=str(ctx['product_id']),
+                target_user_id=str(ctx['target_user_id']),
+                quantity=2.0,
+                interested_only=False,
+                leader=test_user,
+            )
+
+    async def test_leader_edit_bid_invalid_run(self, test_user):
+        """Test run doesn't exist raises NotFoundError."""
+        mock_db = AsyncMock()
+        service = BidService(mock_db)
+        ctx = self._setup_leader_edit_mocks(service, test_user)
+
+        service.run_repo.get_run_by_id = AsyncMock(return_value=None)
+
+        with pytest.raises(NotFoundError):
+            await service.leader_edit_bid(
+                run_id=str(ctx['run_id']),
+                product_id=str(ctx['product_id']),
+                target_user_id=str(ctx['target_user_id']),
+                quantity=2.0,
+                interested_only=False,
+                leader=test_user,
+            )
+
+    async def test_leader_edit_bid_invalid_state(self, test_user):
+        """Test run in completed state raises BadRequestError."""
+        mock_db = AsyncMock()
+        service = BidService(mock_db)
+        ctx = self._setup_leader_edit_mocks(service, test_user, run_state=RunState.COMPLETED)
+
+        with pytest.raises(BadRequestError):
+            await service.leader_edit_bid(
+                run_id=str(ctx['run_id']),
+                product_id=str(ctx['product_id']),
+                target_user_id=str(ctx['target_user_id']),
+                quantity=2.0,
+                interested_only=False,
+                leader=test_user,
+            )
+
+    async def test_leader_edit_bid_emits_event(self, test_user):
+        """Test BidModifiedByLeaderEvent is emitted with correct old/new quantities."""
+        mock_db = AsyncMock()
+        service = BidService(mock_db)
+        ctx = self._setup_leader_edit_mocks(service, test_user)
+
+        with patch('app.services.bid_service.event_bus') as mock_event_bus:
+            await service.leader_edit_bid(
+                run_id=str(ctx['run_id']),
+                product_id=str(ctx['product_id']),
+                target_user_id=str(ctx['target_user_id']),
+                quantity=1.0,
+                interested_only=False,
+                leader=test_user,
+            )
+
+            mock_event_bus.emit.assert_called_once()
+            event = mock_event_bus.emit.call_args[0][0]
+            assert isinstance(event, BidModifiedByLeaderEvent)
+            assert event.run_id == ctx['run_id']
+            assert event.product_id == ctx['product_id']
+            assert event.target_user_id == ctx['target_user_id']
+            assert event.leader_user_id == test_user.id
+            assert event.old_quantity == 3.0
+            assert event.new_quantity == 1.0
+            assert event.product_name == 'Test Product'
+
+    async def test_leader_edit_bid_quantity_zero_removes_bid(self, test_user):
+        """Test quantity=0 removes the bid."""
+        mock_db = AsyncMock()
+        service = BidService(mock_db)
+        ctx = self._setup_leader_edit_mocks(service, test_user)
+
+        with patch('app.services.bid_service.event_bus'):
+            await service.leader_edit_bid(
+                run_id=str(ctx['run_id']),
+                product_id=str(ctx['product_id']),
+                target_user_id=str(ctx['target_user_id']),
+                quantity=0,
+                interested_only=False,
+                leader=test_user,
+            )
+
+        service.bid_repo.delete_bid.assert_called_once_with(
+            ctx['target_participation_id'], ctx['product_id']
+        )

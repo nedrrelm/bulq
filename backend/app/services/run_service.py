@@ -309,6 +309,21 @@ class RunService(BaseService):
         """
         return await self.bid_service.retract_bid(run_id, product_id, user)
 
+    async def leader_edit_bid(
+        self,
+        run_id: str,
+        product_id: str,
+        target_user_id: str,
+        quantity: float,
+        interested_only: bool,
+        leader: User,
+        comment: str | None = None,
+    ) -> PlaceBidResponse:
+        """Leader edits another user's bid - delegates to bid_service."""
+        return await self.bid_service.leader_edit_bid(
+            run_id, product_id, target_user_id, quantity, interested_only, leader, comment
+        )
+
     async def toggle_ready(self, run_id: str, user: User) -> ReadyToggleResponse:
         """Toggle the current user's ready status for a run.
 

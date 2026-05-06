@@ -12,6 +12,7 @@
   "leadershipRequest": "{{from_user_name}} хочет передать вам лидерство в {{store_name}}",
   "leadershipAccepted": "{{new_leader_name}} принял лидерство в {{store_name}}",
   "leadershipDeclined": "{{declined_by_name}} отклонил лидерство в {{store_name}}",
+  "bidModifiedByLeader": "{{leader_name}} изменил вашу ставку на {{product_name}} с {{old_quantity}} на {{new_quantity}}",
   "states": {
     "planning": "в планировании",
     "active": "активна",

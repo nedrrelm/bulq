@@ -50,6 +50,7 @@ async def lifespan(app: FastAPI):
     # Register event handlers for domain events
     from .api.websocket_manager import manager
     from .events.domain_events import (
+        BidModifiedByLeaderEvent,
         BidPlacedEvent,
         BidRetractedEvent,
         CommentUpdatedEvent,
@@ -86,6 +87,7 @@ async def lifespan(app: FastAPI):
     event_bus.subscribe(DistributionUpdatedEvent, ws_handler.handle_distribution_updated)
     event_bus.subscribe(HelperToggledEvent, ws_handler.handle_helper_toggled)
     event_bus.subscribe(CommentUpdatedEvent, ws_handler.handle_comment_updated)
+    event_bus.subscribe(BidModifiedByLeaderEvent, ws_handler.handle_bid_modified_by_leader)
 
     # Note: NotificationEventHandler needs repository which is per-request
     # We'll create a handler factory that gets repo from database session
@@ -99,6 +101,15 @@ async def lifespan(app: FastAPI):
             await db.commit()
 
     event_bus.subscribe(RunStateChangedEvent, handle_run_state_changed_notification)
+
+    async def handle_bid_modified_by_leader_notification(event: BidModifiedByLeaderEvent):
+        async with AsyncSessionLocal() as db:
+            notification_repo = get_notification_repository(db)
+            notification_handler = NotificationEventHandler(notification_repo)
+            await notification_handler.handle_bid_modified_by_leader(event)
+            await db.commit()
+
+    event_bus.subscribe(BidModifiedByLeaderEvent, handle_bid_modified_by_leader_notification)
 
     from .infrastructure.request_context import get_logger
 

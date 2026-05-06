@@ -37,6 +37,16 @@ class PlaceBidRequest(BaseModel):
     comment: str | None = Field(None, max_length=500)
 
 
+class LeaderEditBidRequest(BaseModel):
+    """Request model for a leader editing another user's bid."""
+
+    product_id: str
+    user_id: str
+    quantity: Decimal = Field(ge=0, le=9999, decimal_places=2)
+    interested_only: bool = False
+    comment: str | None = Field(None, max_length=500)
+
+
 class UserBidResponse(BaseModel):
     """Response model for a user's bid on a product."""
 

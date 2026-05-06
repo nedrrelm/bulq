@@ -3,11 +3,6 @@
 ### Features
 1. distribution groups for each run (split total into multiple pickup points)
 3. Create buyers clubs and sellers clubs
-9. **Leader Can Modify User Bids**
-   - Leader has ability to edit other users' bids (not just force equal distribution)
-   - Makes price division and quantity adjustments easier
-   - Useful during adjusting stage for fine-tuning allocations
-   - Note: This needs more design work to determine exact workflow and permissions
 
 ### Seller Group Type
 **Status**: Future

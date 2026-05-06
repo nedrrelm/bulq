@@ -136,3 +136,21 @@ class CommentUpdatedEvent(DomainEvent):
 
     run_id: UUID
     comment: str | None
+
+
+@dataclass
+class BidModifiedByLeaderEvent(DomainEvent):
+    """Event emitted when a leader modifies another user's bid."""
+
+    run_id: UUID
+    product_id: UUID
+    target_user_id: UUID
+    target_user_name: str
+    leader_user_id: UUID
+    leader_user_name: str
+    old_quantity: float
+    new_quantity: float
+    interested_only: bool
+    new_total: float
+    group_id: UUID
+    product_name: str

@@ -44,7 +44,8 @@
     "markAllPickedUp": "Означи све као преузето",
     "downloadState": "Преузми податке",
     "downloading": "Преузимање...",
-    "downloadStateTooltip": "Преузми податке о набавци у JSON формату"
+    "downloadStateTooltip": "Преузми податке о набавци у JSON формату",
+    "editMemberBids": "Izmeni ponude članova"
   },
   "labels": {
     "runInformation": "Информације о набавци",
@@ -136,7 +137,8 @@
     "decimalHint": "Дозвољени су децимални бројеви (нпр. 1,5)",
     "interestedOnly": "Само заинтересован (без конкретне количине)",
     "commentPlaceholder": "Опционо: Додајте напомену о својој понуди...",
-    "commentCounter": "{{count}}/500"
+    "commentCounter": "{{count}}/500",
+    "editingUserBid": "Izmena ponude korisnika {{name}}"
   },
   "reassign": {
     "title": "Пренеси лидерство",
