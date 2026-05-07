@@ -26,6 +26,35 @@
     "creating": "Kreiranje...",
     "updating": "Čuvanje..."
   },
+  "followers": {
+    "noFollowers": "Još niko ne prati.",
+    "unfollow": "Otprati",
+    "unfollowing": "Otpraćivanje..."
+  },
+  "join": {
+    "title": "Zaprati prodavca",
+    "selectGroup": "Izaberite grupu za praćenje",
+    "follow": "Zaprati",
+    "following": "Praćenje...",
+    "success": "Praćeno!",
+    "successDescription": "Vaša grupa sada prati {{name}}.",
+    "joiningDisabled": "Ovaj prodavac ne prihvata nove pratioce.",
+    "noGroups": "Morate biti u grupi da biste zapratili prodavca.",
+    "goHome": "Početna",
+    "errors": {
+      "loadFailed": "Greška pri učitavanju informacija o prodavcu",
+      "followFailed": "Greška pri praćenju prodavca"
+    }
+  },
+  "public": {
+    "followingWith": "Praćeno kroz",
+    "followWithGroup": "Zaprati grupom",
+    "allGroupsFollowing": "Sve vaše grupe već prate ovog prodavca."
+  },
+  "group": {
+    "followedSellers": "Praćeni prodavci",
+    "noFollowedSellers": "Još nema praćenih prodavaca."
+  },
   "errors": {
     "createFailed": "Neuspelo kreiranje profila prodavca",
     "updateFailed": "Neuspelo ažuriranje profila prodavca",

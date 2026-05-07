@@ -2,14 +2,17 @@
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.dependencies import SellerServiceDep
+from app.api.dependencies import SellerFollowerServiceDep, SellerServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     CreateSellerRequest,
+    FollowSellerRequest,
+    SellerFollowerResponse,
     SellerPreviewResponse,
     SellerPublicResponse,
     SellerResponse,
     SellerSearchResult,
+    SuccessResponse,
     UpdateSellerRequest,
 )
 from app.core.models import User
@@ -94,6 +97,15 @@ async def get_seller_by_invite_token(
     return await service.get_seller_by_invite_token(invite_token)
 
 
+@router.get('/me/followers', response_model=list[SellerFollowerResponse])
+async def get_my_followers(
+    service: SellerFollowerServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Get all groups following the current user's seller profile."""
+    return await service.get_seller_followers(current_user)
+
+
 @router.get('/{seller_id}', response_model=SellerPublicResponse)
 async def get_seller(
     seller_id: str,
@@ -103,3 +115,53 @@ async def get_seller(
     """Get a seller's public profile."""
     seller_uuid = validate_uuid(seller_id, 'Seller')
     return await service.get_seller_by_id(seller_uuid)
+
+
+@router.get('/{seller_id}/my-following', response_model=list[SellerFollowerResponse])
+async def get_my_following_groups(
+    seller_id: str,
+    service: SellerFollowerServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Get which of the current user's groups follow this seller."""
+    seller_uuid = validate_uuid(seller_id, 'Seller')
+    return await service.get_my_following_groups(current_user, seller_uuid)
+
+
+@router.post('/{seller_id}/followers', response_model=SellerFollowerResponse)
+async def follow_seller(
+    seller_id: str,
+    request: FollowSellerRequest,
+    service: SellerFollowerServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Follow a seller with a group."""
+    seller_uuid = validate_uuid(seller_id, 'Seller')
+    group_uuid = validate_uuid(request.group_id, 'Group')
+    return await service.follow_seller(current_user, seller_uuid, group_uuid)
+
+
+@router.delete('/{seller_id}/followers/{group_id}', response_model=SuccessResponse)
+async def unfollow_seller(
+    seller_id: str,
+    group_id: str,
+    service: SellerFollowerServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Unfollow a seller."""
+    seller_uuid = validate_uuid(seller_id, 'Seller')
+    group_uuid = validate_uuid(group_id, 'Group')
+    await service.unfollow_seller(current_user, seller_uuid, group_uuid)
+    return SuccessResponse(success=True, message='Unfollowed seller')
+
+
+@router.post('/invite/{invite_token}/follow', response_model=SellerFollowerResponse)
+async def follow_seller_by_invite(
+    invite_token: str,
+    request: FollowSellerRequest,
+    service: SellerFollowerServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Follow a seller via invite token."""
+    group_uuid = validate_uuid(request.group_id, 'Group')
+    return await service.follow_by_invite_token(current_user, invite_token, group_uuid)

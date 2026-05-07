@@ -30,6 +30,8 @@ const AdminPage = lazy(() => import('./pages/AdminPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const TagPage = lazy(() => import('./pages/TagPage'))
 const SellerDashboardPage = lazy(() => import('./pages/SellerDashboardPage'))
+const SellerFollowersPage = lazy(() => import('./pages/SellerFollowersPage'))
+const JoinSeller = lazy(() => import('./pages/JoinSeller'))
 
 // Wrapper components for lazy loading
 function GroupPageWrapper() {
@@ -177,6 +179,31 @@ function SellerDashboardPageWrapper() {
   )
 }
 
+function SellerFollowersPageWrapper() {
+  return (
+    <AppLayout>
+      <SellerFollowersPage />
+    </AppLayout>
+  )
+}
+
+function JoinSellerWrapper() {
+  const { inviteToken } = useParams<{ inviteToken: string }>()
+  const navigate = useNavigate()
+
+  if (!inviteToken) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <JoinSeller
+      inviteToken={inviteToken}
+      onJoinSuccess={() => navigate('/')}
+    />
+  )
+}
+
 function ProfilePageWrapper() {
   return (
     <AppLayout>
@@ -251,7 +278,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     (searchResults.products?.length ?? 0) > 0 ||
     (searchResults.stores?.length ?? 0) > 0 ||
     (searchResults.groups?.length ?? 0) > 0 ||
-    (searchResults.tags?.length ?? 0) > 0
+    (searchResults.tags?.length ?? 0) > 0 ||
+    (searchResults.sellers?.length ?? 0) > 0
   )
 
   const closeSearch = () => {
@@ -373,6 +401,30 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                         <strong>{tag.value}</strong>
                         <span className="product-brand">{tag.type}</span>
                         <span className="product-store">{tag.product_count} products</span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {(searchResults?.sellers?.length ?? 0) > 0 && (
+                <>
+                  {((searchResults?.products?.length ?? 0) > 0 || (searchResults?.stores?.length ?? 0) > 0 || (searchResults?.groups?.length ?? 0) > 0 || (searchResults?.tags?.length ?? 0) > 0) && (
+                    <div className="search-divider" />
+                  )}
+                  <div className="search-category-label">{t('common:search.categories.sellers')}</div>
+                  {searchResults!.sellers!.map((seller: { id: string; store_id: string; display_name: string; description: string | null }) => (
+                    <div
+                      key={`seller-${seller.id}`}
+                      className="search-result-item"
+                      onClick={() => {
+                        navigate(`/stores/${seller.store_id}`)
+                        closeSearch()
+                      }}
+                    >
+                      <div className="product-info">
+                        <strong>{seller.display_name}</strong>
+                        {seller.description && <span className="product-store">{seller.description}</span>}
                       </div>
                     </div>
                   ))}
@@ -539,6 +591,31 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                       ))}
                     </>
                   )}
+
+                  {(searchResults?.sellers?.length ?? 0) > 0 && (
+                    <>
+                      {((searchResults?.products?.length ?? 0) > 0 || (searchResults?.stores?.length ?? 0) > 0 || (searchResults?.groups?.length ?? 0) > 0 || (searchResults?.tags?.length ?? 0) > 0) && (
+                        <div className="search-divider" />
+                      )}
+                      <div className="search-category-label">{t('common:search.categories.sellers')}</div>
+                      {searchResults!.sellers!.map((seller: { id: string; store_id: string; display_name: string; description: string | null }) => (
+                        <div
+                          key={`seller-${seller.id}`}
+                          className="search-result-item"
+                          onClick={() => {
+                            navigate(`/stores/${seller.store_id}`)
+                            closeSearch()
+                            setMenuOpen(false)
+                          }}
+                        >
+                          <div className="product-info">
+                            <strong>{seller.display_name}</strong>
+                            {seller.description && <span className="product-store">{seller.description}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
               {searchQuery.trim().length >= 2 && !searching && !hasResults && (
@@ -675,6 +752,8 @@ function AppRoutes() {
         <Route path="/stores/:storeId" element={<StorePageWrapper />} />
         <Route path="/notifications" element={<NotificationPageWrapper />} />
         <Route path="/seller" element={<SellerDashboardPageWrapper />} />
+        <Route path="/seller/followers" element={<SellerFollowersPageWrapper />} />
+        <Route path="/seller/invite/:inviteToken" element={<JoinSellerWrapper />} />
         <Route path="/profile" element={<ProfilePageWrapper />} />
         <Route path="/admin" element={<AdminPageWrapper />} />
         <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />

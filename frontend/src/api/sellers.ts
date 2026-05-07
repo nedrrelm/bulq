@@ -5,13 +5,17 @@ import {
   sellerPublicSchema,
   sellerSearchResultSchema,
   sellerPreviewSchema,
+  sellerFollowerSchema,
+  followedSellerSchema,
   type Seller,
   type SellerPublic,
   type SellerSearchResult,
   type SellerPreview,
+  type SellerFollower,
+  type FollowedSeller,
 } from '../schemas/seller'
 
-export type { Seller, SellerPublic, SellerSearchResult, SellerPreview }
+export type { Seller, SellerPublic, SellerSearchResult, SellerPreview, SellerFollower, FollowedSeller }
 
 export interface CreateSellerRequest {
   display_name: string
@@ -56,4 +60,23 @@ export const sellersApi = {
 
   getSeller: (sellerId: string) =>
     api.get<SellerPublic>(`/sellers/${sellerId}`, sellerPublicSchema),
+
+  // Follower endpoints
+  getMyFollowers: () =>
+    api.get<SellerFollower[]>('/sellers/me/followers', z.array(sellerFollowerSchema)),
+
+  getMyFollowingGroups: (sellerId: string) =>
+    api.get<SellerFollower[]>(`/sellers/${sellerId}/my-following`, z.array(sellerFollowerSchema)),
+
+  followSeller: (sellerId: string, groupId: string) =>
+    api.post<SellerFollower>(`/sellers/${sellerId}/followers`, { group_id: groupId }, sellerFollowerSchema),
+
+  unfollowSeller: (sellerId: string, groupId: string) =>
+    api.delete(`/sellers/${sellerId}/followers/${groupId}`),
+
+  followByInviteToken: (inviteToken: string, groupId: string) =>
+    api.post<SellerFollower>(`/sellers/invite/${inviteToken}/follow`, { group_id: groupId }, sellerFollowerSchema),
+
+  getFollowedSellers: (groupId: string) =>
+    api.get<FollowedSeller[]>(`/groups/${groupId}/followed-sellers`, z.array(followedSellerSchema)),
 }

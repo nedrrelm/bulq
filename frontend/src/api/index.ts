@@ -22,4 +22,4 @@ export type { DistributionUser, DistributionProduct, DistributionItem, TogglePic
 export type { SearchResults, SearchProduct, SearchStore, SearchGroup } from './search'
 export type { TagBrief, TagSearchResult, TagDetail, CreateTagRequest } from './tags'
 export type { GetNotificationsParams } from './notifications'
-export type { Seller, SellerPublic, SellerSearchResult, SellerPreview, CreateSellerRequest, UpdateSellerRequest } from './sellers'
+export type { Seller, SellerPublic, SellerSearchResult, SellerPreview, SellerFollower, FollowedSeller, CreateSellerRequest, UpdateSellerRequest } from './sellers'

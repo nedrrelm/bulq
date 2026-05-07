@@ -65,6 +65,13 @@ class DatabaseSellerRepository(AbstractSellerRepository):
         await self.db.refresh(seller)
         return seller
 
+    async def get_seller_by_store_id(self, store_id: UUID) -> Seller | None:
+        """Get seller by their linked store ID."""
+        result = await self.db.execute(
+            select(Seller).where(Seller.store_id == store_id).options(joinedload(Seller.user))
+        )
+        return result.scalar_one_or_none()
+
     async def search_sellers(self, query: str, limit: int = 20) -> list[Seller]:
         """Search sellers by display name. Only returns searchable sellers."""
         result = await self.db.execute(

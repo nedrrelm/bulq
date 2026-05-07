@@ -22,6 +22,15 @@ class GroupSearchResult(BaseModel):
     member_count: int
 
 
+class SellerSearchResultBrief(BaseModel):
+    """Search result for a seller."""
+
+    id: str
+    store_id: str
+    display_name: str
+    description: str | None
+
+
 class SearchResponse(BaseModel):
     """Response model for global search."""
 
@@ -29,3 +38,4 @@ class SearchResponse(BaseModel):
     stores: list[StoreSearchResult]
     groups: list[GroupSearchResult]
     tags: list[TagSearchResult] = []
+    sellers: list[SellerSearchResultBrief] = []

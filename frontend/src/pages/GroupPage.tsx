@@ -17,6 +17,7 @@ import { useConfirm } from '../hooks/useConfirm'
 import { useModal } from '../hooks/useModal'
 import RunCard from '../components/RunCard'
 import { useGroup, useGroupRuns, groupKeys } from '../hooks/queries'
+import { useFollowedSellers, useUnfollowSeller } from '../hooks/queries/useSellers'
 import { getErrorMessage } from '../utils/errorHandling'
 
 type RunSummary = {
@@ -37,7 +38,7 @@ type RunSummary = {
 }
 
 export default function GroupPage() {
-  const { t } = useTranslation(['group'])
+  const { t } = useTranslation(['group', 'seller'])
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
 
@@ -45,6 +46,9 @@ export default function GroupPage() {
   const { data: group, isLoading: groupLoading, error: groupError } = useGroup(groupId || '')
   const { data: runs = [], isLoading: runsLoading, error: runsError } = useGroupRuns(groupId || '')
   const queryClient = useQueryClient()
+
+  const { data: followedSellers = [] } = useFollowedSellers(groupId)
+  const unfollowSeller = useUnfollowSeller()
 
   const loading = groupLoading || runsLoading
   const error = groupError ? getErrorMessage(groupError, '') : runsError ? getErrorMessage(runsError, '') : ''
@@ -170,6 +174,31 @@ export default function GroupPage() {
           {t('group:actions.manageGroup')}
         </button>
       </div>
+
+      {/* Followed Sellers */}
+      {followedSellers.length > 0 && (
+        <div className="runs-section">
+          <h3>{t('seller:group.followedSellers')} ({followedSellers.length})</h3>
+          <div className="runs-list">
+            {followedSellers.map((s) => (
+              <div key={s.seller_id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong>{s.display_name}</strong>
+                  {s.description && <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>{s.description}</p>}
+                </div>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => unfollowSeller.mutate({ sellerId: s.seller_id, groupId: groupId! })}
+                  disabled={unfollowSeller.isPending}
+                  style={{ fontSize: '0.8rem' }}
+                >
+                  {t('seller:followers.unfollow')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading && <p>{t('group:loading')}</p>}
 

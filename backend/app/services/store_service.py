@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import StorePageResponse, StoreProductResponse, StoreResponse, StoreRunResponse
+from app.api.schemas.store_schemas import SellerInfo
 from app.core.error_codes import STORE_NAME_EMPTY, STORE_NOT_FOUND
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.models import Store
@@ -13,6 +14,7 @@ from app.repositories import (
     get_group_repository,
     get_product_repository,
     get_run_repository,
+    get_seller_repository,
     get_store_repository,
 )
 
@@ -28,6 +30,7 @@ class StoreService(BaseService):
         self.group_repo = get_group_repository(db)
         self.product_repo = get_product_repository(db)
         self.run_repo = get_run_repository(db)
+        self.seller_repo = get_seller_repository(db)
         self.store_repo = get_store_repository(db)
 
     async def get_all_stores(self, limit: int = 100, offset: int = 0) -> list[Store]:
@@ -117,8 +120,20 @@ class StoreService(BaseService):
                 )
             )
 
+        # Check if this store is linked to a seller
+        seller_info = None
+        seller = await self.seller_repo.get_seller_by_store_id(store_id)
+        if seller:
+            seller_info = SellerInfo(
+                id=str(seller.id),
+                display_name=seller.display_name,
+                description=seller.description,
+                is_joining_allowed=seller.is_joining_allowed,
+            )
+
         return StorePageResponse(
             store=StoreResponse(id=str(store.id), name=store.name),
             products=products_response,
             active_runs=runs_response,
+            seller=seller_info,
         )

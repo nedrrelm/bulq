@@ -48,6 +48,13 @@ class MemorySellerRepository(AbstractSellerRepository):
 
         return seller
 
+    async def get_seller_by_store_id(self, store_id: UUID) -> Seller | None:
+        """Get seller by their linked store ID."""
+        for seller in self.storage.sellers.values():
+            if seller.store_id == store_id:
+                return seller
+        return None
+
     async def search_sellers(self, query: str, limit: int = 20) -> list[Seller]:
         """Search sellers by display name. Only returns searchable sellers."""
         query_lower = query.lower()

@@ -88,6 +88,11 @@ from .search_schemas import (
     SearchResponse,
     StoreSearchResult,
 )
+from .seller_follower_schemas import (
+    FollowedSellerResponse,
+    FollowSellerRequest,
+    SellerFollowerResponse,
+)
 from .seller_schemas import (
     CreateSellerRequest,
     SellerPreviewResponse,
@@ -221,6 +226,10 @@ __all__ = [
     'AddTagToProductRequest',
     'AdminTagResponse',
     'UpdateTagRequest',
+    # Seller follower schemas
+    'FollowSellerRequest',
+    'SellerFollowerResponse',
+    'FollowedSellerResponse',
     # Seller schemas
     'CreateSellerRequest',
     'UpdateSellerRequest',

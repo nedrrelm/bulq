@@ -44,9 +44,19 @@ class StoreRunResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SellerInfo(BaseModel):
+    """Seller info embedded in store page response."""
+
+    id: str
+    display_name: str
+    description: str | None
+    is_joining_allowed: bool
+
+
 class StorePageResponse(BaseModel):
     """Complete store page response with products and runs."""
 
     store: StoreResponse
     products: list[StoreProductResponse]
     active_runs: list[StoreRunResponse]
+    seller: SellerInfo | None = None

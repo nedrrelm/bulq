@@ -75,3 +75,33 @@
   flex-direction: column;
   gap: 0.5rem;
 }
+
+.follower-count {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.followers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.follower-card {
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.follower-card:hover {
+  background: var(--color-bg-secondary);
+}
+
+.follower-info h3 {
+  margin: 0;
+}
+
+.follower-meta {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}

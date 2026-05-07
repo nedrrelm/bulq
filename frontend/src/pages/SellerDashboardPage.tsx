@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Copy, Check, RefreshCw, Store } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Copy, Check, RefreshCw, Store, Users } from 'lucide-react'
 import {
   useMySellerProfile,
   useCreateSeller,
@@ -8,13 +9,16 @@ import {
   useToggleJoiningAllowed,
   useToggleSearchable,
   useRegenerateSellerToken,
+  useSellerFollowers,
 } from '../hooks/queries/useSellers'
 import { logger } from '../utils/logger'
 import '../styles/pages/SellerDashboardPage.css'
 
 export default function SellerDashboardPage() {
   const { t } = useTranslation(['seller'])
+  const navigate = useNavigate()
   const { data: seller, isLoading } = useMySellerProfile()
+  const { data: followers = [] } = useSellerFollowers()
   const createSeller = useCreateSeller()
   const updateSeller = useUpdateSeller()
   const toggleJoining = useToggleJoiningAllowed()
@@ -229,6 +233,14 @@ export default function SellerDashboardPage() {
               <span className="toggle-slider"></span>
             </label>
           </div>
+        </div>
+      </div>
+
+      {/* Followers */}
+      <div className="card clickable" onClick={() => navigate('/seller/followers')}>
+        <div className="seller-profile-header">
+          <h3><Users size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />{t('seller:dashboard.followers')}</h3>
+          <span className="follower-count">{followers.length}</span>
         </div>
       </div>
 

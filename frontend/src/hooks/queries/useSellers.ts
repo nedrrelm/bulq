@@ -6,6 +6,10 @@ import { createQueryKeys } from '../../utils/queryKeys'
 export const sellerKeys = createQueryKeys('sellers', {
   custom: {
     me: (base) => [...base, 'me'] as const,
+    myFollowers: (base) => [...base, 'my-followers'] as const,
+  },
+  nested: {
+    followedSellers: 'followed-sellers',
   },
 })
 
@@ -113,6 +117,89 @@ export function useRegenerateSellerToken() {
     mutationFn: () => sellersApi.regenerateInviteToken(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sellerKeys.me() })
+    },
+  })
+}
+
+// ==================== Follower Queries ====================
+
+/**
+ * Get the current seller's followers
+ */
+export function useSellerFollowers() {
+  return useQuery({
+    queryKey: sellerKeys.myFollowers(),
+    queryFn: () => sellersApi.getMyFollowers(),
+  })
+}
+
+/**
+ * Get which of the current user's groups follow a seller
+ */
+export function useMyFollowingGroups(sellerId: string | undefined) {
+  return useQuery({
+    queryKey: [...sellerKeys.detail(sellerId!), 'my-following'] as const,
+    queryFn: () => sellersApi.getMyFollowingGroups(sellerId!),
+    enabled: !!sellerId,
+  })
+}
+
+/**
+ * Get sellers followed by a group
+ */
+export function useFollowedSellers(groupId: string | undefined) {
+  return useQuery({
+    queryKey: sellerKeys.followedSellers(groupId!),
+    queryFn: () => sellersApi.getFollowedSellers(groupId!),
+    enabled: !!groupId,
+  })
+}
+
+// ==================== Follower Mutations ====================
+
+/**
+ * Follow a seller with a group
+ */
+export function useFollowSeller() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ sellerId, groupId }: { sellerId: string; groupId: string }) =>
+      sellersApi.followSeller(sellerId, groupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sellerKeys.myFollowers() })
+      queryClient.invalidateQueries({ queryKey: sellerKeys.all })
+    },
+  })
+}
+
+/**
+ * Unfollow a seller
+ */
+export function useUnfollowSeller() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ sellerId, groupId }: { sellerId: string; groupId: string }) =>
+      sellersApi.unfollowSeller(sellerId, groupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sellerKeys.myFollowers() })
+      queryClient.invalidateQueries({ queryKey: sellerKeys.all })
+    },
+  })
+}
+
+/**
+ * Follow a seller by invite token
+ */
+export function useFollowSellerByToken() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ inviteToken, groupId }: { inviteToken: string; groupId: string }) =>
+      sellersApi.followByInviteToken(inviteToken, groupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sellerKeys.all })
     },
   })
 }

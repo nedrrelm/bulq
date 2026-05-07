@@ -44,3 +44,25 @@ export const sellerPreviewSchema = z.object({
 })
 
 export type SellerPreview = z.infer<typeof sellerPreviewSchema>
+
+// Follower schemas
+
+export const sellerFollowerSchema = z.object({
+  id: uuidSchema,
+  seller_id: uuidSchema,
+  group_id: uuidSchema,
+  group_name: z.string(),
+  member_count: z.number(),
+  created_at: z.string(),
+})
+
+export type SellerFollower = z.infer<typeof sellerFollowerSchema>
+
+export const followedSellerSchema = z.object({
+  seller_id: uuidSchema,
+  display_name: z.string(),
+  description: z.string().nullable(),
+  is_joining_allowed: z.boolean(),
+})
+
+export type FollowedSeller = z.infer<typeof followedSellerSchema>

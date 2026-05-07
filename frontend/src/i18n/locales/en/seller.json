@@ -26,6 +26,35 @@
     "creating": "Creating...",
     "updating": "Saving..."
   },
+  "followers": {
+    "noFollowers": "No groups following yet.",
+    "unfollow": "Unfollow",
+    "unfollowing": "Unfollowing..."
+  },
+  "join": {
+    "title": "Follow a Seller",
+    "selectGroup": "Select a group to follow with",
+    "follow": "Follow Seller",
+    "following": "Following...",
+    "success": "Following!",
+    "successDescription": "Your group is now following {{name}}.",
+    "joiningDisabled": "This seller is not accepting new followers.",
+    "noGroups": "You need to be in a group before following a seller.",
+    "goHome": "Go Home",
+    "errors": {
+      "loadFailed": "Failed to load seller info",
+      "followFailed": "Failed to follow seller"
+    }
+  },
+  "public": {
+    "followingWith": "Following with",
+    "followWithGroup": "Follow with a group",
+    "allGroupsFollowing": "All your groups are already following this seller."
+  },
+  "group": {
+    "followedSellers": "Followed Sellers",
+    "noFollowedSellers": "No sellers followed yet."
+  },
   "errors": {
     "createFailed": "Failed to create seller profile",
     "updateFailed": "Failed to update seller profile",

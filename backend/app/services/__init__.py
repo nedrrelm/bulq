@@ -12,6 +12,7 @@ from .reassignment_service import ReassignmentService
 from .run_notification_service import RunNotificationService
 from .run_service import RunService
 from .run_state_service import RunStateService
+from .seller_follower_service import SellerFollowerService
 from .seller_service import SellerService
 from .shopping_service import ShoppingService
 from .store_service import StoreService
@@ -32,6 +33,7 @@ __all__ = [
     'RunNotificationService',
     'RunService',
     'RunStateService',
+    'SellerFollowerService',
     'SellerService',
     'ShoppingService',
     'StoreService',

@@ -48,6 +48,7 @@ class SellerSearchResult(BaseModel):
     """Seller search result."""
 
     id: str
+    store_id: str
     display_name: str
     description: str | None
 

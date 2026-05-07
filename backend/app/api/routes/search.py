@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import ProductServiceDep, StoreServiceDep, TagServiceDep
+from app.api.dependencies import ProductServiceDep, SellerServiceDep, StoreServiceDep, TagServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     GroupSearchResult,
     SearchResponse,
     StoreSearchResult,
 )
+from app.api.schemas.search_schemas import SellerSearchResultBrief
 from app.core.models import User
 from app.infrastructure.database import get_db
 from app.repositories import get_user_repository
@@ -20,11 +21,12 @@ async def search_all(
     product_service: ProductServiceDep,
     store_service: StoreServiceDep,
     tag_service: TagServiceDep,
+    seller_service: SellerServiceDep,
     db: AsyncSession = Depends(get_db),
     q: str = Query(..., min_length=1, description='Search query'),
     current_user: User = Depends(require_auth),
 ):
-    """Consolidated search across products, stores, and groups.
+    """Consolidated search across products, stores, groups, tags, and sellers.
 
     Returns up to 3 results per category.
     """
@@ -51,4 +53,17 @@ async def search_all(
 
     tags = await tag_service.search_tags(q, limit=3)
 
-    return SearchResponse(products=products, stores=stores, groups=matching_groups, tags=tags)
+    seller_results = await seller_service.search_sellers(q)
+    sellers = [
+        SellerSearchResultBrief(
+            id=s.id,
+            store_id=s.store_id,
+            display_name=s.display_name,
+            description=s.description,
+        )
+        for s in seller_results[:3]
+    ]
+
+    return SearchResponse(
+        products=products, stores=stores, groups=matching_groups, tags=tags, sellers=sellers
+    )

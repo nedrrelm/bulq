@@ -35,6 +35,11 @@ class AbstractSellerRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def get_seller_by_store_id(self, store_id: UUID) -> Seller | None:
+        """Get seller by their linked store ID."""
+        raise NotImplementedError
+
+    @abstractmethod
     async def search_sellers(self, query: str, limit: int = 20) -> list[Seller]:
         """Search sellers by display name. Only returns searchable sellers."""
         raise NotImplementedError

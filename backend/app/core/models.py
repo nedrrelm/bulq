@@ -91,6 +91,7 @@ class Group(Base):
     creator = relationship('User', back_populates='created_groups')
     members = relationship('User', secondary=group_membership, back_populates='groups')
     runs = relationship('Run', back_populates='group')
+    seller_followers = relationship('SellerFollower', back_populates='group')
 
 
 class Store(Base):
@@ -406,6 +407,25 @@ class Seller(Base):
 
     user = relationship('User', back_populates='seller')
     store = relationship('Store', back_populates='seller')
+    followers = relationship('SellerFollower', back_populates='seller')
+
+
+class SellerFollower(Base):
+    """SellerFollower model tracking which groups follow which sellers."""
+
+    __tablename__ = 'seller_followers'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    seller_id = Column(UUID(as_uuid=True), ForeignKey('sellers.id'), nullable=False, index=True)
+    group_id = Column(UUID(as_uuid=True), ForeignKey('groups.id'), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    seller = relationship('Seller', back_populates='followers')
+    group = relationship('Group', back_populates='seller_followers')
+
+    __table_args__ = (
+        Index('ix_seller_followers_seller_group', 'seller_id', 'group_id', unique=True),
+    )
 
 
 class AppSettings(Base):

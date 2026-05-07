@@ -15,6 +15,7 @@ from app.repositories.database import (
     DatabaseProductRepository,
     DatabaseReassignmentRepository,
     DatabaseRunRepository,
+    DatabaseSellerFollowerRepository,
     DatabaseSellerRepository,
     DatabaseShoppingRepository,
     DatabaseStoreRepository,
@@ -29,6 +30,7 @@ from app.repositories.memory import (
     MemoryProductRepository,
     MemoryReassignmentRepository,
     MemoryRunRepository,
+    MemorySellerFollowerRepository,
     MemorySellerRepository,
     MemoryShoppingRepository,
     MemoryStorage,
@@ -47,6 +49,7 @@ __all__ = [
     'DatabaseReassignmentRepository',
     'DatabaseRunRepository',
     'DatabaseSellerRepository',
+    'DatabaseSellerFollowerRepository',
     'DatabaseShoppingRepository',
     'DatabaseStoreRepository',
     'DatabaseTagRepository',
@@ -60,6 +63,7 @@ __all__ = [
     'MemoryReassignmentRepository',
     'MemoryRunRepository',
     'MemorySellerRepository',
+    'MemorySellerFollowerRepository',
     'MemoryShoppingRepository',
     'MemoryStorage',
     'MemoryStoreRepository',
@@ -77,6 +81,7 @@ __all__ = [
     'get_reassignment_repository',
     'get_distribution_group_repository',
     'get_seller_repository',
+    'get_seller_follower_repository',
     'get_tag_repository',
 ]
 
@@ -199,6 +204,15 @@ def get_seller_repository(db: AsyncSession = None):
     else:
         _validate_database_session(db)
         return DatabaseSellerRepository(db)
+
+
+def get_seller_follower_repository(db: AsyncSession = None):
+    """Get seller follower repository based on configuration mode."""
+    if REPO_MODE == 'memory':
+        return MemorySellerFollowerRepository(_get_memory_storage())
+    else:
+        _validate_database_session(db)
+        return DatabaseSellerFollowerRepository(db)
 
 
 def get_tag_repository(db: AsyncSession = None):

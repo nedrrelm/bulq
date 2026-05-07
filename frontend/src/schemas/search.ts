@@ -38,20 +38,30 @@ export const searchTagSchema = z.object({
   product_count: z.number()
 })
 
+export const searchSellerSchema = z.object({
+  id: uuidSchema,
+  store_id: uuidSchema,
+  display_name: z.string(),
+  description: nullable(z.string())
+})
+
 export const searchResultsSchema = z.object({
   products: z.array(searchProductSchema).catch([]),
   stores: z.array(searchStoreSchema).catch([]),
   groups: z.array(searchGroupSchema).catch([]),
-  tags: z.array(searchTagSchema).catch([])
+  tags: z.array(searchTagSchema).catch([]),
+  sellers: z.array(searchSellerSchema).catch([])
 }).transform(data => ({
   products: data.products ?? [],
   stores: data.stores ?? [],
   groups: data.groups ?? [],
-  tags: data.tags ?? []
+  tags: data.tags ?? [],
+  sellers: data.sellers ?? []
 }))
 
 export type SearchProduct = z.infer<typeof searchProductSchema>
 export type SearchStore = z.infer<typeof searchStoreSchema>
 export type SearchGroup = z.infer<typeof searchGroupSchema>
 export type SearchTag = z.infer<typeof searchTagSchema>
+export type SearchSeller = z.infer<typeof searchSellerSchema>
 export type SearchResults = z.infer<typeof searchResultsSchema>

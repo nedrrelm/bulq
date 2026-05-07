@@ -218,6 +218,7 @@ class SellerService(BaseService):
         return [
             SellerSearchResult(
                 id=str(s.id),
+                store_id=str(s.store_id),
                 display_name=s.display_name,
                 description=s.description,
             )

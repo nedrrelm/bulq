@@ -5,11 +5,13 @@ from app.api.dependencies import (
     GroupManagementServiceDep,
     GroupMembershipServiceDep,
     GroupQueryServiceDep,
+    SellerFollowerServiceDep,
 )
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     CreateGroupRequest,
     CreateGroupResponse,
+    FollowedSellerResponse,
     GroupDetailResponse,
     GroupResponse,
     JoinGroupResponse,
@@ -136,3 +138,16 @@ async def promote_member_to_admin(
 ):
     """Promote a member to group admin (admin only)."""
     return await service.promote_member_to_admin(group_id, member_id, current_user)
+
+
+@router.get('/{group_id}/followed-sellers', response_model=list[FollowedSellerResponse])
+async def get_followed_sellers(
+    group_id: str,
+    service: SellerFollowerServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Get all sellers followed by this group."""
+    from app.utils.validation import validate_uuid
+
+    group_uuid = validate_uuid(group_id, 'Group')
+    return await service.get_followed_sellers(current_user, group_uuid)
