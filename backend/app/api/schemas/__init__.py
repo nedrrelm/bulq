@@ -88,6 +88,14 @@ from .search_schemas import (
     SearchResponse,
     StoreSearchResult,
 )
+from .seller_schemas import (
+    CreateSellerRequest,
+    SellerPreviewResponse,
+    SellerPublicResponse,
+    SellerResponse,
+    SellerSearchResult,
+    UpdateSellerRequest,
+)
 from .shopping_schemas import (
     AddMorePurchaseRequest,
     CompleteShoppingResponse,
@@ -213,6 +221,13 @@ __all__ = [
     'AddTagToProductRequest',
     'AdminTagResponse',
     'UpdateTagRequest',
+    # Seller schemas
+    'CreateSellerRequest',
+    'UpdateSellerRequest',
+    'SellerResponse',
+    'SellerPublicResponse',
+    'SellerSearchResult',
+    'SellerPreviewResponse',
     # Distribution schemas
     'AssignUserToGroupRequest',
     'DistributionGroupResponse',

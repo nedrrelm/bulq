@@ -223,6 +223,16 @@ HELPER_NOT_GROUP_MEMBER = 'HELPER_NOT_GROUP_MEMBER'
 
 
 # ============================================================================
+# Seller Errors
+# ============================================================================
+
+SELLER_NOT_FOUND = 'SELLER_NOT_FOUND'
+SELLER_ALREADY_EXISTS = 'SELLER_ALREADY_EXISTS'
+SELLER_JOINING_DISABLED = 'SELLER_JOINING_DISABLED'
+NOT_SELLER_OWNER = 'NOT_SELLER_OWNER'
+
+
+# ============================================================================
 # Configuration & System Errors
 # ============================================================================
 

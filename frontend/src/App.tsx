@@ -29,6 +29,7 @@ const NotificationPage = lazy(() => import('./pages/NotificationPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const TagPage = lazy(() => import('./pages/TagPage'))
+const SellerDashboardPage = lazy(() => import('./pages/SellerDashboardPage'))
 
 // Wrapper components for lazy loading
 function GroupPageWrapper() {
@@ -168,6 +169,14 @@ function AdminPageWrapper() {
   )
 }
 
+function SellerDashboardPageWrapper() {
+  return (
+    <AppLayout>
+      <SellerDashboardPage />
+    </AppLayout>
+  )
+}
+
 function ProfilePageWrapper() {
   return (
     <AppLayout>
@@ -178,7 +187,7 @@ function ProfilePageWrapper() {
 
 // Shared layout component with header
 function AppLayout({ children }: { children: React.ReactNode }) {
-  const { t } = useTranslation(['common', 'profile'])
+  const { t } = useTranslation(['common', 'profile', 'seller'])
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
@@ -397,6 +406,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Desktop buttons - desktop only */}
           <div className="desktop-buttons">
+            <button onClick={() => navigate('/seller')} className="seller-button">
+              {t('seller:title')}
+            </button>
             {user.is_admin && (
               <button onClick={() => navigate('/admin')} className="admin-button">
                 {t('profile:actions.adminPanel')}
@@ -537,6 +549,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="drawer-divider" />
             <button
+              onClick={() => handleMenuItemClick(() => navigate('/seller'))}
+              className="drawer-item"
+            >
+              {t('seller:title')}
+            </button>
+            <button
               onClick={() => handleMenuItemClick(() => navigate('/profile'))}
               className="drawer-item"
             >
@@ -656,6 +674,7 @@ function AppRoutes() {
         <Route path="/tags/:tagId" element={<TagPageWrapper />} />
         <Route path="/stores/:storeId" element={<StorePageWrapper />} />
         <Route path="/notifications" element={<NotificationPageWrapper />} />
+        <Route path="/seller" element={<SellerDashboardPageWrapper />} />
         <Route path="/profile" element={<ProfilePageWrapper />} />
         <Route path="/admin" element={<AdminPageWrapper />} />
         <Route path="/invite/:inviteToken" element={<JoinGroupWrapper />} />

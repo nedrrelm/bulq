@@ -71,6 +71,7 @@ class User(Base):
     notifications = relationship(
         'Notification', back_populates='user', order_by='desc(Notification.created_at)'
     )
+    seller = relationship('Seller', back_populates='user', uselist=False)
 
 
 class Group(Base):
@@ -112,6 +113,7 @@ class Store(Base):
     creator = relationship('User', foreign_keys=[created_by], back_populates='created_stores')
     verifier = relationship('User', foreign_keys=[verified_by], back_populates='verified_stores')
     product_availabilities = relationship('ProductAvailability', back_populates='store')
+    seller = relationship('Seller', back_populates='store', uselist=False)
 
 
 class Run(Base):
@@ -381,6 +383,29 @@ class Tag(Base):
     products = relationship('Product', secondary=product_tags, back_populates='tags')
 
     __table_args__ = (Index('ix_tags_value_type', 'value', 'type', unique=True),)
+
+
+class Seller(Base):
+    """Seller model representing a user who sells products directly to buyer groups."""
+
+    __tablename__ = 'sellers'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, unique=True, index=True
+    )
+    store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
+    display_name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    invite_token = Column(
+        String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()), index=True
+    )
+    is_joining_allowed = Column(Boolean, nullable=False, default=True)
+    is_searchable = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship('User', back_populates='seller')
+    store = relationship('Store', back_populates='seller')
 
 
 class AppSettings(Base):

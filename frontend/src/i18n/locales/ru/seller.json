@@ -1,0 +1,34 @@
+{
+  "title": "Продавец",
+  "dashboard": {
+    "title": "Панель продавца",
+    "noProfile": "У вас ещё нет профиля продавца.",
+    "becomeSeller": "Стать продавцом",
+    "inviteLink": "Ссылка-приглашение",
+    "copyLink": "Копировать",
+    "linkCopied": "Ссылка скопирована!",
+    "regenerateToken": "Обновить ссылку",
+    "settings": "Настройки",
+    "allowJoining": "Разрешить группам подписываться",
+    "searchable": "Видимость в поиске",
+    "sales": "Продажи",
+    "followers": "Подписчики",
+    "noSales": "Продаж пока нет.",
+    "createSale": "Создать продажу"
+  },
+  "form": {
+    "displayName": "Имя продавца",
+    "displayNamePlaceholder": "Ваше имя продавца",
+    "description": "Описание",
+    "descriptionPlaceholder": "Расскажите покупателям о себе...",
+    "create": "Создать профиль продавца",
+    "update": "Сохранить",
+    "creating": "Создание...",
+    "updating": "Сохранение..."
+  },
+  "errors": {
+    "createFailed": "Не удалось создать профиль продавца",
+    "updateFailed": "Не удалось обновить профиль продавца",
+    "alreadyExists": "У вас уже есть профиль продавца"
+  }
+}

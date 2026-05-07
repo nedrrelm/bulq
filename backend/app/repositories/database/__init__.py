@@ -7,6 +7,7 @@ from app.repositories.database.notification import DatabaseNotificationRepositor
 from app.repositories.database.product import DatabaseProductRepository
 from app.repositories.database.reassignment import DatabaseReassignmentRepository
 from app.repositories.database.run import DatabaseRunRepository
+from app.repositories.database.seller import DatabaseSellerRepository
 from app.repositories.database.shopping import DatabaseShoppingRepository
 from app.repositories.database.store import DatabaseStoreRepository
 from app.repositories.database.tag import DatabaseTagRepository
@@ -20,6 +21,7 @@ __all__ = [
     'DatabaseProductRepository',
     'DatabaseReassignmentRepository',
     'DatabaseRunRepository',
+    'DatabaseSellerRepository',
     'DatabaseShoppingRepository',
     'DatabaseStoreRepository',
     'DatabaseTagRepository',

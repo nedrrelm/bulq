@@ -12,6 +12,7 @@ from app.core.models import (
     ProductBid,
     Run,
     RunParticipation,
+    Seller,
     ShoppingListItem,
     Store,
     Tag,
@@ -51,6 +52,7 @@ class MemoryStorage:
         self._distribution_groups: dict[UUID, DistributionGroup] = {}
         self._tags: dict[UUID, Tag] = {}
         self._product_tags: dict[tuple[UUID, UUID], bool] = {}  # (product_id, tag_id) -> True
+        self._sellers: dict[UUID, Seller] = {}
 
         MemoryStorage._initialized = True
 
@@ -121,3 +123,7 @@ class MemoryStorage:
     @property
     def product_tags(self) -> dict[tuple[UUID, UUID], bool]:
         return self._product_tags
+
+    @property
+    def sellers(self) -> dict[UUID, Seller]:
+        return self._sellers

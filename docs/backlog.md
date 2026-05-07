@@ -5,23 +5,6 @@
 **Priority**: Low
 **Affected files**: Database schema, backend models/services, frontend group management
 
-**Features:**
-- New group type: "Seller" (vs current "Buyer" groups)
-- Seller posts products they're selling with available quantities
-- Users bid on available inventory (reverse auction model)
-- Use case: Local farmers, bulk resellers, group organizers
-
-**Schema Changes:**
-- Add `group_type` enum to Group table: 'buyer' | 'seller'
-- Seller-specific fields on Run:
-  - Inventory limits per product
-  - First-come-first-served vs allocation logic
-
-**Implementation:**
-- Seller UI for posting inventory
-- Buyer UI for bidding on limited stock
-- Allocation algorithm when demand exceeds supply
-- Separate workflows for seller vs buyer groups
 
 ## 🔧 Future Enhancements
 

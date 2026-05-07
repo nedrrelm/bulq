@@ -15,6 +15,7 @@ from app.repositories.database import (
     DatabaseProductRepository,
     DatabaseReassignmentRepository,
     DatabaseRunRepository,
+    DatabaseSellerRepository,
     DatabaseShoppingRepository,
     DatabaseStoreRepository,
     DatabaseTagRepository,
@@ -28,6 +29,7 @@ from app.repositories.memory import (
     MemoryProductRepository,
     MemoryReassignmentRepository,
     MemoryRunRepository,
+    MemorySellerRepository,
     MemoryShoppingRepository,
     MemoryStorage,
     MemoryStoreRepository,
@@ -44,6 +46,7 @@ __all__ = [
     'DatabaseProductRepository',
     'DatabaseReassignmentRepository',
     'DatabaseRunRepository',
+    'DatabaseSellerRepository',
     'DatabaseShoppingRepository',
     'DatabaseStoreRepository',
     'DatabaseTagRepository',
@@ -56,6 +59,7 @@ __all__ = [
     'MemoryProductRepository',
     'MemoryReassignmentRepository',
     'MemoryRunRepository',
+    'MemorySellerRepository',
     'MemoryShoppingRepository',
     'MemoryStorage',
     'MemoryStoreRepository',
@@ -72,6 +76,7 @@ __all__ = [
     'get_notification_repository',
     'get_reassignment_repository',
     'get_distribution_group_repository',
+    'get_seller_repository',
     'get_tag_repository',
 ]
 
@@ -185,6 +190,15 @@ def get_distribution_group_repository(db: AsyncSession = None):
     else:
         _validate_database_session(db)
         return DatabaseDistributionGroupRepository(db)
+
+
+def get_seller_repository(db: AsyncSession = None):
+    """Get seller repository based on configuration mode."""
+    if REPO_MODE == 'memory':
+        return MemorySellerRepository(_get_memory_storage())
+    else:
+        _validate_database_session(db)
+        return DatabaseSellerRepository(db)
 
 
 def get_tag_repository(db: AsyncSession = None):

@@ -1,0 +1,34 @@
+{
+  "title": "Seller",
+  "dashboard": {
+    "title": "Seller Dashboard",
+    "noProfile": "You don't have a seller profile yet.",
+    "becomeSeller": "Become a Seller",
+    "inviteLink": "Invite Link",
+    "copyLink": "Copy Link",
+    "linkCopied": "Link copied!",
+    "regenerateToken": "Regenerate Link",
+    "settings": "Settings",
+    "allowJoining": "Allow groups to follow",
+    "searchable": "Visible in search",
+    "sales": "Sales",
+    "followers": "Followers",
+    "noSales": "No sales yet.",
+    "createSale": "Create Sale"
+  },
+  "form": {
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Your seller name",
+    "description": "Description",
+    "descriptionPlaceholder": "Tell buyers about yourself...",
+    "create": "Create Seller Profile",
+    "update": "Save Changes",
+    "creating": "Creating...",
+    "updating": "Saving..."
+  },
+  "errors": {
+    "createFailed": "Failed to create seller profile",
+    "updateFailed": "Failed to update seller profile",
+    "alreadyExists": "You already have a seller profile"
+  }
+}

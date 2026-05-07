@@ -16,6 +16,7 @@ import storeEn from './locales/en/store.json'
 import productEn from './locales/en/product.json'
 import adminEn from './locales/en/admin.json'
 import notificationsEn from './locales/en/notifications.json'
+import sellerEn from './locales/en/seller.json'
 
 // Import Russian translation files
 import errorsRu from './locales/ru/errors.json'
@@ -31,6 +32,7 @@ import storeRu from './locales/ru/store.json'
 import productRu from './locales/ru/product.json'
 import adminRu from './locales/ru/admin.json'
 import notificationsRu from './locales/ru/notifications.json'
+import sellerRu from './locales/ru/seller.json'
 
 // Import Serbian translation files
 import errorsSr from './locales/sr/errors.json'
@@ -46,6 +48,7 @@ import storeSr from './locales/sr/store.json'
 import productSr from './locales/sr/product.json'
 import adminSr from './locales/sr/admin.json'
 import notificationsSr from './locales/sr/notifications.json'
+import sellerSr from './locales/sr/seller.json'
 
 // Translation resources
 const resources = {
@@ -63,6 +66,7 @@ const resources = {
     product: productEn,
     admin: adminEn,
     notifications: notificationsEn,
+    seller: sellerEn,
   },
   ru: {
     errors: errorsRu,
@@ -78,6 +82,7 @@ const resources = {
     product: productRu,
     admin: adminRu,
     notifications: notificationsRu,
+    seller: sellerRu,
   },
   sr: {
     errors: errorsSr,
@@ -93,6 +98,7 @@ const resources = {
     product: productSr,
     admin: adminSr,
     notifications: notificationsSr,
+    seller: sellerSr,
   },
 }
 
@@ -104,7 +110,7 @@ i18n
     fallbackLng: 'en', // Fallback language if translation is missing
 
     // Namespaces
-    ns: ['errors', 'success', 'common', 'auth', 'groups', 'group', 'run', 'shopping', 'profile', 'store', 'product', 'admin', 'notifications'],
+    ns: ['errors', 'success', 'common', 'auth', 'groups', 'group', 'run', 'shopping', 'profile', 'store', 'product', 'admin', 'notifications', 'seller'],
     defaultNS: 'common',
 
     // Key separator configuration

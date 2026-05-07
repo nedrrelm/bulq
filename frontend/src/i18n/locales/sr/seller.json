@@ -1,0 +1,34 @@
+{
+  "title": "Prodavac",
+  "dashboard": {
+    "title": "Panel prodavca",
+    "noProfile": "Još nemate profil prodavca.",
+    "becomeSeller": "Postani prodavac",
+    "inviteLink": "Link za pozivnicu",
+    "copyLink": "Kopiraj",
+    "linkCopied": "Link kopiran!",
+    "regenerateToken": "Obnovi link",
+    "settings": "Podešavanja",
+    "allowJoining": "Dozvoli grupama da prate",
+    "searchable": "Vidljiv u pretrazi",
+    "sales": "Prodaje",
+    "followers": "Pratioci",
+    "noSales": "Još nema prodaja.",
+    "createSale": "Kreiraj prodaju"
+  },
+  "form": {
+    "displayName": "Ime prodavca",
+    "displayNamePlaceholder": "Vaše ime prodavca",
+    "description": "Opis",
+    "descriptionPlaceholder": "Recite kupcima nešto o sebi...",
+    "create": "Kreiraj profil prodavca",
+    "update": "Sačuvaj",
+    "creating": "Kreiranje...",
+    "updating": "Čuvanje..."
+  },
+  "errors": {
+    "createFailed": "Neuspelo kreiranje profila prodavca",
+    "updateFailed": "Neuspelo ažuriranje profila prodavca",
+    "alreadyExists": "Već imate profil prodavca"
+  }
+}
