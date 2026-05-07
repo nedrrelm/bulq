@@ -24,13 +24,13 @@ async def get_stores(
     """Get all available stores (paginated, max 100 per page, cached)."""
     cache = get_cache()
     cache_key = f'stores:list:{limit}:{offset}'
-    cached = cache.get(cache_key)
+    cached = await cache.get(cache_key)
     if cached is not None:
         return cached
 
     stores = await service.get_all_stores(limit, offset)
     result = [StoreResponse(id=str(store.id), name=store.name) for store in stores]
-    cache.set(cache_key, [r.model_dump() for r in result], ttl_seconds=300)
+    await cache.set(cache_key, [r.model_dump() for r in result], ttl_seconds=300)
     return result
 
 
