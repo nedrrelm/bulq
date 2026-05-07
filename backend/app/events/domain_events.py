@@ -154,3 +154,23 @@ class BidModifiedByLeaderEvent(DomainEvent):
     new_total: float
     group_id: UUID
     product_name: str
+
+
+@dataclass
+class SaleStateChangedEvent(DomainEvent):
+    """Event emitted when a sale's state changes."""
+
+    sale_id: UUID
+    seller_id: UUID
+    old_state: str
+    new_state: str
+    sale_title: str
+
+
+@dataclass
+class SaleDistributionUpdatedEvent(DomainEvent):
+    """Event emitted when a sale distribution item is toggled."""
+
+    sale_id: UUID
+    item_id: UUID
+    is_handed_over: bool

@@ -17,6 +17,8 @@ from ..domain_events import (
     RunCancelledEvent,
     RunCreatedEvent,
     RunStateChangedEvent,
+    SaleDistributionUpdatedEvent,
+    SaleStateChangedEvent,
     ShoppingItemUpdatedEvent,
 )
 
@@ -318,4 +320,41 @@ class WebSocketEventHandler:
         logger.debug(
             'Broadcast comment updated event',
             extra={'run_id': str(event.run_id)},
+        )
+
+    async def handle_sale_state_changed(self, event: SaleStateChangedEvent) -> None:
+        """Broadcast sale state change to seller's WebSocket room."""
+        await self._ws_manager.broadcast(
+            f'user:{event.seller_id}',
+            {
+                'type': 'sale_state_changed',
+                'data': {
+                    'sale_id': str(event.sale_id),
+                    'old_state': event.old_state,
+                    'new_state': event.new_state,
+                    'sale_title': event.sale_title,
+                },
+            },
+        )
+        logger.debug(
+            'Broadcast sale state changed event',
+            extra={'sale_id': str(event.sale_id), 'new_state': event.new_state},
+        )
+
+    async def handle_sale_distribution_updated(self, event: SaleDistributionUpdatedEvent) -> None:
+        """Broadcast sale distribution update to seller."""
+        await self._ws_manager.broadcast(
+            f'user:{event.sale_id}',
+            {
+                'type': 'sale_distribution_updated',
+                'data': {
+                    'sale_id': str(event.sale_id),
+                    'item_id': str(event.item_id),
+                    'is_handed_over': event.is_handed_over,
+                },
+            },
+        )
+        logger.debug(
+            'Broadcast sale distribution updated event',
+            extra={'sale_id': str(event.sale_id)},
         )

@@ -23,6 +23,8 @@ from app.core.error_codes import (
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import Sale, SaleProduct, User
 from app.core.sale_state import SaleState, sale_state_machine
+from app.events.domain_events import SaleStateChangedEvent
+from app.events.event_bus import event_bus
 from app.infrastructure.request_context import get_logger
 from app.repositories import (
     get_product_repository,
@@ -340,6 +342,15 @@ class SaleService(BaseService):
         await self.sale_repo.update_sale(sale_id, state=SaleState.ACTIVE, active_at=now)
 
         logger.info('Sale activated', extra={'sale_id': str(sale_id)})
+        event_bus.emit(
+            SaleStateChangedEvent(
+                sale_id=sale_id,
+                seller_id=sale.seller_id,
+                old_state=SaleState.PLANNING,
+                new_state=SaleState.ACTIVE,
+                sale_title=sale.title,
+            )
+        )
 
         return await self.get_sale_details(sale_id)
 
@@ -381,7 +392,17 @@ class SaleService(BaseService):
             if run.state not in (RunState.COMPLETED, RunState.CANCELLED):
                 await run_repo.update_run_state(run.id, RunState.CANCELLED)
 
+        old_state = sale.state
         logger.info('Sale cancelled', extra={'sale_id': str(sale_id)})
+        event_bus.emit(
+            SaleStateChangedEvent(
+                sale_id=sale_id,
+                seller_id=sale.seller_id,
+                old_state=old_state,
+                new_state=SaleState.CANCELLED,
+                sale_title=sale.title,
+            )
+        )
 
         return await self.get_sale_details(sale_id)
 
@@ -411,6 +432,15 @@ class SaleService(BaseService):
                 )
 
         logger.info('Sale confirmed', extra={'sale_id': str(sale_id)})
+        event_bus.emit(
+            SaleStateChangedEvent(
+                sale_id=sale_id,
+                seller_id=sale.seller_id,
+                old_state=SaleState.ACTIVE,
+                new_state=SaleState.CONFIRMED,
+                sale_title=sale.title,
+            )
+        )
 
         return await self.get_sale_details(sale_id)
 
@@ -459,6 +489,15 @@ class SaleService(BaseService):
         await dist_service.generate_distribution_items(sale_id)
 
         logger.info('Sale distributing started', extra={'sale_id': str(sale_id)})
+        event_bus.emit(
+            SaleStateChangedEvent(
+                sale_id=sale_id,
+                seller_id=sale.seller_id,
+                old_state=SaleState.CONFIRMED,
+                new_state=SaleState.DISTRIBUTING,
+                sale_title=sale.title,
+            )
+        )
 
         return await self.get_sale_details(sale_id)
 

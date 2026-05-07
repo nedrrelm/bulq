@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from app.infrastructure.request_context import get_logger
 
-from ..domain_events import BidModifiedByLeaderEvent, RunStateChangedEvent
+from ..domain_events import BidModifiedByLeaderEvent, RunStateChangedEvent, SaleStateChangedEvent
 
 if TYPE_CHECKING:
     from app.repositories.database.notification import DatabaseNotificationRepository
@@ -104,6 +104,59 @@ class NotificationEventHandler:
                 extra={
                     'run_id': str(event.run_id),
                     'target_user_id': str(event.target_user_id),
+                    'error': str(e),
+                },
+                exc_info=True,
+            )
+
+    async def handle_sale_state_changed(self, event: SaleStateChangedEvent) -> None:
+        """Create notifications for followers when sale state changes.
+
+        Notifies members of all groups following this seller when a sale
+        becomes active (new sale available).
+        """
+        try:
+            # Only notify on activation (new sale available to bid on)
+            if event.new_state != 'active':
+                return
+
+            from app.repositories import get_group_repository, get_seller_follower_repository
+
+            follower_repo = get_seller_follower_repository(None)
+            group_repo = get_group_repository(None)
+
+            followers = await follower_repo.get_followers_by_seller(event.seller_id)
+            notification_data = {
+                'sale_id': str(event.sale_id),
+                'sale_title': event.sale_title,
+                'type': 'sale_activated',
+            }
+
+            notified_users = set()
+            for follower in followers:
+                members = await group_repo.get_group_members_with_admin_status(follower.group_id)
+                for member in members:
+                    user_id = member.get('user_id') or member.get('id')
+                    if user_id and user_id not in notified_users:
+                        await self._notification_repo.create_notification(
+                            user_id=user_id,
+                            type='sale_activated',
+                            data=notification_data,
+                        )
+                        notified_users.add(user_id)
+
+            logger.debug(
+                'Created notifications for sale activation',
+                extra={
+                    'sale_id': str(event.sale_id),
+                    'notified_count': len(notified_users),
+                },
+            )
+        except Exception as e:
+            logger.error(
+                'Failed to create notifications for sale state change',
+                extra={
+                    'sale_id': str(event.sale_id),
                     'error': str(e),
                 },
                 exc_info=True,

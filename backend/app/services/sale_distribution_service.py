@@ -15,6 +15,8 @@ from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.models import SaleDistributionItem, User
 from app.core.run_state import RunState
 from app.core.sale_state import SaleState, sale_state_machine
+from app.events.domain_events import SaleDistributionUpdatedEvent
+from app.events.event_bus import event_bus
 from app.infrastructure.request_context import get_logger
 from app.repositories import (
     get_bid_repository,
@@ -182,6 +184,13 @@ class SaleDistributionService(BaseService):
         logger.info(
             'Distribution item toggled',
             extra={'item_id': str(item_id), 'is_handed_over': item.is_handed_over},
+        )
+        event_bus.emit(
+            SaleDistributionUpdatedEvent(
+                sale_id=sale_id,
+                item_id=item_id,
+                is_handed_over=item.is_handed_over,
+            )
         )
 
         # Mark/unmark the corresponding shopping list item as purchased

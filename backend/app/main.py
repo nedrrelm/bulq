@@ -66,6 +66,8 @@ async def lifespan(app: FastAPI):
         RunCancelledEvent,
         RunCreatedEvent,
         RunStateChangedEvent,
+        SaleDistributionUpdatedEvent,
+        SaleStateChangedEvent,
         ShoppingItemUpdatedEvent,
     )
     from .events.event_bus import event_bus
@@ -91,6 +93,8 @@ async def lifespan(app: FastAPI):
     event_bus.subscribe(HelperToggledEvent, ws_handler.handle_helper_toggled)
     event_bus.subscribe(CommentUpdatedEvent, ws_handler.handle_comment_updated)
     event_bus.subscribe(BidModifiedByLeaderEvent, ws_handler.handle_bid_modified_by_leader)
+    event_bus.subscribe(SaleStateChangedEvent, ws_handler.handle_sale_state_changed)
+    event_bus.subscribe(SaleDistributionUpdatedEvent, ws_handler.handle_sale_distribution_updated)
 
     # Note: NotificationEventHandler needs repository which is per-request
     # We'll create a handler factory that gets repo from database session
@@ -113,6 +117,16 @@ async def lifespan(app: FastAPI):
             await db.commit()
 
     event_bus.subscribe(BidModifiedByLeaderEvent, handle_bid_modified_by_leader_notification)
+
+    async def handle_sale_state_changed_notification(event: SaleStateChangedEvent):
+        """Handle sale state changed event for notifications."""
+        async with AsyncSessionLocal() as db:
+            notification_repo = get_notification_repository(db)
+            notification_handler = NotificationEventHandler(notification_repo)
+            await notification_handler.handle_sale_state_changed(event)
+            await db.commit()
+
+    event_bus.subscribe(SaleStateChangedEvent, handle_sale_state_changed_notification)
 
     from .infrastructure.request_context import get_logger
 
