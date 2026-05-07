@@ -8,7 +8,8 @@
     "users": "Корисници",
     "products": "Производи",
     "stores": "Продавнице",
-    "groups": "Групе"
+    "groups": "Групе",
+    "tags": "Тагови"
   },
   "search": {
     "placeholder": "Претражи..."
@@ -52,6 +53,14 @@
     "memberCount": "Чланови",
     "id": "ИД",
     "createdAt": "Креирана"
+  },
+  "tags": {
+    "value": "Вредност",
+    "type": "Тип",
+    "productCount": "Производи",
+    "id": "ИД",
+    "verified": "Верификован",
+    "actions": "Акције"
   },
   "edit": {
     "dangerZone": "Опасна зона",

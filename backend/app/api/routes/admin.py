@@ -9,11 +9,13 @@ from app.api.schemas import (
     AdminGroupResponse,
     AdminProductResponse,
     AdminStoreResponse,
+    AdminTagResponse,
     AdminUserResponse,
     DeleteResponse,
     MergeResponse,
     UpdateProductRequest,
     UpdateStoreRequest,
+    UpdateTagRequest,
     UpdateUserRequest,
     VerificationToggleResponse,
 )
@@ -219,6 +221,66 @@ async def delete_user(
 ):
     """Delete a user. Cannot delete yourself or other admins."""
     return await service.delete_user(validate_uuid(user_id, 'User'), admin_user)
+
+
+# ==================== Tag Routes ====================
+
+
+@router.get('/tags', response_model=list[AdminTagResponse])
+async def get_tags(
+    service: AdminServiceDep,
+    search: str | None = Query(None),
+    type: str | None = Query(None),
+    verified: bool | None = Query(None),
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    admin_user: User = Depends(require_admin),
+):
+    """Get all tags with optional search and filtering (paginated, max 100 per page)."""
+    return await service.get_tags(search, type, verified, limit, offset)
+
+
+@router.post('/tags/{tag_id}/verify', response_model=VerificationToggleResponse)
+async def toggle_tag_verification(
+    tag_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
+):
+    """Toggle tag verification status."""
+    return await service.toggle_tag_verification(validate_uuid(tag_id, 'Tag'), admin_user)
+
+
+@router.put('/tags/{tag_id}', response_model=AdminTagResponse)
+async def update_tag(
+    tag_id: str,
+    data: UpdateTagRequest,
+    service: AdminServiceDep,
+    admin_user: User = Depends(require_admin),
+):
+    """Update tag fields."""
+    return await service.update_tag(validate_uuid(tag_id, 'Tag'), data.model_dump(), admin_user)
+
+
+@router.post('/tags/{source_id}/merge/{target_id}', response_model=MergeResponse)
+async def merge_tags(
+    source_id: str,
+    target_id: str,
+    service: AdminServiceDep,
+    admin_user: User = Depends(require_admin),
+):
+    """Merge one tag into another. All product-tag links will be transferred."""
+    return await service.merge_tags(
+        validate_uuid(source_id, 'Tag'), validate_uuid(target_id, 'Tag'), admin_user
+    )
+
+
+@router.delete('/tags/{tag_id}', response_model=DeleteResponse)
+async def delete_tag(
+    tag_id: str, service: AdminServiceDep, admin_user: User = Depends(require_admin)
+):
+    """Delete a tag. Cannot delete if it has associated products."""
+    return await service.delete_tag(validate_uuid(tag_id, 'Tag'), admin_user)
+
+
+# ==================== Settings Routes ====================
 
 
 @router.get('/settings/registration')

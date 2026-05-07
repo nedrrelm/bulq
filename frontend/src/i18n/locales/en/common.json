@@ -58,7 +58,8 @@
     "categories": {
       "products": "Products",
       "stores": "Stores",
-      "groups": "Groups"
+      "groups": "Groups",
+      "tags": "Tags"
     }
   },
   "footer": {

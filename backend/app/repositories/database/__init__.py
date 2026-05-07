@@ -9,6 +9,7 @@ from app.repositories.database.reassignment import DatabaseReassignmentRepositor
 from app.repositories.database.run import DatabaseRunRepository
 from app.repositories.database.shopping import DatabaseShoppingRepository
 from app.repositories.database.store import DatabaseStoreRepository
+from app.repositories.database.tag import DatabaseTagRepository
 from app.repositories.database.user import DatabaseUserRepository
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     'DatabaseRunRepository',
     'DatabaseShoppingRepository',
     'DatabaseStoreRepository',
+    'DatabaseTagRepository',
     'DatabaseUserRepository',
 ]

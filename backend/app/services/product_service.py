@@ -13,6 +13,7 @@ from app.api.schemas import (
     StoreDetail,
     StoreInfo,
 )
+from app.api.schemas.product_schemas import TagBrief
 from app.core.error_codes import (
     PRODUCT_NAME_EMPTY,
     PRODUCT_PRICE_NEGATIVE,
@@ -27,6 +28,7 @@ from app.repositories import (
     get_run_repository,
     get_shopping_repository,
     get_store_repository,
+    get_tag_repository,
 )
 
 from .base_service import BaseService
@@ -42,6 +44,7 @@ class ProductService(BaseService):
         self.run_repo = get_run_repository(db)
         self.shopping_repo = get_shopping_repository(db)
         self.store_repo = get_store_repository(db)
+        self.tag_repo = get_tag_repository(db)
 
     async def search_products(
         self, query: str, limit: int = 50, offset: int = 0
@@ -166,12 +169,17 @@ class ProductService(BaseService):
                 )
             )
 
+        # Get tags for this product
+        tags = await self.tag_repo.get_tags_by_product(product_id)
+        tags_data = [TagBrief(id=str(tag.id), value=tag.value, type=tag.type) for tag in tags]
+
         return ProductDetailResponse(
             id=str(product.id),
             name=product.name,
             brand=product.brand,
             unit=product.unit,
             stores=stores_data,
+            tags=tags_data,
         )
 
     @transactional('create product')

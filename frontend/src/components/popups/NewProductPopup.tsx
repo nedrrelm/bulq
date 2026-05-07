@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { productsApi } from '../../api'
+import { tagsApi } from '../../api'
+import type { TagSearchResult } from '../../api/tags'
 import { validateLength, validateAlphanumeric, validateDecimal, sanitizeString } from '../../utils/validation'
 import { useConfirm } from '../../hooks/useConfirm'
 import ConfirmDialog from '../common/ConfirmDialog'
@@ -31,6 +33,65 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
   const { confirmState, showConfirm, hideConfirm, handleConfirm } = useConfirm()
   const { data: storesData, isLoading: loadingStores } = useStores()
   const stores = Array.isArray(storesData) ? storesData : []
+
+  // Tags state
+  const [selectedTags, setSelectedTags] = useState<Array<{ id: string; value: string; type: string }>>([])
+  const [tagSearch, setTagSearch] = useState('')
+  const [tagResults, setTagResults] = useState<TagSearchResult[]>([])
+  const [tagTypes, setTagTypes] = useState<string[]>([])
+  const [showTagCreate, setShowTagCreate] = useState(false)
+  const [newTagValue, setNewTagValue] = useState('')
+  const [newTagType, setNewTagType] = useState('')
+
+  const searchTags = useCallback(async (query: string) => {
+    if (query.trim().length < 1) {
+      setTagResults([])
+      return
+    }
+    try {
+      const results = await tagsApi.search(query)
+      const selectedIds = new Set(selectedTags.map(t => t.id))
+      setTagResults(results.filter(r => !selectedIds.has(r.id)))
+    } catch {
+      setTagResults([])
+    }
+  }, [selectedTags])
+
+  const addSelectedTag = (tag: { id: string; value: string; type: string }) => {
+    setSelectedTags(prev => [...prev, tag])
+    setTagSearch('')
+    setTagResults([])
+  }
+
+  const removeSelectedTag = (tagId: string) => {
+    setSelectedTags(prev => prev.filter(t => t.id !== tagId))
+  }
+
+  const handleCreateAndAddTag = async () => {
+    if (!newTagValue.trim() || !newTagType) return
+    try {
+      const result = await tagsApi.createTag({ value: newTagValue.trim(), type: newTagType })
+      const created = result as { id: string; value: string; type: string }
+      if (created?.id) {
+        addSelectedTag({ id: created.id, value: created.value, type: created.type })
+      }
+      setNewTagValue('')
+      setShowTagCreate(false)
+    } catch {
+      // silently fail
+    }
+  }
+
+  const loadTagTypes = async () => {
+    if (tagTypes.length > 0) return
+    try {
+      const types = await tagsApi.getTypes()
+      setTagTypes(types)
+      if (types.length > 0) setNewTagType(types[0])
+    } catch {
+      // use defaults
+    }
+  }
 
   // Check for similar products as user types (matches on name and brand)
   const { similar: similarProducts, exactMatch, hasNonExactSimilar } = useSimilarEntities({
@@ -100,7 +161,7 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
     try {
       setSubmitting(true)
 
-      await productsApi.createProduct({
+      const result = await productsApi.createProduct({
         name: productName.trim(),
         brand: brand.trim() || null,
         unit: unit.trim() || null,
@@ -108,6 +169,18 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
         price: price.trim() ? parseFloat(price) : null,
         minimum_quantity: minimumQuantity.trim() ? parseInt(minimumQuantity) : null
       })
+
+      // Attach selected tags to the newly created product
+      const productId = (result as { id?: string })?.id
+      if (productId && selectedTags.length > 0) {
+        for (const tag of selectedTags) {
+          try {
+            await tagsApi.addTagToProduct(tag.id, productId)
+          } catch {
+            // Continue even if a tag fails to attach
+          }
+        }
+      }
 
       onSuccess()
     } catch (err) {
@@ -251,6 +324,101 @@ export default function NewProductPopup({ onClose, onSuccess, initialStoreId }: 
                 disabled={submitting}
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{t('product:tags.title')}</label>
+            <div className="tags-list" style={{ marginBottom: '0.5rem' }}>
+              {selectedTags.map((tag) => (
+                <span key={tag.id} className={`tag-chip tag-type-${tag.type}`}>
+                  <span className="tag-chip-text">{tag.value}</span>
+                  <button
+                    type="button"
+                    className="tag-chip-remove"
+                    onClick={() => removeSelectedTag(tag.id)}
+                  >
+                    &times;
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              className="form-input"
+              placeholder={t('product:tags.searchPlaceholder')}
+              value={tagSearch}
+              onChange={(e) => {
+                setTagSearch(e.target.value)
+                searchTags(e.target.value)
+              }}
+              onFocus={loadTagTypes}
+              disabled={submitting}
+            />
+            {tagResults.length > 0 && (
+              <div className="tag-results">
+                {tagResults.map((tag) => (
+                  <div
+                    key={tag.id}
+                    className="tag-result-item"
+                    onClick={() => addSelectedTag({ id: tag.id, value: tag.value, type: tag.type })}
+                  >
+                    <span className="tag-result-value">{tag.value}</span>
+                    <span className={`tag-type-badge tag-type-${tag.type}`}>{t(`product:tags.types.${tag.type}`, tag.type)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!showTagCreate ? (
+              <button
+                type="button"
+                className="btn btn-sm"
+                style={{ marginTop: '0.25rem' }}
+                onClick={() => { setShowTagCreate(true); loadTagTypes() }}
+                disabled={submitting}
+              >
+                {t('product:tags.createNew')}
+              </button>
+            ) : (
+              <div className="tag-create-form" style={{ marginTop: '0.25rem' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={t('product:tags.newValuePlaceholder')}
+                  value={newTagValue}
+                  onChange={(e) => setNewTagValue(e.target.value)}
+                  disabled={submitting}
+                />
+                <select
+                  className="form-input"
+                  value={newTagType}
+                  onChange={(e) => setNewTagType(e.target.value)}
+                  disabled={submitting}
+                >
+                  {tagTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {t(`product:tags.types.${type}`, type)}
+                    </option>
+                  ))}
+                </select>
+                <div className="tag-create-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleCreateAndAddTag}
+                    disabled={!newTagValue.trim() || !newTagType || submitting}
+                  >
+                    {t('common:actions.create')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={() => setShowTagCreate(false)}
+                  >
+                    {t('common:actions.cancel')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="form-group">

@@ -22,6 +22,7 @@ from .api.routes.runs import router as runs_router
 from .api.routes.search import router as search_router
 from .api.routes.shopping import router as shopping_router
 from .api.routes.stores import router as stores_router
+from .api.routes.tags import router as tags_router
 from .api.routes.websocket import router as websocket_router
 from .core.exceptions import AppException
 from .errors.handlers import (
@@ -205,6 +206,7 @@ app.include_router(products_router, prefix='/api')
 app.include_router(search_router, prefix='/api')
 app.include_router(notifications_router, prefix='/api')
 app.include_router(reassignment_router, prefix='/api')
+app.include_router(tags_router, prefix='/api')
 app.include_router(admin_router, prefix='/api')
 app.include_router(websocket_router, prefix='/api')
 

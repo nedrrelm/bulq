@@ -28,6 +28,7 @@ const StorePage = lazy(() => import('./pages/StorePage'))
 const NotificationPage = lazy(() => import('./pages/NotificationPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const TagPage = lazy(() => import('./pages/TagPage'))
 
 // Wrapper components for lazy loading
 function GroupPageWrapper() {
@@ -140,6 +141,25 @@ function NotificationPageWrapper() {
   )
 }
 
+function TagPageWrapper() {
+  const { tagId } = useParams<{ tagId: string }>()
+  const navigate = useNavigate()
+
+  if (!tagId) {
+    navigate('/')
+    return null
+  }
+
+  return (
+    <AppLayout>
+      <TagPage
+        tagId={tagId}
+        onBack={() => navigate('/')}
+      />
+    </AppLayout>
+  )
+}
+
 function AdminPageWrapper() {
   return (
     <AppLayout>
@@ -221,7 +241,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const hasResults = searchResults && (
     (searchResults.products?.length ?? 0) > 0 ||
     (searchResults.stores?.length ?? 0) > 0 ||
-    (searchResults.groups?.length ?? 0) > 0
+    (searchResults.groups?.length ?? 0) > 0 ||
+    (searchResults.tags?.length ?? 0) > 0
   )
 
   const closeSearch = () => {
@@ -318,6 +339,31 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                       <div className="product-info">
                         <strong>{group.name}</strong>
                         <span className="product-store">{group.member_count} members</span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {(searchResults?.tags?.length ?? 0) > 0 && (
+                <>
+                  {((searchResults?.products?.length ?? 0) > 0 || (searchResults?.stores?.length ?? 0) > 0 || (searchResults?.groups?.length ?? 0) > 0) && (
+                    <div className="search-divider" />
+                  )}
+                  <div className="search-category-label">{t('common:search.categories.tags')}</div>
+                  {searchResults!.tags!.map((tag: { id: string; value: string; type: string; product_count: number }) => (
+                    <div
+                      key={`tag-${tag.id}`}
+                      className="search-result-item"
+                      onClick={() => {
+                        navigate(`/tags/${tag.id}`)
+                        closeSearch()
+                      }}
+                    >
+                      <div className="product-info">
+                        <strong>{tag.value}</strong>
+                        <span className="product-brand">{tag.type}</span>
+                        <span className="product-store">{tag.product_count} products</span>
                       </div>
                     </div>
                   ))}
@@ -455,6 +501,32 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                       ))}
                     </>
                   )}
+
+                  {(searchResults?.tags?.length ?? 0) > 0 && (
+                    <>
+                      {((searchResults?.products?.length ?? 0) > 0 || (searchResults?.stores?.length ?? 0) > 0 || (searchResults?.groups?.length ?? 0) > 0) && (
+                        <div className="search-divider" />
+                      )}
+                      <div className="search-category-label">{t('common:search.categories.tags')}</div>
+                      {searchResults!.tags!.map((tag: { id: string; value: string; type: string; product_count: number }) => (
+                        <div
+                          key={`tag-${tag.id}`}
+                          className="search-result-item"
+                          onClick={() => {
+                            navigate(`/tags/${tag.id}`)
+                            closeSearch()
+                            setMenuOpen(false)
+                          }}
+                        >
+                          <div className="product-info">
+                            <strong>{tag.value}</strong>
+                            <span className="product-brand">{tag.type}</span>
+                            <span className="product-store">{tag.product_count} products</span>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
               {searchQuery.trim().length >= 2 && !searching && !hasResults && (
@@ -581,6 +653,7 @@ function AppRoutes() {
         <Route path="/runs/:runId" element={<RunPageWrapper />} />
         <Route path="/shopping/:runId" element={<ShoppingPageWrapper />} />
         <Route path="/products/:productId" element={<ProductPageWrapper />} />
+        <Route path="/tags/:tagId" element={<TagPageWrapper />} />
         <Route path="/stores/:storeId" element={<StorePageWrapper />} />
         <Route path="/notifications" element={<NotificationPageWrapper />} />
         <Route path="/profile" element={<ProfilePageWrapper />} />

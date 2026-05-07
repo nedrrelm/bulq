@@ -9,6 +9,7 @@ from app.repositories.abstract.reassignment import AbstractReassignmentRepositor
 from app.repositories.abstract.run import AbstractRunRepository
 from app.repositories.abstract.shopping import AbstractShoppingRepository
 from app.repositories.abstract.store import AbstractStoreRepository
+from app.repositories.abstract.tag import AbstractTagRepository
 from app.repositories.abstract.user import AbstractUserRepository
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     'AbstractRunRepository',
     'AbstractShoppingRepository',
     'AbstractStoreRepository',
+    'AbstractTagRepository',
     'AbstractUserRepository',
 ]

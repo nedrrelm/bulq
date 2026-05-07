@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import '../styles/pages/ProductPage.css'
 import { productsApi } from '../api'
+import { tagsApi } from '../api'
+import type { TagBrief, TagSearchResult } from '../api/tags'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import '../styles/components/LoadingSpinner.css'
 import ErrorAlert from '../components/common/ErrorAlert'
@@ -38,6 +41,7 @@ interface ProductDetails {
   brand: string | null
   unit: string | null
   stores: StoreData[]
+  tags: TagBrief[]
 }
 
 interface ProductPageProps {
@@ -162,10 +166,18 @@ function PriceGraph({ storesData }: { storesData: StoreData[] }) {
 }
 
 export default function ProductPage({ productId, onBack }: ProductPageProps) {
-  const { t } = useTranslation(['common', 'product'])
+  const { t } = useTranslation(['common', 'product', 'admin'])
+  const navigate = useNavigate()
   const [product, setProduct] = useState<ProductDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showTagSelector, setShowTagSelector] = useState(false)
+  const [tagSearch, setTagSearch] = useState('')
+  const [tagResults, setTagResults] = useState<TagSearchResult[]>([])
+  const [tagTypes, setTagTypes] = useState<string[]>([])
+  const [newTagValue, setNewTagValue] = useState('')
+  const [newTagType, setNewTagType] = useState('')
+  const [showCreateTag, setShowCreateTag] = useState(false)
 
   const fetchProduct = useCallback(async () => {
     try {
@@ -184,6 +196,73 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
   useEffect(() => {
     fetchProduct()
   }, [productId, fetchProduct])
+
+  const searchTags = useCallback(async (query: string) => {
+    if (query.trim().length < 1) {
+      setTagResults([])
+      return
+    }
+    try {
+      const results = await tagsApi.search(query)
+      // Filter out tags already on the product
+      const existingIds = new Set(product?.tags?.map(t => t.id) || [])
+      setTagResults(results.filter(r => !existingIds.has(r.id)))
+    } catch {
+      setTagResults([])
+    }
+  }, [product?.tags])
+
+  const handleAddTag = async (tagId: string) => {
+    try {
+      await tagsApi.addTagToProduct(tagId, productId)
+      await fetchProduct()
+      setTagSearch('')
+      setTagResults([])
+      setShowTagSelector(false)
+    } catch {
+      // error handled silently
+    }
+  }
+
+  const handleRemoveTag = async (tagId: string) => {
+    try {
+      await tagsApi.removeTagFromProduct(tagId, productId)
+      await fetchProduct()
+    } catch {
+      // error handled silently
+    }
+  }
+
+  const handleCreateTag = async () => {
+    if (!newTagValue.trim() || !newTagType) return
+    try {
+      const result = await tagsApi.createTag({ value: newTagValue.trim(), type: newTagType })
+      // The result has the new tag's id
+      if (result && (result as { id?: string }).id) {
+        await tagsApi.addTagToProduct((result as { id: string }).id, productId)
+        await fetchProduct()
+      }
+      setNewTagValue('')
+      setNewTagType('')
+      setShowCreateTag(false)
+      setShowTagSelector(false)
+    } catch {
+      // error handled silently
+    }
+  }
+
+  const openTagSelector = async () => {
+    setShowTagSelector(true)
+    if (tagTypes.length === 0) {
+      try {
+        const types = await tagsApi.getTypes()
+        setTagTypes(types)
+        if (types.length > 0) setNewTagType(types[0])
+      } catch {
+        // use defaults
+      }
+    }
+  }
 
   if (loading) {
     return <LoadingSpinner />
@@ -207,6 +286,114 @@ export default function ProductPage({ productId, onBack }: ProductPageProps) {
           <div className="product-meta">
             {product.brand && <span className="meta-item">{t('product:fields.brand')}: {product.brand}</span>}
             {product.unit && <span className="meta-item">{t('product:fields.unit')}: {product.unit}</span>}
+          </div>
+        )}
+      </div>
+
+      <div className="product-tags-section">
+        <div className="tags-header">
+          <h4>{t('product:tags.title')}</h4>
+          {!showTagSelector && (
+            <button className="btn btn-sm" onClick={openTagSelector}>
+              + {t('product:tags.addTag')}
+            </button>
+          )}
+        </div>
+
+        <div className="tags-list">
+          {(product.tags || []).map((tag) => (
+            <span
+              key={tag.id}
+              className={`tag-chip tag-type-${tag.type}`}
+            >
+              <span className="tag-chip-text" onClick={() => navigate(`/tags/${tag.id}`)}>
+                {tag.value}
+              </span>
+              <button
+                className="tag-chip-remove"
+                onClick={() => handleRemoveTag(tag.id)}
+                title={t('product:tags.removeTag')}
+              >
+                &times;
+              </button>
+            </span>
+          ))}
+          {(!product.tags || product.tags.length === 0) && !showTagSelector && (
+            <span className="no-tags-hint">{t('product:tags.noTags')}</span>
+          )}
+        </div>
+
+        {showTagSelector && (
+          <div className="tag-selector">
+            <input
+              type="text"
+              className="form-input"
+              placeholder={t('product:tags.searchPlaceholder')}
+              value={tagSearch}
+              onChange={(e) => {
+                setTagSearch(e.target.value)
+                searchTags(e.target.value)
+              }}
+              autoFocus
+            />
+            {tagResults.length > 0 && (
+              <div className="tag-results">
+                {tagResults.map((tag) => (
+                  <div
+                    key={tag.id}
+                    className="tag-result-item"
+                    onClick={() => handleAddTag(tag.id)}
+                  >
+                    <span className="tag-result-value">{tag.value}</span>
+                    <span className={`tag-type-badge tag-type-${tag.type}`}>{t(`product:tags.types.${tag.type}`, tag.type)}</span>
+                    <span className="tag-result-count">{tag.product_count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!showCreateTag && (
+              <button className="btn btn-sm tag-create-btn" onClick={() => setShowCreateTag(true)}>
+                {t('product:tags.createNew')}
+              </button>
+            )}
+
+            {showCreateTag && (
+              <div className="tag-create-form">
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={t('product:tags.newValuePlaceholder')}
+                  value={newTagValue}
+                  onChange={(e) => setNewTagValue(e.target.value)}
+                />
+                <select
+                  className="form-input"
+                  value={newTagType}
+                  onChange={(e) => setNewTagType(e.target.value)}
+                >
+                  {tagTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {t(`product:tags.types.${type}`, type)}
+                    </option>
+                  ))}
+                </select>
+                <div className="tag-create-actions">
+                  <button className="btn btn-primary btn-sm" onClick={handleCreateTag} disabled={!newTagValue.trim() || !newTagType}>
+                    {t('common:actions.create')}
+                  </button>
+                  <button className="btn btn-sm" onClick={() => { setShowCreateTag(false); setShowTagSelector(false) }}>
+                    {t('common:actions.cancel')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!showCreateTag && (
+              <button className="btn btn-sm tag-cancel-btn" onClick={() => { setShowTagSelector(false); setTagSearch(''); setTagResults([]) }}>
+                {t('common:actions.cancel')}
+              </button>
+            )}
           </div>
         )}
       </div>

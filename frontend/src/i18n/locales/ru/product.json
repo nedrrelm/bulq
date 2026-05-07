@@ -61,5 +61,28 @@
   },
   "emptyStates": {
     "noStoreInfo": "Пока нет информации о магазине для этого товара"
+  },
+  "tags": {
+    "title": "Теги",
+    "addTag": "Добавить тег",
+    "removeTag": "Удалить тег",
+    "searchPlaceholder": "Поиск тегов...",
+    "createNew": "Создать новый тег",
+    "newValuePlaceholder": "Значение тега",
+    "noTags": "Тегов пока нет",
+    "noProducts": "Пока нет товаров с этим тегом",
+    "productsWithTag": "{{count}} товаров",
+    "types": {
+      "category": "Категория",
+      "subcategory": "Подкатегория",
+      "brand": "Бренд",
+      "origin": "Происхождение",
+      "dietary": "Диетическое",
+      "produce": "Продукты"
+    },
+    "errors": {
+      "loadFailed": "Не удалось загрузить тег",
+      "notFound": "Тег не найден"
+    }
   }
 }

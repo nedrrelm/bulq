@@ -3,6 +3,7 @@
 from pydantic import BaseModel
 
 from .product_schemas import ProductSearchResult
+from .tag_schemas import TagSearchResult
 
 
 class StoreSearchResult(BaseModel):
@@ -27,3 +28,4 @@ class SearchResponse(BaseModel):
     products: list[ProductSearchResult]
     stores: list[StoreSearchResult]
     groups: list[GroupSearchResult]
+    tags: list[TagSearchResult] = []

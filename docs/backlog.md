@@ -26,20 +26,7 @@
 ## 🔧 Future Enhancements
 
 
-### Product Management Enhancements
-**Status**: Future
-**Priority**: Medium
-**Affected files**: Database schema, backend models, frontend components, admin panel
-
-**Features:**
-
-1. **Product Tag System**
-   - Tag dimensions: category, subcategory, generic items, brands, etc.
-   - Users manually create and apply tags to products
-   - Admins verify tags through admin panel
-   - Add tag management table to admin panel
-
-2. **Product Aliases (Multi-language Support)**
+### Product Aliases (Multi-language Support)
    - Allow multiple names per product for localization
    - Support for en, ru, sr languages
    - Prepare infrastructure for future i18n

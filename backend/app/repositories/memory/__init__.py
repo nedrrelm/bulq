@@ -10,6 +10,7 @@ from app.repositories.memory.run import MemoryRunRepository
 from app.repositories.memory.shopping import MemoryShoppingRepository
 from app.repositories.memory.storage import MemoryStorage
 from app.repositories.memory.store import MemoryStoreRepository
+from app.repositories.memory.tag import MemoryTagRepository
 from app.repositories.memory.user import MemoryUserRepository
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     'MemoryShoppingRepository',
     'MemoryStorage',
     'MemoryStoreRepository',
+    'MemoryTagRepository',
     'MemoryUserRepository',
 ]

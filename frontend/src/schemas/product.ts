@@ -51,14 +51,22 @@ export const storeWithPriceHistorySchema = z.object({
   notes: z.string()
 })
 
+export const tagBriefSchema = z.object({
+  id: uuidSchema,
+  value: z.string(),
+  type: z.string()
+})
+
 export const productDetailSchema = z.object({
   id: uuidSchema,
   name: z.string(),
   brand: nullable(z.string()),
   unit: nullable(z.string()),
-  stores: z.array(storeWithPriceHistorySchema)
+  stores: z.array(storeWithPriceHistorySchema),
+  tags: z.array(tagBriefSchema).catch([])
 })
 
+export type TagBrief = z.infer<typeof tagBriefSchema>
 export type ProductAvailability = z.infer<typeof productAvailabilitySchema>
 export type ProductSearchResult = z.infer<typeof productSearchResultSchema>
 export type AvailableProduct = z.infer<typeof availableProductSchema>

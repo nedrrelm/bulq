@@ -8,7 +8,8 @@
     "users": "Пользователи",
     "products": "Товары",
     "stores": "Магазины",
-    "groups": "Группы"
+    "groups": "Группы",
+    "tags": "Теги"
   },
   "search": {
     "placeholder": "Поиск..."
@@ -52,6 +53,14 @@
     "memberCount": "Участники",
     "id": "ID",
     "createdAt": "Создана"
+  },
+  "tags": {
+    "value": "Значение",
+    "type": "Тип",
+    "productCount": "Товары",
+    "id": "ID",
+    "verified": "Проверен",
+    "actions": "Действия"
   },
   "edit": {
     "dangerZone": "Опасная зона",

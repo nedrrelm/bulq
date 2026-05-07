@@ -104,6 +104,16 @@ from .store_schemas import (
     StoreResponse,
     StoreRunResponse,
 )
+from .tag_schemas import (
+    AddTagToProductRequest,
+    AdminTagResponse,
+    CreateTagRequest,
+    TagBriefResponse,
+    TagDetailResponse,
+    TagResponse,
+    TagSearchResult,
+    UpdateTagRequest,
+)
 
 __all__ = [
     # Common
@@ -194,6 +204,15 @@ __all__ = [
     'AvailabilityInfo',
     'PricePoint',
     'StoreDetail',
+    # Tag schemas
+    'TagBriefResponse',
+    'TagResponse',
+    'TagDetailResponse',
+    'TagSearchResult',
+    'CreateTagRequest',
+    'AddTagToProductRequest',
+    'AdminTagResponse',
+    'UpdateTagRequest',
     # Distribution schemas
     'AssignUserToGroupRequest',
     'DistributionGroupResponse',

@@ -35,6 +35,7 @@ from app.services import (
     RunStateService,
     ShoppingService,
     StoreService,
+    TagService,
 )
 
 # =============================================================================
@@ -240,6 +241,11 @@ async def get_distribution_service(db: AsyncSession = Depends(get_db)) -> Distri
     return DistributionService(db)
 
 
+async def get_tag_service(db: AsyncSession = Depends(get_db)) -> TagService:
+    """Provide TagService instance with injected database session."""
+    return TagService(db)
+
+
 async def get_distribution_group_service(
     db: AsyncSession = Depends(get_db),
 ) -> DistributionGroupService:
@@ -280,3 +286,4 @@ RunServiceDep = Annotated[RunService, Depends(get_run_service)]
 RunStateServiceDep = Annotated[RunStateService, Depends(get_run_state_service)]
 ShoppingServiceDep = Annotated[ShoppingService, Depends(get_shopping_service)]
 StoreServiceDep = Annotated[StoreService, Depends(get_store_service)]
+TagServiceDep = Annotated[TagService, Depends(get_tag_service)]

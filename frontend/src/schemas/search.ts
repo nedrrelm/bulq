@@ -31,17 +31,27 @@ export const searchGroupSchema = z.object({
   member_count: z.number()
 })
 
+export const searchTagSchema = z.object({
+  id: uuidSchema,
+  value: z.string(),
+  type: z.string(),
+  product_count: z.number()
+})
+
 export const searchResultsSchema = z.object({
   products: z.array(searchProductSchema).catch([]),
   stores: z.array(searchStoreSchema).catch([]),
-  groups: z.array(searchGroupSchema).catch([])
+  groups: z.array(searchGroupSchema).catch([]),
+  tags: z.array(searchTagSchema).catch([])
 }).transform(data => ({
   products: data.products ?? [],
   stores: data.stores ?? [],
-  groups: data.groups ?? []
+  groups: data.groups ?? [],
+  tags: data.tags ?? []
 }))
 
 export type SearchProduct = z.infer<typeof searchProductSchema>
 export type SearchStore = z.infer<typeof searchStoreSchema>
 export type SearchGroup = z.infer<typeof searchGroupSchema>
+export type SearchTag = z.infer<typeof searchTagSchema>
 export type SearchResults = z.infer<typeof searchResultsSchema>

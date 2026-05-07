@@ -14,6 +14,7 @@ from .run_service import RunService
 from .run_state_service import RunStateService
 from .shopping_service import ShoppingService
 from .store_service import StoreService
+from .tag_service import TagService
 
 __all__ = [
     'AdminService',
@@ -32,4 +33,5 @@ __all__ = [
     'RunStateService',
     'ShoppingService',
     'StoreService',
+    'TagService',
 ]

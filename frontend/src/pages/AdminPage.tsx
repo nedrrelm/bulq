@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { adminApi } from '../api/admin'
-import type { AdminUser, AdminProduct, AdminStore, AdminGroup } from '../api/admin'
+import type { AdminUser, AdminProduct, AdminStore, AdminGroup, AdminTag } from '../api/admin'
 import EditProductPopup from '../components/popups/EditProductPopup'
 import EditStorePopup from '../components/popups/EditStorePopup'
 import EditUserPopup from '../components/popups/EditUserPopup'
 import { logger } from '../utils/logger'
 import '../styles/pages/AdminPage.css'
 
-type TabType = 'users' | 'products' | 'stores' | 'groups'
+type TabType = 'users' | 'products' | 'stores' | 'groups' | 'tags'
 
 const LIMIT = 100
 
@@ -23,6 +23,7 @@ export default function AdminPage() {
   const [productsOffset, setProductsOffset] = useState(0)
   const [storesOffset, setStoresOffset] = useState(0)
   const [groupsOffset, setGroupsOffset] = useState(0)
+  const [tagsOffset, setTagsOffset] = useState(0)
 
   // Users
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -39,6 +40,10 @@ export default function AdminPage() {
   // Groups
   const [groups, setGroups] = useState<AdminGroup[]>([])
   const [loadingGroups, setLoadingGroups] = useState(false)
+
+  // Tags
+  const [tags, setTags] = useState<AdminTag[]>([])
+  const [loadingTags, setLoadingTags] = useState(false)
 
   // Edit popups
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
@@ -62,9 +67,11 @@ export default function AdminPage() {
       fetchStores()
     } else if (activeTab === 'groups') {
       fetchGroups()
+    } else if (activeTab === 'tags') {
+      fetchTags()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, search, verifiedFilter, usersOffset, productsOffset, storesOffset, groupsOffset])
+  }, [activeTab, search, verifiedFilter, usersOffset, productsOffset, storesOffset, groupsOffset, tagsOffset])
 
   // Reset offsets when search or filter changes
   useEffect(() => {
@@ -72,6 +79,7 @@ export default function AdminPage() {
     setProductsOffset(0)
     setStoresOffset(0)
     setGroupsOffset(0)
+    setTagsOffset(0)
   }, [search, verifiedFilter])
 
   const fetchUsers = async () => {
@@ -119,6 +127,30 @@ export default function AdminPage() {
       logger.error('Failed to fetch groups:', err)
     } finally {
       setLoadingGroups(false)
+    }
+  }
+
+  const fetchTags = async () => {
+    setLoadingTags(true)
+    try {
+      const data = await adminApi.getTags(search || undefined, verifiedFilter, LIMIT, tagsOffset)
+      setTags(data)
+    } catch (err) {
+      logger.error('Failed to fetch tags:', err)
+    } finally {
+      setLoadingTags(false)
+    }
+  }
+
+  const toggleTagVerification = async (tagId: string) => {
+    try {
+      setTags(tags.map(tag =>
+        tag.id === tagId ? { ...tag, verified: !tag.verified } : tag
+      ))
+      await adminApi.toggleTagVerification(tagId)
+    } catch (err) {
+      logger.error('Failed to toggle tag verification:', err)
+      fetchTags()
     }
   }
 
@@ -235,6 +267,12 @@ export default function AdminPage() {
           onClick={() => setActiveTab('groups')}
         >
           {t('admin:tabs.groups')}
+        </button>
+        <button
+          className={activeTab === 'tags' ? 'active' : ''}
+          onClick={() => setActiveTab('tags')}
+        >
+          {t('admin:tabs.tags')}
         </button>
       </div>
 
@@ -513,6 +551,69 @@ export default function AdminPage() {
                   <button
                     onClick={() => setGroupsOffset(groupsOffset + LIMIT)}
                     disabled={groups.length < LIMIT}
+                    className="btn btn-secondary"
+                  >
+                    {t('common:next')}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'tags' && (
+        <div className="admin-content">
+          {loadingTags ? (
+            <p>{t('common:loading')}</p>
+          ) : (
+            <>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>{t('admin:tags.value')}</th>
+                    <th>{t('admin:tags.type')}</th>
+                    <th>{t('admin:tags.productCount')}</th>
+                    <th>{t('admin:tags.id')}</th>
+                    <th>{t('admin:tags.verified')}</th>
+                    <th>{t('admin:tags.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tags?.map((tag) => (
+                    <tr key={tag.id}>
+                      <td>{tag.value}</td>
+                      <td>{tag.type}</td>
+                      <td>{tag.product_count}</td>
+                      <td className="id-cell">{tag.id}</td>
+                      <td>{tag.verified ? '\u2713' : '\u2717'}</td>
+                      <td>
+                        <button
+                          onClick={() => toggleTagVerification(tag.id)}
+                          className="btn-small"
+                        >
+                          {tag.verified ? t('admin:actions.unverify') : t('admin:actions.verify')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {(tagsOffset > 0 || tags.length === LIMIT) && (
+                <div className="pagination-controls">
+                  <button
+                    onClick={() => setTagsOffset(Math.max(0, tagsOffset - LIMIT))}
+                    disabled={tagsOffset === 0}
+                    className="btn btn-secondary"
+                  >
+                    {t('common:previous')}
+                  </button>
+                  <span className="pagination-info">
+                    {t('common:showing')} {tagsOffset + 1}-{tagsOffset + tags.length}
+                  </span>
+                  <button
+                    onClick={() => setTagsOffset(tagsOffset + LIMIT)}
+                    disabled={tags.length < LIMIT}
                     className="btn btn-secondary"
                   >
                     {t('common:next')}

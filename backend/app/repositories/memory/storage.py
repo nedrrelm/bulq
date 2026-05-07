@@ -14,6 +14,7 @@ from app.core.models import (
     RunParticipation,
     ShoppingListItem,
     Store,
+    Tag,
     User,
 )
 
@@ -48,6 +49,8 @@ class MemoryStorage:
         self._notifications: dict[UUID, Notification] = {}
         self._reassignment_requests: dict[UUID, LeaderReassignmentRequest] = {}
         self._distribution_groups: dict[UUID, DistributionGroup] = {}
+        self._tags: dict[UUID, Tag] = {}
+        self._product_tags: dict[tuple[UUID, UUID], bool] = {}  # (product_id, tag_id) -> True
 
         MemoryStorage._initialized = True
 
@@ -110,3 +113,11 @@ class MemoryStorage:
     @property
     def distribution_groups(self) -> dict[UUID, DistributionGroup]:
         return self._distribution_groups
+
+    @property
+    def tags(self) -> dict[UUID, Tag]:
+        return self._tags
+
+    @property
+    def product_tags(self) -> dict[tuple[UUID, UUID], bool]:
+        return self._product_tags

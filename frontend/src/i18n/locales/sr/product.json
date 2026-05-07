@@ -61,5 +61,28 @@
   },
   "emptyStates": {
     "noStoreInfo": "Још нема информација о продавници за овај производ"
+  },
+  "tags": {
+    "title": "Тагови",
+    "addTag": "Додај таг",
+    "removeTag": "Уклони таг",
+    "searchPlaceholder": "Претражи тагове...",
+    "createNew": "Направи нови таг",
+    "newValuePlaceholder": "Вредност тага",
+    "noTags": "Нема тагова",
+    "noProducts": "Нема производа са овим тагом",
+    "productsWithTag": "{{count}} производа",
+    "types": {
+      "category": "Категорија",
+      "subcategory": "Подкатегорија",
+      "brand": "Бренд",
+      "origin": "Порекло",
+      "dietary": "Дијетарно",
+      "produce": "Производи"
+    },
+    "errors": {
+      "loadFailed": "Неуспешно учитавање тага",
+      "notFound": "Таг није пронађен"
+    }
   }
 }

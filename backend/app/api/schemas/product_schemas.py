@@ -68,6 +68,14 @@ class StoreDetail(BaseModel):
     notes: str
 
 
+class TagBrief(BaseModel):
+    """Brief tag info for product details."""
+
+    id: str
+    value: str
+    type: str
+
+
 class ProductDetailResponse(BaseModel):
     """Response model for product details."""
 
@@ -76,3 +84,4 @@ class ProductDetailResponse(BaseModel):
     brand: str | None
     unit: str | None
     stores: list[StoreDetail]
+    tags: list[TagBrief] = []

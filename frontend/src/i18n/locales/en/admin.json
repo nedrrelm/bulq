@@ -8,7 +8,8 @@
     "users": "Users",
     "products": "Products",
     "stores": "Stores",
-    "groups": "Groups"
+    "groups": "Groups",
+    "tags": "Tags"
   },
   "search": {
     "placeholder": "Search..."
@@ -52,6 +53,14 @@
     "memberCount": "Members",
     "id": "ID",
     "createdAt": "Created At"
+  },
+  "tags": {
+    "value": "Value",
+    "type": "Type",
+    "productCount": "Products",
+    "id": "ID",
+    "verified": "Verified",
+    "actions": "Actions"
   },
   "edit": {
     "dangerZone": "Danger Zone",

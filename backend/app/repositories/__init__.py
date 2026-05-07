@@ -17,6 +17,7 @@ from app.repositories.database import (
     DatabaseRunRepository,
     DatabaseShoppingRepository,
     DatabaseStoreRepository,
+    DatabaseTagRepository,
     DatabaseUserRepository,
 )
 from app.repositories.memory import (
@@ -30,6 +31,7 @@ from app.repositories.memory import (
     MemoryShoppingRepository,
     MemoryStorage,
     MemoryStoreRepository,
+    MemoryTagRepository,
     MemoryUserRepository,
 )
 
@@ -44,6 +46,7 @@ __all__ = [
     'DatabaseRunRepository',
     'DatabaseShoppingRepository',
     'DatabaseStoreRepository',
+    'DatabaseTagRepository',
     'DatabaseUserRepository',
     # Memory repositories
     'MemoryBidRepository',
@@ -56,6 +59,7 @@ __all__ = [
     'MemoryShoppingRepository',
     'MemoryStorage',
     'MemoryStoreRepository',
+    'MemoryTagRepository',
     'MemoryUserRepository',
     # Factory functions
     'get_user_repository',
@@ -68,6 +72,7 @@ __all__ = [
     'get_notification_repository',
     'get_reassignment_repository',
     'get_distribution_group_repository',
+    'get_tag_repository',
 ]
 
 # Singleton storage for memory mode
@@ -180,3 +185,12 @@ def get_distribution_group_repository(db: AsyncSession = None):
     else:
         _validate_database_session(db)
         return DatabaseDistributionGroupRepository(db)
+
+
+def get_tag_repository(db: AsyncSession = None):
+    """Get tag repository based on configuration mode."""
+    if REPO_MODE == 'memory':
+        return MemoryTagRepository(_get_memory_storage())
+    else:
+        _validate_database_session(db)
+        return DatabaseTagRepository(db)

@@ -61,5 +61,28 @@
   },
   "emptyStates": {
     "noStoreInfo": "No store information available for this product yet"
+  },
+  "tags": {
+    "title": "Tags",
+    "addTag": "Add Tag",
+    "removeTag": "Remove tag",
+    "searchPlaceholder": "Search tags...",
+    "createNew": "Create new tag",
+    "newValuePlaceholder": "Tag value",
+    "noTags": "No tags yet",
+    "noProducts": "No products with this tag yet",
+    "productsWithTag": "{{count}} products",
+    "types": {
+      "category": "Category",
+      "subcategory": "Subcategory",
+      "brand": "Brand",
+      "origin": "Origin",
+      "dietary": "Dietary",
+      "produce": "Produce"
+    },
+    "errors": {
+      "loadFailed": "Failed to load tag",
+      "notFound": "Tag not found"
+    }
   }
 }

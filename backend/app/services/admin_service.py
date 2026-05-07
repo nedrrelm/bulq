@@ -10,6 +10,7 @@ from app.api.schemas import (
     AdminGroupResponse,
     AdminProductResponse,
     AdminStoreResponse,
+    AdminTagResponse,
     AdminUserResponse,
     VerificationToggleResponse,
 )
@@ -19,12 +20,15 @@ from app.core.error_codes import (
     CANNOT_MERGE_ADMIN_USER,
     CANNOT_MERGE_SAME_PRODUCT,
     CANNOT_MERGE_SAME_STORE,
+    CANNOT_MERGE_SAME_TAG,
     CANNOT_MERGE_SAME_USER,
     CANNOT_REMOVE_OWN_ADMIN_STATUS,
     PRODUCT_HAS_ACTIVE_BIDS,
     PRODUCT_NOT_FOUND,
     STORE_HAS_ACTIVE_RUNS,
     STORE_NOT_FOUND,
+    TAG_HAS_PRODUCTS,
+    TAG_NOT_FOUND,
     USER_NOT_FOUND,
     USERS_HAVE_CONFLICTING_PARTICIPATIONS,
 )
@@ -39,6 +43,10 @@ from app.core.success_codes import (
     STORE_UNVERIFIED,
     STORE_VERIFIED,
     STORES_MERGED,
+    TAG_DELETED,
+    TAG_UNVERIFIED,
+    TAG_VERIFIED,
+    TAGS_MERGED,
     USER_DELETED,
     USER_UNVERIFIED,
     USER_VERIFIED,
@@ -50,6 +58,7 @@ from app.repositories import (
     get_group_repository,
     get_product_repository,
     get_store_repository,
+    get_tag_repository,
     get_user_repository,
 )
 
@@ -66,6 +75,7 @@ class AdminService(BaseService):
         self.product_repo = get_product_repository(db)
         self.store_repo = get_store_repository(db)
         self.group_repo = get_group_repository(db)
+        self.tag_repo = get_tag_repository(db)
 
     async def get_users(
         self,
@@ -377,6 +387,155 @@ class AdminService(BaseService):
             code=STORE_VERIFIED if store.verified else STORE_UNVERIFIED,
             id=str(store.id),
             verified=store.verified,
+        )
+
+    # ==================== Tag Methods ====================
+
+    async def get_tags(
+        self,
+        search: str | None = None,
+        tag_type: str | None = None,
+        verified: bool | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[AdminTagResponse]:
+        """Get all tags with optional search and filtering (paginated)."""
+        tags = await self.tag_repo.get_all_tags()
+
+        if search:
+            search_lower = search.lower()
+            tags = [
+                t
+                for t in tags
+                if (
+                    search_lower in t.value.lower()
+                    or search_lower in t.type.lower()
+                    or search_lower in str(t.id).lower()
+                )
+            ]
+
+        if tag_type:
+            tags = [t for t in tags if t.type == tag_type]
+
+        if verified is not None:
+            tags = [t for t in tags if t.verified == verified]
+
+        tags.sort(key=lambda t: t.created_at if t.created_at else datetime.min, reverse=True)
+        paginated_tags = tags[offset : offset + limit]
+
+        results = []
+        for t in paginated_tags:
+            product_count = await self.tag_repo.count_tag_products(t.id)
+            results.append(
+                AdminTagResponse(
+                    id=str(t.id),
+                    value=t.value,
+                    type=t.type,
+                    verified=t.verified if t.verified is not None else False,
+                    product_count=product_count,
+                    created_at=t.created_at.isoformat() if t.created_at else None,
+                )
+            )
+        return results
+
+    async def toggle_tag_verification(
+        self, tag_id: UUID, admin_user: User
+    ) -> VerificationToggleResponse:
+        """Toggle tag verification status."""
+        tag = await self.tag_repo.get_tag_by_id(tag_id)
+        if not tag:
+            raise NotFoundError(code=TAG_NOT_FOUND, message='Tag not found', tag_id=str(tag_id))
+
+        tag.verified = not tag.verified
+        if tag.verified:
+            tag.verified_by = admin_user.id
+            tag.verified_at = datetime.now(UTC)
+        else:
+            tag.verified_by = None
+            tag.verified_at = None
+
+        return VerificationToggleResponse(
+            code=TAG_VERIFIED if tag.verified else TAG_UNVERIFIED,
+            id=str(tag.id),
+            verified=tag.verified,
+        )
+
+    async def update_tag(self, tag_id: UUID, data: dict, admin_user: User) -> AdminTagResponse:
+        """Update tag fields."""
+        tag = await self.tag_repo.update_tag(tag_id, **data)
+        if not tag:
+            raise NotFoundError(code=TAG_NOT_FOUND, message='Tag not found', tag_id=str(tag_id))
+
+        product_count = await self.tag_repo.count_tag_products(tag.id)
+        return AdminTagResponse(
+            id=str(tag.id),
+            value=tag.value,
+            type=tag.type,
+            verified=tag.verified,
+            product_count=product_count,
+            created_at=tag.created_at.isoformat() if tag.created_at else None,
+        )
+
+    @transactional('merge tags')
+    async def merge_tags(self, source_id: UUID, target_id: UUID, admin_user: User) -> dict:
+        """Merge one tag into another. All product-tag links from source move to target."""
+        from app.api.schemas import MergeResponse
+        from app.core.exceptions import BadRequestError
+
+        source = await self.tag_repo.get_tag_by_id(source_id)
+        target = await self.tag_repo.get_tag_by_id(target_id)
+
+        if not source:
+            raise NotFoundError(
+                code=TAG_NOT_FOUND, message='Source tag not found', tag_id=str(source_id)
+            )
+        if not target:
+            raise NotFoundError(
+                code=TAG_NOT_FOUND, message='Target tag not found', tag_id=str(target_id)
+            )
+        if source_id == target_id:
+            raise BadRequestError(
+                code=CANNOT_MERGE_SAME_TAG,
+                message='Cannot merge tag into itself',
+                tag_id=str(source_id),
+            )
+
+        moved_count = await self.tag_repo.bulk_update_product_tags(source_id, target_id)
+        await self.tag_repo.delete_tag(source_id)
+
+        return MergeResponse(
+            code=TAGS_MERGED,
+            source_id=str(source_id),
+            target_id=str(target_id),
+            affected_records=moved_count,
+            details={'source_value': source.value, 'target_value': target.value},
+        )
+
+    @transactional('delete tag')
+    async def delete_tag(self, tag_id: UUID, admin_user: User) -> dict:
+        """Delete a tag. Cannot delete if it has products."""
+        from app.api.schemas import DeleteResponse
+        from app.core.exceptions import BadRequestError
+
+        tag = await self.tag_repo.get_tag_by_id(tag_id)
+        if not tag:
+            raise NotFoundError(code=TAG_NOT_FOUND, message='Tag not found', tag_id=str(tag_id))
+
+        product_count = await self.tag_repo.count_tag_products(tag_id)
+        if product_count > 0:
+            raise BadRequestError(
+                code=TAG_HAS_PRODUCTS,
+                message=f'Cannot delete tag with {product_count} associated products. Consider merging instead.',
+                product_count=product_count,
+                tag_id=str(tag_id),
+            )
+
+        await self.tag_repo.delete_tag(tag_id)
+
+        return DeleteResponse(
+            code=TAG_DELETED,
+            deleted_id=str(tag_id),
+            details={'tag_value': tag.value},
         )
 
     # ==================== Update Methods ====================

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import ProductServiceDep, StoreServiceDep
+from app.api.dependencies import ProductServiceDep, StoreServiceDep, TagServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     GroupSearchResult,
@@ -19,6 +19,7 @@ router = APIRouter(prefix='/search', tags=['search'])
 async def search_all(
     product_service: ProductServiceDep,
     store_service: StoreServiceDep,
+    tag_service: TagServiceDep,
     db: AsyncSession = Depends(get_db),
     q: str = Query(..., min_length=1, description='Search query'),
     current_user: User = Depends(require_auth),
@@ -48,4 +49,6 @@ async def search_all(
             if len(matching_groups) >= 3:
                 break
 
-    return SearchResponse(products=products, stores=stores, groups=matching_groups)
+    tags = await tag_service.search_tags(q, limit=3)
+
+    return SearchResponse(products=products, stores=stores, groups=matching_groups, tags=tags)

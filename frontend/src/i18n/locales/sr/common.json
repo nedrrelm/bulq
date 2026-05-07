@@ -58,7 +58,8 @@
     "categories": {
       "products": "Производи",
       "stores": "Продавнице",
-      "groups": "Групе"
+      "groups": "Групе",
+      "tags": "Тагови"
     }
   },
   "footer": {

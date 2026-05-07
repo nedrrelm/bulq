@@ -1,0 +1,79 @@
+.tag-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.tag-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tag-header h2 {
+  margin: 0;
+}
+
+.tag-type-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--color-bg-secondary, #f0f0f0);
+  color: var(--color-text-secondary, #666);
+}
+
+.tag-type-category { background: #e8f5e9; color: #2e7d32; }
+.tag-type-subcategory { background: #e3f2fd; color: #1565c0; }
+.tag-type-brand { background: #fce4ec; color: #c62828; }
+.tag-type-origin { background: #fff3e0; color: #e65100; }
+.tag-type-dietary { background: #f3e5f5; color: #6a1b9a; }
+.tag-type-produce { background: #e8f5e9; color: #388e3c; }
+
+.tag-verified-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.tag-products-section h3 {
+  margin-bottom: 1rem;
+  color: var(--color-text-secondary, #666);
+}
+
+.tag-products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tag-product-card {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.tag-product-card:hover {
+  background: var(--color-bg-hover, #f5f5f5);
+}
+
+.tag-product-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.tag-product-brand {
+  color: var(--color-text-secondary, #888);
+  font-size: 0.9rem;
+}
+
+.tag-product-unit {
+  color: var(--color-text-tertiary, #aaa);
+  font-size: 0.85rem;
+}

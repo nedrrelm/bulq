@@ -29,6 +29,13 @@ group_membership = Table(
     Column('is_group_admin', Boolean, nullable=False, default=False),
 )
 
+product_tags = Table(
+    'product_tags',
+    Base.metadata,
+    Column('product_id', UUID(as_uuid=True), ForeignKey('products.id'), primary_key=True),
+    Column('tag_id', UUID(as_uuid=True), ForeignKey('tags.id'), primary_key=True),
+)
+
 
 class User(Base):
     """User model representing registered users."""
@@ -182,6 +189,7 @@ class Product(Base):
     creator = relationship('User', foreign_keys=[created_by], back_populates='created_products')
     verifier = relationship('User', foreign_keys=[verified_by], back_populates='verified_products')
     availabilities = relationship('ProductAvailability', back_populates='product')
+    tags = relationship('Tag', secondary=product_tags, back_populates='products')
 
 
 class RunParticipation(Base):
@@ -354,6 +362,25 @@ class LeaderReassignmentRequest(Base):
         # Composite index for finding pending requests for a run
         Index('ix_reassignment_requests_run_status', 'run_id', 'status'),
     )
+
+
+class Tag(Base):
+    """Tag model representing labels that can be applied to products."""
+
+    __tablename__ = 'tags'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    value = Column(String, nullable=False, index=True)
+    type = Column(String, nullable=False, index=True)
+    verified = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    verified_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=True)
+
+    products = relationship('Product', secondary=product_tags, back_populates='tags')
+
+    __table_args__ = (Index('ix_tags_value_type', 'value', 'type', unique=True),)
 
 
 class AppSettings(Base):
