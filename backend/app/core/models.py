@@ -125,6 +125,7 @@ class Run(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     group_id = Column(UUID(as_uuid=True), ForeignKey('groups.id'), nullable=False, index=True)
     store_id = Column(UUID(as_uuid=True), ForeignKey('stores.id'), nullable=False, index=True)
+    sale_id = Column(UUID(as_uuid=True), ForeignKey('sales.id'), nullable=True, index=True)
     state = Column(String, nullable=False, default=RunState.PLANNING, index=True)
     comment = Column(Text, nullable=True)  # Leader's comment/description for the run
     leader_fee = Column(DECIMAL(10, 2), nullable=True)  # Optional fee for the leader's service
@@ -144,6 +145,7 @@ class Run(Base):
 
     group = relationship('Group', back_populates='runs')
     store = relationship('Store', back_populates='runs')
+    sale = relationship('Sale', back_populates='runs')
     participations = relationship('RunParticipation', back_populates='run')
     distribution_groups = relationship(
         'DistributionGroup', back_populates='run', order_by='DistributionGroup.sort_order'
@@ -408,6 +410,56 @@ class Seller(Base):
     user = relationship('User', back_populates='seller')
     store = relationship('Store', back_populates='seller')
     followers = relationship('SellerFollower', back_populates='seller')
+    sales = relationship('Sale', back_populates='seller', order_by='desc(Sale.created_at)')
+
+
+class Sale(Base):
+    """Sale model representing a seller's sale event."""
+
+    __tablename__ = 'sales'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    seller_id = Column(UUID(as_uuid=True), ForeignKey('sellers.id'), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    state = Column(String, nullable=False, default='planning', index=True)
+    invite_token = Column(
+        String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()), index=True
+    )
+
+    # State transition timestamps
+    planning_at = Column(DateTime(timezone=True), server_default=func.now())
+    active_at = Column(DateTime(timezone=True), nullable=True)
+    confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    shopping_at = Column(DateTime(timezone=True), nullable=True)
+    distributing_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    cancelled_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    seller = relationship('Seller', back_populates='sales')
+    products = relationship('SaleProduct', back_populates='sale', order_by='SaleProduct.created_at')
+    runs = relationship('Run', back_populates='sale')
+
+    __table_args__ = (Index('ix_sales_seller_state', 'seller_id', 'state'),)
+
+
+class SaleProduct(Base):
+    """SaleProduct model representing a product offered in a sale."""
+
+    __tablename__ = 'sale_products'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sale_id = Column(UUID(as_uuid=True), ForeignKey('sales.id'), nullable=False, index=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
+    price = Column(DECIMAL(10, 2), nullable=True)
+    available_quantity = Column(DECIMAL(10, 2), nullable=True)  # null = unlimited
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    sale = relationship('Sale', back_populates='products')
+    product = relationship('Product')
+
+    __table_args__ = (Index('ix_sale_products_sale_product', 'sale_id', 'product_id', unique=True),)
 
 
 class SellerFollower(Base):

@@ -26,6 +26,7 @@ class FollowedSellerResponse(BaseModel):
     """Followed seller response (for group's followed sellers list)."""
 
     seller_id: str
+    store_id: str
     display_name: str
     description: str | None
     is_joining_allowed: bool

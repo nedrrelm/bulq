@@ -7,6 +7,7 @@ from app.repositories.memory.notification import MemoryNotificationRepository
 from app.repositories.memory.product import MemoryProductRepository
 from app.repositories.memory.reassignment import MemoryReassignmentRepository
 from app.repositories.memory.run import MemoryRunRepository
+from app.repositories.memory.sale import MemorySaleRepository
 from app.repositories.memory.seller import MemorySellerRepository
 from app.repositories.memory.seller_follower import MemorySellerFollowerRepository
 from app.repositories.memory.shopping import MemoryShoppingRepository
@@ -23,6 +24,7 @@ __all__ = [
     'MemoryProductRepository',
     'MemoryReassignmentRepository',
     'MemoryRunRepository',
+    'MemorySaleRepository',
     'MemorySellerRepository',
     'MemorySellerFollowerRepository',
     'MemoryShoppingRepository',

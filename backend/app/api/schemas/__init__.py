@@ -83,6 +83,15 @@ from .run_schemas import (
     UpdateRunCommentRequest,
     UserBidResponse,
 )
+from .sale_schemas import (
+    AddSaleProductRequest,
+    CreateSaleRequest,
+    SaleDetailResponse,
+    SaleProductResponse,
+    SaleResponse,
+    UpdateSaleProductRequest,
+    UpdateSaleRequest,
+)
 from .search_schemas import (
     GroupSearchResult,
     SearchResponse,
@@ -226,6 +235,14 @@ __all__ = [
     'AddTagToProductRequest',
     'AdminTagResponse',
     'UpdateTagRequest',
+    # Sale schemas
+    'CreateSaleRequest',
+    'UpdateSaleRequest',
+    'AddSaleProductRequest',
+    'UpdateSaleProductRequest',
+    'SaleProductResponse',
+    'SaleResponse',
+    'SaleDetailResponse',
     # Seller follower schemas
     'FollowSellerRequest',
     'SellerFollowerResponse',

@@ -211,6 +211,7 @@ class SellerFollowerService(BaseService):
                 result.append(
                     FollowedSellerResponse(
                         seller_id=str(seller.id),
+                        store_id=str(seller.store_id),
                         display_name=seller.display_name,
                         description=seller.description,
                         is_joining_allowed=seller.is_joining_allowed,

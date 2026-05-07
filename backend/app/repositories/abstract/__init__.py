@@ -7,6 +7,7 @@ from app.repositories.abstract.notification import AbstractNotificationRepositor
 from app.repositories.abstract.product import AbstractProductRepository
 from app.repositories.abstract.reassignment import AbstractReassignmentRepository
 from app.repositories.abstract.run import AbstractRunRepository
+from app.repositories.abstract.sale import AbstractSaleRepository
 from app.repositories.abstract.seller import AbstractSellerRepository
 from app.repositories.abstract.seller_follower import AbstractSellerFollowerRepository
 from app.repositories.abstract.shopping import AbstractShoppingRepository
@@ -22,6 +23,7 @@ __all__ = [
     'AbstractProductRepository',
     'AbstractReassignmentRepository',
     'AbstractRunRepository',
+    'AbstractSaleRepository',
     'AbstractSellerRepository',
     'AbstractSellerFollowerRepository',
     'AbstractShoppingRepository',

@@ -19,6 +19,7 @@ from .api.routes.notifications import router as notifications_router
 from .api.routes.products import router as products_router
 from .api.routes.reassignment import router as reassignment_router
 from .api.routes.runs import router as runs_router
+from .api.routes.sales import router as sales_router
 from .api.routes.search import router as search_router
 from .api.routes.sellers import router as sellers_router
 from .api.routes.shopping import router as shopping_router
@@ -209,6 +210,7 @@ app.include_router(notifications_router, prefix='/api')
 app.include_router(reassignment_router, prefix='/api')
 app.include_router(tags_router, prefix='/api')
 app.include_router(sellers_router, prefix='/api')
+app.include_router(sales_router, prefix='/api')
 app.include_router(admin_router, prefix='/api')
 app.include_router(websocket_router, prefix='/api')
 

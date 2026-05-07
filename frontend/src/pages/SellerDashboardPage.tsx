@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Copy, Check, RefreshCw, Store, Users } from 'lucide-react'
+import { Copy, Check, RefreshCw, Store, Users, Plus, ShoppingBag } from 'lucide-react'
 import {
   useMySellerProfile,
   useCreateSeller,
@@ -11,6 +11,7 @@ import {
   useRegenerateSellerToken,
   useSellerFollowers,
 } from '../hooks/queries/useSellers'
+import { useMySales, useCreateSale } from '../hooks/queries/useSales'
 import { logger } from '../utils/logger'
 import '../styles/pages/SellerDashboardPage.css'
 
@@ -19,7 +20,9 @@ export default function SellerDashboardPage() {
   const navigate = useNavigate()
   const { data: seller, isLoading } = useMySellerProfile()
   const { data: followers = [] } = useSellerFollowers()
+  const { data: sales = [] } = useMySales()
   const createSeller = useCreateSeller()
+  const createSale = useCreateSale()
   const updateSeller = useUpdateSeller()
   const toggleJoining = useToggleJoiningAllowed()
   const toggleSearchable = useToggleSearchable()
@@ -29,6 +32,9 @@ export default function SellerDashboardPage() {
   const [description, setDescription] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [showNewSale, setShowNewSale] = useState(false)
+  const [saleTitle, setSaleTitle] = useState('')
+  const [saleDescription, setSaleDescription] = useState('')
 
   if (isLoading) {
     return <div className="seller-page"><p>Loading...</p></div>
@@ -244,12 +250,90 @@ export default function SellerDashboardPage() {
         </div>
       </div>
 
-      {/* Sales placeholder (will be populated in Slice 3) */}
+      {/* Sales */}
       <div className="card">
-        <h3>{t('seller:dashboard.sales')}</h3>
-        <div className="empty-state">
-          <p>{t('seller:dashboard.noSales')}</p>
+        <div className="seller-profile-header">
+          <h3><ShoppingBag size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />{t('seller:dashboard.sales')}</h3>
+          <button className="btn btn-primary" onClick={() => setShowNewSale(true)}>
+            <Plus size={16} /> {t('seller:dashboard.createSale')}
+          </button>
         </div>
+
+        {showNewSale && (
+          <div className="seller-form" style={{ marginTop: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">{t('seller:sale.titleLabel')}</label>
+              <input
+                className="form-input"
+                type="text"
+                value={saleTitle}
+                onChange={(e) => setSaleTitle(e.target.value)}
+                placeholder={t('seller:sale.titlePlaceholder')}
+                maxLength={200}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">{t('seller:form.description')}</label>
+              <textarea
+                className="form-input seller-description-input"
+                value={saleDescription}
+                onChange={(e) => setSaleDescription(e.target.value)}
+                placeholder={t('seller:sale.descriptionPlaceholder')}
+                maxLength={2000}
+                rows={2}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                className="btn btn-primary"
+                disabled={!saleTitle.trim() || createSale.isPending}
+                onClick={async () => {
+                  try {
+                    const newSale = await createSale.mutateAsync({
+                      title: saleTitle,
+                      description: saleDescription || null,
+                    })
+                    setShowNewSale(false)
+                    setSaleTitle('')
+                    setSaleDescription('')
+                    navigate(`/seller/sale/${newSale.id}`)
+                  } catch (err) {
+                    logger.error('Failed to create sale:', err)
+                  }
+                }}
+              >
+                {createSale.isPending ? 'Creating...' : t('seller:dashboard.createSale')}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setShowNewSale(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {sales.length === 0 && !showNewSale ? (
+          <div className="empty-state">
+            <p>{t('seller:dashboard.noSales')}</p>
+          </div>
+        ) : (
+          <div className="sales-list">
+            {sales.map((s) => (
+              <div
+                key={s.id}
+                className="card sale-card clickable"
+                onClick={() => navigate(`/seller/sale/${s.id}`)}
+              >
+                <div className="sale-card-header">
+                  <strong>{s.title}</strong>
+                  <span className={`state-badge state-${s.state}`}>{s.state}</span>
+                </div>
+                <div className="sale-card-meta">
+                  {s.product_count} {t('seller:sale.products').toLowerCase()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

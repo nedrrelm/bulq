@@ -80,3 +80,11 @@ export const sellersApi = {
   getFollowedSellers: (groupId: string) =>
     api.get<FollowedSeller[]>(`/groups/${groupId}/followed-sellers`, z.array(followedSellerSchema)),
 }
+
+// Active sales for a group (from followed sellers)
+import { saleSchema, type Sale } from '../schemas/sale'
+
+export const groupSalesApi = {
+  getActiveSales: (groupId: string) =>
+    api.get<Sale[]>(`/groups/${groupId}/active-sales`, z.array(saleSchema)),
+}

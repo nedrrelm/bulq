@@ -53,7 +53,31 @@
   },
   "group": {
     "followedSellers": "Followed Sellers",
-    "noFollowedSellers": "No sellers followed yet."
+    "noFollowedSellers": "No sellers followed yet.",
+    "activeSales": "Active Sales"
+  },
+  "sale": {
+    "titleLabel": "Sale Title",
+    "titlePlaceholder": "e.g., Weekly Produce",
+    "descriptionPlaceholder": "Optional description...",
+    "products": "Products",
+    "noProducts": "No products added yet.",
+    "searchProduct": "Search Products",
+    "searchProductPlaceholder": "Type to search...",
+    "price": "Price",
+    "pricePlaceholder": "Optional",
+    "quantity": "Available Qty",
+    "quantityPlaceholder": "Optional (unlimited)",
+    "confirmCancel": "Are you sure you want to cancel this sale?",
+    "actions": {
+      "activate": "Activate Sale",
+      "deactivate": "Back to Planning",
+      "cancel": "Cancel Sale",
+      "addProduct": "Add Product"
+    },
+    "errors": {
+      "addProductFailed": "Failed to add product"
+    }
   },
   "errors": {
     "createFailed": "Failed to create seller profile",

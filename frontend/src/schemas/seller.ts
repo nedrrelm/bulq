@@ -60,6 +60,7 @@ export type SellerFollower = z.infer<typeof sellerFollowerSchema>
 
 export const followedSellerSchema = z.object({
   seller_id: uuidSchema,
+  store_id: uuidSchema,
   display_name: z.string(),
   description: z.string().nullable(),
   is_joining_allowed: z.boolean(),

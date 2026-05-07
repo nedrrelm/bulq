@@ -12,6 +12,8 @@ from app.core.models import (
     ProductBid,
     Run,
     RunParticipation,
+    Sale,
+    SaleProduct,
     Seller,
     SellerFollower,
     ShoppingListItem,
@@ -55,6 +57,8 @@ class MemoryStorage:
         self._product_tags: dict[tuple[UUID, UUID], bool] = {}  # (product_id, tag_id) -> True
         self._sellers: dict[UUID, Seller] = {}
         self._seller_followers: dict[UUID, SellerFollower] = {}
+        self._sales: dict[UUID, Sale] = {}
+        self._sale_products: dict[UUID, SaleProduct] = {}
 
         MemoryStorage._initialized = True
 
@@ -133,3 +137,11 @@ class MemoryStorage:
     @property
     def seller_followers(self) -> dict[UUID, SellerFollower]:
         return self._seller_followers
+
+    @property
+    def sales(self) -> dict[UUID, Sale]:
+        return self._sales
+
+    @property
+    def sale_products(self) -> dict[UUID, SaleProduct]:
+        return self._sale_products

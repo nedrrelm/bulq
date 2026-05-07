@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { sellersApi, type CreateSellerRequest, type UpdateSellerRequest } from '../../api/sellers'
+import { sellersApi, groupSalesApi, type CreateSellerRequest, type UpdateSellerRequest } from '../../api/sellers'
 import { createQueryKeys } from '../../utils/queryKeys'
 
 // Query Keys
@@ -151,6 +151,17 @@ export function useFollowedSellers(groupId: string | undefined) {
   return useQuery({
     queryKey: sellerKeys.followedSellers(groupId!),
     queryFn: () => sellersApi.getFollowedSellers(groupId!),
+    enabled: !!groupId,
+  })
+}
+
+/**
+ * Get active sales from followed sellers for a group
+ */
+export function useActiveSalesForGroup(groupId: string | undefined) {
+  return useQuery({
+    queryKey: [...sellerKeys.detail(groupId!), 'active-sales'] as const,
+    queryFn: () => groupSalesApi.getActiveSales(groupId!),
     enabled: !!groupId,
   })
 }

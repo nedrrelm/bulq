@@ -33,6 +33,7 @@ from app.services import (
     RunNotificationService,
     RunService,
     RunStateService,
+    SaleService,
     SellerFollowerService,
     SellerService,
     ShoppingService,
@@ -248,6 +249,11 @@ async def get_tag_service(db: AsyncSession = Depends(get_db)) -> TagService:
     return TagService(db)
 
 
+async def get_sale_service(db: AsyncSession = Depends(get_db)) -> SaleService:
+    """Provide SaleService instance with injected database session."""
+    return SaleService(db)
+
+
 async def get_seller_follower_service(
     db: AsyncSession = Depends(get_db),
 ) -> SellerFollowerService:
@@ -298,6 +304,7 @@ ReassignmentServiceDep = Annotated[ReassignmentService, Depends(get_reassignment
 RunNotificationServiceDep = Annotated[RunNotificationService, Depends(get_run_notification_service)]
 RunServiceDep = Annotated[RunService, Depends(get_run_service)]
 RunStateServiceDep = Annotated[RunStateService, Depends(get_run_state_service)]
+SaleServiceDep = Annotated[SaleService, Depends(get_sale_service)]
 SellerFollowerServiceDep = Annotated[SellerFollowerService, Depends(get_seller_follower_service)]
 SellerServiceDep = Annotated[SellerService, Depends(get_seller_service)]
 ShoppingServiceDep = Annotated[ShoppingService, Depends(get_shopping_service)]

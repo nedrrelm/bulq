@@ -10,6 +10,7 @@ export { searchApi } from './search'
 export { tagsApi } from './tags'
 export { notificationsApi } from './notifications'
 export { reassignmentApi } from './reassignment'
+export { salesApi } from './sales'
 export { sellersApi } from './sellers'
 
 export type { LoginRequest, RegisterRequest } from './auth'
@@ -22,4 +23,5 @@ export type { DistributionUser, DistributionProduct, DistributionItem, TogglePic
 export type { SearchResults, SearchProduct, SearchStore, SearchGroup } from './search'
 export type { TagBrief, TagSearchResult, TagDetail, CreateTagRequest } from './tags'
 export type { GetNotificationsParams } from './notifications'
+export type { Sale, SaleDetail, CreateSaleRequest, AddSaleProductRequest, UpdateSaleProductRequest } from './sales'
 export type { Seller, SellerPublic, SellerSearchResult, SellerPreview, SellerFollower, FollowedSeller, CreateSellerRequest, UpdateSellerRequest } from './sellers'

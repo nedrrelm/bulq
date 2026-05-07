@@ -5,6 +5,7 @@ from app.api.dependencies import (
     GroupManagementServiceDep,
     GroupMembershipServiceDep,
     GroupQueryServiceDep,
+    SaleServiceDep,
     SellerFollowerServiceDep,
 )
 from app.api.routes.auth import require_auth
@@ -18,6 +19,7 @@ from app.api.schemas import (
     PreviewGroupResponse,
     RegenerateTokenResponse,
     RunResponse,
+    SaleResponse,
     SuccessResponse,
     ToggleJoiningResponse,
 )
@@ -151,3 +153,16 @@ async def get_followed_sellers(
 
     group_uuid = validate_uuid(group_id, 'Group')
     return await service.get_followed_sellers(current_user, group_uuid)
+
+
+@router.get('/{group_id}/active-sales', response_model=list[SaleResponse])
+async def get_active_sales_for_group(
+    group_id: str,
+    service: SaleServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Get active sales from sellers this group follows."""
+    from app.utils.validation import validate_uuid
+
+    group_uuid = validate_uuid(group_id, 'Group')
+    return await service.get_active_sales_for_group(current_user, group_uuid)

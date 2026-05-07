@@ -31,6 +31,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const TagPage = lazy(() => import('./pages/TagPage'))
 const SellerDashboardPage = lazy(() => import('./pages/SellerDashboardPage'))
 const SellerFollowersPage = lazy(() => import('./pages/SellerFollowersPage'))
+const SellerSalePage = lazy(() => import('./pages/SellerSalePage'))
 const JoinSeller = lazy(() => import('./pages/JoinSeller'))
 
 // Wrapper components for lazy loading
@@ -183,6 +184,14 @@ function SellerFollowersPageWrapper() {
   return (
     <AppLayout>
       <SellerFollowersPage />
+    </AppLayout>
+  )
+}
+
+function SellerSalePageWrapper() {
+  return (
+    <AppLayout>
+      <SellerSalePage />
     </AppLayout>
   )
 }
@@ -753,6 +762,7 @@ function AppRoutes() {
         <Route path="/notifications" element={<NotificationPageWrapper />} />
         <Route path="/seller" element={<SellerDashboardPageWrapper />} />
         <Route path="/seller/followers" element={<SellerFollowersPageWrapper />} />
+        <Route path="/seller/sale/:saleId" element={<SellerSalePageWrapper />} />
         <Route path="/seller/invite/:inviteToken" element={<JoinSellerWrapper />} />
         <Route path="/profile" element={<ProfilePageWrapper />} />
         <Route path="/admin" element={<AdminPageWrapper />} />

@@ -53,7 +53,31 @@
   },
   "group": {
     "followedSellers": "Отслеживаемые продавцы",
-    "noFollowedSellers": "Пока нет отслеживаемых продавцов."
+    "noFollowedSellers": "Пока нет отслеживаемых продавцов.",
+    "activeSales": "Активные продажи"
+  },
+  "sale": {
+    "titleLabel": "Название продажи",
+    "titlePlaceholder": "напр., Недельные продукты",
+    "descriptionPlaceholder": "Описание (необязательно)...",
+    "products": "Товары",
+    "noProducts": "Товары ещё не добавлены.",
+    "searchProduct": "Поиск товаров",
+    "searchProductPlaceholder": "Введите для поиска...",
+    "price": "Цена",
+    "pricePlaceholder": "Необязательно",
+    "quantity": "Доступное кол-во",
+    "quantityPlaceholder": "Необязательно (неограниченно)",
+    "confirmCancel": "Вы уверены, что хотите отменить эту продажу?",
+    "actions": {
+      "activate": "Активировать",
+      "deactivate": "Вернуть в планирование",
+      "cancel": "Отменить продажу",
+      "addProduct": "Добавить товар"
+    },
+    "errors": {
+      "addProductFailed": "Не удалось добавить товар"
+    }
   },
   "errors": {
     "createFailed": "Не удалось создать профиль продавца",
