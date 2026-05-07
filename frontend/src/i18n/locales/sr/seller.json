@@ -73,11 +73,21 @@
       "activate": "Aktiviraj",
       "deactivate": "Nazad na planiranje",
       "cancel": "Otkaži prodaju",
+      "confirm": "Potvrdi prodaju",
+      "startDistributing": "Započni distribuciju",
       "addProduct": "Dodaj proizvod"
     },
     "errors": {
       "addProductFailed": "Greška pri dodavanju proizvoda"
     }
+  },
+  "distribution": {
+    "title": "Distribucija",
+    "backToSale": "Nazad na prodaju",
+    "viewDistribution": "Distribucija",
+    "progress": "Napredak distribucije",
+    "completeSale": "Završi prodaju",
+    "noItems": "Nema stavki za distribuciju."
   },
   "errors": {
     "createFailed": "Neuspelo kreiranje profila prodavca",

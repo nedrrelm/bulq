@@ -196,6 +196,7 @@ function SellerSalePageWrapper() {
   )
 }
 
+
 function JoinSellerWrapper() {
   const { inviteToken } = useParams<{ inviteToken: string }>()
   const navigate = useNavigate()

@@ -60,4 +60,22 @@ export const salesApi = {
 
   cancelSale: (saleId: string) =>
     api.post<SaleDetail>(`/sales/${saleId}/cancel`, {}, saleDetailSchema),
+
+  confirmSale: (saleId: string) =>
+    api.post<SaleDetail>(`/sales/${saleId}/confirm`, {}, saleDetailSchema),
+
+  startDistributing: (saleId: string) =>
+    api.post<SaleDetail>(`/sales/${saleId}/start-distributing`, {}, saleDetailSchema),
+
+  getSaleRuns: (saleId: string) =>
+    api.get(`/sales/${saleId}/runs`),
+
+  getDistribution: (saleId: string) =>
+    api.get(`/sales/${saleId}/distribution`),
+
+  toggleHandover: (saleId: string, itemId: string) =>
+    api.post(`/sales/${saleId}/distribution/${itemId}/handover`, {}),
+
+  completeSale: (saleId: string) =>
+    api.post(`/sales/${saleId}/complete`, {}),
 }

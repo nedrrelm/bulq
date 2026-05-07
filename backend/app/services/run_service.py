@@ -108,10 +108,11 @@ class RunService(BaseService):
     async def create_run(
         self,
         group_id: str,
-        store_id: str,
+        store_id: str | None,
         user: User,
         comment: str | None = None,
         leader_fee: float | None = None,
+        sale_id: str | None = None,
     ) -> CreateRunResponse:
         """Create a new run for a group.
 
@@ -121,6 +122,7 @@ class RunService(BaseService):
             user: Current user creating the run
             comment: Optional comment/description for the run
             leader_fee: Optional fee for the leader's service
+            sale_id: Optional sale ID to link run to a sale
 
         Returns:
             CreateRunResponse with run data
@@ -137,7 +139,6 @@ class RunService(BaseService):
 
         # Validate IDs
         group_uuid = validate_uuid(group_id, 'Group')
-        store_uuid = validate_uuid(store_id, 'Store')
 
         # Verify group exists and user is a member
         group = await self.group_repo.get_group_by_id(group_uuid)
@@ -152,10 +153,57 @@ class RunService(BaseService):
             group_id=group_id,
         )
 
-        # Verify store exists
-        store = await self.store_repo.get_store_by_id(store_uuid)
-        if not store:
-            raise NotFoundError(code=STORE_NOT_FOUND, message='Store not found', store_id=store_id)
+        # Handle sale-linked runs
+        sale_uuid = None
+        if sale_id:
+            from app.repositories import get_sale_repository
+
+            sale_uuid = validate_uuid(sale_id, 'Sale')
+            sale_repo = get_sale_repository(self.db)
+            sale = await sale_repo.get_sale_by_id(sale_uuid)
+            if not sale:
+                raise NotFoundError(
+                    code='SALE_NOT_FOUND', message='Sale not found', sale_id=sale_id
+                )
+            if sale.state != 'active':
+                raise BadRequestError(
+                    code='SALE_INVALID_STATE',
+                    message='Can only create runs for active sales',
+                    current_state=sale.state,
+                )
+            # Check if this group already has an active run for this sale
+            existing_runs = await sale_repo.get_runs_for_sale(sale_uuid)
+            for existing in existing_runs:
+                if existing.group_id == group_uuid and existing.state not in (
+                    RunState.COMPLETED,
+                    RunState.CANCELLED,
+                ):
+                    raise BadRequestError(
+                        code='GROUP_ALREADY_HAS_SALE_RUN',
+                        message='This group already has an active run for this sale',
+                        group_id=group_id,
+                        sale_id=sale_id,
+                    )
+            # Auto-set store_id from seller's store
+            from app.repositories import get_seller_repository
+
+            seller_repo = get_seller_repository(self.db)
+            seller = await seller_repo.get_seller_by_id(sale.seller_id)
+            store_uuid = seller.store_id
+            store = await self.store_repo.get_store_by_id(store_uuid)
+        else:
+            # Regular run: store_id is required
+            if not store_id:
+                raise BadRequestError(
+                    code=STORE_NOT_FOUND,
+                    message='Store ID is required for regular runs',
+                )
+            store_uuid = validate_uuid(store_id, 'Store')
+            store = await self.store_repo.get_store_by_id(store_uuid)
+            if not store:
+                raise NotFoundError(
+                    code=STORE_NOT_FOUND, message='Store not found', store_id=store_id
+                )
 
         # Check active runs limit for the group - use state machine
         group_runs = await self.run_repo.get_runs_by_group(group_uuid)
@@ -178,7 +226,9 @@ class RunService(BaseService):
             )
 
         # Create the run with current user as leader
-        run = await self.run_repo.create_run(group_uuid, store_uuid, user.id, comment, leader_fee)
+        run = await self.run_repo.create_run(
+            group_uuid, store_uuid, user.id, comment, leader_fee, sale_uuid
+        )
 
         # Create default distribution group and assign leader to it
         default_dist_group = await self.dist_group_repo.create_group(
@@ -260,6 +310,23 @@ class RunService(BaseService):
         # Get products data
         products = await self._get_products_data(run, user.id)
 
+        # Get sale info if this is a sale-linked run
+        sale_id_str = None
+        sale_title = None
+        seller_name = None
+        if run.sale_id:
+            from app.repositories import get_sale_repository, get_seller_repository
+
+            sale_repo = get_sale_repository(self.db)
+            sale = await sale_repo.get_sale_by_id(run.sale_id)
+            if sale:
+                sale_id_str = str(sale.id)
+                sale_title = sale.title
+                seller_repo = get_seller_repository(self.db)
+                seller = await seller_repo.get_seller_by_id(sale.seller_id)
+                if seller:
+                    seller_name = seller.display_name
+
         return RunDetailResponse(
             id=str(run.id),
             group_id=str(run.group_id),
@@ -276,6 +343,9 @@ class RunService(BaseService):
             current_user_is_helper=current_user_is_helper,
             leader_name=leader_name,
             helpers=helpers,
+            sale_id=sale_id_str,
+            sale_title=sale_title,
+            seller_name=seller_name,
         )
 
     async def place_bid(
@@ -574,37 +644,57 @@ class RunService(BaseService):
             user, run, NOT_GROUP_MEMBER, 'Not authorized to view this run', run_id=run_id
         )
 
-        # Get all products
-        all_products = await self.product_repo.get_all_products()
         run_bids = await self.bid_repo.get_bids_by_run(run.id)
-
-        # Get products that have bids
         products_with_bids = {bid.product_id for bid in run_bids}
 
-        # Return products that don't have bids, sorted by availability at run's store
         available_products = []
-        for product in all_products:
-            if product.id not in products_with_bids:
-                # Get product availability/price for this store
-                availability = await self.product_repo.get_availability_by_product_and_store(
-                    product.id, run.store_id
-                )
-                current_price = (
-                    str(availability.price) if availability and availability.price else None
-                )
-                has_store_availability = availability is not None
 
-                available_products.append(
-                    AvailableProductResponse(
-                        id=str(product.id),
-                        name=product.name,
-                        brand=product.brand,
-                        current_price=current_price,
-                        has_store_availability=has_store_availability,
+        # For sale-linked runs, only show products from the sale
+        run_sale_id = getattr(run, 'sale_id', None)
+        if run_sale_id is not None and isinstance(run_sale_id, UUID):
+            from app.repositories import get_sale_repository
+
+            sale_repo = get_sale_repository(self.db)
+            sale_products = await sale_repo.get_sale_products(run_sale_id)
+            for sp in sale_products:
+                product = (
+                    sp.product
+                    if sp.product
+                    else await self.product_repo.get_product_by_id(sp.product_id)
+                )
+                if product and product.id not in products_with_bids:
+                    current_price = str(sp.price) if sp.price is not None else None
+                    available_products.append(
+                        AvailableProductResponse(
+                            id=str(product.id),
+                            name=product.name,
+                            brand=product.brand,
+                            current_price=current_price,
+                            has_store_availability=True,
+                        )
                     )
-                )
+        else:
+            # Regular run: show all products, sorted by store availability
+            all_products = await self.product_repo.get_all_products()
+            for product in all_products:
+                if product.id not in products_with_bids:
+                    availability = await self.product_repo.get_availability_by_product_and_store(
+                        product.id, run.store_id
+                    )
+                    current_price = (
+                        str(availability.price) if availability and availability.price else None
+                    )
+                    has_store_availability = availability is not None
+                    available_products.append(
+                        AvailableProductResponse(
+                            id=str(product.id),
+                            name=product.name,
+                            brand=product.brand,
+                            current_price=current_price,
+                            has_store_availability=has_store_availability,
+                        )
+                    )
 
-        # Sort: products with store availability first, then alphabetically by name
         available_products.sort(key=lambda p: (not p.has_store_availability, p.name.lower()))
 
         return available_products[offset : offset + limit]
@@ -702,16 +792,32 @@ class RunService(BaseService):
             if product:
                 products_map[product_id] = product
 
+        # For sale-linked runs, include all sale products (even without bids)
+        run_sale_id = getattr(run, 'sale_id', None)
+        if run_sale_id is not None and isinstance(run_sale_id, UUID):
+            from app.repositories import get_sale_repository
+
+            sale_repo = get_sale_repository(self.db)
+            sale_products = await sale_repo.get_sale_products(run_sale_id)
+            for sp in sale_products:
+                if sp.product_id not in products_map:
+                    product = (
+                        sp.product
+                        if sp.product
+                        else await self.product_repo.get_product_by_id(sp.product_id)
+                    )
+                    if product:
+                        products_map[sp.product_id] = product
+
         # Calculate product statistics
         products_data = []
         for product_id, product in products_map.items():
             product_bids = [bid for bid in run_bids if bid.product_id == product_id]
 
-            if len(product_bids) > 0:  # Only include products with bids
-                product_response = await self._build_product_response(
-                    product, product_bids, current_user_id, run, shopping_list_map
-                )
-                products_data.append(product_response)
+            product_response = await self._build_product_response(
+                product, product_bids, current_user_id, run, shopping_list_map
+            )
+            products_data.append(product_response)
 
         return products_data
 
@@ -740,11 +846,25 @@ class RunService(BaseService):
         if product.id in shopping_list_map:
             purchased_qty = shopping_list_map[product.id].purchased_quantity
 
-        # Get product availability/price for this store
-        availability = await self.product_repo.get_availability_by_product_and_store(
-            product.id, run.store_id
-        )
-        current_price = str(availability.price) if availability and availability.price else None
+        # Get product price and available quantity — from sale product if sale run
+        current_price = None
+        avail_qty = None
+        run_sale_id = getattr(run, 'sale_id', None)
+        if run_sale_id is not None and isinstance(run_sale_id, UUID):
+            from app.repositories import get_sale_repository
+
+            sale_repo = get_sale_repository(self.db)
+            sale_product = await sale_repo.get_sale_product(run_sale_id, product.id)
+            if sale_product:
+                if sale_product.price is not None:
+                    current_price = str(sale_product.price)
+                if sale_product.available_quantity is not None:
+                    avail_qty = str(sale_product.available_quantity)
+        if current_price is None:
+            availability = await self.product_repo.get_availability_by_product_and_store(
+                product.id, run.store_id
+            )
+            current_price = str(availability.price) if availability and availability.price else None
 
         return ProductResponse(
             id=str(product.id),
@@ -757,6 +877,7 @@ class RunService(BaseService):
             user_bids=user_bids_data,
             current_user_bid=current_user_bid,
             purchased_quantity=purchased_qty,
+            available_quantity=avail_qty,
         )
 
     def _calculate_product_statistics(self, product_bids: list[ProductBid]) -> tuple[int, int]:

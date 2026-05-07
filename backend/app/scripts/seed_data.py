@@ -747,3 +747,146 @@ async def create_seed_data(db_session=None):
     shopping_item15.purchased_price_per_unit = 16.48
     shopping_item15.purchased_quantity = 1
     shopping_item15.purchase_order = 1
+
+    # =========================================================================
+    # SELLER SEED DATA
+    # =========================================================================
+    from uuid import uuid4
+
+    from app.core.models import Sale, SaleProduct, Seller, SellerFollower
+    from app.core.sale_state import SaleState
+    from app.repositories import (
+        get_sale_repository,
+        get_seller_follower_repository,
+        get_seller_repository,
+    )
+
+    seller_repo = get_seller_repository(db_session)
+    seller_follower_repo = get_seller_follower_repository(db_session)
+    sale_repo = get_sale_repository(db_session)
+
+    # Create a store for the test seller
+    seller_store = await store_repo.create_store("Test User's Farm")
+
+    # Make test_user a seller
+    test_seller = Seller(
+        id=uuid4(),
+        user_id=test_user.id,
+        store_id=seller_store.id,
+        display_name="Test User's Farm",
+        description='Fresh organic produce from our local farm. Weekly deliveries available!',
+        invite_token=str(uuid4()),
+        is_joining_allowed=True,
+        is_searchable=True,
+    )
+    test_seller = await seller_repo.create_seller(test_seller)
+
+    # friends_group follows the seller
+    follower = SellerFollower(
+        id=uuid4(),
+        seller_id=test_seller.id,
+        group_id=friends_group.id,
+    )
+    await seller_follower_repo.create_follower(follower)
+
+    # Create an active sale with products
+    active_sale = Sale(
+        id=uuid4(),
+        seller_id=test_seller.id,
+        title='Weekly Produce Box',
+        description="Fresh vegetables and fruits from this week's harvest",
+        state=SaleState.ACTIVE,
+        invite_token=str(uuid4()),
+    )
+    active_sale.active_at = datetime.now(UTC) - timedelta(hours=12)
+    active_sale = await sale_repo.create_sale(active_sale)
+
+    # Add products to the sale (reuse existing products + create new ones)
+    tomatoes = await product_repo.create_product('Organic Tomatoes', brand='Farm Fresh', unit='kg')
+    cucumbers = await product_repo.create_product(
+        'Organic Cucumbers', brand='Farm Fresh', unit='kg'
+    )
+    eggs = await product_repo.create_product('Free Range Eggs', brand='Farm Fresh', unit='dozen')
+
+    sale_product1 = SaleProduct(
+        id=uuid4(),
+        sale_id=active_sale.id,
+        product_id=tomatoes.id,
+        price=3.50,
+        available_quantity=20,
+    )
+    await sale_repo.add_sale_product(sale_product1)
+
+    sale_product2 = SaleProduct(
+        id=uuid4(),
+        sale_id=active_sale.id,
+        product_id=cucumbers.id,
+        price=2.00,
+        available_quantity=15,
+    )
+    await sale_repo.add_sale_product(sale_product2)
+
+    sale_product3 = SaleProduct(
+        id=uuid4(),
+        sale_id=active_sale.id,
+        product_id=eggs.id,
+        price=5.00,
+        available_quantity=10,
+    )
+    await sale_repo.add_sale_product(sale_product3)
+
+    # Also add olive oil to the sale (existing product, no quantity limit)
+    sale_product4 = SaleProduct(
+        id=uuid4(),
+        sale_id=active_sale.id,
+        product_id=olive_oil.id,
+        price=22.00,
+        available_quantity=None,  # unlimited
+    )
+    await sale_repo.add_sale_product(sale_product4)
+
+    # Create a run linked to this sale (bob creates it for friends_group)
+    sale_run = await run_repo.create_run(
+        friends_group.id, seller_store.id, bob.id, sale_id=active_sale.id
+    )
+    sale_run.state = RunState.ACTIVE
+    sale_run.active_at = datetime.now(UTC) - timedelta(hours=6)
+
+    # Add some bids from group members
+    sale_participation_carol = await run_repo.get_participation(carol.id, sale_run.id)
+    if not sale_participation_carol:
+        from app.core.models import RunParticipation
+
+        sale_participation_carol = RunParticipation(
+            id=uuid4(),
+            user_id=carol.id,
+            run_id=sale_run.id,
+            is_leader=False,
+            is_helper=False,
+            is_ready=False,
+            is_removed=False,
+        )
+        from app.repositories.memory.storage import MemoryStorage
+
+        storage = MemoryStorage()
+        storage.participations[sale_participation_carol.id] = sale_participation_carol
+
+    # Carol bids on tomatoes and eggs
+    await bid_repo.create_or_update_bid(sale_participation_carol.id, tomatoes.id, 3, False)
+    await bid_repo.create_or_update_bid(sale_participation_carol.id, eggs.id, 2, False)
+
+    # Bob (leader) bids on cucumbers and olive oil
+    sale_participation_bob = await run_repo.get_participation(bob.id, sale_run.id)
+    await bid_repo.create_or_update_bid(sale_participation_bob.id, cucumbers.id, 5, False)
+    await bid_repo.create_or_update_bid(sale_participation_bob.id, olive_oil.id, 1, False)
+
+    # Create a second sale in planning state (for testing)
+    planning_sale = Sale(
+        id=uuid4(),
+        seller_id=test_seller.id,
+        title='Holiday Special',
+        description='Special holiday bundle with premium items',
+        state=SaleState.PLANNING,
+        invite_token=str(uuid4()),
+    )
+    await sale_repo.create_sale(planning_sale)

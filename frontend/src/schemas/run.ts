@@ -23,7 +23,8 @@ export const productInRunSchema = z.object({
   interested_count: z.number(),
   user_bids: z.array(userBidSchema),
   current_user_bid: nullable(userBidSchema),
-  purchased_quantity: nullable(z.number())
+  purchased_quantity: nullable(z.number()),
+  available_quantity: nullable(z.string()).optional()
 })
 
 export const participantSchema = z.object({
@@ -50,7 +51,10 @@ export const runDetailSchema = z.object({
   current_user_is_leader: z.boolean(),
   current_user_is_helper: z.boolean(),
   leader_name: z.string(),
-  helpers: z.array(z.string())
+  helpers: z.array(z.string()),
+  sale_id: nullable(z.string()).optional(),
+  sale_title: nullable(z.string()).optional(),
+  seller_name: nullable(z.string()).optional()
 })
 
 export type RunDetail = z.infer<typeof runDetailSchema>

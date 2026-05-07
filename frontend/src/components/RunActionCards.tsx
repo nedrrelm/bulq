@@ -88,9 +88,16 @@ export default function RunActionCards({
         )
         const allReady = participantsWithBids.length > 0 && participantsWithBids.every(p => p.is_ready)
 
+        const isSaleRun = !!run.sale_id
+
         return (
           <div className="info-card">
-            {allReady ? (
+            {isSaleRun ? (
+              <>
+                <h3>{t('run:labels.waitingForParticipants')}</h3>
+                <p>{t('run:sale.sellerWillConfirm')}</p>
+              </>
+            ) : allReady ? (
               <>
                 <h3>{t('run:labels.readyToConfirm')}</h3>
                 <p>{t('run:labels.allParticipantsReady')}</p>
@@ -133,7 +140,14 @@ export default function RunActionCards({
         )
       })()}
 
-      {run.state === 'confirmed' && run.current_user_is_leader && (
+      {run.state === 'confirmed' && run.sale_id && (
+        <div className="info-card">
+          <h3>{t('run:sale.confirmedBySeller')}</h3>
+          <p>{t('run:sale.waitingForPickup')}</p>
+        </div>
+      )}
+
+      {run.state === 'confirmed' && !run.sale_id && run.current_user_is_leader && (
         <div className="info-card">
           <h3>{t('run:labels.readyToShop')}</h3>
           <p>{t('run:labels.allParticipantsReady')}</p>

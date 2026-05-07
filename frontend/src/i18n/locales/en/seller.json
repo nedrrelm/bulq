@@ -73,11 +73,21 @@
       "activate": "Activate Sale",
       "deactivate": "Back to Planning",
       "cancel": "Cancel Sale",
+      "confirm": "Confirm Sale",
+      "startDistributing": "Start Distributing",
       "addProduct": "Add Product"
     },
     "errors": {
       "addProductFailed": "Failed to add product"
     }
+  },
+  "distribution": {
+    "title": "Distribution",
+    "backToSale": "Back to Sale",
+    "viewDistribution": "View Distribution",
+    "progress": "Handover Progress",
+    "completeSale": "Complete Sale",
+    "noItems": "No items to distribute."
   },
   "errors": {
     "createFailed": "Failed to create seller profile",

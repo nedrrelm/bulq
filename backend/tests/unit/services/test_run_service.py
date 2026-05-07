@@ -79,7 +79,7 @@ class TestCreateRun:
             service.group_repo.get_group_by_id.assert_called_once_with(group_id)
             service.store_repo.get_store_by_id.assert_called_once_with(store_id)
             service.run_repo.create_run.assert_called_once_with(
-                group_id, store_id, test_user.id, None, None
+                group_id, store_id, test_user.id, None, None, None
             )
 
             # Verify event was emitted
@@ -132,7 +132,7 @@ class TestCreateRun:
 
             # Assert
             service.run_repo.create_run.assert_called_once_with(
-                group_id, store_id, test_user.id, comment, None
+                group_id, store_id, test_user.id, comment, None, None
             )
 
     async def test_create_run_invalid_group_id_format(self, test_user):
@@ -151,11 +151,19 @@ class TestCreateRun:
         """Test creating run with invalid store ID format raises BadRequestError."""
         # Arrange
         mock_db = AsyncMock()
+        group_id = uuid4()
         service = RunService(mock_db)
+
+        mock_group = Mock(spec=Group)
+        mock_group.id = group_id
+        service.group_repo.get_group_by_id = AsyncMock(return_value=mock_group)
+        service.user_repo.get_user_groups = AsyncMock(return_value=[mock_group])
 
         # Act & Assert
         with pytest.raises(BadRequestError) as exc_info:
-            await service.create_run(group_id=str(uuid4()), store_id='invalid-uuid', user=test_user)
+            await service.create_run(
+                group_id=str(group_id), store_id='invalid-uuid', user=test_user
+            )
 
         assert exc_info.value.code == INVALID_UUID_FORMAT
 

@@ -10,7 +10,8 @@ class CreateRunRequest(BaseModel):
     """Request model for creating a new run."""
 
     group_id: str
-    store_id: str
+    store_id: str | None = None  # Required for regular runs, auto-set for sale runs
+    sale_id: str | None = None  # Optional: link run to a sale
     comment: str | None = Field(default=None, max_length=500)
     leader_fee: Decimal | None = Field(default=None, ge=0, le=99999.99, decimal_places=2)
 
@@ -72,6 +73,7 @@ class ProductResponse(BaseModel):
     user_bids: list[UserBidResponse]
     current_user_bid: UserBidResponse | None
     purchased_quantity: float | None = None  # For adjusting state
+    available_quantity: str | None = None  # For sale-linked runs: seller's available qty
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -107,6 +109,9 @@ class RunDetailResponse(BaseModel):
     current_user_is_helper: bool = False
     leader_name: str
     helpers: list[str] = []
+    sale_id: str | None = None
+    sale_title: str | None = None
+    seller_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

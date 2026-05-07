@@ -29,6 +29,7 @@ class AbstractRunRepository(ABC):
         leader_id: UUID,
         comment: str | None = None,
         leader_fee: float | None = None,
+        sale_id: UUID | None = None,
     ) -> Run:
         """Create a new run with the leader as first participant."""
         raise NotImplementedError('Subclass must implement create_run')

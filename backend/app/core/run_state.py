@@ -41,6 +41,17 @@ class RunStateMachine:
         RunState.CANCELLED: [],  # Terminal state
     }
 
+    # Sale-linked runs skip shopping/adjusting states
+    SALE_RUN_VALID_TRANSITIONS = {
+        RunState.PLANNING: [RunState.ACTIVE, RunState.CANCELLED],
+        RunState.ACTIVE: [RunState.CONFIRMED, RunState.PLANNING, RunState.CANCELLED],
+        RunState.CONFIRMED: [RunState.SHOPPING, RunState.ACTIVE, RunState.CANCELLED],
+        RunState.SHOPPING: [RunState.DISTRIBUTING, RunState.CANCELLED],
+        RunState.DISTRIBUTING: [RunState.COMPLETED],
+        RunState.COMPLETED: [],
+        RunState.CANCELLED: [],
+    }
+
     # Human-readable state descriptions
     STATE_DESCRIPTIONS = {
         RunState.PLANNING: 'Leader is planning the run',
@@ -53,29 +64,41 @@ class RunStateMachine:
         RunState.CANCELLED: 'Run was cancelled',
     }
 
-    def can_transition(self, from_state: RunState, to_state: RunState) -> bool:
+    def _get_transitions(self, is_sale_run: bool = False) -> dict:
+        """Get the appropriate transitions dict."""
+        return self.SALE_RUN_VALID_TRANSITIONS if is_sale_run else self.VALID_TRANSITIONS
+
+    def can_transition(
+        self, from_state: RunState, to_state: RunState, is_sale_run: bool = False
+    ) -> bool:
         """Check if a state transition is valid.
 
         Args:
             from_state: Current state
             to_state: Desired state
+            is_sale_run: Whether this is a sale-linked run
 
         Returns:
             True if transition is valid, False otherwise
         """
-        valid_next_states = self.VALID_TRANSITIONS.get(from_state, [])
+        transitions = self._get_transitions(is_sale_run)
+        valid_next_states = transitions.get(from_state, [])
         return to_state in valid_next_states
 
-    def get_valid_transitions(self, from_state: RunState) -> list[RunState]:
+    def get_valid_transitions(
+        self, from_state: RunState, is_sale_run: bool = False
+    ) -> list[RunState]:
         """Get all valid transitions from a given state.
 
         Args:
             from_state: Current state
+            is_sale_run: Whether this is a sale-linked run
 
         Returns:
             List of valid next states
         """
-        return self.VALID_TRANSITIONS.get(from_state, [])
+        transitions = self._get_transitions(is_sale_run)
+        return transitions.get(from_state, [])
 
     def get_state_description(self, state: RunState) -> str:
         """Get human-readable description of a state.
@@ -89,7 +112,11 @@ class RunStateMachine:
         return self.STATE_DESCRIPTIONS.get(state, 'Unknown state')
 
     def validate_transition(
-        self, from_state: RunState, to_state: RunState, run_id: str | None = None
+        self,
+        from_state: RunState,
+        to_state: RunState,
+        run_id: str | None = None,
+        is_sale_run: bool = False,
     ) -> None:
         """Validate a state transition and raise exception if invalid.
 
@@ -97,12 +124,13 @@ class RunStateMachine:
             from_state: Current state
             to_state: Desired state
             run_id: Optional run ID for logging context
+            is_sale_run: Whether this is a sale-linked run
 
         Raises:
             BadRequestError: If transition is not valid
         """
-        if not self.can_transition(from_state, to_state):
-            valid_states = self.get_valid_transitions(from_state)
+        if not self.can_transition(from_state, to_state, is_sale_run):
+            valid_states = self.get_valid_transitions(from_state, is_sale_run)
             valid_states_str = (
                 ', '.join([s.value for s in valid_states]) if valid_states else 'none'
             )

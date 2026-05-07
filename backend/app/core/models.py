@@ -462,6 +462,31 @@ class SaleProduct(Base):
     __table_args__ = (Index('ix_sale_products_sale_product', 'sale_id', 'product_id', unique=True),)
 
 
+class SaleDistributionItem(Base):
+    """Tracks per-product per-group handover status for seller distribution."""
+
+    __tablename__ = 'sale_distribution_items'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sale_id = Column(UUID(as_uuid=True), ForeignKey('sales.id'), nullable=False, index=True)
+    run_id = Column(UUID(as_uuid=True), ForeignKey('runs.id'), nullable=False, index=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False, index=True)
+    quantity = Column(DECIMAL(10, 2), nullable=False)
+    is_handed_over = Column(Boolean, nullable=False, default=False)
+    handed_over_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    sale = relationship('Sale')
+    run = relationship('Run')
+    product = relationship('Product')
+
+    __table_args__ = (
+        Index(
+            'ix_sale_dist_items_sale_run_product', 'sale_id', 'run_id', 'product_id', unique=True
+        ),
+    )
+
+
 class SellerFollower(Base):
     """SellerFollower model tracking which groups follow which sellers."""
 

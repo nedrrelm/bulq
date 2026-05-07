@@ -73,11 +73,21 @@
       "activate": "Активировать",
       "deactivate": "Вернуть в планирование",
       "cancel": "Отменить продажу",
+      "confirm": "Подтвердить продажу",
+      "startDistributing": "Начать раздачу",
       "addProduct": "Добавить товар"
     },
     "errors": {
       "addProductFailed": "Не удалось добавить товар"
     }
+  },
+  "distribution": {
+    "title": "Раздача",
+    "backToSale": "Назад к продаже",
+    "viewDistribution": "Раздача",
+    "progress": "Прогресс выдачи",
+    "completeSale": "Завершить продажу",
+    "noItems": "Нет товаров для раздачи."
   },
   "errors": {
     "createFailed": "Не удалось создать профиль продавца",

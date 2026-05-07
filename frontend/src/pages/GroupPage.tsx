@@ -18,6 +18,7 @@ import { useModal } from '../hooks/useModal'
 import RunCard from '../components/RunCard'
 import { useGroup, useGroupRuns, groupKeys } from '../hooks/queries'
 import { useFollowedSellers, useUnfollowSeller, useActiveSalesForGroup } from '../hooks/queries/useSellers'
+import { runsApi } from '../api'
 import { getErrorMessage } from '../utils/errorHandling'
 
 type RunSummary = {
@@ -182,20 +183,31 @@ export default function GroupPage() {
           <h3>{t('seller:group.activeSales')} ({activeSales.length})</h3>
           <div className="runs-list">
             {activeSales.map((sale) => (
-              <div
-                key={sale.id}
-                className="card clickable"
-                onClick={() => navigate(`/sales/${sale.id}`)}
-                style={{ padding: '0.75rem' }}
-              >
+              <div key={sale.id} className="card" style={{ padding: '0.75rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <strong>{sale.title}</strong>
                     {sale.seller_name && <span style={{ color: 'var(--color-text-secondary)', marginLeft: '0.5rem' }}>{sale.seller_name}</span>}
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.2rem' }}>
+                      {sale.product_count} {t('seller:sale.products').toLowerCase()}
+                    </div>
                   </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                    {sale.product_count} {t('seller:sale.products').toLowerCase()}
-                  </span>
+                  <button
+                    className="btn btn-primary"
+                    onClick={async () => {
+                      try {
+                        const run = await runsApi.createRun({
+                          group_id: groupId!,
+                          sale_id: sale.id,
+                        })
+                        navigate(`/runs/${run.id}`)
+                      } catch (err) {
+                        showToast(getErrorMessage(err, 'Failed to create run'), 'error')
+                      }
+                    }}
+                  >
+                    {t('run:sale.createRunForSale')}
+                  </button>
                 </div>
               </div>
             ))}

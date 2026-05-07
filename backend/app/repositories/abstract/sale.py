@@ -48,3 +48,15 @@ class AbstractSaleRepository(ABC):
     @abstractmethod
     async def delete_sale_product(self, sale_id: UUID, product_id: UUID) -> bool:
         raise NotImplementedError
+
+    @abstractmethod
+    async def get_total_bids_for_sale_product(
+        self, sale_id: UUID, product_id: UUID, exclude_bid_id: UUID | None = None
+    ) -> float:
+        """Get total bids across all runs for a sale product."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_runs_for_sale(self, sale_id: UUID) -> list:
+        """Get all runs linked to a sale."""
+        raise NotImplementedError

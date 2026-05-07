@@ -40,6 +40,7 @@ async def create_run(
         current_user,
         request.comment,
         float(request.leader_fee) if request.leader_fee is not None else None,
+        request.sale_id,
     )
 
 

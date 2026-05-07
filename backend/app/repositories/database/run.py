@@ -65,11 +65,13 @@ class DatabaseRunRepository(AbstractRunRepository):
         leader_id: UUID,
         comment: str | None = None,
         leader_fee: float | None = None,
+        sale_id: UUID | None = None,
     ) -> Run:
         """Create a new run with the leader as first participant."""
         run = Run(
             group_id=group_id,
             store_id=store_id,
+            sale_id=sale_id,
             state=RunState.PLANNING,
             comment=comment,
             leader_fee=leader_fee,
@@ -188,7 +190,8 @@ class DatabaseRunRepository(AbstractRunRepository):
             current_state = RunState(run.state)
             target_state = RunState(new_state)
 
-            state_machine.validate_transition(current_state, target_state, str(run_id))
+            is_sale_run = run.sale_id is not None
+            state_machine.validate_transition(current_state, target_state, str(run_id), is_sale_run)
 
             run.state = new_state
 

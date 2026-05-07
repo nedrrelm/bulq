@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends
 
-from app.api.dependencies import SaleServiceDep
+from app.api.dependencies import SaleDistributionServiceDep, SaleServiceDep
 from app.api.routes.auth import require_auth
 from app.api.schemas import (
     AddSaleProductRequest,
@@ -135,3 +135,76 @@ async def cancel_sale(
     """Cancel a sale."""
     sale_uuid = validate_uuid(sale_id, 'Sale')
     return await service.cancel_sale(current_user, sale_uuid)
+
+
+@router.post('/{sale_id}/confirm', response_model=SaleDetailResponse)
+async def confirm_sale(
+    sale_id: str,
+    service: SaleServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Confirm a sale. Cascades confirmation to all linked group runs."""
+    sale_uuid = validate_uuid(sale_id, 'Sale')
+    return await service.confirm_sale(current_user, sale_uuid)
+
+
+@router.post('/{sale_id}/start-distributing', response_model=SaleDetailResponse)
+async def start_distributing(
+    sale_id: str,
+    service: SaleServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Start distributing (CONFIRMED → DISTRIBUTING)."""
+    sale_uuid = validate_uuid(sale_id, 'Sale')
+    return await service.start_distributing(current_user, sale_uuid)
+
+
+@router.get('/{sale_id}/runs')
+async def get_sale_runs(
+    sale_id: str,
+    service: SaleServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Get all group runs for this sale (seller view with aggregates)."""
+    sale_uuid = validate_uuid(sale_id, 'Sale')
+    return await service.get_sale_runs(current_user, sale_uuid)
+
+
+# =============================================================================
+# Distribution Routes
+# =============================================================================
+
+
+@router.get('/{sale_id}/distribution')
+async def get_sale_distribution(
+    sale_id: str,
+    service: SaleDistributionServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Get seller distribution view with per-product per-group breakdown."""
+    sale_uuid = validate_uuid(sale_id, 'Sale')
+    return await service.get_sale_distribution(current_user, sale_uuid)
+
+
+@router.post('/{sale_id}/distribution/{item_id}/handover')
+async def toggle_handover(
+    sale_id: str,
+    item_id: str,
+    service: SaleDistributionServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Toggle handover status for a distribution item."""
+    sale_uuid = validate_uuid(sale_id, 'Sale')
+    item_uuid = validate_uuid(item_id, 'DistributionItem')
+    return await service.mark_handed_over(current_user, sale_uuid, item_uuid)
+
+
+@router.post('/{sale_id}/complete')
+async def complete_sale(
+    sale_id: str,
+    service: SaleDistributionServiceDep,
+    current_user: User = Depends(require_auth),
+):
+    """Complete a sale (DISTRIBUTING → COMPLETED)."""
+    sale_uuid = validate_uuid(sale_id, 'Sale')
+    return await service.complete_sale(current_user, sale_uuid)

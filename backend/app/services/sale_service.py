@@ -72,8 +72,10 @@ class SaleService(BaseService):
     def _format_timestamp(self, dt) -> str | None:
         return dt.isoformat() if dt else None
 
-    def _format_sale_product(self, sp: SaleProduct) -> SaleProductResponse:
+    async def _format_sale_product(self, sp: SaleProduct) -> SaleProductResponse:
         product = sp.product
+        if not product:
+            product = await self.product_repo.get_product_by_id(sp.product_id)
         return SaleProductResponse(
             id=str(sp.id),
             product_id=str(sp.product_id),
@@ -189,7 +191,7 @@ class SaleService(BaseService):
             raise NotFoundError(code=SALE_NOT_FOUND, message='Sale not found', sale_id=str(sale_id))
 
         sale_products = await self.sale_repo.get_sale_products(sale_id)
-        products = [self._format_sale_product(sp) for sp in sale_products]
+        products = [await self._format_sale_product(sp) for sp in sale_products]
 
         return self._format_sale_detail(sale, products)
 
@@ -369,6 +371,135 @@ class SaleService(BaseService):
         now = datetime.now(UTC)
         await self.sale_repo.update_sale(sale_id, state=SaleState.CANCELLED, cancelled_at=now)
 
+        # Cancel all linked runs too
+        from app.core.run_state import RunState
+        from app.repositories import get_run_repository
+
+        run_repo = get_run_repository(self.db)
+        runs = await self.sale_repo.get_runs_for_sale(sale_id)
+        for run in runs:
+            if run.state not in (RunState.COMPLETED, RunState.CANCELLED):
+                await run_repo.update_run_state(run.id, RunState.CANCELLED)
+
         logger.info('Sale cancelled', extra={'sale_id': str(sale_id)})
 
         return await self.get_sale_details(sale_id)
+
+    async def confirm_sale(self, user: User, sale_id: UUID) -> SaleDetailResponse:
+        """Confirm a sale. Cascades confirmation to all linked group runs."""
+        from app.core.run_state import RunState
+        from app.repositories import get_run_repository
+
+        sale = await self._get_sale_owned_by(sale_id, user)
+
+        sale_state_machine.validate_transition(
+            SaleState(sale.state), SaleState.CONFIRMED, str(sale_id)
+        )
+
+        now = datetime.now(UTC)
+        await self.sale_repo.update_sale(sale_id, state=SaleState.CONFIRMED, confirmed_at=now)
+
+        # Cascade: confirm all linked runs that are in planning or active state
+        run_repo = get_run_repository(self.db)
+        runs = await self.sale_repo.get_runs_for_sale(sale_id)
+        for run in runs:
+            if run.state in (RunState.PLANNING, RunState.ACTIVE):
+                await run_repo.update_run_state(run.id, RunState.CONFIRMED)
+                logger.info(
+                    'Run confirmed by sale cascade',
+                    extra={'run_id': str(run.id), 'sale_id': str(sale_id)},
+                )
+
+        logger.info('Sale confirmed', extra={'sale_id': str(sale_id)})
+
+        return await self.get_sale_details(sale_id)
+
+    async def start_distributing(self, user: User, sale_id: UUID) -> SaleDetailResponse:
+        """Start distributing (CONFIRMED → DISTRIBUTING)."""
+        sale = await self._get_sale_owned_by(sale_id, user)
+
+        sale_state_machine.validate_transition(
+            SaleState(sale.state), SaleState.DISTRIBUTING, str(sale_id)
+        )
+
+        now = datetime.now(UTC)
+        await self.sale_repo.update_sale(sale_id, state=SaleState.DISTRIBUTING, distributing_at=now)
+
+        # Transition connected runs to shopping and create shopping list items
+        from app.core.run_state import RunState
+        from app.repositories import get_bid_repository, get_run_repository, get_shopping_repository
+
+        run_repo = get_run_repository(self.db)
+        bid_repo = get_bid_repository(self.db)
+        shopping_repo = get_shopping_repository(self.db)
+        runs = await self.sale_repo.get_runs_for_sale(sale_id)
+        for run in runs:
+            if run.state == RunState.CONFIRMED:
+                await run_repo.update_run_state(run.id, RunState.SHOPPING)
+                logger.info(
+                    'Run transitioned to shopping by sale',
+                    extra={'run_id': str(run.id), 'sale_id': str(sale_id)},
+                )
+
+                # Create shopping list items for each product with bids
+                bids = await bid_repo.get_bids_by_run(run.id)
+                product_totals: dict[UUID, float] = {}
+                for bid in bids:
+                    if not bid.interested_only and float(bid.quantity) > 0:
+                        product_totals[bid.product_id] = product_totals.get(
+                            bid.product_id, 0
+                        ) + float(bid.quantity)
+                for product_id, qty in product_totals.items():
+                    await shopping_repo.create_shopping_list_item(run.id, product_id, qty)
+
+        # Auto-generate distribution items
+        from .sale_distribution_service import SaleDistributionService
+
+        dist_service = SaleDistributionService(self.db)
+        await dist_service.generate_distribution_items(sale_id)
+
+        logger.info('Sale distributing started', extra={'sale_id': str(sale_id)})
+
+        return await self.get_sale_details(sale_id)
+
+    async def get_sale_runs(self, user: User, sale_id: UUID) -> list[dict]:
+        """Get all group runs for a sale with aggregated info (seller view)."""
+        from app.repositories import get_group_repository, get_run_repository
+
+        await self._get_sale_owned_by(sale_id, user)
+
+        runs = await self.sale_repo.get_runs_for_sale(sale_id)
+        group_repo = get_group_repository(self.db)
+        run_repo = get_run_repository(self.db)
+
+        result = []
+        for run in runs:
+            group = await group_repo.get_group_by_id(run.group_id)
+            participations = await run_repo.get_run_participations(run.id)
+            leader = next((p for p in participations if p.is_leader), None)
+            leader_name = leader.user.name if leader and leader.user else 'Unknown'
+
+            # Aggregate bids per product for this run
+            from app.repositories import get_bid_repository
+
+            bid_repo = get_bid_repository(self.db)
+            bids = await bid_repo.get_bids_by_run(run.id)
+
+            product_totals = {}
+            for bid in bids:
+                if not bid.interested_only:
+                    pid = str(bid.product_id)
+                    product_totals[pid] = product_totals.get(pid, 0) + float(bid.quantity)
+
+            result.append(
+                {
+                    'run_id': str(run.id),
+                    'group_id': str(run.group_id),
+                    'group_name': group.name if group else 'Unknown',
+                    'leader_name': leader_name,
+                    'state': run.state,
+                    'product_totals': product_totals,
+                }
+            )
+
+        return result

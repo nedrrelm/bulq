@@ -30,8 +30,7 @@ class SaleStateMachine:
     VALID_TRANSITIONS = {
         SaleState.PLANNING: [SaleState.ACTIVE, SaleState.CANCELLED],
         SaleState.ACTIVE: [SaleState.CONFIRMED, SaleState.PLANNING, SaleState.CANCELLED],
-        SaleState.CONFIRMED: [SaleState.SHOPPING, SaleState.ACTIVE, SaleState.CANCELLED],
-        SaleState.SHOPPING: [SaleState.DISTRIBUTING, SaleState.CANCELLED],
+        SaleState.CONFIRMED: [SaleState.DISTRIBUTING, SaleState.ACTIVE, SaleState.CANCELLED],
         SaleState.DISTRIBUTING: [SaleState.COMPLETED],
         SaleState.COMPLETED: [],
         SaleState.CANCELLED: [],

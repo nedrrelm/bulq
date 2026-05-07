@@ -182,6 +182,7 @@
     "increaseBy": "Увеличить на {{amount}}{{unit}}",
     "partiallyPurchased": "Куплено частично",
     "totalQuantity": "Всего",
+    "availableQuantity": "Доступно",
     "peopleInterested": "Интересуются",
     "bidders": "Участников",
     "interested": "Интересуются",
@@ -234,5 +235,13 @@
     "groupLabel": "Группа {{name}}",
     "groupTotal": "Итого по группе",
     "productTotals": "Товары"
+  },
+  "sale": {
+    "fromSale": "Из продажи:",
+    "sellerWillConfirm": "Продавец подтвердит эту закупку, когда будет готов.",
+    "confirmedBySeller": "Подтверждено продавцом",
+    "waitingForPickup": "Ожидание начала выдачи продавцом.",
+    "createRunForSale": "Создать закупку",
+    "remainingQty": "Осталось {{remaining}}"
   }
 }

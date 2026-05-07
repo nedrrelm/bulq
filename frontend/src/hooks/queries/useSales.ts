@@ -97,6 +97,28 @@ export function useDeactivateSale(saleId: string) {
   })
 }
 
+export function useConfirmSale(saleId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => salesApi.confirmSale(saleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: saleKeys.detail(saleId) })
+      queryClient.invalidateQueries({ queryKey: saleKeys.mySales() })
+    },
+  })
+}
+
+export function useStartDistributing(saleId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => salesApi.startDistributing(saleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: saleKeys.detail(saleId) })
+      queryClient.invalidateQueries({ queryKey: saleKeys.mySales() })
+    },
+  })
+}
+
 export function useCancelSale(saleId: string) {
   const queryClient = useQueryClient()
   return useMutation({

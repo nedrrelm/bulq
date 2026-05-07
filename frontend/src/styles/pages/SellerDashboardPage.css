@@ -202,20 +202,3 @@
 .product-search-item:hover {
   background: var(--color-bg-secondary);
 }
-
-/* State badges */
-.state-badge {
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.state-planning { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
-.state-active { background: #dbeafe; color: #1d4ed8; }
-.state-confirmed { background: #d1fae5; color: #065f46; }
-.state-shopping { background: #fef3c7; color: #92400e; }
-.state-distributing { background: #ede9fe; color: #5b21b6; }
-.state-completed { background: #d1fae5; color: #065f46; }
-.state-cancelled { background: #fee2e2; color: #991b1b; }

@@ -715,6 +715,15 @@ export default function RunPage() {
         </Link>
       </div>
 
+      {/* Sale context banner */}
+      {run.sale_id && (
+        <div className="sale-context-banner">
+          <span className="sale-context-label">{t('run:sale.fromSale')}</span>
+          <strong>{run.sale_title}</strong>
+          {run.seller_name && <span className="sale-context-seller"> — {run.seller_name}</span>}
+        </div>
+      )}
+
       <div className="run-header">
         <div className="run-title">
           <h2>

@@ -166,6 +166,12 @@ const RunProductItem = memo(({ product, runState, canBid, onPlaceBid, onRetractB
           <span className="stat-value">{formatQuantity(product.total_quantity)}{product.unit ? ` ${product.unit}` : ''}</span>
           <span className="stat-label">{t('run:product.totalQuantity')}</span>
         </div>
+        {product.available_quantity && (
+          <div className="stat">
+            <span className="stat-value">{product.available_quantity}{product.unit ? ` ${product.unit}` : ''}</span>
+            <span className="stat-label">{t('run:product.availableQuantity')}</span>
+          </div>
+        )}
         <div className="stat">
           <span className="stat-value">{product.interested_count}</span>
           <span className="stat-label">{t('run:product.peopleInterested')}</span>

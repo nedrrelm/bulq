@@ -115,6 +115,29 @@ class BidService(BaseService):
         # Validate the bid based on current state
         await self._validate_bid_for_state(run, product_uuid, quantity, participation)
 
+        # Enforce quantity cap for sale-linked runs
+        if getattr(run, 'sale_id', None) and isinstance(run.sale_id, UUID) and quantity > 0:
+            from app.repositories import get_sale_repository
+
+            sale_repo = get_sale_repository(self.db)
+            sale_product = await sale_repo.get_sale_product(run.sale_id, product_uuid)
+            if sale_product and sale_product.available_quantity is not None:
+                # Get current user's existing bid to exclude from total
+                existing_bid = await self.bid_repo.get_bid(participation.id, product_uuid)
+                exclude_id = existing_bid.id if existing_bid else None
+
+                total_bids = await sale_repo.get_total_bids_for_sale_product(
+                    run.sale_id, product_uuid, exclude_id
+                )
+                remaining = float(sale_product.available_quantity) - total_bids
+                if quantity > remaining:
+                    raise BadRequestError(
+                        code='BID_EXCEEDS_AVAILABLE_QUANTITY',
+                        message=f'Requested quantity ({quantity}) exceeds available ({remaining:.2f})',
+                        requested=quantity,
+                        available=remaining,
+                    )
+
         # Handle quantity=0 as bid removal (in adjusting state, this is allowed when minAllowed=0)
         if quantity == 0 and not interested_only:
             existing_bid = await self.bid_repo.get_bid(participation.id, product_uuid)

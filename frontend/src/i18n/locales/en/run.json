@@ -192,6 +192,7 @@
     "increaseBy": "Increase by {{amount}}{{unit}}",
     "partiallyPurchased": "Partially Purchased",
     "totalQuantity": "Total",
+    "availableQuantity": "Available",
     "peopleInterested": "Interested",
     "bidders": "Bidders",
     "interested": "Interested",
@@ -244,5 +245,13 @@
     "groupLabel": "Group {{name}}",
     "groupTotal": "Group Total",
     "productTotals": "Products"
+  },
+  "sale": {
+    "fromSale": "From sale:",
+    "sellerWillConfirm": "The seller will confirm this run when ready.",
+    "confirmedBySeller": "Confirmed by Seller",
+    "waitingForPickup": "Waiting for seller to start pickup.",
+    "createRunForSale": "Create Run",
+    "remainingQty": "{{remaining}} remaining"
   }
 }

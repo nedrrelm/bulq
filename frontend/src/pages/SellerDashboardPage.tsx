@@ -14,6 +14,7 @@ import {
 import { useMySales, useCreateSale } from '../hooks/queries/useSales'
 import { logger } from '../utils/logger'
 import '../styles/pages/SellerDashboardPage.css'
+import '../styles/run-states.css'
 
 export default function SellerDashboardPage() {
   const { t } = useTranslation(['seller'])
@@ -325,7 +326,7 @@ export default function SellerDashboardPage() {
               >
                 <div className="sale-card-header">
                   <strong>{s.title}</strong>
-                  <span className={`state-badge state-${s.state}`}>{s.state}</span>
+                  <span className={`run-state state-${s.state}`}>{s.state}</span>
                 </div>
                 <div className="sale-card-meta">
                   {s.product_count} {t('seller:sale.products').toLowerCase()}

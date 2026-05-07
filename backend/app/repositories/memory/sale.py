@@ -70,3 +70,31 @@ class MemorySaleRepository(AbstractSaleRepository):
             del self.storage.sale_products[to_delete]
             return True
         return False
+
+    async def get_total_bids_for_sale_product(
+        self, sale_id: UUID, product_id: UUID, exclude_bid_id: UUID | None = None
+    ) -> float:
+        """Get total bids across all runs for a sale product."""
+        # Find all runs for this sale
+        sale_run_ids = {
+            r.id for r in self.storage.runs.values() if getattr(r, 'sale_id', None) == sale_id
+        }
+        # Find all participations in those runs
+        sale_participation_ids = {
+            p.id for p in self.storage.participations.values() if p.run_id in sale_run_ids
+        }
+        # Sum bids for this product across those participations
+        total = 0.0
+        for bid in self.storage.bids.values():
+            if (
+                bid.participation_id in sale_participation_ids
+                and bid.product_id == product_id
+                and not bid.interested_only
+                and (exclude_bid_id is None or bid.id != exclude_bid_id)
+            ):
+                total += float(bid.quantity)
+        return total
+
+    async def get_runs_for_sale(self, sale_id: UUID) -> list:
+        """Get all runs linked to a sale."""
+        return [r for r in self.storage.runs.values() if getattr(r, 'sale_id', None) == sale_id]

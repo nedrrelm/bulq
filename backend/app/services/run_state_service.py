@@ -162,6 +162,15 @@ class RunStateService(BaseService):
                 run_id=run_id,
             )
 
+        # Block force-confirm for sale-linked runs (seller confirms via sale)
+        run_sale_id = getattr(run, 'sale_id', None)
+        if run_sale_id is not None and isinstance(run_sale_id, UUID):
+            raise ForbiddenError(
+                code=NOT_RUN_LEADER,
+                message='Sale-linked runs are confirmed by the seller, not the group leader',
+                run_id=run_id,
+            )
+
         # Check if run is in planning or active state
         if run.state not in (RunState.PLANNING, RunState.ACTIVE):
             raise BadRequestError(
@@ -416,7 +425,7 @@ class RunStateService(BaseService):
         )
 
     async def _transition_run_state(
-        self, run: Run, new_state: RunState, notify: bool = True
+        self, run: Run, new_state: RunState, notify: bool = True, is_sale_run: bool = False
     ) -> str:
         """Safely transition run to new state with validation and notifications.
 
@@ -427,6 +436,7 @@ class RunStateService(BaseService):
             run: The run to transition
             new_state: Target state
             notify: Whether to emit state change events (default True)
+            is_sale_run: Whether this is a sale-linked run
 
         Returns:
             old_state string for caller use
@@ -435,7 +445,7 @@ class RunStateService(BaseService):
             BadRequestError: If transition is invalid according to state machine
         """
         # Validate transition using state machine
-        state_machine.validate_transition(RunState(run.state), new_state, str(run.id))
+        state_machine.validate_transition(RunState(run.state), new_state, str(run.id), is_sale_run)
 
         old_state = run.state
         await self.run_repo.update_run_state(run.id, new_state)

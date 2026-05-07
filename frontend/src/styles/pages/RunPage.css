@@ -4,6 +4,23 @@
   margin: 0 auto;
 }
 
+.sale-context-banner {
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  background: #dbeafe;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1d4ed8;
+}
+
+.sale-context-label {
+  margin-right: 0.35rem;
+}
+
+.sale-context-seller {
+  color: #3b82f6;
+}
+
 .distribution-section {
   margin-bottom: 2rem;
   padding: 1.5rem;

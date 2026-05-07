@@ -494,6 +494,25 @@ class ShoppingService(BaseService):
             item.product_id, run.store_id, price_per_unit, user.id
         )
 
+        # For sale-linked runs: auto-mark the sale distribution item as handed over
+        run_sale_id = getattr(run, 'sale_id', None)
+        if run_sale_id is not None:
+            from app.repositories.memory.storage import MemoryStorage
+
+            storage = MemoryStorage()
+            for dist_item in storage.sale_distribution_items.values():
+                if (
+                    dist_item.sale_id == run_sale_id
+                    and dist_item.run_id == run_uuid
+                    and dist_item.product_id == item.product_id
+                    and not dist_item.is_handed_over
+                ):
+                    from datetime import UTC, datetime
+
+                    dist_item.is_handed_over = True
+                    dist_item.handed_over_at = datetime.now(UTC)
+                    break
+
         # Emit event for WebSocket broadcast
         event_bus.emit(
             ShoppingItemUpdatedEvent(run_id=run_uuid, item_id=item_uuid, action='marked_purchased')

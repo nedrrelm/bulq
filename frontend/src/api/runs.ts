@@ -7,7 +7,8 @@ export type { RunDetail }
 
 export interface CreateRunRequest {
   group_id: string
-  store_id: string
+  store_id?: string | null
+  sale_id?: string | null
   comment?: string
   leader_fee?: number | null
 }

@@ -182,6 +182,7 @@
     "increaseBy": "Повећај за {{amount}}{{unit}}",
     "partiallyPurchased": "Делимично купљено",
     "totalQuantity": "Укупно",
+    "availableQuantity": "Доступно",
     "peopleInterested": "Заинтересовано",
     "bidders": "Понуђачи",
     "interested": "Заинтересовано",
@@ -234,5 +235,13 @@
     "groupLabel": "Група {{name}}",
     "groupTotal": "Укупно група",
     "productTotals": "Производи"
+  },
+  "sale": {
+    "fromSale": "Iz prodaje:",
+    "sellerWillConfirm": "Prodavac će potvrditi ovu nabavku kada bude spreman.",
+    "confirmedBySeller": "Potvrdio prodavac",
+    "waitingForPickup": "Čekanje da prodavac započne preuzimanje.",
+    "createRunForSale": "Kreiraj nabavku",
+    "remainingQty": "Preostalo {{remaining}}"
   }
 }

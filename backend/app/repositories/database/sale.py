@@ -2,11 +2,11 @@
 
 from uuid import UUID
 
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.core.models import Sale, SaleProduct
+from app.core.models import ProductBid, Run, RunParticipation, Sale, SaleProduct
 from app.repositories.abstract.sale import AbstractSaleRepository
 
 
@@ -97,3 +97,31 @@ class DatabaseSaleRepository(AbstractSaleRepository):
         )
         await self.db.commit()
         return result.rowcount > 0
+
+    async def get_total_bids_for_sale_product(
+        self, sale_id: UUID, product_id: UUID, exclude_bid_id: UUID | None = None
+    ) -> float:
+        """Get total bids across all runs for a sale product."""
+        stmt = (
+            select(func.coalesce(func.sum(ProductBid.quantity), 0))
+            .join(RunParticipation, ProductBid.participation_id == RunParticipation.id)
+            .join(Run, RunParticipation.run_id == Run.id)
+            .where(
+                and_(
+                    Run.sale_id == sale_id,
+                    ProductBid.product_id == product_id,
+                    ProductBid.interested_only.is_(False),
+                )
+            )
+        )
+        if exclude_bid_id:
+            stmt = stmt.where(ProductBid.id != exclude_bid_id)
+        result = await self.db.execute(stmt)
+        return float(result.scalar_one())
+
+    async def get_runs_for_sale(self, sale_id: UUID) -> list[Run]:
+        """Get all runs linked to a sale."""
+        result = await self.db.execute(
+            select(Run).where(Run.sale_id == sale_id).order_by(Run.planning_at)
+        )
+        return list(result.scalars().all())

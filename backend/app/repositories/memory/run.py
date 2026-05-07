@@ -51,11 +51,13 @@ class MemoryRunRepository(AbstractRunRepository):
         leader_id: UUID,
         comment: str | None = None,
         leader_fee: float | None = None,
+        sale_id: UUID | None = None,
     ) -> Run:
         run = Run(
             id=uuid4(),
             group_id=group_id,
             store_id=store_id,
+            sale_id=sale_id,
             state=RunState.PLANNING,
             comment=comment,
             leader_fee=leader_fee,
@@ -151,7 +153,8 @@ class MemoryRunRepository(AbstractRunRepository):
             current_state = RunState(run.state)
             target_state = RunState(new_state)
 
-            state_machine.validate_transition(current_state, target_state, str(run_id))
+            is_sale_run = getattr(run, 'sale_id', None) is not None
+            state_machine.validate_transition(current_state, target_state, str(run_id), is_sale_run)
 
             run.state = new_state
 
