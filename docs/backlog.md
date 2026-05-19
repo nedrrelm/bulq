@@ -2,29 +2,40 @@
 
 ## Items
 
+### [bulq-0001] Product aliases for multi-language support
+
+```yaml
+type: feature
+status: open
+areas: [backend, db, frontend]
+created: 2026-05-19
+updated: 2026-05-19
+```
+
+Allow multiple names per product for localization. Support for en, ru, sr languages. Prepare infrastructure for future i18n.
+
+### [bulq-0002] Savings tracking and price comparison
+
+```yaml
+type: feature
+status: open
+areas: [backend, db, frontend]
+priority: medium
+created: 2026-05-19
+updated: 2026-05-19
+```
+
+Track regular supermarket prices for products and compute savings from bulk purchases.
+
+Features:
+- Track regular supermarket prices for products
+- Calculate total savings per run by comparing bulk purchase prices vs regular retail prices
+- Display savings summary at run completion
+- Historical savings trends per group/user
+- Price comparison with multiple regular retailers
+
+Affected areas: database schema, backend services, frontend run pages, price tracking models.
+
 ## Notes
-
-<!-- janus:needs-review -->
-
--- # Backlog
---
--- ## 🔧 Future Enhancements
---
--- ### Product Aliases (Multi-language Support)
---    - Allow multiple names per product for localization
---    - Support for en, ru, sr languages
---    - Prepare infrastructure for future i18n
---
--- ### Savings Tracking & Price Comparison
--- **Status**: Future
--- **Priority**: Medium
--- **Affected files**: Database schema, backend services, frontend run pages, price tracking models
---
--- **Features:**
--- - Track regular supermarket prices for products
--- - Calculate total savings per run by comparing bulk purchase prices vs regular retail prices
--- - Display savings summary at run completion
--- - Historical savings trends per group/user
--- - Price comparison with multiple regular retailers
 
 ## Future Work
