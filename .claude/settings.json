@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/block-file-edits.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/block-bash-edits.py"
+          }
+        ]
+      }
+    ]
+  },
+  "_janus": {
+    "managed_hooks": [
+      "Edit|Write|NotebookEdit",
+      "Bash"
+    ]
+  }
+}

@@ -58,3 +58,11 @@ repos:
         args: [--maxkb=5000]
       # - id: no-commit-to-branch
       #   args: [--branch, master, --branch, main]
+  - repo: local
+    hooks:
+      - id: janus-validate
+        name: Janus validate backlog / devlog
+        entry: uv run janus validate
+        language: system
+        files: ^docs/(backlog|devlog)\.md$
+        pass_filenames: true
