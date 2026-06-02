@@ -62,7 +62,7 @@ repos:
     hooks:
       - id: janus-validate
         name: Janus validate backlog / devlog
-        entry: uv run janus validate
+        entry: janus validate
         language: system
         files: ^docs/(backlog|devlog)\.md$
         pass_filenames: true

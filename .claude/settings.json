@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/block-file-edits.py"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.janus/hooks/block-file-edits.py\""
           }
         ]
       },
@@ -15,16 +15,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/block-bash-edits.py"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.janus/hooks/block-bash-edits.py\""
           }
         ]
       }
     ]
   },
-  "_janus": {
-    "managed_hooks": [
-      "Edit|Write|NotebookEdit",
-      "Bash"
+  "permissions": {
+    "allow": [
+      "Bash(janus list:*)",
+      "Bash(janus show:*)",
+      "Bash(janus search:*)",
+      "Bash(janus notes)",
+      "Bash(janus future-work)",
+      "Bash(janus validate:*)"
     ]
   }
 }

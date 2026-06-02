@@ -9,7 +9,7 @@ type: feature
 status: open
 areas: [backend, db, frontend]
 created: 2026-05-19
-updated: 2026-05-19
+updated: 2026-05-21
 ```
 
 Allow multiple names per product for localization. Support for en, ru, sr languages. Prepare infrastructure for future i18n.
@@ -22,7 +22,7 @@ status: open
 areas: [backend, db, frontend]
 priority: medium
 created: 2026-05-19
-updated: 2026-05-19
+updated: 2026-05-21
 ```
 
 Track regular supermarket prices for products and compute savings from bulk purchases.

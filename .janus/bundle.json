@@ -1,0 +1,7 @@
+{
+  "managed_hooks": [
+    "Edit|Write|NotebookEdit",
+    "Bash"
+  ],
+  "janus_version": "1.2.1"
+}

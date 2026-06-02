@@ -60,7 +60,7 @@ Devlog items add a required `completed: YYYY-MM-DD` field. The `slug` is derived
   Two modes:
   - **With flags** (preferred for agents) — patches only the supplied fields in place, no editor. `--status done` is rejected; use `complete` instead.
   - **Without flags** — opens the item block in `$EDITOR`; re-validates on save. File is left untouched if the result is invalid. **Never call this form as an agent** — it opens an interactive terminal and will hang. Always supply at least one flag.
-- `janus complete <id>` — sets `status: done`, adds `completed: <today>`, moves the item from `docs/backlog.md` to `docs/devlog.md`. Creates the devlog file on first use.
+- `janus complete <id>` — sets `status: done`, adds `completed: <today>`, moves the item from `docs/backlog.md` to `docs/devlog.md`. Creates the devlog file on first use. **Requires explicit user approval before invocation** — see the rule below.
 - `janus rm <id>` — removes the item from the backlog. No confirmation. Doesn't move to devlog.
 
 ### Maintenance
@@ -78,6 +78,7 @@ Devlog items add a required `completed: YYYY-MM-DD` field. The `slug` is derived
    - drop an item without devlog entry → `janus rm <id>`
 3. Every mutation re-validates before writing. If validation fails, the file is left untouched — fix the input and try again.
 4. **Never** use Edit, Write, or NotebookEdit on `docs/backlog.md` or `docs/devlog.md`. **Never** use Bash redirection (`>`, `>>`), `sed -i`, `awk -i`, `mv`, `rm`, `cp`, `tee`, or `truncate` against them. These are blocked by PreToolUse hooks with a clear error message.
+5. **Never run `janus complete` without explicit user approval.** Even when the user has asked you to work on an item, completion is a separate decision: finish the implementation, present what changed, and wait for the user to confirm before running `janus complete`. Implicit signals ("let's do 17", "next item") authorize the *work*, not the completion. If unsure, ask.
 
 ## Common error patterns
 
